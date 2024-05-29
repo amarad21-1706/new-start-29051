@@ -1,0 +1,279 @@
+{% extends 'base.html' %}
+
+{% block content %}
+  <h2>{{ questionnaire_name }} (User {{ user_id }}/Company {{ company_id }} {{ today}})</h2>
+  <input type="hidden" name="action" id="action" value="">
+
+  <form id="questionnaireForm" method="POST" action="/handle_questionnaire">
+
+      <!-- Display the dynamic form fields -->
+
+      {% for question in questions %}
+        <!-- Display question details -->
+        <label>{{ question.text }}</label>
+        <!-- Check if the question allows multiple responses -->
+        {% if question.num_responses > 1 %}
+            <!-- Display multiple response controls -->
+            {% for i in range(question.num_responses) %}
+                {% if i < 4 %}
+                    {% set input_type = ['text', 'number', 'file', 'text'][i] %}
+                {% else %}
+                    {% set input_type = 'text' %}
+                {% endif %}
+                {% if input_type == 'number' %}
+                    <select name="answer_{{ question.id }}_{{ i }}" class="form-control">
+                        {% for value in range(11) %}
+                            <option value="{{ value }}">{{ value }}</option>
+                        {% endfor %}
+                    </select>
+                {% else %}
+                    <input type="{{ input_type }}" name="answer_{{ question.id }}_{{ i }}" class="form-control">
+                {% endif %}
+            {% endfor %}
+
+        {% else %}
+            <!-- Display single response control with appropriate type -->
+            {% if question.answer_type == 'integer' or question.answer_type == 'number' %}
+                <input type="number" name="answer_{{ question.id }}" class="form-control">
+            {% elif question.answer_type == 'date' %}
+                <input type="date" name="answer_{{ question.id }}" class="form-control">
+            {% elif question.answer_type == 'boolean' %}
+                <input type="checkbox" name="answer_{{ question.id }}" class="form-check-input">
+            {% elif question.answer_type == 'yes_no' %}
+                <select name="answer_{{ question.id }}" class="form-control">
+                    <option value="">N/A</option>
+                    <option value="Yes">Yes</option>
+                    <option value="No">No</option>
+                </select>
+            {% else %}
+                <!-- Default to text input for other types -->
+                <input type="text" name="answer_{{ question.id }}" class="form-control">
+            {% endif %}
+        {% endif %}
+        <!-- Add a thin blue line as a separator -->
+        <hr style="border-color: red; margin: 12px 0;">
+    {% endfor %}
+
+      <!-- Hidden fields for CSRF token and questionnaire ID -->
+      <input type="hidden" name="questionnaire_id" value="{{ questionnaire_id }}">
+      <input type="hidden" id="questionnaireId" value="{{ questionnaire_id }}">
+      <input type="hidden" name="company_id" value="{{ company_id }}">
+      <input type="hidden" name="user_id" value="{{ user_id }}">
+      <input type="hidden" name="today" value="{{ today }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+      <!-- Buttons for actions -->
+      <input class="btn btn-secondary" type="button" id="retrieveBtn" value="Retrieve" onclick="retrieveAnswers({{ questionnaire_id }}, {{ user_id }}, {{ company_id }})">
+      <input type="submit" id="saveBtn" name="save" value="Save">
+      <input type="submit" id="submitBtn" name="submit" value="Submit">
+      <button type="button" id="backBtn">Back</button>
+
+      <!-- Apply the styling class to the CSRF token output -->
+      <span class="csrf-token">{{ csrf_token }}</span>
+
+      <!-- Display area for messages -->
+      <div>{{ message }}</div>
+  </form>
+
+  <!-- Include jQuery and Bootstrap Datepicker library -->
+  <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+
+  <!-- Include your custom JavaScript -->
+  <script>
+
+      function retrieveAnswers(questionnaire_id, user_id, company_id) {
+        // Make a request to retrieve existing answers for the questionnaire
+        fetch(`/handle_questionnaire/${questionnaire_id}?user_id=${user_id}&company_id=${company_id}`, {
+            method: 'GET'
+        })
+        .then(response => {
+            if (response.status !== 200) {
+                console.log('Data not found for the given parameters.'); // Treat non-200 status as informational
+                return; // Skip further processing
+            }
+            if (!response.ok) {
+                throw new Error(`Network response was not ok. Status: ${response.status} - ${response.statusText}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (!data) {
+                console.log('No data found for the given parameters.'); // Informative message
+                return;
+            }
+            // Process retrieved data here
+            console.log('Retrieved data:', data);
+            // Handle retrieved answers data
+            for (const answer of data.answers) {
+                const fieldId = `question_${answer.question_text.toLowerCase()}`;
+                const field = document.getElementsByName(fieldId)[0];
+                if (field) {
+                    if (answer.answer_type === 'complex') {
+                        // Parse complex answer data
+                        const complexAnswer = JSON.parse(answer.answer_text);
+                        // Create input fields based on the type of each answer within the complex answer
+                        for (const subAnswer of complexAnswer) {
+                            // Determine the appropriate input type based on the type field of subAnswer
+                            let inputType;
+                            if (subAnswer.type === 'integer') {
+                                inputType = 'number';
+                            } else if (subAnswer.type === 'date') {
+                                inputType = 'date';
+                            } else if (subAnswer.type === 'file') {
+                                inputType = 'file';
+                            } else {
+                                inputType = 'text'; // Default to text input
+                            }
+                            // Create input field
+                            const inputField = document.createElement('input');
+                            inputField.type = inputType;
+                            inputField.name = `${fieldId}_${subAnswer.index}`; // Use index to differentiate multiple answers
+                            // Set value if available
+                            if (subAnswer.value) {
+                                inputField.value = subAnswer.value;
+                            }
+                            // Append input field to form
+                            field.appendChild(inputField);
+                        }
+                    } else {
+                        // Non-complex answer, set value directly
+                        field.value = answer.answer_text;
+                    }
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error while retrieving answers:', error.message);
+            alert('An error occurred while retrieving answers: ' + error.message);
+        });
+    }
+
+    function handleFormAction(action, questionnaire_id, company_id, user_id) {
+        const form = document.getElementById('questionnaireForm');
+        const formData = new FormData(form);
+
+        // Set the value of the 'action' field (not needed for Retrieve)
+        if (action !== 'retrieve') {
+            formData.append('action', action);
+        }
+
+        // Add questionnaire_id to the FormData
+        formData.append('questionnaire_id', questionnaire_id);
+
+        // Define the endpoint based on the action
+        let endpoint;
+        if (action === 'save') {
+            endpoint = '/handle_questionnaire';
+        } else if (action === 'submit') {
+            endpoint = '/handle_questionnaire';
+        } else if (action === 'retrieve') {
+            endpoint = form.action;
+        }
+
+        // Determine request method (GET for retrieve, POST for others)
+        const method = (action === 'retrieve') ? 'GET' : 'POST';
+
+        fetch(endpoint, {
+            method: method,
+            body: (method === 'POST') ? formData : undefined,
+        })
+        .then(response => {
+            if (!response.ok) {
+                if (response.status === 404) {
+                    console.log('Data not found for the given parameters.'); // Treat 404 as informational
+                    return; // Skip further processing
+                }
+                throw new Error(`Network response was not ok. Status: ${response.status} - ${response.statusText}. Questionnaire ID: ${questionnaire_id}, User ID: ${user_id}, Company ID: ${company_id}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log(data);
+            if (action === 'retrieve') {
+                // Retrieve answers if action is 'retrieve'
+                retrieveAnswers(questionnaire_id, user_id, company_id);
+            } else {
+                // Handle other actions
+                alert(data.message); // Display success message for save/submit
+                if (data.success && data.redirect_url) {
+                    // Redirect to the specified URL after a successful operation
+                    window.location.href = data.redirect_url;
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error while handling form action:', error.message);
+            alert('An error occurred while processing the request: ' + error.message);
+        });
+    }
+
+    $(document).ready(function () {
+        // Initialize date picker for elements with the 'datepicker' class
+        $('.datepicker').datepicker({
+          format: 'yyyy-mm-dd',  // Customize the date format as needed
+          autoclose: true,
+        });
+      });
+
+      function handleFormSubmission(formData) {
+        console.log('Form submission started');
+        // Make a request to the server to process the questionnaire
+        fetch('/handle_questionnaire', {
+          method: 'POST',
+          body: formData
+        })
+        .then(response => {
+            console.log('Response:', response);
+            return response.json();
+        })
+        .then(data => {
+          if (data.success) {
+            console.log('Success response received');
+            // Show success flash message
+            alert(data.message); // You can replace alert with your preferred way of displaying flash messages
+
+            // Redirect to the index page after a delay
+            setTimeout(function() {
+              console.log('Redirecting...');
+              window.location.href = '/back_url'; // Replace '/back_url' with the URL you want to redirect to
+            }, 500); // Adjust the delay time (in milliseconds) as needed
+          } else {
+            // Show error flash message
+            alert(data.message); // You can replace alert with your preferred way of displaying flash messages
+          }
+        })
+        .catch(error => {
+          // Handle errors
+          console.error('Error:', error);
+          alert('An error occurred while processing the request: ' + error.message);
+        });
+      }
+
+      // Define a function to handle form submission event
+      function handleSubmit(event) {
+        event.preventDefault(); // Prevent default form submission
+
+        const form = event.target; // Get the form element
+        const formData = new FormData(form); // Create FormData object from the form
+
+        // Call the function to handle form submission
+        handleFormSubmission(formData);
+      }
+
+      // Get the form element
+      const form = document.querySelector('#questionnaireForm');
+
+      // Add event listener to the form for form submission
+      form.addEventListener('submit', handleSubmit);
+
+      // Add event listener to the "Back" button
+      document.getElementById('backBtn').addEventListener('click', function(event) {
+          event.preventDefault(); // Prevent default button behavior
+
+          // Redirect to the "Back" URL
+          window.location.href = '/back'; // Replace '/back_url' with the actual URL
+      });
+  </script>
+{% endblock %}

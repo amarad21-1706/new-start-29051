@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Us 1</title>
+</head>
+<body>
+    <h1>About Us Page 1</h1>
+    <p>This is the ctrl area 1.</p>
+    <p>Aaa bbb ccc.</p>
+
+    <div>
+        <p>{{ debug_message }}</p>
+    </div>
+
+    <!-- Back Button -->
+    <button onclick="goBack()">Back</button>
+
+    <!-- Home Button -->
+    <button onclick="goHome()">Home</button>
+
+    <script>
+        // Function to navigate back
+        function goBack() {
+            window.history.back();
+        }
+
+        // Function to navigate to the home page
+        function goHome() {
+            window.location.href = "{{ url_for('index') }}";  // Replace 'index' with the actual route for your home page
+        }
+    </script>
+</body>
+</html>

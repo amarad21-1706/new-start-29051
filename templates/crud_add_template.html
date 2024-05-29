@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+<head>
+    <!-- Add your custom styles or scripts if needed -->
+    <style>
+        .crud-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .crud-table th,
+        .crud-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+
+        .crud-table th {
+            background-color: #f2f2f2;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: auto;
+        }
+
+        .new-row-input {
+            width: 100%;
+            box-sizing: border-box;
+        }
+    </style>
+</head>
+
+{% block content %}
+    <h1>Add {{ model_name }}</h1>
+    <div class="container">
+        <table class="crud-table">
+            <thead>
+                <tr>
+                    {% for field_name in field_names %}
+                        <th>{{ field_name }}</th>
+                    {% endfor %}
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for field_name in field_names %}
+                    <td>
+                        <input type="text" name="{{ field_name }}" class="new-row-input" required>
+                    </td>
+                {% endfor %}
+                <td>
+                    <button onclick="saveNewRow()">Save...</button>
+                    <button onclick="cancelNewRow()">Cancel</button>
+                </td>
+            </tbody>
+        </table>
+    </div>
+
+    <a href="{{ url_for(model_name|lower + '.read') }}">Back to List</a>
+
+    <script>
+        function saveNewRow() {
+            // Add logic to save the new row data (e.g., send an AJAX request)
+            // After saving, you may want to refresh the page or update the table dynamically
+        }
+
+        function cancelNewRow() {
+            // Add logic to cancel adding a new row (e.g., remove the new row from the DOM)
+            document.querySelector('.crud-table tbody').deleteRow(-1);
+        }
+    </script>
+{% endblock %}

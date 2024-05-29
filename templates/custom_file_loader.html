@@ -1,0 +1,104 @@
+
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <header>
+        <h1>{% block header %}{% endblock %}</h1>
+        <nav>
+            <ul>
+                <li><a href="{{ url_for('home') }}">Home</a></li>
+                <li><a href="{{ url_for('back') }}">Back</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    <footer>
+        <h1>Custom File Loader</h1>
+        <form method="POST" enctype="multipart/form-data">
+            {{ form.hidden_tag() }}
+            <div>
+                Company ID: {{ company_id }}
+            </div>
+            <div>
+                User ID: {{ user_id }}
+            </div>
+            <div>
+                {{ form.document_number.label }}
+                {{ form.document_number }}
+            </div>
+            <div>
+                {{ form.document_date.label }}
+                {{ form.document_date }}
+            </div>
+            <div>
+                {{ form.document_title.label }}
+                {{ form.document_title }}
+            </div>
+            <div>
+                {{ form.document_origin.label }}
+                {{ form.document_origin }}
+            </div>
+            <div>
+                {{ form.document_receiver.label }}
+                {{ form.document_receiver }}
+            </div>
+            <div>
+                {{ form.document_year.label }}
+                {{ form.document_year }}
+            </div>
+            <div>
+                {{ form.document_reference_interval.label }}
+                {{ form.document_reference_interval }}
+            </div>
+            <div>
+                {{ form.document_interval.label }}
+                {{ form.document_interval }}
+            </div>
+            <div>
+                {{ form.file_upload.label }}
+                {{ form.file_upload }}
+            </div>
+            <div>
+                {{ form.no_attachment.label }}
+                {{ form.no_attachment }}
+            </div>
+            <div>
+                {{ form.workflow.label }}
+                {{ form.workflow }}
+            </div>
+            <div>
+                {{ form.step.label }}
+                {{ form.step }}
+            </div>
+            <div>
+                {{ form.deadline_date.label }}
+                {{ form.deadline_date }}
+            </div>
+            <div>
+                {{ form.auto_move.label }}
+                {{ form.auto_move }}
+            </div>
+            <div>
+                {{ form.reminder_units.label }}
+                {{ form.reminder_units }}
+            </div>
+            <div>
+                {{ form.reminder_unit.label }}
+                {{ form.reminder_unit }}
+            </div>
+            <button type="submit">Submit</button>
+        </form>
+    </footer>
+</body>
+</html>
+

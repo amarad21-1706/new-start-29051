@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Authority dashboard AREA ONE</title>
+
+    <!-- Link the external stylesheet -->
+    <link rel="stylesheet" href="/static/css/card_style.css">
+
+    <style>
+        /* Add your custom styles here */
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        th,
+        td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+
+        tr:nth-child(even) {
+            background-color: #f5f5f5;
+            /* Even row color */
+        }
+
+        tr:hover {
+            background-color: #e0e0e0;
+            /* Hover color */
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top">
+        <!-- Back Button -->
+        <button onclick="goBack()">Back</button>
+        <!-- Home Button -->
+        <button onclick="goHome()">Home</button>
+
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav"
+            aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav">
+                <!-- Add other menu items if needed -->
+            </ul>
+        </div>
+    </nav>
+
+    <h1>Dashboard Area 1</h1>
+    <p>This is about authority dashboard AREA NUMBER ONE.</p>
+    <p>This area is dedicated to the authority.</p>
+
+    <!-- Add your tables here -->
+    <!-- Display information for a specific table -->
+    <p>{{ specific_table.id }} - {{ specific_table.name }} - {{ specific_table.description }}</p>
+
+    <div class="container">
+        {% for t in tables %}
+        <div class="card">
+            <div class="card-body">
+                <!-- Inside the card body -->
+                <h5 class="card-title" id="nonEditableField-{{ t.id }}">{{ t.column1 }}</h5>
+                <p class="card-text" id="nonEditableText-{{ t.id }}">{{ t.column2 }}</p>
+                <p class="card-text" id="nonEditableDate-{{ t.id }}">{{ t.creation_date }}</p>
+
+                <input type="text" id="editableField-{{ t.id }}" style="display: none;" value="{{ t.column1 }}">
+                <!-- Inside the card body -->
+
+                <button onclick="editCard({{ t.id }})">Edit</button>
+                <button onclick="saveCard({{ t.id }})">Save</button>
+                <button onclick="discardCard({{ t.id }})">Discard</button>
+
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Add your PDF document here -->
+    <div id="pdf-section">
+        <h2> </h2>
+        <p>For more info click <a href="{{ url_for('static', filename='docs/area_controllo_1.pdf') }}" target="_blank">here</a>.</p>
+    </div>
+
+    <div>
+        <p>{{ debug_message }}</p>
+    </div>
+
+    <script>
+        // Function to navigate back
+        function goBack() {
+            window.history.back();
+        }
+
+        // Function to navigate to the home page
+        function goHome() {
+            window.location.href = "{{ url_for('index') }}"; // Replace 'index' with the actual route for your home page
+        }
+
+        // Function to edit a row
+        function editRow() {
+            // Collect data from the form
+            const rowId = document.getElementById('rowId').value;
+            const newValue = document.getElementById('newValue').value;
+
+            // Send data to the server using fetch
+            fetch('/workflow/control_areas/area_1', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    'action': 'edit_row',
+                    'row_id': rowId,
+                    'new_value': newValue,
+                }),
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                    // Add logic to handle the server's response if needed
+                });
+        }
+
+        // Function to add a new row
+        function addRow() {
+            // Implement logic to handle add operation
+        }
+
+        // Function to remove a row
+        function removeRow() {
+            // Implement logic to handle remove operation
+        }
+
+        // Function to commit data
+        function commitData() {
+            // Implement logic to handle commit operation
+        }
+
+        // AJAX functions
+        function editRowAJAX() {
+            fetch('/edit_row', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ /* Data to send */ }),
+            }).then(response => response.json())
+                .then(data => console.log(data));
+        }
+
+        // Similar AJAX requests for other operations
+        // Function to toggle between editable and non-editable fields
+        function toggleEditable(cardId, isEditable) {
+            const editableField = document.getElementById(`editableField-${cardId}`);
+            const nonEditableField = document.getElementById(`nonEditableField-${cardId}`);
+
+            if (editableField && nonEditableField) {
+                if (isEditable) {
+                    editableField.style.display = 'block';
+                    nonEditableField.style.display = 'none';
+                } else {
+                    editableField.style.display = 'none';
+                    nonEditableField.style.display = 'block';
+                }
+            } else {
+                console.error('Editable fields not found.');
+            }
+        }
+
+        // Function to handle the Edit action
+        function editCard(cardId) {
+            // Toggle visibility of editable and non-editable fields
+            toggleEditable(cardId, true);
+        }
+
+        // Function to handle the Save action
+        // Function to handle the Save action
+        function saveCard(cardId) {
+            // Get the edited content from the editable field
+            const editedContent = document.getElementById(`editableField-${cardId}`).value;
+
+            // Send the edited content to the server using fetch
+            fetch('/save_card', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                },
+                body: new URLSearchParams({
+                    'card_id': cardId,
+                    'edited_content': editedContent,
+                }),
+            })
+                .then(response => response.json())
+                .then(data => {
+                    console.log(data);
+                    // Handle the server's response if needed
+
+                    // Update the non-editable text content with the edited content
+                    const nonEditableText = document.getElementById(`nonEditableText-${cardId}`);
+                    if (nonEditableText) {
+                        nonEditableText.textContent = editedContent;
+                    }
+
+                    // Toggle back to non-editable mode
+                    toggleEditable(cardId, false);
+                });
+        }
+
+    </script>
+</body>
+
+</html>

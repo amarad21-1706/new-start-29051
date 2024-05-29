@@ -1,0 +1,13 @@
+{# no_questions.html #}
+{% extends 'base.html' %}
+
+{% block content %}
+  <div class="container">
+    <h2>Thank you!</h2>
+    <p>{{type}} operation successfully completed.</p>
+
+      <!-- Home and Back buttons -->
+      <a href="{{ url_for('index') }}" class="btn btn-primary mb-3">Home</a>
+
+  </div>
+{% endblock %}

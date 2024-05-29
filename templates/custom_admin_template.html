@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Admin Page</title>
+</head>
+<body>
+    <h1>Welcome to the Custom Admin Page</h1>
+
+    <!-- Add your custom content here -->
+
+    <p>This is a placeholder for your custom admin page. You can add more HTML, CSS, and JavaScript as needed.</p>
+
+    <!-- Example: Display a list of items from your Base_data model -->
+    <ul>
+        {% for item in base_data_items %}
+            <li>{{ item.name }} - {{ item.description }}</li>
+        {% endfor %}
+    </ul>
+
+    <!-- Add more content or customize based on your requirements -->
+</body>
+</html>

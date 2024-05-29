@@ -1,0 +1,195 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document Workflow</title>
+    <style>
+        /* Add CSS styles as needed */
+        body {
+            font-family: Arial, sans-serif;
+        }
+
+        h1 {
+            color: #5f5f5f;
+        }
+
+        #workflow-container {
+            background-color: #f7f7f7;
+            padding: 20px;
+        }
+
+        .document {
+            margin-bottom: 20px;
+        }
+
+        .step {
+            display: inline-block;
+            width: 190px; /* Adjust width as needed */
+            height: 20px;
+            background: linear-gradient(to right, #ffdb95, #56aaff); /* Gradient fill */
+            border: 1px solid #5c5c5c;
+            margin-right: 10px;
+            text-align: center;
+            line-height: 20px;
+        }
+
+        .highlighted {
+            fill: #afcf55; /* Change fill color to highlight steps */
+            stroke: #baafba;
+            stroke-width: 2;
+        }
+
+        /* Alternating row background colors */
+        .document:nth-child(even) {
+            background-color: #eaeaea;
+        }
+
+        .document:nth-child(odd) {
+            background-color: #d9d9d9;
+        }
+
+        .step:nth-child(even) {
+            background-color: #f2f2f2; /* Very pale shadow of gray */
+        }
+
+        .step:nth-child(odd) {
+            background-color: #ffffff; /* White */
+        }
+
+        /* Style for buttons */
+        .button {
+            background-color: #4CAF50;
+            border: none;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+            font-size: 16px;
+            margin-right: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <h1>Document Workflow</h1>
+
+    <!-- Back and Home buttons -->
+    <button class="button" onclick="goBack()">Back</button>
+    <button class="button" onclick="goHome()">Home</button>
+
+    <div id="workflow-container"></div>
+
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+
+    <script>
+        // Load JSON data
+        d3.json("/user_documents_d3").then(function(data) {
+            console.log("Data received from server:", data); // Log the data
+
+            // Define dimensions
+            var width = 1600;
+            var height = 800;
+            var stepWidth = 200;
+            var stepHeight = 20;
+            var margin = { top: 20, right: 20, bottom: 20, left: 20 };
+
+            // Create SVG container
+            var svg = d3.select("#workflow-container")
+                        .append("svg")
+                        .attr("width", width + margin.left + margin.right)
+                        .attr("height", height + margin.top + margin.bottom)
+                        .append("g")
+                        .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+            // Create groups for each document
+            var documentGroups = svg.selectAll(".document")
+                                    .data(data)
+                                    .enter()
+                                    .append("g")
+                                    .attr("class", "document")
+                                    .attr("transform", function(d, i) {
+                                        return "translate(0," + (i * (stepHeight + 30)) + ")";
+                                    });
+
+            // Add text elements for document ID (or file path) as links
+            var documentLinks = documentGroups.append("a")
+                .attr("xlink:href", function(d) {
+                    // Construct the complete relative URL for Flask-Admin interface
+                    var adminUrl = "/open_admin_3/assigned_documents/edit/?id=" + d.id;
+                    // http://127.0.0.1:5000/open_admin_3/base_data/edit/?id=410
+                    // "/open_admin_3/base_data/?item=" + d.id;
+                    return adminUrl;
+                })
+                .append("text")
+                .attr("x", 0)
+                .attr("y", stepHeight / 2)
+                .attr("dy", ".35em")
+                .text(function(d) {
+                    return "Document ID: " + d.id + " - File: " + d.file_path + " - User: " + d.user_last_name;
+                })
+                .attr("fill", "blue")
+                .attr("font-size", "12px")
+                .style("text-decoration", "underline");  // Optionally add underline to indicate it's a link
+
+            // Add rectangles for steps
+            var rectangles = documentGroups.selectAll(".step")
+                                            .data(function(d) { return d.steps; })
+                                            .enter()
+                                            .append("rect")
+                                            .attr("class", "step")
+                                            .attr("x", function(d, i) { return i * stepWidth; })
+                                            .attr("y", stepHeight + 10) // Adjust the y position to create space between the document ID and rectangles
+                                            .attr("width", stepWidth)
+                                            .attr("height", stepHeight)
+                                            .attr("stroke", "blue")
+                                            .attr("stroke-width", 1)
+                                            .style("fill", function(d) { return d.color; });
+
+            // Add event listeners for click and double click events
+            rectangles.on("click", function(event, d) {
+                // Handle click event
+                console.log("Clicked:", d); // Log the clicked data
+                // Perform action for click event (e.g., show confirmation message)
+                alert("Single click action");
+            }).on("dblclick", function(event, d) {
+                // Handle double click event
+                console.log("Double-clicked:", d); // Log the double-clicked data
+                // Perform action for double click event (e.g., show confirmation message)
+                alert("Double click action");
+            });
+
+            // Add text element within the rectangles (Step Names)
+            documentGroups.selectAll(".step-text")
+                .data(function(d) { return d.steps; })
+                .enter()
+                .append("text")
+                .attr("class", "step-text")
+                .attr("x", function(d, i) { return i * stepWidth + stepWidth / 2; }) // Center text horizontally within the rectangle
+                .attr("y", stepHeight + 15) // Adjust the y-position to align text vertically with the middle of the rectangle
+                .attr("dy", ".35em")
+                .text(function(d) { return d.name ? d.name : "n.a."; })
+                .attr("fill", "white") // Text color
+                .attr("font-size", "12px")
+                .style("text-anchor", "middle"); // Center text horizontally within the text box
+
+        }).catch(function(error) {
+            console.error
+        });
+
+        // Function to go back
+        function goBack() {
+            window.history.back();
+        }
+
+        // Function to go home
+        function goHome() {
+            window.location.href = "/";
+        }
+
+    </script>
+
+</body>
+</html>

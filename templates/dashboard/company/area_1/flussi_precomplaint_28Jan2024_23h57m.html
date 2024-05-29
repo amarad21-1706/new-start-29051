@@ -1,0 +1,281 @@
+
+{% macro render_menu(menu_items, user_roles) %}
+    <ul>
+        {% for menu_item in menu_items %}
+            <li>
+                <a href="{{ url_for(menu_item.url) }}">{{ menu_item.label }}</a>
+                {% if menu_item.submenus %}
+                    {{ render_menu(menu_item.submenus, user_roles) }}
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+{% endmacro %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <!-- Add meta tag for responsive design -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Dashboard - Company</title>
+
+    <!-- Back and Home buttons -->
+    <div class="mb-3">
+        <a href="javascript:history.back()" class="btn btn-primary">Back</a>
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">Home</a>
+    </div>
+
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+
+    <!-- Optional: Your custom styles -->
+
+    <style>
+        /* Add your custom styles here */
+
+        /* Style for the main navigation items */
+        .main-menu {
+            list-style: none;
+            display: flex;
+            margin: 0;
+            padding: 0;
+        }
+
+        .navbar-nav > li {
+            position: relative;
+        }
+
+        .navbar-nav > li:not(:last-child) {
+            margin-right: 10px; /* Adjust as needed */
+        }
+
+        /* Style for the submenus */
+        .submenu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background-color: #f8f9fa; /* Adjust as needed */
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Add a box shadow for a subtle effect */
+            display: none;
+        }
+
+        /* Show the submenu when hovering over the main navigation item */
+        .navbar-nav > li:hover > .submenu {
+            display: block;
+        }
+
+        /* Style for the indicator (triangle) */
+        .has-submenu .submenu-indicator::after {
+            content: '\25B6'; /* Unicode character for a right-pointing triangle */
+            margin-left: 5px;
+            display: inline-block;
+            transform: rotate(90deg);
+            transition: transform 0.3s ease; /* Add a smooth transition effect */
+        }
+
+        /* Hide level 3 submenus by default */
+        .submenu .submenu {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 100%; /* Adjust to position level 3 menus to the right of level 2 items */
+        }
+
+        /* Show level 3 submenu on click */
+        .submenu.show {
+            display: block;
+        }
+
+        /* Rotate the triangle indicator when level 3 submenu is shown */
+        .has-submenu.active .submenu-indicator::after {
+            transform: rotate(0deg);
+        }
+
+        .sticky-top {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar.shrink {
+            transition: padding 0.3s;
+            padding-top: 10px;
+            padding-bottom: 10px;
+            background-color: #ffffff; /* Add your desired background color when shrunk */
+        }
+
+        /* Adjust left menu width for smaller screens */
+        @media (max-width: 768px) {
+            .left-menu {
+                width: 100%; /* Full width on smaller screens */
+                border-right: none; /* Remove the border on smaller screens */
+                padding-right: 0; /* Remove right padding on smaller screens */
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top">
+        <a class="navbar-brand" href="{{ url_for('index') }}">[Logo]</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <!-- Main menu -->
+            <ul class="navbar-nav main-menu">
+                <!-- Include the main menu items here -->
+                {{ render_menu(main_menu_items, user_roles) }}
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Main content area -->
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-12">
+                <!-- Add your content specific to the dashboard_company page -->
+                <h1>Dashboard - Company</h1>
+
+                <!-- Dropdown for Lexic values -->
+                <div class="mb-3">
+                    <label for="lexicDropdown">Select Lexic:</label>
+                    <select class="form-control" id="lexicDropdown" name="lexic_id">
+                        {% for lexic in lexic_values %}
+                            <option value="{{ lexic.id }}">{{ lexic.name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- CRUD buttons -->
+
+                <!-- Add your data_set content here -->
+                {% if data_set %}
+                    <div>
+                        <p>Data Set Information:</p>
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    {% for field_name, _ in data_set[0].__dict__.items() %}
+                                        <th>{{ field_name|capitalize }}</th>
+                                    {% endfor %}
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for item in data_set %}
+                                    <tr>
+                                        {% for field_name, field_value in item.__dict__.items() %}
+                                            {% if field_name == 'lexic' %}
+                                                <td>{{ field_value.name }}</td>
+                                            {% else %}
+                                                <td>{{ field_value }}</td>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <p>No data available.</p>
+                {% endif %}
+
+                <!-- Add more content as needed -->
+
+            </div>
+
+        </div>
+    </div>
+
+    <!-- Bootstrap JS and jQuery -->
+    <script src="https://code.jquery.com/jquery-3.3.1.min.js"></script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
+    <!-- JavaScript to handle submenu visibility and click events -->
+    <script>
+
+        $(document).ready(function () {
+            // Initialize the selected lexic_id
+            var selected_lexic_id = $('#lexicDropdown').val();
+
+            // Event listener for lexic dropdown change
+            $('#lexicDropdown').change(function () {
+                // Get the selected lexic_id
+                var selectedLexicId = $(this).val();
+
+                // Update the selected lexic_id
+                selected_lexic_id = selectedLexicId;
+
+                // Log the selected lexic_id for debugging
+                console.log('Selected Lexic ID:', selected_lexic_id);
+
+                // Update the displayed dataset based on the selected lexic_id
+                updateDatasetDisplay();
+            });
+
+            // Initial update based on the default selected lexic_id
+            updateDatasetDisplay();
+
+            function updateDatasetDisplay() {
+                // Log a message to verify that the function is called
+                console.log('Updating dataset display for Lexic ID:', selected_lexic_id);
+
+                // Make an AJAX request to get the dataset based on the selected lexic_id
+                jQuery(function($) {
+                    $.ajax({
+                        type: 'GET',
+                        url: '/update_dataset_flussi',
+                        data: {
+                            lexic_id: selected_lexic_id,
+                        },
+                        success: function(response) {
+                            console.log('Full Response:', response);
+
+                            // Assuming response contains an array of objects with lexic_id
+                            var dataset = response.dataset;
+
+                            // Clear existing content (adjust this based on your HTML structure)
+                            $('#datasetList').empty();
+
+                            // Update the list with the new dataset
+                            dataset.forEach(function(item) {
+                                console.log('Lexic ID:', item.lexic_id);
+                                // Update your HTML elements here based on the 'item' properties
+                                $('#datasetList').append('<li>' + item.lexic_id + '</li>');
+                            });
+                        },
+                        error: function(error) {
+                            console.error('Error:', error);
+                        }
+                    });
+                });
+            }
+
+
+            // Your existing JavaScript code for handling submenus and other interactions
+            // ...
+
+            // Display personalized greeting if the user is authenticated
+            var username = "{{ current_user.username }}"; // Use the username from the Flask route
+            if (username && username !== "Guest") {
+                $("#greeting-section").html("Welcome, " + username + "!");
+                $("#greeting-section").show(); // Show the greeting section
+            } else {
+                $("#greeting-section").html("Please <a href='{{ url_for('login') }}'>log in</a> or <a href='{{ url_for('signup') }}'>sign up</a>");
+                $("#greeting-section").show(); // Show the greeting section
+            }
+        });
+
+    </script>
+
+</body>
+
+</html>

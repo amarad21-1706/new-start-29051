@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<div class="container-fluid">
+  <div class="row">
+    {% for card in cards_data %}
+      <div class="col-md-4 mb-3">
+        <div class="card">
+          <div class="card-header">
+            <h3>{{ card.title }}</h3>
+          </div>
+          <div class="card-body">
+            <p>{{ card.content }}</p>
+          </div>
+        </div>
+      </div>
+    {% endfor %}
+  </div>
+
+  <hr>
+  <h3>Assigned Documents</h3>
+    {% if crud_view %}
+        {{ crud_view.render() }}
+    {% endif %}
+
+</div>

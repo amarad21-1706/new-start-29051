@@ -1,0 +1,190 @@
+
+{% extends 'base.html' %}
+
+{% block content %}
+  <h1>Manage Users</h1>
+
+  <!-- Home and Back buttons -->
+  <a href="{{ url_for('index') }}" class="btn btn-primary mb-3">Home</a>
+
+  <form method="POST">
+    {{ form.hidden_tag() }}
+    {{ form.user_id(id="user_id") }}
+    {{ form.csrf_token }}
+
+    <!-- Hidden field for form action -->
+    <input type="hidden" name="form_action" id="form_action" value="">
+
+    <!-- Display user_id -->
+    <div>User ID: <span id="display_user_id" readonly></span></div>
+
+    <!-- Dropdown for selecting existing users -->
+    {{ form.existing_user.label(class="form-label") }}
+    {{ form.existing_user(class="form-control mb-3") }}
+
+    <!-- Additional fields for adding or editing a user -->
+    {{ form.username.label(class="form-label") }}
+    {{ form.username(class="form-control mb-3") }}
+
+    {{ form.title.label(class="form-label") }}
+    {{ form.title(class="form-control mb-3") }}
+
+    {{ form.first_name.label(class="form-label") }}
+    {{ form.first_name(class="form-control mb-3") }}
+
+    {{ form.mid_name.label(class="form-label") }}
+    {{ form.mid_name(class="form-control mb-3") }}
+
+    {{ form.last_name.label(class="form-label") }}
+    {{ form.last_name(class="form-control mb-3") }}
+
+    {{ form.address.label(class="form-label") }}
+    {{ form.address(class="form-control mb-3") }}
+
+    {{ form.address1.label(class="form-label") }}
+    {{ form.address1(class="form-control mb-3") }}
+
+    {{ form.city.label(class="form-label") }}
+    {{ form.city(class="form-control mb-3") }}
+
+    {{ form.province.label(class="form-label") }}
+    {{ form.province(class="form-control mb-3") }}
+
+    {{ form.region.label(class="form-label") }}
+    {{ form.region(class="form-control mb-3") }}
+
+    {{ form.zip_code.label(class="form-label") }}
+    {{ form.zip_code(class="form-control mb-3") }}
+
+    {{ form.country.label(class="form-label") }}
+    {{ form.country(class="form-control mb-3") }}
+
+    {{ form.tax_code.label(class="form-label") }}
+    {{ form.tax_code(class="form-control mb-3") }}
+
+    {{ form.mobile_phone.label(class="form-label") }}
+    {{ form.mobile_phone(class="form-control mb-3") }}
+
+    {{ form.work_phone.label(class="form-label") }}
+    {{ form.work_phone(class="form-control mb-3") }}
+
+    {{ form.registration_date.label(class="form-label") }}
+    {{ form.registration_date(class="form-control mb-3") }}
+
+    <!-- Add other fields as needed -->
+
+    {{ form.add(class="btn btn-primary") }}
+    {{ form.edit(class="btn btn-secondary") }}
+    {{ form.delete(class="btn btn-warning") }}
+
+    {{ form.cancel(class="btn btn-danger") }}
+  </form>
+
+  <!-- Display outcome messages -->
+  {% if message %}
+      <div class="alert alert-success">
+          {{ message }}<br>
+      </div>
+  {% endif %}
+
+  <ul>
+    {% for user in users %}
+      <li>{{ user.username }} - {{ user.user_id }}</li>
+    {% endfor %}
+  </ul>
+
+  <!-- Back button -->
+  <a href="{{ url_for('index') }}" class="btn btn-primary mt-3">Back</a>
+
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Handle change event on the existing_company dropdown
+            $('#existing_user').change(function () {
+                var selectedUserId = $(this).val();
+
+                // Set the value of the hidden User_id field
+                $('#user_id').val(selectedUserId);
+
+                // Display User_id dynamically
+                $('#display_user_id').text(selectedUserId);
+
+                // Fetch User details from the server
+                $.get('/get_user_details/' + selectedUserId, function (data) {
+                    // Populate the form fields with the fetched data
+                    $('#username').val(data.username);
+                    $('#title').val(data.title);
+                    $('#first_name').val(data.first_name);
+                    $('#mid_name').val(data.mid_name);
+                    $('#last_name').val(data.last_name);
+                    $('#address').val(data.address);
+                    $('#address1').val(data.address1);
+                    $('#city').val(data.city);
+                    $('#province').val(data.province);
+                    $('#region').val(data.region);
+                    $('#zip_code').val(data.zip_code);
+                    $('#country').val(data.country);
+                    $('#tax_code').val(data.tax_code);
+                    $('#mobile_phone').val(data.mobile_phone);
+                    $('#work_phone').val(data.work_phone);
+                    $('#registration_date').val(data.registration_date);
+
+                    // Populate other fields as needed
+                });
+
+                console.log('Form submitted');
+            });
+
+            function submitForm(action) {
+                // Set the value of the hidden field to identify the button clicked
+                $('#form_action').val(action);
+
+                // Check if the action is delete
+                if (action === 'delete') {
+                    console.log('Processing delete action');
+
+                    // Get the selected User ID
+                    var userId = $('#user_id').val();
+
+                    // Configure AJAX request for Delete
+                    $.ajax({
+                        url: '/delete_user/' + userId,
+                        type: 'POST',
+                        success: function (data) {
+                            // Handle success (if needed)
+                            console.log('User deleted successfully');
+                            alert('User deleted successfully');
+                            window.location.href = '/companies'; // Redirect after deletion
+                        },
+                        error: function (error) {
+                            // Handle error (if needed)
+                            console.log('Error deleting user:', error.statusText);
+                            alert('Error deleting user: ' + error.statusText);
+                        }
+                    });
+                } else {
+                    // Configure AJAX request for Add/Edit
+                    $.ajax({
+                        url: '/add_or_edit_user',
+                        type: 'POST',
+                        data: $('form').serialize(),
+                        success: function (data) {
+                            // Handle success (if needed)
+                            console.log('User added/edited successfully');
+                            alert('User added/edited successfully');
+                        },
+                        error: function (error) {
+                            // Handle error (if needed)
+                            console.log('Error adding/editing user:', error.statusText);
+                            alert('Error adding/editing user: ' + error.statusText);
+                        },
+                    });
+
+                    // Submit the form for Add/Edit
+                    $('form').submit();
+                }
+            }
+        });
+    </script>
+
+{% endblock %}

@@ -1,0 +1,246 @@
+
+{% extends 'base.html' %}
+
+{% block content %}
+
+    {% block title %}Document Workflow Manager{% endblock %}
+
+    <!-- Buttons outside of the form -->
+    <div class="d-grid gap-2 d-md-flex justify-content-md-end mb-4">
+
+        <!-- Add a button to clone elements -->
+        <button type="button" class="btn btn-primary me-md-2" id="clone-button">New Record</button>
+        <!-- Add button for adding new records -->
+        <button type="button" class="btn btn-primary me-md-2" id="add-button">Add</button>
+        <!-- Other buttons -->
+        <button type="button" class="btn btn-primary me-md-2" id="delete-button">Delete</button>
+        <!-- Change the action to 'Back' or 'Home' for the cancel button -->
+        <a href="/back" class="btn btn-secondary" id="cancel-button">Cancel</a>
+    </div>
+
+    <div class="container">
+        <!-- Message container -->
+        {% if message %}
+            <div class="row mb-4">
+                <div class="col-md-12">
+                    <div class="alert alert-info" workflow="alert">
+                        {{ message }}
+                    </div>
+                </div>
+            </div>
+        {% endif %}
+
+        <form method="POST" class="my-8 mx-auto cloned-form" style="max-width: 80%;" id="original-form">
+            {{ form.hidden_tag() }}
+
+            <!-- Hidden fields to store IDs -->
+            <input type="hidden" name="base_data_id" id="base_data_id">
+            <input type="hidden" name="workflow_id" id="workflow_id">
+            <input type="hidden" name="step_id" id="step_id">
+
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <label for="base_data" class="form-label">Select Document:</label>
+                    {{ form.base_data(class="form-control", id="base-data-select") }}
+                </div>
+                <div class="col-md-6">
+                    <label for="workflow" class="form-label">Select Workflow:</label>
+                    {{ form.workflow(class="form-control", id="workflow-select") }}
+                </div>
+                <div class="col-md-6">
+                    <label for="step" class="form-label">Select Step:</label>
+                    {{ form.step(class="form-control", id="step-select") }}
+                </div>
+                <div class="col-md-6">
+                    <label for="auto_move" class="form-label">Auto:</label>
+                    {{ form.auto_move(class="form-check-input", id="auto-move-checkbox", value="") }}
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Include Bootstrap JS and jQuery -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script>
+        $(document).ready(function() {
+            // Function to populate workflows based on selected document
+            $('#base-data-select').change(function() {
+                var baseDataId = $(this).val();
+                $('#base_data_id').val(baseDataId);
+                $.ajax({
+                    url: '/get_workflows', // Flask endpoint to fetch workflows
+                    type: 'GET',
+                    data: { base_data_id: baseDataId },
+                    success: function(data) {
+                        // Update workflow dropdown options
+                        $('#workflow-select').empty();
+                        $.each(data.workflows, function(key, value) {
+                            $('#workflow-select').append('<option value="' + value.id + '">' + value.name + '</option>');
+                        });
+                    }
+                });
+            });
+
+            // Function to populate steps based on selected workflow
+            $('#workflow-select').change(function() {
+                var workflowId = $(this).val();
+                $('#workflow_id').val(workflowId);
+                $.ajax({
+                    url: '/get_steps', // Flask endpoint to fetch steps
+                    type: 'GET',
+                    data: { workflow_id: workflowId },
+                    success: function(data) {
+                        // Update step dropdown options
+                        $('#step-select').empty();
+                        $.each(data.steps, function(key, value) {
+                            $('#step-select').append('<option value="' + value.id + '">' + value.name + '</option>');
+                        });
+                    }
+                });
+            });
+
+            // Function to collect data from all records
+            function collectFormData() {
+                var all_records_data = [];
+                $('.cloned-form').each(function(index) {
+                    var record_data = {};
+
+                    // Handle auto_move checkbox first (outside the inner each loop)
+                    var autoMoveCheckbox = $(this).find('[name="auto_move"]');
+                    var autoMoveValue = autoMoveCheckbox.prop('checked') ? 'y' : ''; // Set value based on checked state
+
+                    $(this).find('[name]:not([name*="-id"])').each(function() {
+                        var value = $(this).val();
+
+                        // Assign auto_move value directly
+                        if ($(this).attr('name') === 'auto_move') {
+                            value = autoMoveValue;
+                        }
+
+                        console.log("Name:", $(this).attr('name'), "Value:", value); // Log name and value
+
+                        record_data[$(this).attr('name')] = value;
+                    });
+
+
+                    all_records_data.push(record_data);
+                });
+                return all_records_data;
+            }
+
+            function cloneFormElements() {
+                var originalForm = $('#original-form');
+                var clonedForm = originalForm.clone();
+
+                // Generate a unique identifier
+                var cloneCounter = $('.cloned-form').length + 1;
+
+                // Update [IDs and] names for cloned form elements
+                //clonedForm.find('[id]').each(function() {
+                //    var id = $(this).attr('id');
+                //    $(this).attr('id', id + '-' + cloneCounter);
+                //});
+
+                clonedForm.find('[name]').each(function() {
+                    var name = $(this).attr('name');
+                    // Replace existing counter with the new one or add a new counter
+                    $(this).attr('name', name.replace(/\-\d+$/, '') + '-' + cloneCounter);
+
+                    // Copy value from original form field if available
+                    var originalFieldName = name.replace(/\-\d+$/, '');
+                    var originalFieldValue = originalForm.find('[name="' + originalFieldName + '"]').val();
+                    $(this).val(originalFieldValue);
+                });
+
+                // Clear the selected option of the step dropdown
+                clonedForm.find('select[id^="step-select"]').val('');
+
+                // Add a "Remove" button for each cloned record
+                var removeButton = $('<button type="button" class="btn btn-danger remove-button">Remove</button>');
+                removeButton.click(function() {
+                    clonedForm.remove(); // Remove the cloned form when "Remove" button is clicked
+                });
+                clonedForm.append(removeButton);
+
+                originalForm.after(clonedForm); // Append cloned form after original
+            }
+
+            // Event handler for Clone button
+            $('#clone-button').click(function() {
+                cloneFormElements();
+            });
+
+            $('#add-button').click(function() {
+                var all_records_data = collectFormData();
+                console.log("FormData before sending:", all_records_data); // Print form data before sending
+
+                // Update auto_move value based on checkbox state
+                $('.cloned-form').each(function(index) {
+                    var autoMoveCheckbox = $(this).find('#auto-move-checkbox');
+                    var autoMoveValue = autoMoveCheckbox.prop('checked') ? 'y' : '';
+
+                    console.log("Auto Move Value:", autoMoveValue); // Log auto_move value
+
+                    $(this).find('[name="auto_move"]').val(autoMoveValue); // Use .val() to set the value
+                });
+
+                $.ajax({
+                    url: '/add_records_bws', // Flask endpoint to add records
+                    type: 'POST',
+                    contentType: 'application/json', // Set Content-Type header to JSON
+                    data: JSON.stringify({ forms_data: all_records_data }), // Send data as JSON string
+                    success: function(response) {
+                        // Handle success response
+                        console.log(response);
+                        // Display the message on the template
+                        $('.alert').removeClass('alert-danger').addClass('alert-success').text(response.message).show(); // Show the success alert message
+                    },
+
+                    error: function(xhr, status, error) {
+                        // Handle error response
+                        console.error(xhr.responseText);
+                        var errorMessage = 'An error occurred while processing your request.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+                        // Display the error message on the template
+                        $('.alert').removeClass('alert-success').addClass('alert-danger').text(errorMessage).show(); // Show the error alert message
+                    }
+
+                });
+            });
+
+
+            $('#delete-button').click(function() {
+                var formData = collectFormData();
+                $.ajax({
+                    url: '/delete_records_bws',
+                    type: 'POST',
+                    contentType: 'application/json',
+                    data: JSON.stringify({ forms_data: formData }),
+                    dataType: 'json',
+                    success: function(response) {
+                        console.log(response); // Log the response for debugging
+                        if (response.message) {
+                            $('.alert').text(response.message).show(); // Show the alert message with the response
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error(xhr.responseText);
+                        alert('Error deleting records');
+                    }
+                });
+            });
+
+            // Event handler for Cancel button
+            $('#cancel-button').click(function() {
+                // Redirect to the home page
+                window.location.href = '/';
+            });
+
+        });
+    </script>
+
+{% endblock %}

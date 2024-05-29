@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>List of Workflows of Documents</title>
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        /* Add CSS styles as needed */
+        .document {
+            margin-bottom: 20px;
+        }
+        .step {
+            display: inline-block;
+            width: 190px; /* Adjust width as needed */
+            height: 20px;
+            background-color: #5cdb95; /* Light green color */
+            border: 1px solid #bbaabb;
+            margin-right: 10px;
+            text-align: center;
+            line-height: 20px;
+        }
+        .highlighted {
+            fill: #22ff22; /* Change fill color to highlight steps */
+            stroke: #5588ff;
+            stroke-width: 2;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>List of Workflows of Documents</h1>
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Company</th>
+                    <th>Document</th>
+                    <th>Step</th>
+                    <th>Workflow</th>
+                    <th>Status</th>
+                    <th>Deadline Date</th>
+                    <th>Auto Move</th>
+                    <th>Open Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for step_record in step_base_data_records %}
+                    {% for model_record in model_records %}
+                        {% if step_record.base_data_id == model_record.id %}
+                            <tr>
+                                <td>{{ model_record.id }}</td>
+                                <td>{{ model_record.company.name if model_record.company else '' }}</td>
+                                <td>{{ model_record.file_path }}</td>
+                                <td>{{ step_record.step.name if step_record.step else '' }}</td>
+                                <td>{{ step_record.workflow.name if step_record.workflow else '' }}</td>
+                                <td>{{ step_record.status.name if step_record.status else '' }}</td>
+                                <td>{{ step_record.deadline_date }}</td>
+                                <td>{{ step_record.auto_move }}</td>
+                                <td>{{ step_record.open_action }}</td>
+                            </tr>
+                        {% endif %}
+                    {% endfor %}
+                {% endfor %}
+
+            </tbody>
+        </table>
+        <div>
+            <a href="#" class="btn btn-primary" onclick="history.back()">Back</a>
+            <a href="#" class="btn btn-secondary" onclick="window.close()">Close</a>
+            <a href="{{ url_for('home') }}" class="btn btn-primary">Home</a>
+        </div>
+    </div>
+</body>
+</html>

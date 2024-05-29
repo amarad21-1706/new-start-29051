@@ -1,0 +1,266 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>{{ questionnaire_name }}</h2>
+
+<form id="questionnaireForm" method="post">
+
+    {{ form.hidden_tag() }}
+
+    {% if headers %}
+        <table>
+            <tr>
+                {% for header in headers %}
+                <!-- Inline style for setting width directly from the header dictionary -->
+                <th style="width: {{ header.width }}px;" data-bs-toggle="tooltip" data-bs-original-title="{{ header.tooltip }}">
+                    {{ header.title }}
+                </th>
+                {% endfor %}
+            </tr>
+        </table>
+    {% endif %}
+
+
+    <!-- Optionally, handle the case where there are no headers, e.g., display a message or alternative content -->
+
+    <!-- Dynamic Form Contents -->
+    <div id="dynamicFormContainer" class="question-container">
+        {{ dynamic_html|safe }}
+    </div>
+</form>
+
+<style>
+    /* Base table and tooltip styles */
+    table {
+        width: 100%;
+        background-color: lightblue;
+    }
+    th {
+        text-align: center;
+        padding: 10px;
+        cursor: help;
+    }
+    th:hover {
+        background-color: #e0f0ff;
+    }
+    .tooltip {
+        display: none;
+        position: absolute;
+        top: 100%;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #ffffff;
+        border: 1px solid #cccccc;
+        padding: 5px 10px;
+        color: #333333;
+        text-align: center;
+        border-radius: 6px;
+        white-space: nowrap;
+        z-index: 1000;
+        box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    }
+    th:hover .tooltip {
+        display: block;
+    }
+
+    .form-input {
+        padding: 5px 10px;  /* Adjust padding as needed */
+        /* You can also use margin or align-self for vertical alignment */
+    }
+
+    /* Flexible input groups using flexbox */
+    .input-group {
+        display: flex;
+        align-items: center;
+        width: 100%;
+    }
+    .order-number {
+        margin-right: 10px;
+    }
+    .form-control, .input-group select, .input-group input {
+        flex-grow: 1; /* Allows these elements to fill available horizontal space */
+    }
+
+    /* Specific rules for all input types to ensure they line up next to their labels */
+    .input-group .form-control, .input-group select, .input-group textarea, .input-group input[type='file'], .input-group input[type='date'] {
+        width: auto; /* Ensures these elements can grow to fill available space */
+    }
+
+    /* Custom styles for text areas and inputs */
+    .my-custom-textarea, .my-custom-textinput, .my-custom-shorttextarea, .my-custom-shorttextinput {
+        width: 100%;
+        padding: 8px;
+        box-sizing: border-box;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+    }
+    .my-custom-textarea, .my-custom-shorttextarea {
+        height: auto; /* Adjust height as needed */
+        resize: none; /* Prevent resizing of textareas */
+    }
+
+    /* Styles to ensure checkboxes align nicely without growing */
+    .checkbox-horizontal, .horizontal-input, .answers.horizontal {
+        display: flex;
+        align-items: center;
+        width: 100%;
+    }
+    .checkbox-horizontal .form-check-input, .horizontal-input .form-control {
+        margin-right: 10px; /* Space between checkboxes */
+    }
+
+    /* Vertical alignment styles, if needed */
+    .vertical .form-control, .vertical .form-check {
+        width: auto; /* Allow these elements to naturally fit their content */
+    }
+
+    /* Utility styles */
+    .question-container {
+        background-color: #cdcdcd;
+        padding: 10px;
+        margin-bottom: 20px;
+        width: 100%;
+    }
+</style>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">{{ message }}</div>
+        {% endfor %}
+    {% endif %}
+{% endwith %}
+
+<!-- Include jQuery and Bootstrap Datepicker library -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css">
+<!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous"> -->
+<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Custom JavaScript -->
+<script>
+    function retrieveData() {
+        const questionnaireId = $('input[name="questionnaire_id"]').val();
+        const companyId = $('input[name="company_id"]').val();
+        const userId = $('input[name="user_id"]').val();
+        const messageDisplay = $('#messageDisplay'); // Ensure this element exists in your HTML
+
+        $.ajax({
+            url: "{{ url_for('load_survey') }}",
+            method: 'POST',
+            data: {
+                questionnaire_id: questionnaireId,
+                company_id: companyId,
+                user_id: userId
+            },
+            success: function(response) {
+                if (response.found && !response.submitted) {
+                    populateForm(response.data);
+                    messageDisplay.text('Answers successfully loaded into the form.');
+                    initializeDatePickers();  // Reinitialize date pickers after loading data
+                } else if (response.found && response.submitted) {
+                    messageDisplay.text('The form has already been submitted.');
+                } else {
+                    messageDisplay.text('No records found.');
+                }
+            },
+            error: function() {
+                messageDisplay.text('Failed to retrieve data.');
+            }
+        });
+    }
+
+    function populateForm(data) {
+        console.log("Data to populate:", data);
+        for (const key in data) {
+            if (!data.hasOwnProperty(key)) continue;
+            const fieldData = data[key];
+            const fieldType = fieldData.type;
+            const fieldValue = fieldData.value;
+
+            let input = $(`[name="${key}"]`);
+            if (input.length === 0) {
+                console.log('No input found for key:', key);
+                continue;
+            }
+
+            switch (fieldType) {
+                case 'CB':
+                    // Ensure the checkbox is checked or unchecked based on 'on' or empty
+                    input.prop('checked', fieldValue === 'on');
+                    break;
+                case 'BYN': // Handle binary or boolean inputs
+                    input.val(fieldValue);  // This sets the select dropdown to the appropriate value
+                    break;
+
+                case 'TLT': // Text Long Type
+                case 'DD': // Dropdown for dates and similar
+                    input.val(fieldValue);
+                    break;
+                case 'NI(0-10)': // Numeric input (dropdown)
+                    // Ensure the correct option is selected for numeric dropdowns
+                    input.find(`option`).each(function() {
+                        if ($(this).val() === fieldValue) {
+                            $(this).prop('selected', true);
+                        }
+                    });
+                    break;
+                case 'FILE': // File inputs
+                    console.log('File input not populated for key:', key);
+                    break;
+                default:
+                    console.log('Unhandled field type:', fieldType);
+                    input.val(fieldValue);
+            }
+        }
+    }
+
+
+    function initializeDatePickers() {
+        $('.datepicker').datepicker({
+            format: 'yyyy-mm-dd',
+            autoclose: true,
+            todayHighlight: true
+        });
+    }
+
+    $(document).ready(function() {
+        initializeDatePickers(); // Initialize date pickers on document ready
+
+        // Set action ID and handle confirmation directly on button clicks
+        $('.btn-primary').on('click', function(event) {
+            var confirmMessage;
+            var action;
+
+            if ($(this).text() === 'Save') {
+                confirmMessage = "Are you sure you want to save your changes?";
+                action = 'save';
+            } else if ($(this).text() === 'Submit') {
+                confirmMessage = "Are you sure you want to submit your answers? Submission is final and cannot be undone.";
+                action = 'submit';
+            }
+
+            if (!confirm(confirmMessage)) {
+                event.preventDefault();  // Stop the form from submitting if not confirmed
+            } else {
+                $('#action_id').val(action);  // Only set action_id if confirmed
+            }
+        });
+    });
+
+    document.addEventListener('DOMContentLoaded', function () {
+      var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+      var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+        return new bootstrap.Tooltip(tooltipTriggerEl, {
+          placement: 'top',  // Can be 'auto', 'top', 'bottom', 'left', 'right'
+          delay: { "show": 500, "hide": 100 },
+          html: true  // Allows HTML in the tooltips if needed
+        });
+      });
+    });
+</script>
+
+{% endblock %}

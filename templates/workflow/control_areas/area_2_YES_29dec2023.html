@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Area 2 (featuring Tabulator)</title>
+    <!-- Include Tabulator CSS and JS directly from the CDN -->
+    <link href="https://unpkg.com/tabulator-tables@5.5.2/dist/css/tabulator.min.css" rel="stylesheet">
+    <script type="text/javascript" src="https://unpkg.com/tabulator-tables@5.5.2/dist/js/tabulator.min.js"></script>
+</head>
+<body>
+
+<!-- Back Button -->
+<button onclick="goBack()">Back</button>
+<!-- Home Button -->
+<button onclick="goHome()">Home</button>
+<script>
+    // Function to navigate back
+    function goBack() {
+        window.history.back();
+    }
+    // Function to navigate to the home page
+    function goHome() {
+        window.location.href = "{{ url_for('index') }}";  // Replace 'index' with the actual route for your home page
+    }
+</script>
+
+<h1>Control Area 1</h1>
+<p>This is about CONTROL AREA NUMBER TWO.</p>
+<p>This area is dedicated to the market data structure and dynamics; switching ratios; competitive environment etc..</p>
+
+
+<div id="dataTable"></div>
+
+<!-- Add your PDF document here -->
+<div id="pdf-section">
+    <p>For more info click <a href="{{ url_for('static', filename='docs/area_controllo_2.pdf') }}" target="_blank">here</a>.</p>
+</div>
+
+<!-- Back Button -->
+<button onclick="goBack()">Back</button>
+<!-- Home Button -->
+<button onclick="goHome()">Home</button>
+
+<script>
+    var table = new Tabulator("#dataTable", {
+        columns: [
+            {title: 'ID', field: 'id', sorter: 'number', width: 100},
+            {title: 'Name', field: 'name', sorter: 'string', editor: 'input'},
+            {title: 'Column 1', field: 'column1', sorter: 'string', editor: 'input'},
+            {title: 'Column 2', field: 'column2', sorter: 'string', editor: 'input'},
+            {title: 'Creation Date', field: 'creation_date', sorter: 'datetime', width: 150},
+        ],
+        ajaxURL: "{{ url_for('area_2.area_2_data') }}",
+        ajaxParams: {
+            user_id: '{{ current_user.id }}',
+            name: 'Tabella 2'
+        },
+        selectable: 1,
+        selectableRangeMode: 2,
+        rowDblClick: function (e, row) {
+            alert('Double-clicked on row ' + row.getData().id);
+        },
+        cellClick: function (e, cell) {
+            var rowId = cell.getRow().getData().id;
+            var columnField = cell.getField();
+
+            // Open an input prompt to get the new value
+            var newValue = prompt("Enter the new value:", cell.getValue());
+
+            if (newValue !== null) {
+                // Update the cell with the new value
+                cell.setValue(newValue);
+
+                // Send an AJAX request to update the database
+                fetch("{{ url_for('area_2.area_2_update') }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json"
+                    },
+                    body: JSON.stringify({
+                        id: rowId,
+                        field: columnField,
+                        value: newValue
+                    })
+                }).then(response => {
+                    if (response.ok) {
+                        console.log('Update successful');
+                    } else {
+                        console.error('Update failed');
+                    }
+                });
+            }
+        },
+        rowContextMenu: [
+            {
+                label: "Edit",
+                action: function (e, row) {
+                    // Handle edit action
+                    alert('Edit clicked for row ' + row.getData().id);
+                }
+            },
+            {
+                label: "Delete",
+                action: function (e, row) {
+                    // Handle delete action
+                    var id = row.getData().id;
+
+                    // Send an AJAX request to delete the row
+                    fetch("{{ url_for('area_2.area_2_delete') }}", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ id: id })
+                    }).then(response => {
+                        if (response.ok) {
+                            console.log('Delete successful');
+                        } else {
+                            console.error('Delete failed');
+                        }
+                    });
+                }
+            },
+            {
+                label: "Save",
+                action: function (e, row) {
+                    // Handle save action
+                    var id = row.getData().id;
+                    var allFieldValues = row.getData();
+                    console.log("All field values to save:", allFieldValues);
+
+                    // Send all field values to the server
+                    fetch("{{ url_for('area_2.area_2_update') }}", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json"
+                        },
+                        body: JSON.stringify({ id: id, fields: allFieldValues })
+                    }).then(response => {
+                        if (response.ok) {
+                            console.log('Update successful');
+                        } else {
+                            console.error('Update failed');
+                        }
+                    });
+                }
+            },
+            {
+                label: "Add New",
+                action: function (e, row) {
+                    // Handle add new action
+                    alert('Add New clicked');
+
+                    // Generate a temporary unique ID for the new row
+                    var newRowId = 'temp_' + new Date().getTime();
+
+                    // Add a new row to the table with the temporary ID
+                    table.addRow({id: newRowId, name: '', column1: '', column2: ''});
+                }
+            }
+        ]
+    });
+
+</script>
+
+</body>
+</html>
