@@ -46,7 +46,7 @@ def create_app(conf=None):
     # Set the logging level to DEBUG
     # logging.basicConfig(level=logging.DEBUG)
 
-    # environment variables
+    # environment variablesg
 
     # TODO (in)activate debug toolbar here
     app.debug = False
