@@ -19,7 +19,6 @@ import pandas as pd
 from flask_login import current_user
 import json
 import pytz
-import secrets
 
 import os
 from dotenv import load_dotenv
@@ -68,7 +67,7 @@ class Config:
         self.SQLALCHEMY_BINDS = {
             'db1': os.environ.get('DATABASE_URL_DB1')
         }
-        SQLALCHEMY_TRACK_MODIFICATIONS = False
+        self.SQLALCHEMY_TRACK_MODIFICATIONS = False
         self.BOOTSTRAP_USE_MINIFIED = False
         self.BOOTSTRAP_SERVE_LOCAL = True
         self.SQLALCHEMY_ECHO = False
@@ -83,6 +82,14 @@ class Config:
         self.STATIC_FOLDER = 'static'
         self.ASSETS_FOLDER = 'assets'
         self.MAX_RECURSION_DEPTH = 12
+
+        self.RECAPTCHA_PUBLIC_KEY = '6LdcYnkpAAAAADpQdytwQVK7UtxeJJ0C_nHsPc8R'
+        self.RECAPTCHA_PRIVATE_KEY = '6LdcYnkpAAAAAKOWGB7_cEBlY-3UlBGZY9KS6zH9'
+
+        self.TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
+        self.TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
+        self.TWILIO_AUTHY_API_KEY = os.environ.get('TWILIO_AUTHY_API_KEY')
+
         #self.SESSION_COOKIE_HTTPONLY = True
         #self.SESSION_COOKIE_SECURE = True  # Only set to True if using HTTPS
 

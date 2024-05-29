@@ -40,8 +40,6 @@ def create_app(conf=None):
     # CAPTCHA
     # app.config['SECRET_KEY'] = 'your_secret_key'
     app.config['SECRET_KEY'] = some_keys['secret_key_2']
-    app.config['RECAPTCHA_PUBLIC_KEY'] = '6LdcYnkpAAAAADpQdytwQVK7UtxeJJ0C_nHsPc8R'
-    app.config['RECAPTCHA_PRIVATE_KEY'] = '6LdcYnkpAAAAAKOWGB7_cEBlY-3UlBGZY9KS6zH9'
     # TODO reactivate for production!
     app.config['WTF_CSRF_ENABLED'] = True  # Disable CSRF protection for local development
 
@@ -49,10 +47,6 @@ def create_app(conf=None):
     # logging.basicConfig(level=logging.DEBUG)
 
     # environment variables
-    # Set environment variables
-    app.config['TWILIO_ACCOUNT_SID'] = 'AC4be81594cf4c35b1584973b2c234d60d'
-    app.config['TWILIO_AUTH_TOKEN'] = 'a519a34888f553ac6765b40bb56d9b50'
-    app.config['TWILIO_AUTHY_API_KEY'] = 'f9e8d720fbabfec46a32ca631804c61b'
 
     # TODO (in)activate debug toolbar here
     app.debug = False
