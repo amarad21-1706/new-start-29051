@@ -61,7 +61,12 @@ class Config:
         self.SQLALCHEMY_BINDS = {
             "db1": f"sqlite:///{self.current_directory}/database/sysconfig.db",
         }
+        
+        
         '''
+
+        self.SECRET_KEY = os.environ.get('SECRET_KEY_1')
+
         # PostgreSQL
         self.SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
         self.SQLALCHEMY_BINDS = {
@@ -78,7 +83,7 @@ class Config:
         self.COMPANY_FILES_DIR =f"/{self.current_directory}/static/docs/company_files/"
         self.CRUD_ADD_TEMPLATE = f"/{self.current_directory}/templates/crud_add_template.html"
 
-        self.SECURITY_PASSWORD_SALT = some_keys['security_password_salt'] #'329d29b7bedc86e66ea3456b3a49ff9328b082649a1bc3b02ecb6f5881d2a380'
+        self.SECURITY_PASSWORD_SALT = os.environ.get('SECURITY_PASSWORD_SALT_')
         self.STATIC_FOLDER = 'static'
         self.ASSETS_FOLDER = 'assets'
         self.MAX_RECURSION_DEPTH = 12
@@ -120,12 +125,13 @@ class DateTimeEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 some_keys = {
-    "security_password_salt": '329d29b7bedc86e66ea3456b3a49ff9328b082649a1bc3b02ecb6f5881d2a380',
-    "recaptcha_public_key": '6LdcYnkpAAAAADpQdytwQVK7UtxeJJ0C_nHsPc8R',
-    "recaptcha_private_key": '6LdcYnkpAAAAAKOWGB7_cEBlY-3UlBGZY9KS6zH9',
-    "secret_key_1": 'Doru-ghitica-mielus-dudu-s...etaru-.961',
+
     "secret_key_2": secrets.token_hex(16),
 }
+# "recaptcha_public_key": '6LdcYnkpAAAAADpQdytwQVK7UtxeJJ0C_nHsPc8R',
+# "recaptcha_private_key": '6LdcYnkpAAAAAKOWGB7_cEBlY-3UlBGZY9KS6zH9',
+# "security_password_salt": '329d29b7bedc86e66ea3456b3a49ff9328b082649a1bc3b02ecb6f5881d2a380',
+#    "secret_key_1": 'see .env',
 
 sample_answer = {
     "questionnaire_id": None,  # Initialize with appropriate values

@@ -38,7 +38,6 @@ def create_app(conf=None):
     app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # Example: 1 hour
 
     # CAPTCHA
-    # app.config['SECRET_KEY'] = 'your_secret_key'
     app.config['SECRET_KEY'] = some_keys['secret_key_2']
     # TODO reactivate for production!
     app.config['WTF_CSRF_ENABLED'] = True  # Disable CSRF protection for local development
@@ -48,7 +47,6 @@ def create_app(conf=None):
 
     # environment variablesg
 
-    # TODO (in)activate debug toolbar here
     app.debug = False
     app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
     toolbar = DebugToolbarExtension(app)

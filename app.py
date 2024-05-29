@@ -202,8 +202,8 @@ app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=15)  # Set session 
 app.config['MAX_RECURSION_DEPTH'] = 12  # Example: 1 hour
 
 # CAPTCHA
-app.config['RECAPTCHA_PUBLIC_KEY'] = some_keys['recaptcha_public_key'] #'6LdcYnkpAAAAADpQdytwQVK7UtxeJJ0C_nHsPc8R'
-app.config['RECAPTCHA_PRIVATE_KEY'] = some_keys['recaptcha_private_key']
+#app.config['RECAPTCHA_PUBLIC_KEY'] = some_keys['recaptcha_public_key']
+#app.config['RECAPTCHA_PRIVATE_KEY'] = some_keys['recaptcha_private_key']
 app.config['WTF_CSRF_ENABLED'] = False  # Disable CSRF protection for local development
 
 session_dir = get_current_directory() + '/static/files/'
