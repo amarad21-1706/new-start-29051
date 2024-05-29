@@ -50,9 +50,9 @@ def create_app(conf=None):
 
     # environment variables
     # Set environment variables
-    os.environ['TWILIO_ACCOUNT_SID'] = 'AC4be81594cf4c35b1584973b2c234d60d'
-    os.environ['TWILIO_AUTH_TOKEN'] = 'a519a34888f553ac6765b40bb56d9b50'
-    os.environ['TWILIO_AUTHY_API_KEY'] = 'f9e8d720fbabfec46a32ca631804c61b'
+    app.config['TWILIO_ACCOUNT_SID'] = 'AC4be81594cf4c35b1584973b2c234d60d'
+    app.config['TWILIO_AUTH_TOKEN'] = 'a519a34888f553ac6765b40bb56d9b50'
+    app.config['TWILIO_AUTHY_API_KEY'] = 'f9e8d720fbabfec46a32ca631804c61b'
 
     # TODO (in)activate debug toolbar here
     app.debug = False
