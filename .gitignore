@@ -23,3 +23,5 @@ DataTables/
 venv/
 .idea/
 venv/
+# Ignore files starting with "new-start-29051.git"
+new-start-29051.git/*
