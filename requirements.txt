@@ -233,7 +233,6 @@ pure-eval==0.2.2
 py-moneyed==0.8.0
 pyasn1==0.5.0
 pyasn1-modules==0.3.0
-PyAudio==0.2.13
 pycountry==23.12.11
 pycparser==2.21
 pydantic==2.4.2
