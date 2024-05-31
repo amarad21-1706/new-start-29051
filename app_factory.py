@@ -12,6 +12,9 @@ from flask import Flask, request, render_template, redirect, url_for, flash, ses
 from twilio.rest import Client
 import os
 
+import psycopg2
+from sqlalchemy import dialects
+
 def create_app(conf=None):
     if conf is None:
         conf = Config()

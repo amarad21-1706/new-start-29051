@@ -61,8 +61,6 @@ class Config:
         self.SQLALCHEMY_BINDS = {
             "db1": f"sqlite:///{self.current_directory}/database/sysconfig.db",
         }
-        
-        
         '''
 
         self.SECRET_KEY = os.environ.get('SECRET_KEY_1')
@@ -88,8 +86,8 @@ class Config:
         self.ASSETS_FOLDER = 'assets'
         self.MAX_RECURSION_DEPTH = 12
 
-        self.RECAPTCHA_PUBLIC_KEY = '6LdcYnkpAAAAADpQdytwQVK7UtxeJJ0C_nHsPc8R'
-        self.RECAPTCHA_PRIVATE_KEY = '6LdcYnkpAAAAAKOWGB7_cEBlY-3UlBGZY9KS6zH9'
+        self.RECAPTCHA_PUBLIC_KEY = os.environ.get('RECAPTCHA_PUBLIC_KEY')
+        self.RECAPTCHA_PRIVATE_KEY = os.environ.get('RECAPTCHA_PRIVATE_KEY')
 
         self.TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
         self.TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')

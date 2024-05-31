@@ -25,3 +25,4 @@ venv/
 venv/
 # Ignore files starting with "new-start-29051.git"
 new-start-29051.git/*
+db_posgres_test.py
