@@ -160,31 +160,25 @@ encoding_scheme = {
 
 
 def decode_question_type(code, encoding_scheme):
-    print(f"Processing code: {code}")
 
     if '(' in code and ')' in code:
         base_code, extra_info = code.split('(')
-        print(f"Base code: {base_code}, Extra info: {extra_info}")
 
         if extra_info.endswith(')'):
             extra_info = extra_info[:-1]  # Remove the closing parenthesis
-            print(f"Processed extra info: {extra_info}")
 
             if '-' in extra_info:
                 min_value, max_value = extra_info.split('-')
-                print(f"Min value: {min_value}, Max value: {max_value}")
 
                 if min_value.isdigit() and max_value.isdigit():
                     min_value = int(min_value)
                     max_value = int(max_value)
                     base_code_with_parentheses = f"{base_code}({extra_info})"
-                    print(f"Base code with parentheses: {base_code_with_parentheses}")
 
                     if base_code_with_parentheses in encoding_scheme:
                         decoded = encoding_scheme[base_code_with_parentheses]
                         decoded['min'] = min_value
                         decoded['max'] = max_value
-                        print(f"Decoded type: {decoded['type']}, Decoded characteristic: {decoded['characteristic']}")
 
                         if decoded['type'] == 'Number' and decoded[
                             'characteristic'] == 'Integer' and min_value == 0 and max_value == 10:
@@ -201,11 +195,9 @@ def decode_question_type(code, encoding_scheme):
             return "Invalid code (Unmatched parentheses)"
     else:
         adjusted_code = code.upper() if 'FILE' in encoding_scheme.keys() else code
-        print(f"Adjusted code: {adjusted_code}")
 
         if adjusted_code in encoding_scheme:
             decoded = encoding_scheme[adjusted_code]
-            print(f"Decoded type: {decoded['type']}, Decoded characteristic: {decoded['characteristic']}")
 
             if 'min' in decoded and 'max' in decoded:
                 return f"Type: {decoded['type']}, Characteristic: {decoded['characteristic']}, Min: {decoded['min']}, Max: {decoded['max']}"
@@ -889,7 +881,6 @@ def get_time_qualifier(interval_id, interval_ord, year):
         else:  # Same interval order as current interval order
             result = "current"
 
-    print(f'get_time_qualifier({interval_id}, {interval_ord}, {year}) -> {result}')
     return result
 
 
@@ -955,7 +946,6 @@ def get_session_workflows(session, current_user):
 
 def get_pd_report_from_base_data(session):
     # Get the records without the time qualifier
-    print('db7')
     query = session.query(
         BaseData.company_id,
         Company.name.label('company_name'),  # Add the company name to the query
@@ -985,7 +975,6 @@ def get_pd_report_from_base_data(session):
     # Apply the same logic as the loop for assigning time qualifier to each record
     df['time_qualifier'] = df.apply(lambda row: get_time_qualifier(row['interval_id'], row['interval_ord'], row['fi0']), axis=1)
     # Print the updated DataFrame
-    print(df.head())
 
     # (debugging an error): Assuming df is your DataFrame
     #df['time_qualifier'] = df.apply(lambda row: get_time_qualifier(row['interval_id'], row['interval_ord'], row['fi0']),
@@ -1035,7 +1024,6 @@ def get_pd_report_from_base_data_wtq(session):
         df = pd.read_sql(str(compiled_query), session.bind)
 
         # Debugging: Print the DataFrame structure
-        print("DataFrame structure:\n", df.head())
 
         # Check if the DataFrame is empty
         if df.empty:
@@ -1138,7 +1126,6 @@ def generate_html_cards_progression_with_progress_bars111(sorted_values, current
     html_code = ""
 
     areas_with_subareas = get_areas_with_subareas(session)
-    print('areas, subareas', areas_with_subareas)
 
     # If current_time_qualifier is None, set it to an empty dictionary
     current_time_qualifier = current_time_qualifier or {}
@@ -2027,10 +2014,9 @@ def form_has_changes(rendered_form, initial_data):
     # Check if lists are different
 
     if any(not custom_compare(elem1, elem2) for elem1, elem2 in zip(initials, currents)):
-        print(initials, currents, 'are not equal?')
         return True
     else:
-        print(initials, currents, 'are equal?')
+        pass
 
     return False
 
@@ -2112,8 +2098,6 @@ def remove_duplicates(session, model_class, keys):
 
         # Commit the changes
         session.commit()
-        print('duplicates removed')
-
 
 
 def create_notification(session, **kwargs):
@@ -2123,8 +2107,6 @@ def create_notification(session, **kwargs):
     )
     session.add(notification)
     session.commit()
-
-    print('notification created')
 
     '''
     use example

@@ -16,7 +16,6 @@ tests
 docs
 *.log
 node_modules
-static/uploads
 ILM1.git/
 ar_venv/
 DataTables/

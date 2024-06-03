@@ -31,21 +31,10 @@
 
     <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+    <!-- Include the custom CSS file -->
+    <!-- Optional: Your custom styles -->
 
-    <!-- Include the custom font -->
     <style>
-        @font-face {
-            font-family: 'Geneve';
-            src: url('{{ url_for('static', filename='fonts/Geneve.ttf') }}') format('truetype');
-        }
-
-        body {
-            font-family: 'Geneve', sans-serif;
-            background-image: url("{{ url_for('static', filename='images/background_image.jpg') }}");
-            background-size: cover; /* Cover the entire viewport */
-            background-repeat: no-repeat; /* Prevent repeating of the image */
-        }
-
         /* Styles for flashed messages */
         .flashes {
             margin: 0;
@@ -88,7 +77,6 @@
         .gray-text {
             color: gray;
         }
-
         .white-text {
             color: white;
         }
@@ -102,6 +90,11 @@
             color: green; /* Change 'green' to the desired color */
         }
 
+        body {
+            background-image: url("{{ url_for('static', filename='images/background_image.jpg') }}");
+            background-size: cover; /* Cover the entire viewport */
+            background-repeat: no-repeat; /* Prevent repeating of the image */
+        }
         /* Style for the main navigation items */
         .main-menu {
             list-style: none;
@@ -110,6 +103,12 @@
             padding: 0;
             z-index: 1000;
             position: relative; /* Ensure proper stacking context */
+            /*background-color: gray; /* Change this to the desired background color */
+        }
+
+        /* Style for the body */
+        body {
+            background-color: lightslategray; /* Change this to the desired background color */
         }
 
         .navbar-nav > li {
@@ -126,7 +125,7 @@
             position: absolute;
             top: 100%;
             left: 0;
-            background-color: #f8f9fa; /* Adjust as needed */
+            background-color: #f8f9fa;  Adjust as needed */
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Add a box shadow for a subtle effect */
             display: none;
         }
@@ -173,6 +172,7 @@
             transition: padding 0.3s;
             padding-top: 10px;
             padding-bottom: 10px;
+            /* background-color: #ffffff; /* Add your desired background color when shrunk */
         }
 
         .left-menu {
@@ -188,11 +188,9 @@
             margin-top: 0;
             margin-bottom: 15px; /* Add some spacing below the heading */
         }
-
         .left-menu ul li {
             margin-bottom: 10px;
         }
-
         .left-menu ul {
             list-style: none;
             padding: 0;
@@ -201,34 +199,25 @@
         .sidebar {
             padding: 20px; /* Add padding to the sidebar */
         }
-
         #greeting-section {
-            text-align: right;
+          text-align: right;
         }
 
         /* Adjust left menu width for smaller screens */
         @media (max-width: 768px) {
             .left-menu {
-                width: 100%; /* Full width on smaller screens */
-                border-right: none; /* Remove the border on smaller screens */
-                padding-right: 0; /* Remove right padding on smaller screens */
+            width: 100%; /* Full width on smaller screens */
+            border-right: none; /* Remove the border on smaller screens */
+            padding-right: 0; /* Remove right padding on smaller screens */
             }
-        }
-
-        .navbar-logo {
-            height: 50px;
-            position: absolute;
-            right: 20px;
-            top: 0;
         }
     </style>
 
 </head>
-
 <body>
     <!-- Greeting message -->
     <div id="greeting-section" class="gray-text">
-        <!-- Display personalized greeting if the user is authenticated -->
+            <!-- Display personalized greeting if the user is authenticated -->
         {% if current_user.is_authenticated %}
             Welcome, {{ current_user.username }}!
             <a href="/noticeboard">
@@ -276,7 +265,7 @@
                     // Function to hide flashed messages after a specified time interval
                     setTimeout(function() {
                         $('.flashes').fadeOut('fast');
-                    }, 2000); // Change '2000' to the desired time interval in milliseconds (e.g., 3000 for 3 seconds)
+                    }, 2000); // Change '5000' to the desired time interval in milliseconds (e.g., 3000 for 3 seconds)
                 });
             </script>
         {% endif %}
@@ -284,6 +273,8 @@
 
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top">
+        <!-- Placing the logo to the left -->
+        <img src="{{ url_for('static', filename='ilm_logo_1.png') }}" alt="My Logo" style="height: 50px;">
         <a class="navbar-brand" href="{{ url_for('index') }}"></a>
         <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
             aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
@@ -295,8 +286,6 @@
                 {{ render_menu(main_menu_items, user_roles) }}
             </ul>
         </div>
-        <!-- Placing the logo to the right -->
-        <img src="{{ url_for('static', filename='ilm_logo_1.png') }}" alt="My Logo" class="navbar-logo">
     </nav>
 
     <!-- Left-side menu (conditionally displayed based on user role) -->
@@ -430,3 +419,4 @@
 </body>
 
 </html>
+

@@ -2,6 +2,8 @@
 
 import logging
 from flask import Flask
+
+from werkzeug.middleware.proxy_fix import ProxyFix
 from config.config import Config, some_keys
 #import secrets
 #from flask_bootstrap import Bootstrap
@@ -15,12 +17,43 @@ import os
 import psycopg2
 from sqlalchemy import dialects
 
+class ExcludeRequestsFilter(logging.Filter):
+    def filter(self, record):
+        return not (record.args and len(record.args) > 0 and record.args[0] in ["GET", "POST", "PUT", "DELETE"])
+
 def create_app(conf=None):
     if conf is None:
         conf = Config()
 
     #app = Flask(__name__, static_folder='frontend/dist', template_folder='frontend/dist')
     app = Flask(__name__)
+    # Wrap the Flask app with ProxyFix
+    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
+
+    # Set up logging based on the environment
+
+    # Set up logging based on the environment
+    if os.getenv('FLASK_ENV') == 'development':
+        app.config['DEBUG'] = True
+        # Configure Flask app logger
+        app.logger.setLevel(logging.INFO)
+
+        # Configure Werkzeug logger to suppress HTTP request logs
+        werkzeug_logger = logging.getLogger('werkzeug')
+        werkzeug_logger.setLevel(logging.INFO)
+
+        # Apply custom filter to suppress HTTP request logs
+        request_filter = ExcludeRequestsFilter()
+        werkzeug_logger.addFilter(request_filter)
+
+    else:
+        app.config['DEBUG'] = False
+        # Configure Flask app logger
+        app.logger.setLevel(logging.INFO)
+
+        # Configure Werkzeug logger to suppress HTTP request logs
+        werkzeug_logger = logging.getLogger('werkzeug')
+        werkzeug_logger.setLevel(logging.WARNING)
 
     csrf = CSRFProtect(app)
 
@@ -52,6 +85,6 @@ def create_app(conf=None):
 
     app.debug = False
     app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
-    toolbar = DebugToolbarExtension(app)
+    # toolbar = DebugToolbarExtension(app)
 
     return app

@@ -3,13 +3,12 @@
 
 # app.py (or run.py)
 import re
+import logging
 
-#import logging
-#from logging import FileHandler, Formatter
+from logging import FileHandler, Formatter
 
 from sqlalchemy import or_, and_, desc, func, not_, null, exists, extract, select
 from sqlalchemy import distinct
-from sqlalchemy.orm import sessionmaker
 from db import db
 from flask import g
 from flask import flash
@@ -164,6 +163,7 @@ def get_session():
 
 @login_manager.user_loader
 def load_user(user_id):
+    print('load user', user_id)
     user = user_manager.load_user(user_id)
     # print('user loaded')
     # print_routes()
@@ -192,8 +192,8 @@ login_manager.login_message_category = 'info'  # Specify the category for flash 
 user_manager = UserManager(db)
 user_roles = []
 
-# TODO DEBUG deactivate in prod or after first debug row
-app.config['DEBUG'] = False
+# TODO deactivate in prod or after first debug row
+app.config['DEBUG'] = True
 app.config['SQLALCHEMY_ECHO'] = True  # This will log all the SQL queries
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 
@@ -319,52 +319,6 @@ def verify_reset_token(token, expiration=3600):
     except:
         return None  # invalid token
     return email
-
-
-def create_company_folder(company_id, subfolder):
-    try:
-        base_path = '/path/to/company/folders'
-        company_folder_path = os.path.join(base_path, str(company_id), str(subfolder))
-        os.makedirs(company_folder_path, exist_ok=True)
-        #logging.info(f'Created folder: {company_folder_path}')
-    except Exception as e:
-        #logging.error(f'Error creating company folder: {e}')
-        #raise
-        pass
-
-def create_company_folder(company_id, subfolder):
-    """
-    Creates a folder for the given company_id in the specified directory.
-    Args:
-        company_id (int): The ID of the company.
-    Returns:
-        str: The path of the created folder or None if it already exists.
-    """
-    print('inside the function')
-    try:
-        folder_path = None
-        folder_name = f"company_id_{company_id}/{subfolder}"
-        folder_path = os.path.join(app.config['COMPANY_FILES_DIR'], folder_name)
-        print('folder_path', folder_path)
-        if not os.path.exists(folder_path):
-            os.makedirs(folder_path)
-            print('Folder created:', folder_path)
-
-        else:
-            print('Folder already exists')
-            #return None  # Folder already exists
-
-    except Exception as e:
-        #logging.error(f'Error creating company folder: {e}')
-        #raise
-        pass
-
-    if folder_path:
-        print('return folder path', folder_path)
-        return folder_path
-    else:
-        return None
-
 
 '''
 @app.route('/reset_password', methods=['GET', 'POST'])
@@ -6230,8 +6184,7 @@ def replace_undefined(value):
 
 
 # Load menu items from JSON file
-json_file_path = os.path.join(os.path.dirname(__file__), 'static', 'js', 'menuStructure101.json')
-# json_file_path = get_current_directory() + "/static/js/menuStructure101.json"
+json_file_path = get_current_directory() + "/static/js/menuStructure101.json"
 with open(Path(json_file_path), 'r') as file:
     main_menu_items = json.load(file)
 
@@ -6584,7 +6537,7 @@ def signup():
             try:
                 db.session.commit()
             except Exception as commit_error:
-                # logging.error(f'Error committing to the database: {commit_error}')
+                logging.error(f'Error committing to the database: {commit_error}')
                 db.session.rollback()
                 flash('An error occurred during signup', 'error')
                 return render_template('access/signup.html', title='Sign Up', form=form)
@@ -6633,7 +6586,7 @@ def create_step():
             return "Step created successfully!"
         except Exception as e:
             db.session.rollback()
-            # logging.error(f'Error creating step: {e}')
+            logging.error(f'Error creating step: {e}')
             return f"Error: {e}"
     return '''
         <form method="post">
@@ -7144,9 +7097,13 @@ def dashboard_company_audit_progression():
 
         return render_template('admin_cards_progression.html', html_cards=html_cards, user_roles=user_roles)
 
+
+import logging
+from sqlalchemy.orm import sessionmaker
+
 @app.route('/company_overview_current')
 def company_overview_current():
-    # logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.DEBUG)
     time_scope = 'current'
     bind_key = 'db1'  # Use the bind key corresponding to the desired database
     try:
@@ -7184,7 +7141,7 @@ def company_overview_current():
             return render_template('admin_cards_progression.html', html_cards=html_cards, user_roles=user_roles)
 
     except Exception as e:
-        # logging.error(f'Error in company_overview_current: {e}')
+        logging.error(f'Error in company_overview_current: {e}')
         return render_template('error.html', error_message=str(e)), 500
 
 
@@ -7313,6 +7270,7 @@ def site_map():
 def login():
     if request.method == 'POST':
         # Verify CAPTCHA
+        print('login1')
         user_captcha = request.form['captcha']
         if 'captcha' in session and session['captcha'] == user_captcha:
             # CAPTCHA entered correctly
@@ -7321,6 +7279,7 @@ def login():
 
             user = user_manager.authenticate_user(username, password)
             if user:
+                print('login2')
                 login_user(user)
                 flash('Login Successful')
 
@@ -7344,31 +7303,26 @@ def login():
 
                 '''
 
-                # Authenticate user and retrieve roles (not necessary after login_user
-                # user = user_manager.authenticate_user(username, password)
-                session['user_roles'] = [role.name for role in user.roles] if user.roles else []
-                session['user_id'] = getattr(user, 'id')
-                # Store data in the session
-                session['username'] = username
-                # Other session data
-                try:
-                    company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-                except:
-                    company_id = None
-                    pass
+            # Authenticate user and retrieve roles (not necessary after login_user
+            # user = user_manager.authenticate_user(username, password)
+            session['user_roles'] = [role.name for role in user.roles] if user.roles else []
+            session['user_id'] = getattr(user, 'id')
+            # Store data in the session
+            session['username'] = username
+            print('login3')
+            # Other session data
+            try:
+                company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
+                print('login3.1')
+            except:
+                company_id = None
+                pass
 
-                # Usage in your existing function
                 if company_id is not None and isinstance(company_id, int):
                     try:
-                        #logging.debug('before create_company_folder')
-                        subfolder = datetime.now().year
-                        #logging.debug(f'subfolder: {subfolder}')
-                        # TODO implement file storage on cloud (Google, AWS etc)
-                        #  create_company_folder(company_id, subfolder)
-                        pass
-                    except Exception as e:
-                        # logging.error('Error creating company files folder:', e)
-                        pass
+                        create_company_folder(company_id)
+                    except:
+                        print('Error creating company files folder')
 
                 # Store user roles in session or persistent storage
                 user_roles = session['user_roles']
@@ -7389,6 +7343,7 @@ def login():
 
                 # TODO dove mettere questo?
                 #messages = Post.query.filter_by(user_id=getattr(user, 'id')).all()
+                print('login3.2')
 
             else:
                 print('login4')
@@ -7401,7 +7356,9 @@ def login():
     captcha_text, captcha_image = generate_captcha(300, 100, 5)
 
     session['captcha'] = captcha_text
+    print('login6')
     return render_template('access/login.html', captcha=captcha_text, captcha_image=captcha_image)
+
 
 def generate_captcha(width, height, length):
     characters = "&%?ABCDEFGHJKLMNPRSTUVWXYZ2345679"
@@ -7410,14 +7367,7 @@ def generate_captcha(width, height, length):
     image = Image.new('RGB', (width, height), color=(255, 255, 255))
     # font = ImageFont.truetype('/System/Library/Fonts/Supplemental/arial.ttf', size=40)
 
-    # Get the path to the current directory where your script resides
-    # current_dir = get_current_directory()
-    # Define the relative path to the font file within the static/fonts directory
-    # font_path = os.path.join(current_dir, 'static', 'fonts', 'Geneve.ttf')
-    font_path = os.path.join(os.path.dirname(__file__), 'static', 'fonts', 'Geneve.ttf')
-    # Load the font using the relative path
-    font = ImageFont.truetype(font_path, size=40)
-    #font = ImageFont.truetype('/usr/local/share/fonts/Geneve.ttf', size=40)
+    font = ImageFont.truetype('/usr/local/share/fonts/Geneve.ttf', size=40)
 
     draw = ImageDraw.Draw(image)
 
@@ -8685,6 +8635,31 @@ def save_file_with_incremented_name(file, folder_path):
     file.save(file_path)
     return file_path
 
+
+def create_company_folder(company_id, subfolder):
+    """
+    Creates a folder for the given company_id in the specified directory.
+    Args:
+        company_id (int): The ID of the company.
+    Returns:
+        str: The path of the created folder or None if it already exists.
+    """
+    folder_path = None
+    folder_name = f"company_id_{company_id}/{subfolder}"
+    folder_path = os.path.join(app.config['COMPANY_FILES_DIR'], folder_name)
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+        print('Folder created:', folder_path)
+
+    else:
+        print('Folder already exists')
+        #return None  # Folder already exists
+    if folder_path:
+        return folder_path
+    else:
+        return None
+
+
 def apply_filters(text_filter, answer_type_filter):
     # Replace this with your actual filtering logic
     # For example, if using SQLAlchemy and you have a Question model:
@@ -8806,8 +8781,7 @@ def print_routes():
 
 if __name__ == '__main__':
     # Load menu items from JSON file
-    curent_dir = get_current_directory()
-    json_file_path = os.path.join(current_dir, 'static', 'js', 'menuStructure101.json')
+    json_file_path = get_current_directory() + '/static/js/menuStructure101.json'
     with open(Path(json_file_path), 'r') as file:
         main_menu_items = json.load(file)
 
@@ -8833,7 +8807,6 @@ if __name__ == '__main__':
     #port = int(os.environ.get('PORT', 5000))
 
     port = int(os.environ.get('PORT', 10000))
-    #logging.basicConfig(level=logging.DEBUG)
-    # logging.debug(f"Starting app on port {port}")
-    # TODO DEBUG
-    app.run(debug=False, host='0.0.0.0', port=port, extra_files=['./static/js/menuStructure101.json'])
+    logging.basicConfig(level=logging.DEBUG)
+    logging.debug(f"Starting app on port {port}")
+    app.run(debug=True, host='0.0.0.0', port=port, extra_files=['./static/js/menuStructure101.json'])
