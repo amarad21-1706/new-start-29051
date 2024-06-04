@@ -506,7 +506,8 @@
                                 "allowed_roles": [
                                     "Admin"
                                 ]
-                            },                            "Assign Questionnaires to Companies": {
+                            },
+                            "Assign Questionnaires to Companies": {
                                 "label": "Assign questionnaire to company",
                                 "url": "/manage_questionnaire_companies",
                                 "protected": true,

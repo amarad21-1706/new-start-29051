@@ -862,6 +862,8 @@ def generate_question_html(question, existing_answers, base_path, horizontal=Fal
     html += "</div><hr>"
     return html
 
+
+
 def generate_input_html(input_type, field_name, existing_value, base_path, horizontal=False, order_number=None, width=None):
     css_class = "form-control"
     horizontal_class = "horizontal" if horizontal else "vertical"
@@ -897,8 +899,115 @@ def generate_input_html(input_type, field_name, existing_value, base_path, horiz
             range(11))
         html += f"<select name='{field_name}' class='{input_css_class}'>{options}</select>"
 
+        '''
+        old version, where the file existence was checked IN THE DIRECTORY
+        elif input_type == 'FILE':
+            print('FILE type??', input_type)
+            if existing_value:
+                print('existing value, base path:', existing_value, base_path)
+                file_path = url_for('static', filename=f"{base_path}/{existing_value}")
+                html += f"Current File: <a href='{file_path}' target='_blank'>{existing_value}</a><br>"
+    
+            html += f"""
+            <input type='file' name='{field_name}' class='{input_css_class}'>
+            <label for='{field_name}'>Replace Existing File</label>
+            <input type='checkbox' id='{field_name}_replace' name='replace_existing'>
+            <br>
+            """
+        '''
+
+    # new version, where the file existence is only checked in the DB field!
     elif input_type == 'FILE':
+        # Check if existing_value is present in the database field
         if existing_value:
+            # Don't check for file existence on disk (remove unnecessary print statements)
+
+            html += f"Current File: {existing_value}<br>"  # Display the filename from the database
+
+            # Replace logic using checkbox and database field
+            html += f"""
+                <input type='file' name='{field_name}' class='{input_css_class}'>
+                <label for='{field_name}'>Replace Existing File</label>
+                <input type='checkbox' id='{field_name}_replace' name='replace_existing' value='{existing_value}'>
+                <br>
+                """
+        else:
+            # No existing value, show standard upload field
+            html += f"""
+                <input type='file' name='{field_name}' class='{input_css_class}'>
+                <label for='{field_name}'>Upload File</label>
+                <br>
+                """
+
+    elif input_type == 'DD':
+        html += f"<input type='date' name='{field_name}' value='{existing_value}' class='{input_css_class}'>"
+
+    elif input_type == 'BYN':
+        yes_selected = "selected" if "Yes" == existing_value else ""
+        no_selected = "selected" if "No" == existing_value else ""
+        html += f"<select name='{field_name}' class='{input_css_class}'>"
+        html += f"<option value='Yes' {yes_selected}>Yes</option>"
+        html += f"<option value='No' {no_selected}>No</option></select>"
+
+    elif input_type == 'HML':
+        high_selected = "selected" if existing_value == 'H' else ""
+        medium_selected = "selected" if existing_value == 'M' else ""
+        low_selected = "selected" if existing_value == 'L' else ""
+        html += f"<select name='{field_name}' class='{input_css_class}'>"
+        html += f"<option value='H' {high_selected}>High</option>"
+        html += f"<option value='M' {medium_selected}>Medium</option>"
+        html += f"<option value='L' {low_selected}>Low</option></select>"
+
+    elif input_type == 'NUM':
+        html += f"<input type='number' name='{field_name}' value='{existing_value}' step='0.01' class='{input_css_class}'>"
+
+    else:
+        html += f"<input type='text' name='{field_name}' value='{existing_value}' class='{input_css_class}' autocomplete='off'>"
+
+    html += "</div><br>"
+    return html
+
+
+
+def generate_input_html222(input_type, field_name, existing_value, base_path, horizontal=False, order_number=None, width=None):
+    css_class = "form-control"
+    horizontal_class = "horizontal" if horizontal else "vertical"
+    html = ""
+
+    # Define a style for width if provided, and additional flexbox alignment
+    width_style = f" style='width: {width}px; display: flex; align-items: center;'" if width else " style='display: flex; align-items: center;'"
+
+    if order_number:
+        html += f"<div class='input-group {horizontal_class}'{width_style}>"
+        html += f"<label class='order-number'>{order_number}.</label> "
+    else:
+        order_number = extract_index_with_regex(field_name)
+        html += f"<div class='{horizontal_class}'{width_style}>"
+
+    # Define specific CSS classes for inputs to ensure alignment
+    input_css_class = f"{css_class} form-input"  # Use form-input to handle specific styling
+
+    # Control specific HTML generation
+    if input_type == 'CB':
+        checked = 'checked' if existing_value.lower() == 'on' else ''
+        html += f"<input type='hidden' name='{field_name}' value='off'>"
+        html += f"<input type='checkbox' class='form-check-input' id='{field_name}' name='{field_name}' value='on' {checked}>"
+        label_text = f"A.{order_number}" if order_number else "A "  # Example label
+        html += f"<label class='form-check-label' for='{field_name}'>{label_text}</label>"
+
+    elif input_type == 'TLT':
+        html += f"<textarea name='{field_name}' class='{input_css_class}'>{existing_value}</textarea>"
+
+    elif input_type == 'NI(0-10)':
+        options = ''.join(
+            f"<option value='{num}' {'selected' if str(num) == existing_value else ''}>{num}</option>" for num in
+            range(11))
+        html += f"<select name='{field_name}' class='{input_css_class}'>{options}</select>"
+
+    elif input_type == 'FILE':
+        print('FILE type?', input_type)
+        if existing_value:
+            print('existing value', existing_value)
             file_path = url_for('static', filename=f"{base_path}/{existing_value}")
             html += f"Current File: <a href='{file_path}' target='_blank'>{existing_value}</a>"
         html += f"<input type='file' name='{field_name}' class='{input_css_class}'>"

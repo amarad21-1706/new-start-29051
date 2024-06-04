@@ -21,7 +21,6 @@ from sqlalchemy.dialects.sqlite import JSON  # for SQLite
 # from sqlalchemy.dialects.oracle import JSON  # for Oracle
 import json
 
-
 class CheckboxField(BooleanField):
     def process_formdata(self, valuelist):
         if valuelist:
@@ -125,7 +124,8 @@ class UserRoles(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
-
+    created_on = Column(DateTime, nullable=False, default=datetime.now)
+    updated_on = Column(DateTime, nullable=True, onupdate=datetime.now)
     #user = relationship('Users', backref='user_roles')
     #role = relationship('Role', backref='user_roles')
 

@@ -4,8 +4,8 @@
 # app.py (or run.py)
 import re
 
-#import logging
-#from logging import FileHandler, Formatter
+# import logging
+# from logging import FileHandler, Formatter
 
 from sqlalchemy import or_, and_, desc, func, not_, null, exists, extract, select
 from sqlalchemy import distinct
@@ -115,6 +115,9 @@ from flask import request
 from flask_admin import BaseView, expose
 from flask import jsonify
 from werkzeug.utils import secure_filename
+
+# Example of using the function with ImmutableMultiDict
+from werkzeug.datastructures import ImmutableMultiDict
 
 import os
 
@@ -5381,7 +5384,7 @@ admin_app10.add_view(QuestionnaireQuestionsView(QuestionnaireQuestions, db.sessi
                                                 endpoint='questionnaire_questions_questionnaire_view'))
 admin_app10.add_view(CompanyView(Company, db.session, name='C.1 Company List',
                                  endpoint='company_questionnaire_view'))
-# TODO decodifica/dropdown lists here
+# TODO decode/dropdown lists here
 admin_app10.add_view(QuestionnaireCompaniesView(QuestionnaireCompanies, db.session,
                                 name='C.2 Association of Questionnaires to Companies',
                                 endpoint='questionnaire_companies_questionnaire_view'))
@@ -6571,7 +6574,10 @@ def signup():
             country=form.country.data,
             tax_code=form.tax_code.data,
             mobile_phone=form.mobile_phone.data,
-            work_phone=form.work_phone.data
+            work_phone=form.work_phone.data,
+            created_on=datetime.now(),
+            updated_on=datetime.now()
+
             # Add other fields from the form as needed
         )
 
@@ -8295,6 +8301,7 @@ def show_survey(questionnaire_id):
     if request.method == 'POST':
         if form.validate_on_submit():
             answers_to_save = serialize_answers(request.form)
+
             return handle_post_submission(form, company_id, user_id, questionnaire_id, answers_to_save)
         else:
             flash('Error with form data. Please check your entries.', 'error')
@@ -8342,9 +8349,11 @@ def show_survey(questionnaire_id):
         ).first()
 
         if existing_answer and existing_answer.answer_data:
+            print('existing answer found', existing_answer.answer_data)
             merged_fields = merge_answer_fields(question.answer_fields, existing_answer.answer_data)  # Make sure this function is set to merge JSON fields correctly
             form_data[str(question.id)] = merged_fields
         else:
+            print('n existing data found')
             form_data[str(question.id)] = question.answer_fields
 
         questions.append({
@@ -8355,7 +8364,7 @@ def show_survey(questionnaire_id):
             'answer_width': question.answer_width,
             'answer_fields': form_data[str(question.id)]
         })
-
+    print('questions list', questions)
     dynamic_html = create_dynamic_form(form, {'questions': questions, 'form_data': form_data}, company_id, horizontal)  # Adjust this function to accept horizontal flag
     return render_template('survey.html', form=form, headers=headers, dynamic_html=dynamic_html, questionnaire_name=selected_questionnaire.name, today=datetime.now().date())
 
@@ -8456,7 +8465,9 @@ def handle_post_submission(form, company_id, user_id, questionnaire_id, answers_
 
 def serialize_answers(form_data):
     answers = {}
+    print('serialize answers, form_data:', form_data)
     for key in form_data.keys():
+        print('serialize answers, key:', key)
         # Extract width data, assuming it's submitted as part of the form data
         width_key = key + '_width'  # Assuming width data is submitted with a key suffix '_width'
         width = form_data.get(width_key, '')  # Default width is an empty string if not provided
@@ -8487,10 +8498,6 @@ def serialize_answers(form_data):
     return answers
 
 
-# Example of using the function with ImmutableMultiDict
-from werkzeug.datastructures import ImmutableMultiDict
-
-
 def check_existing_data(company_id, user_id, questionnaire_id):
     """
     Check if there is existing data for a given combination of company ID, user ID, and questionnaire ID.
@@ -8512,7 +8519,6 @@ def is_substantive(data):
     if data and data.strip():
         return True
     return False
-
 
 def save_answers(data):
     try:
@@ -8585,7 +8591,6 @@ def save_answers(data):
         return redirect(url_for('show_survey', questionnaire_id=questionnaire_id))
 
 
-
 @app.route('/load_survey', methods=['GET', 'POST'])
 def load_survey():
     company_id = request.args.get('company_id')
@@ -8611,7 +8616,6 @@ def load_survey():
 
     # For GET requests, render the survey with the loaded data
     return render_template('survey.html', form_data=json_data)
-
 
 
 def validate_form_structure(form_data, json_data):
@@ -8660,6 +8664,7 @@ def download_file(company_id, filename):
 
     return send_from_directory(os.path.dirname(file_path), filename)  # Use Flask-Send
 
+
 # Other functions for retrieving file paths, verifying permissions, etc.
 @app.route('/company_files/<int:company_id>/<path:filename>', methods=['GET'])
 def serve_company_file(company_id, filename):
@@ -8684,6 +8689,7 @@ def save_file_with_incremented_name(file, folder_path):
     file_path = os.path.join(folder_path, filename)
     file.save(file_path)
     return file_path
+
 
 def apply_filters(text_filter, answer_type_filter):
     # Replace this with your actual filtering logic
