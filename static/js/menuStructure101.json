@@ -476,6 +476,14 @@
                                 "allowed_roles": [
                                     "Admin"
                                 ]
+                            },
+                            "Password Reset": {
+                                "label": "Reset User Password",
+                                "url": "/master_reset_password",
+                                "protected": true,
+                                "allowed_roles": [
+                                    "Admin"
+                                ]
                             }
                         }
                     },

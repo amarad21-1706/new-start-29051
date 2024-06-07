@@ -37,7 +37,7 @@ class Users(db.Model, UserMixin):
     username = db.Column(String(80), unique=True, nullable=False)
     email = db.Column(String(120), unique=True, nullable=False)
     password_hash = db.Column(String(255), nullable=False)
-    user_2fa_secret = db.Column(String(32), nullable=False)
+    user_2fa_secret = db.Column(String(255), nullable=True)
     title = db.Column(String(12), nullable=True)
     first_name = db.Column(String(128), nullable=True)
     mid_name = db.Column(String(128), nullable=True)

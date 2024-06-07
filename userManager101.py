@@ -7,6 +7,7 @@ from sqlalchemy.orm import joinedload
 from flask_login import current_user
 
 from flask_sqlalchemy import SQLAlchemy
+from flask_babel import Domain
 
 
 class UserManager:

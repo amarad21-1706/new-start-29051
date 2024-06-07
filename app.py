@@ -16,12 +16,24 @@ from flask import flash
 import datetime
 
 from flask_wtf import FlaskForm
+from wtforms import EmailField
+from wtforms.validators import DataRequired, Email, InputRequired, NumberRange
 
 from flask_session import Session
 from wtforms import SubmitField
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired
+
+from flask import Flask, render_template, flash, redirect, url_for, request
+from flask_wtf import FlaskForm
+from wtforms import StringField, SubmitField
+from wtforms.validators import DataRequired, Email
+from flask_mail import Mail, Message
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
+from flask_babel import Babel, lazy_gettext as _
+
 from userManager101 import UserManager
-from workflow_manager import (add_transition_log, create_card, get_model_statistics, create_deadline_card,
+from workflow_manager import (add_transition_log, create_card,
+                              get_model_statistics, create_deadline_card,
                               create_model_card, deadline_approaching)
 
 from app_defs import get_user_roles, create_message, generate_menu_tree
@@ -31,10 +43,15 @@ from models.user import (Users, UserRoles, Role, Table, Questionnaire, Question,
         QuestionnaireCompanies, CompanyUsers, Status, Lexic,
         Interval, Subject,
         AuditLog, Post, Ticket, StepQuestionnaire,
-        Workflow, Step, BaseData, WorkflowSteps, WorkflowBaseData, StepBaseData, Config, get_config_values)
+        Workflow, Step, BaseData, WorkflowSteps, WorkflowBaseData,
+                         StepBaseData, Config, get_config_values)
 
-from forms.forms import (RegistrationForm, QuestionnaireCompanyForm, CustomBaseDataForm,
-        QuestionnaireQuestionForm, WorkflowStepForm, WorkflowBaseDataForm, BaseDataWorkflowStepForm,
+from master_password_reset import admin_reset_password, AdminResetPasswordForm
+
+from forms.forms import (ForgotPasswordForm, ResetPasswordForm101, RegistrationForm,
+                         QuestionnaireCompanyForm, CustomBaseDataForm,
+        QuestionnaireQuestionForm, WorkflowStepForm, WorkflowBaseDataForm,
+                         BaseDataWorkflowStepForm,
         UserRoleForm, CompanyUserForm, UserDocumentsForm, StepBaseDataInlineForm,
         create_dynamic_form, CustomFileLoaderForm,
         CustomSubjectAjaxLoader, BaseSurveyForm)
@@ -52,7 +69,8 @@ from config.config import (extract_year_from_fy, get_current_interval, get_curre
         generate_workflow_document_report_data, generate_document_step_report_data, get_cet_time, remove_duplicates,
         normalize_structure, compare_structures, some_keys)
 
-from admin_views import (CompanyView, QuestionnaireView, QuestionView, StatusView, LexicView, AreaView, StepQuestionnaireView,
+from admin_views import (CompanyView, QuestionnaireView, QuestionView,
+                         StatusView, LexicView, AreaView, StepQuestionnaireView,
         SubareaView, SubjectView, PostView, TicketView, WorkflowView, StepView, AuditLogView,
         QuestionnaireQuestionsView, WorkflowStepsView, QuestionnaireCompaniesView,
                          OpenQuestionnairesView, BaseDataView, UsersView)
@@ -61,7 +79,7 @@ from mail_service import send_simple_message, send_simple_message333
 from wtforms import Form
 
 from utils.utils import get_current_directory
-from wtforms import (SelectField, BooleanField, ValidationError)
+from wtforms import (SelectField, BooleanField, ValidationError, EmailField)
 from flask_login import login_required, LoginManager
 from flask_login import login_user, current_user
 from flask_cors import CORS
@@ -90,7 +108,6 @@ from flask import session
 from flask_admin import Admin, expose, expose_plugview
 from flask_admin.actions import action  # Import the action decorator
 from flask_admin.contrib.sqla import ModelView
-from wtforms.validators import InputRequired, NumberRange
 
 from flask_admin.model.widgets import XEditableWidget
 from flask_limiter import Limiter
@@ -134,6 +151,10 @@ import plotly.graph_objects as go
 
 # app.py
 app = create_app()
+
+mail = Mail(app)
+babel = Babel(app)
+
 limiter = Limiter(
     get_remote_address,
     app=app,
@@ -154,6 +175,8 @@ with app.app_context():
 login_manager = LoginManager(app)
 # Define your custom template path
 
+# Register the password reset route
+app.add_url_rule('/admin_reset_password', 'admin_reset_password', admin_reset_password, methods=['GET', 'POST'])
 
 @app.route('/set_session')
 def set_session():
@@ -210,7 +233,15 @@ app.config['MAX_RECURSION_DEPTH'] = 12  # Example: 1 hour
 #app.config['RECAPTCHA_PRIVATE_KEY'] = some_keys['recaptcha_private_key']
 app.config['WTF_CSRF_ENABLED'] = False  # Disable CSRF protection for local development
 
+app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
+    'connect_args': {
+        'options': '-c statement_timeout=60000'  # Set timeout to 60 seconds
+    }
+}
+
+# TODO check directory for the prod env in Render!
 session_dir = get_current_directory() + '/static/files/'
+
 if not os.path.exists(session_dir):
     os.makedirs(session_dir)
 
@@ -233,7 +264,6 @@ file_handler.setFormatter(Formatter(
 app.logger.addHandler(file_handler)
 '''
 
-
 current_interval = get_current_interval(1) #year
 
 print('Current periods:', get_current_interval(1),
@@ -250,6 +280,9 @@ with app.app_context():
 
     intervals = get_current_intervals(db.session)
     app.config['CURRENT_INTERVALS'] = intervals
+
+# Serializer for generating tokens
+serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 # TODO - eliminati tutti i blueprint per i quali c'è Admin?
 # pyobjc
@@ -368,65 +401,73 @@ def create_company_folder(company_id, subfolder):
     else:
         return None
 
+def generate_password_reset_token(email):
+    salt = app.config['SECURITY_PASSWORD_SALT']
+    return serializer.dumps(email, salt=salt)
 
 '''
-@app.route('/reset_password', methods=['GET', 'POST'])
-def reset_password_request():
-    if request.method == 'POST':
-        user = Users.query.filter_by(email=request.form['email']).first()
-        if user:
-            token = user.get_reset_token()
-            send_email(user.email, 'Password Reset Request',
-                       f'Please go to the following link to reset your password: {url_for('reset_password', token=token, _external=True)}')
-        return "An email has been sent with instructions to reset your password."
+@babel.localeselector
+def get_locale():
+    return request.accept_languages.best_match(['en', 'it', 'es', 'fr', 'de'])
+'''
+
+# TODO unused?
+def verify_password_reset_token(token, expiration=1800):
+    salt = app.config['SECURITY_PASSWORD_SALT']
+    try:
+        email = serializer.loads(token, salt=salt, max_age=expiration)
+    except (SignatureExpired, BadSignature):
+        return None
+    return email
+
+
+from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as _
+
+@app.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    form = ForgotPasswordForm()
+    if form.validate_on_submit():
+        try:
+            user = Users.query.filter_by(email=form.email.data).first()
+            if user:
+                user_email = form.email.data
+                token = generate_password_reset_token(user_email)
+                user.user_2fa_secret = token
+                db.session.commit()
+                # Send password reset email using Flask-Mail (example)
+                msg = Message(sender="Auditors Digital Platform <info@firstauditors.org>",
+                              recipients=[user.email])
+                reset_url = url_for('reset_password', token=token, _external=True)
+                msg.body = f'Click the link to reset your password: {reset_url}'
+
+                mail.send(msg)
+
+                flash(_('An email has been sent with instructions to reset your password.'), 'success')
+            else:
+                flash(_('No user found with that email address.'), 'danger')
+            return redirect(url_for('forgot_password'))
+        except Exception as e:
+            print(f"Error: {e}")  # Log the error for debugging purposes
+            flash(_('An error occurred while processing your request. Please try again later.'), 'danger')
+            return render_template('access/forgot_password.html', form=form)
+    return render_template('access/forgot_password.html', form=form)
 
 
 @app.route('/reset_password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
-    user = Users.verify_reset_token(token)
+    user = Users.query.filter_by(user_2fa_secret=token).first()
     if not user:
-        return "This is an invalid or expired token"
-
-    # Assume the logic to update the user's password
-    return "Your password has been updated."
-'''
-
-@app.route('/forgot_password', methods=['GET', 'POST'])
-def forgot_password():
-    print('forgot_password...', request.method)
-    if request.method == 'POST':
-        email = request.form['email']  # Get the email entered in the form
-
-        user = Users.query.filter_by(email=email).first()
-        if user:
-            token = generate_reset_token(user.email)
-            msg = Message('Password Reset Request', sender='noreply@demo.com', recipients=[user.email])
-            msg.body = f"""To reset your password, visit the following link:
-                {url_for('reset_token', token=token, _external=True)}
-                
-                If you did not make this request, simply ignore this email and no changes will be made.
-                """
-            mail = Mail(app)
-            mail.send(msg)
-            return redirect(url_for('login'))
-    return render_template('access/forgot.html')
-
-@app.route('/reset/<token>', methods=['GET', 'POST'])
-def reset_token(token):
-    email = verify_reset_token(token)
-    if not email:
-        # Handle the invalid or expired token
-        return redirect(url_for('forgot'))
-
-    user = Users.query.filter_by(email=email).first()
-    if request.method == 'POST':
-        # Update user's password
-        hashed_pw = bcrypt.generate_password_hash(request.form['password']).decode('utf-8')
-        user.password = hashed_pw
-        db.session.commit()
+        flash('The password reset token is invalid or expired.', 'warning')
         return redirect(url_for('login'))
 
-    return render_template('reset.html')
+    form = ResetPasswordForm101()  # Assuming you have a ResetPasswordForm for new password entry
+    if form.validate_on_submit():
+        user.set_password(form.password.data)  # Use a secure password hashing method
+        user.user_2fa_secret = None  # Invalidate the token after reset
+        db.session.commit()
+        flash('Your password has been reset successfully!', 'success')
+        return redirect(url_for('login'))
+    return render_template('access/reset_password.html', form=form, token=token)
 
 
 @app.route("/send_email222")
@@ -457,9 +498,9 @@ def send_email():
     flash('Mail sent successfully', 'success')
     return redirect(url_for('index'))  # Redirect to your home page
 
+
 @app.route('/confirmation')
 def confirmation_page():
-
     return redirect(url_for('login'))
 
 
@@ -503,7 +544,6 @@ def get_documents_query(session, current_user):
 @app.route('/document_workflow_visualization_d3js')
 def workflow_visualization():
     return render_template('document_workflow_visualization_d3js.html')
-
 
 
 @app.route('/custom_base_atti')
@@ -5407,6 +5447,13 @@ def open_admin_app_4():
     return redirect(url_for('open_admin_4.index'))
 
 
+@login_required
+@role_required('Admin')
+@app.route('/master_reset_password')
+def master_reset_password():
+    return redirect(url_for('admin_reset_password'))
+
+
 # Route to open F l a s k -Admin
 @app.route('/open_admin_app_1')
 def open_admin_app_1():
@@ -6556,8 +6603,9 @@ def signup():
 
     clear_flashed_messages()
     form = RegistrationForm()
-
+    print('signup1')
     if form.validate_on_submit():
+        print('signup1 2')
         new_user = Users(
             username=form.username.data,
             email=form.email.data,
@@ -6584,20 +6632,26 @@ def signup():
         try:
             # Set the hashed password
             new_user.set_password(form.password.data)
+            print('signup 3')
 
             db.session.add(new_user)
+            print('signup 4')
 
             try:
                 db.session.commit()
+                print('signup 5')
+
             except Exception as commit_error:
                 # logging.error(f'Error committing to the database: {commit_error}')
                 db.session.rollback()
+                print('signup ko 6')
                 flash('An error occurred during signup', 'error')
                 return render_template('access/signup.html', title='Sign Up', form=form)
 
             # Retrieve the newly assigned user ID
 
             new_user_id = new_user.id
+            print('signup 7 ok', new_user_id)
 
             # Create a new record in UserRoles table
             # user_role_employee = UserRoles(user_id=new_user_id, role_id=4)
@@ -6606,20 +6660,22 @@ def signup():
             # Create a new record in UserRoles table for role ID 5 (Guest)
 
             user_role_guest = UserRoles(user_id=new_user_id, role_id=5)
+            print('signup 8', user_role_guest)
 
             db.session.add(user_role_guest)
-
+            print('signup 9', user_role_guest)
             db.session.commit()
-
+            print('signup 10', user_role_guest)
             flash('Your account has been created! You can now log in.', 'success')
             return redirect(url_for('login'))
 
         except IntegrityError as e:
+            print('signup 11', e)
             db.session.rollback()
             flash('Username already exists. Please choose a different username.', 'error')
             return render_template('access/signup.html', form=form)
 
-    print('return')
+    print('signup 12')
     return render_template('access/signup.html', title='Sign Up', form=form)
 
 
@@ -6866,6 +6922,9 @@ def deadlines_1():
 
 @app.route('/dashboard_company_audit')
 def dashboard_company_audit():
+
+    session = db.session  # Create a new database session object
+    engine = db.engine  # Get the engine object from SQLAlchemy
     # Your view logic goes here
     # Perform the SQL query to get information for each company
     """
@@ -6882,30 +6941,18 @@ def dashboard_company_audit():
             new_metric: The number of records grouped by fi0, interval_id, area_id, subarea_id.
     """
 
-    with app.app_context():
-        bind_key = 'db1'  # Use the bind key corresponding to the desired database
+    sorted_values = get_pd_report_from_base_data_wtq(engine)
+    # Example usage
+    # Get all companies from the database
+    all_companies = Company.query.all()
+    html_cards = generate_html_cards(sorted_values, all_companies)
 
-        options = {'url': str(db.engine.url)}  # Your options dictionary
+    # Write HTML code to a file
+    with open('report_cards1.html', 'w') as f:
+        f.write(html_cards)
 
-        # Create the SQLAlchemy engine using db object
-        engine = db._make_engine(bind_key, options, app)
-        # Usage example:
-        from sqlalchemy.orm import sessionmaker
+    return render_template('admin_cards.html', html_cards=html_cards, user_roles=user_roles)
 
-        Session = sessionmaker(bind=engine)
-        session = Session()  # Create a session object
-
-        sorted_values = get_pd_report_from_base_data_wtq(session)
-        # Example usage
-        # Get all companies from the database
-        all_companies = Company.query.all()
-        html_cards = generate_html_cards(sorted_values, all_companies)
-
-        # Write HTML code to a file
-        with open('report_cards1.html', 'w') as f:
-            f.write(html_cards)
-
-        return render_template('admin_cards.html', html_cards=html_cards, user_roles=user_roles)
 
 # Define the route for handling card clicks
 @app.route('/handle_card_click')
@@ -6921,6 +6968,7 @@ System setup, admin: Company->User(s)
 @app.route('/dashboard_setup_companies_users')
 def dashboard_setup_companies_users():
     # Assuming you have access to the session object
+    '''
     with app.app_context():
         bind_key = 'db1'  # Use the bind key corresponding to the desired database
         options = {'url': str(db.engine.url)}  # Your options dictionary
@@ -6929,9 +6977,10 @@ def dashboard_setup_companies_users():
         # Usage example here:
         Session = sessionmaker(bind=engine)
         session = Session()  # Create a session object
+    '''
 
     # Generate HTML report
-    report_data = generate_company_user_report_data(session)
+    report_data = generate_company_user_report_data(db.session)
 
     # Render the template with the report data
     return render_template('generic_report.html', title="User-Company Relationship Report", columns=["Company", "User", "Last Name"], rows=report_data)
@@ -6942,18 +6991,9 @@ System setup, admin: User->Role(s)
 '''
 @app.route('/dashboard_setup_user_roles')
 def dashboard_setup_user_roles():
-    # Assuming you have access to the session object
-    with app.app_context():
-        bind_key = 'db1'  # Use the bind key corresponding to the desired database
-        options = {'url': str(db.engine.url)}  # Your options dictionary
-        # Create the SQLAlchemy engine using db object
-        engine = db._make_engine(bind_key, options, app)
-        # Usage example here:
-        Session = sessionmaker(bind=engine)
-        session = Session()  # Create a session object
 
     # Generate HTML report
-    report_data = generate_user_role_report_data(session)
+    report_data = generate_user_role_report_data(db.session)
 
     # Render the template with the report data
     return render_template('generic_report.html', title="User-Role Relationship Report", columns=["User", "Last Name", "Role"], rows=report_data)
@@ -6966,17 +7006,8 @@ System setup, admin: Questionnaire->Question(s)
 @app.route('/dashboard_setup_questionnaire_questions')
 def dashboard_setup_questionnaire_questions():
     # Assuming you have access to the session object
-    with app.app_context():
-        bind_key = 'db1'  # Use the bind key corresponding to the desired database
-        options = {'url': str(db.engine.url)}  # Your options dictionary
-        # Create the SQLAlchemy engine using db object
-        engine = db._make_engine(bind_key, options, app)
-        # Usage example here:
-        Session = sessionmaker(bind=engine)
-        session = Session()  # Create a session object
-
     # Generate HTML report
-    report_data = generate_questionnaire_question_report_data(session)
+    report_data = generate_questionnaire_question_report_data(db.session)
 
     # Render the template with the report data
     return render_template('generic_report.html', title="Questionnaire Structure", columns=["Questionnaire id", "Name", "Question"], rows=report_data)
@@ -6987,18 +7018,8 @@ System setup, admin: Company - > Questionnaire(s)
 '''
 @app.route('/generate_setup_company_questionnaire')
 def generate_setup_company_questionnaire():
-    # Assuming you have access to the session object
-    with app.app_context():
-        bind_key = 'db1'  # Use the bind key corresponding to the desired database
-        options = {'url': str(db.engine.url)}  # Your options dictionary
-        # Create the SQLAlchemy engine using db object
-        engine = db._make_engine(bind_key, options, app)
-        # Usage example here:
-        Session = sessionmaker(bind=engine)
-        session = Session()  # Create a session object
-
     # Generate HTML report
-    report_data = generate_company_questionnaire_report_data(session)
+    report_data = generate_company_questionnaire_report_data(db.session)
 
     # Render the template with the report data
     return render_template('generic_report.html', title="Questionnaires and Companies", columns=["Company", "Questionnaire name", "Questionnaire id"], rows=report_data)
@@ -7006,18 +7027,8 @@ def generate_setup_company_questionnaire():
 
 @app.route('/dashboard_setup_workflow_steps')
 def dashboard_setup_workflow_steps():
-    # Assuming you have access to the session object
-    with app.app_context():
-        bind_key = 'db1'  # Use the bind key corresponding to the desired database
-        options = {'url': str(db.engine.url)}  # Your options dictionary
-        # Create the SQLAlchemy engine using db object
-        engine = db._make_engine(bind_key, options, app)
-        # Usage example here:
-        Session = sessionmaker(bind=engine)
-        session = Session()  # Create a session object
-
     # Generate HTML report
-    report_data = generate_workflow_step_report_data(session)
+    report_data = generate_workflow_step_report_data(db.session)
 
     # Render the template with the report data
     return render_template('generic_report.html', title="Workflows and Steps", columns=["Workflow id", "Workflow name", "Step id", "Step name"], rows=report_data)
@@ -7027,17 +7038,6 @@ report of workflow of documents
 '''
 @app.route('/dashboard_setup_workflow_base_data')
 def dashboard_setup_workflow_base_data():
-    # Assuming you have access to the session object
-    '''
-    with app.app_context():
-        bind_key = 'db1'  # Use the bind key corresponding to the desired database
-        options = {'url': str(db.engine.url)}  # Your options dictionary
-        # Create the SQLAlchemy engine using db object
-        engine = db._make_engine(bind_key, options, app)
-        # Usage example here:
-        Session = sessionmaker(bind=engine)
-        session = Session()  # Create a session object
-    '''
 
     # Generate HTML report
     report_data_raw = generate_workflow_document_report_data(db.session)
@@ -7055,20 +7055,10 @@ Route to manage trilateral link document/workflow/step
 '''
 @app.route('/dashboard_setup_step_base_data')
 def dashboard_setup_step_base_data():
-    # Assuming you have access to the session object
-    with app.app_context():
-        bind_key = 'db1'  # Use the bind key corresponding to the desired database
-        options = {'url': str(db.engine.url)}  # Your options dictionary
-        # Create the SQLAlchemy engine using db object
-        engine = db._make_engine(bind_key, options, app)
-        # Usage example here:
-        Session = sessionmaker(bind=engine)
-        session = Session()  # Create a session object
-
     # Generate HTML report
 
     report_data = []
-    report_data_raw = generate_document_step_report_data(session)
+    report_data_raw = generate_document_step_report_data(db.session)
     columns = ["Document id", "Document name", "Area", "Subarea", "Company",
                "Workflow id",
                "Step", "Step name", "Start", "Deadline", "Completion", "Auto"]
@@ -7096,18 +7086,8 @@ System setup, admin: Area->Subareas
 '''
 @app.route('/dashboard_setup_area_subareas')
 def dashboard_setup_area_subareas():
-    # Assuming you have access to the session object
-    with app.app_context():
-        bind_key = 'db1'  # Use the bind key corresponding to the desired database
-        options = {'url': str(db.engine.url)}  # Your options dictionary
-        # Create the SQLAlchemy engine using db object
-        engine = db._make_engine(bind_key, options, app)
-        # Usage example here:
-        Session = sessionmaker(bind=engine)
-        session = Session()  # Create a session object
-
     # Generate HTML report
-    report_data = generate_area_subarea_report_data(session)
+    report_data = generate_area_subarea_report_data(db.session)
 
     # Render the template with the report data
     return render_template('generic_report.html', title="Control Areas and Subareas", columns=["Area", "Subarea", "Data Type"], rows=report_data)
@@ -7115,16 +7095,46 @@ def dashboard_setup_area_subareas():
 
 @app.route('/dashboard_company_audit_progression')
 def dashboard_company_audit_progression():
-    time_scope = 'current'
-    with app.app_context():
-        bind_key = 'db1'  # Use the bind key corresponding to the desired database
-        options = {'url': str(db.engine.url)}  # Your options dictionary
-        # Create the SQLAlchemy engine using db object
-        engine = db._make_engine(bind_key, options, app)
-        # Usage example here:
-        Session = sessionmaker(bind=engine)
-        session = Session()  # Create a session object
 
+    session = db.session  # Create a new database session object
+    engine = db.engine  # Get the engine object from SQLAlchemy
+    # TODO time_scope vs time_qualifier here below?
+    time_scope = 'current'
+
+    def filter_records_by_time_qualifier(records, time_qualifier):
+        filtered_records = []
+        for record in records:
+            if record['time_qualifier'] == time_qualifier:
+                filtered_records.append(record)
+        return filtered_records
+
+    sorted_values_raw = get_pd_report_from_base_data_wtq(engine)
+    # Example usage to filter 'current' records
+    sorted_values = filter_records_by_time_qualifier(sorted_values_raw, time_scope)
+
+    if is_user_role(session, current_user.id, 'admin'):
+        company_id = None  # will list all companies' cards
+    else:
+        company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
+
+    html_cards = generate_html_cards_progression_with_progress_bars_in_short(sorted_values, time_scope or {}, session,
+                                                                       company_id)
+
+    # Write HTML code to a file
+    with open('report_cards1.html', 'w') as f:
+        f.write(html_cards)
+
+    return render_template('admin_cards_progression.html', html_cards=html_cards, user_roles=user_roles)
+
+
+@app.route('/company_overview_current')
+def company_overview_current():
+    # logging.basicConfig(level=logging.DEBUG)
+
+    session = db.session  # Create a new database session object
+    engine = db.engine  # Get the engine object from SQLAlchemy
+    time_scope = 'current'
+    try:
         def filter_records_by_time_qualifier(records, time_qualifier):
             filtered_records = []
             for record in records:
@@ -7132,7 +7142,7 @@ def dashboard_company_audit_progression():
                     filtered_records.append(record)
             return filtered_records
 
-        sorted_values_raw = get_pd_report_from_base_data_wtq(session)
+        sorted_values_raw = get_pd_report_from_base_data_wtq(engine)
         # Example usage to filter 'current' records
         sorted_values = filter_records_by_time_qualifier(sorted_values_raw, time_scope)
 
@@ -7141,53 +7151,15 @@ def dashboard_company_audit_progression():
         else:
             company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
 
-        html_cards = generate_html_cards_progression_with_progress_bars_in_short(sorted_values, time_scope or {}, session,
-                                                                           company_id)
+        html_cards = generate_html_cards_progression_with_progress_bars111(
+            sorted_values, time_scope or {}, db.session, company_id
+        )
 
         # Write HTML code to a file
         with open('report_cards1.html', 'w') as f:
             f.write(html_cards)
 
         return render_template('admin_cards_progression.html', html_cards=html_cards, user_roles=user_roles)
-
-@app.route('/company_overview_current')
-def company_overview_current():
-    # logging.basicConfig(level=logging.DEBUG)
-    time_scope = 'current'
-    bind_key = 'db1'  # Use the bind key corresponding to the desired database
-    try:
-        with app.app_context():
-            options = {'url': str(db.engine.url)}  # Your options dictionary
-            # Create the SQLAlchemy engine using db object
-            engine = db._make_engine(bind_key, options, app)
-            # Usage example here:
-            Session = sessionmaker(bind=engine)
-            session = Session()  # Create a session object
-            def filter_records_by_time_qualifier(records, time_qualifier):
-                filtered_records = []
-                for record in records:
-                    if record['time_qualifier'] == time_qualifier:
-                        filtered_records.append(record)
-                return filtered_records
-
-            sorted_values_raw = get_pd_report_from_base_data_wtq(session)
-            # Example usage to filter 'current' records
-            sorted_values = filter_records_by_time_qualifier(sorted_values_raw, time_scope)
-
-            if is_user_role(session, current_user.id, 'admin'):
-                company_id = None  # will list all companies' cards
-            else:
-                company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-
-            html_cards = generate_html_cards_progression_with_progress_bars111(
-                sorted_values, time_scope or {}, session, company_id
-            )
-
-            # Write HTML code to a file
-            with open('report_cards1.html', 'w') as f:
-                f.write(html_cards)
-
-            return render_template('admin_cards_progression.html', html_cards=html_cards, user_roles=user_roles)
 
     except Exception as e:
         # logging.error(f'Error in company_overview_current: {e}')
@@ -7197,43 +7169,36 @@ def company_overview_current():
 
 @app.route('/company_overview_historical')
 def company_overview_historical():
+    session = db.session  # Create a new database session object
+    engine = db.engine  # Get the engine object from SQLAlchemy
     time_scope = 'past'
-    with app.app_context():
-        bind_key = 'db1'  # Use the bind key corresponding to the desired database
 
-        options = {'url': str(db.engine.url)}  # Your options dictionary
+    def filter_records_by_time_qualifier(records, time_qualifier):
+        filtered_records = []
+        for record in records:
+            if record['time_qualifier'] == time_qualifier:
+                filtered_records.append(record)
+        return filtered_records
 
-        # Create the SQLAlchemy engine using db object
-        engine = db._make_engine(bind_key, options, app)
-        # Usage example here:
-        from sqlalchemy.orm import sessionmaker
+    print('hist')
+    sorted_values_raw = get_pd_report_from_base_data_wtq(engine)
 
-        Session = sessionmaker(bind=engine)
-        session = Session()  # Create a session object
+    print('hist', sorted_values_raw)
+    # Example usage to filter 'current' records
+    sorted_values = filter_records_by_time_qualifier(sorted_values_raw, time_scope)
 
-        def filter_records_by_time_qualifier(records, time_qualifier):
-            filtered_records = []
-            for record in records:
-                if record['time_qualifier'] == time_qualifier:
-                    filtered_records.append(record)
-            return filtered_records
+    if is_user_role(db.session, current_user.id, 'admin'):
+        company_id = None # will list all companies' cards
+    else:
+        company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
 
-        sorted_values_raw = get_pd_report_from_base_data_wtq(session)
-        # Example usage to filter 'current' records
-        sorted_values = filter_records_by_time_qualifier(sorted_values_raw, time_scope)
+    html_cards = generate_html_cards_progression_with_progress_bars111(sorted_values, time_scope, db.session, company_id)
 
-        if is_user_role(session, current_user.id, 'admin'):
-            company_id = None # will list all companies' cards
-        else:
-            company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
+    # Write HTML code to a file
+    with open('report_cards1.html', 'w') as f:
+        f.write(html_cards)
 
-        html_cards = generate_html_cards_progression_with_progress_bars111(sorted_values, time_scope, session, company_id)
-
-        # Write HTML code to a file
-        with open('report_cards1.html', 'w') as f:
-            f.write(html_cards)
-
-        return render_template('admin_cards_progression.html', html_cards=html_cards, user_roles=user_roles)
+    return render_template('admin_cards_progression.html', html_cards=html_cards, user_roles=user_roles)
 
 
 @app.route('/control_area_1')
@@ -7324,13 +7289,18 @@ def login():
             # CAPTCHA entered correctly
             username = request.form.get('username')
             password = request.form.get('password')
-
+            print('username, pwd', username, password)
             user = user_manager.authenticate_user(username, password)
+            print('user', user)
             if user:
+                print('logging')
                 login_user(user)
+                print('logged')
                 flash('Login Successful')
 
                 cet_time = get_cet_time()
+                print('time', cet_time)
+
                 # Create message record
 
                 '''
@@ -7362,6 +7332,8 @@ def login():
                 except:
                     company_id = None
                     pass
+
+                print('comp', company_id)
 
                 # Usage in your existing function
                 if company_id is not None and isinstance(company_id, int):
@@ -7397,7 +7369,7 @@ def login():
                 #messages = Post.query.filter_by(user_id=getattr(user, 'id')).all()
 
             else:
-                print('login4')
+                print('login 4 - invalid username or pwd')
                 flash('Invalid username or password. Please try again.', 'error')
         else:
             # CAPTCHA entered incorrectly
@@ -8349,11 +8321,11 @@ def show_survey(questionnaire_id):
         ).first()
 
         if existing_answer and existing_answer.answer_data:
-            print('existing answer found', existing_answer.answer_data)
+            # print('existing answer found', existing_answer.answer_data)
             merged_fields = merge_answer_fields(question.answer_fields, existing_answer.answer_data)  # Make sure this function is set to merge JSON fields correctly
             form_data[str(question.id)] = merged_fields
         else:
-            print('n existing data found')
+            # print('no existing data found')
             form_data[str(question.id)] = question.answer_fields
 
         questions.append({
@@ -8364,7 +8336,7 @@ def show_survey(questionnaire_id):
             'answer_width': question.answer_width,
             'answer_fields': form_data[str(question.id)]
         })
-    print('questions list', questions)
+    # print('questions list', questions)
     dynamic_html = create_dynamic_form(form, {'questions': questions, 'form_data': form_data}, company_id, horizontal)  # Adjust this function to accept horizontal flag
     return render_template('survey.html', form=form, headers=headers, dynamic_html=dynamic_html, questionnaire_name=selected_questionnaire.name, today=datetime.now().date())
 
@@ -8812,7 +8784,7 @@ def print_routes():
 
 if __name__ == '__main__':
     # Load menu items from JSON file
-    curent_dir = get_current_directory()
+    current_dir = get_current_directory()
     json_file_path = os.path.join(current_dir, 'static', 'js', 'menuStructure101.json')
     with open(Path(json_file_path), 'r') as file:
         main_menu_items = json.load(file)

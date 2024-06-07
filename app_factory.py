@@ -17,6 +17,7 @@ import os
 import psycopg2
 from sqlalchemy import dialects
 
+
 class ExcludeRequestsFilter(logging.Filter):
     def filter(self, record):
         return not (record.args and len(record.args) > 0 and record.args[0] in ["GET", "POST", "PUT", "DELETE"])
@@ -74,7 +75,9 @@ def create_app(conf=None):
     app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # Example: 1 hour
 
     # CAPTCHA
-    app.config['SECRET_KEY'] = some_keys['secret_key_2']
+    # app.config['SECRET_KEY'] = some_keys['secret_key_2']
+
+    print('mail server', app.config['SECRET_KEY'][:10], app.config['MAIL_SERVER'])
     # TODO reactivate for production!
     app.config['WTF_CSRF_ENABLED'] = True  # Disable CSRF protection for local development
 

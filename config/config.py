@@ -64,13 +64,14 @@ class Config:
         }
         '''
 
-        self.SECRET_KEY = os.environ.get('SECRET_KEY_1')
+        self.SECRET_KEY = os.environ.get('SECRET_KEY_2')
 
         # PostgreSQL
         self.SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
         self.SQLALCHEMY_BINDS = {
             'db1': os.environ.get('DATABASE_URL_DB1')
         }
+
         self.SQLALCHEMY_TRACK_MODIFICATIONS = False
         self.BOOTSTRAP_USE_MINIFIED = False
         self.BOOTSTRAP_SERVE_LOCAL = True
@@ -114,7 +115,6 @@ class Config:
         self.MAIL_PASSWORD = ' *******'
         self.MAIL_USE_TLS = True
         self.MAIL_USE_SSL = False
-
 
 # Define a custom JSON encoder class to handle datetime serialization
 class DateTimeEncoder(json.JSONEncoder):
@@ -991,13 +991,13 @@ def get_pd_report_from_base_data(session):
     return sorted_records
 
 
-import pandas as pd
 from sqlalchemy import func
-
-def get_pd_report_from_base_data_wtq(session):
+def get_pd_report_from_base_data_wtq(engine):
     try:
-        # Get the records without the time qualifier
-        query = session.query(
+        # Assuming BaseData and Company are your SQLAlchemy models
+        connection = engine.connect()
+
+        query = db.session.query(
             BaseData.company_id,
             Company.name.label('company_name'),  # Add the company name to the query
             BaseData.area_id,
@@ -1017,17 +1017,15 @@ def get_pd_report_from_base_data_wtq(session):
             BaseData.interval_ord,
             BaseData.fi0
         )
-        # Compile the query and print it for debugging
-        compiled_query = query.statement.compile(session.bind)
 
         # Fetch query results into DataFrame
-        df = pd.read_sql(str(compiled_query), session.bind)
+        df = pd.read_sql(query.statement, connection)  # Use query.statement
 
         # Debugging: Print the DataFrame structure
 
         # Check if the DataFrame is empty
         if df.empty:
-            print("No data returned by the query.")
+            print("No data returned.")
             return []
 
         # Apply the logic for assigning time qualifier to each record
@@ -1047,8 +1045,11 @@ def get_pd_report_from_base_data_wtq(session):
         return sorted_records
 
     except Exception as e:
-        print(f'Error in get_pd_report_from_base_data_wtq: {e}')
+        print(f"Error in get_pd_report_from_base_data_wtq: {e}")
         raise
+
+    finally:
+        connection.close()
 
 
 def generate_html_cards(sorted_values, all_companies):

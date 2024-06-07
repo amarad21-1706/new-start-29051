@@ -20,13 +20,27 @@ from wtforms_sqlalchemy.fields import QuerySelectField
 from models.user import (Subject, Step, Workflow, StepBaseData, WorkflowSteps, BaseData, Question, Questionnaire, QuestionnaireQuestions)
 from flask_admin.model.form import InlineFormAdmin
 
-from wtforms import IntegerField  # Import necessary field type
+from wtforms import IntegerField, EmailField  # Import necessary field type
 from flask_wtf import FlaskForm
 from wtforms import StringField, TextAreaField, RadioField, SelectField, HiddenField, FormField, SubmitField
 from wtforms.validators import DataRequired, Optional, Length
 from enum import Enum
 
 from flask_admin.contrib.sqla.ajax import QueryAjaxModelLoader
+from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as _
+
+
+class ForgotPasswordForm(FlaskForm):
+    email = EmailField(_('Email Address'), validators=[DataRequired(), Email()])
+    # Other form fields, if needed
+    submit = SubmitField(_('Reset Password'))
+
+class ResetPasswordForm101(FlaskForm):
+    password = PasswordField(_('New Password'), validators=[DataRequired()])
+    confirm_password = PasswordField(_('Confirm New Password'),
+                                     validators=[DataRequired(), EqualTo('password', message=_('Passwords must match'))])
+    submit = SubmitField(_('Reset Password'))
+
 
 class CustomSubjectAjaxLoader(QueryAjaxModelLoader):
     def __init__(self, name, session, model=None, fields=None, filter_criteria=None):

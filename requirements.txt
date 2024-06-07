@@ -85,7 +85,6 @@ Flask==2.2.5
 Flask-Admin==1.6.1
 Flask-Assets==2.1.0
 flask-babel==4.0.0
-Flask-BabelEx==0.9.4
 Flask-Bcrypt==1.0.1
 Flask-Bootstrap==3.3.7.1
 Flask-Celery==2.4.3
@@ -402,3 +401,4 @@ zope.testbrowser==6.0
 zope.testing==5.0.1
 zope.traversing==5.0
 zope.viewlet==5.0
+email-validator==1.1.3
