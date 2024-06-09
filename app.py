@@ -4,8 +4,9 @@
 # app.py (or run.py)
 import re
 
-# import logging
-# from logging import FileHandler, Formatter
+import logging
+from logging.handlers import RotatingFileHandler
+from logging import FileHandler, Formatter
 
 from sqlalchemy import or_, and_, desc, func, not_, null, exists, extract, select
 from sqlalchemy import distinct
@@ -175,6 +176,19 @@ with app.app_context():
 
 login_manager = LoginManager(app)
 # Define your custom template path
+
+# TODO cancel next sequence after PROD debug
+# Create a log handler
+handler = RotatingFileHandler('app.log', maxBytes=10000, backupCount=1)
+handler.setLevel(logging.DEBUG)
+
+# Create a logging format
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+handler.setFormatter(formatter)
+
+# Add the handler to the Flask app's logger
+app.logger.addHandler(handler)
+
 
 # Register the password reset route
 app.add_url_rule('/admin_reset_password', 'admin_reset_password', admin_reset_password, methods=['GET', 'POST'])
@@ -5876,21 +5890,27 @@ def open_admin_app_2():
 # Define the index route
 @app.route('/open_admin_app_3')
 def open_admin_app_3():
-    user_id = current_user.id
-    company_row = db.session.query(Company.name) \
-        .join(CompanyUsers, CompanyUsers.company_id == Company.id) \
-        .filter(CompanyUsers.user_id == user_id) \
-        .first()
+    try:
+        user_id = current_user.id
+        company_row = db.session.query(Company.name) \
+            .join(CompanyUsers, CompanyUsers.company_id == Company.id) \
+            .filter(CompanyUsers.user_id == user_id) \
+            .first()
 
-    company_name = company_row[0] if company_row else None  # Extracting the name attribute
+        company_name = company_row[0] if company_row else None  # Extracting the name attribute
 
-    template = "Area di controllo 3 - Contratti e documenti"
-    placeholder_value = company_name
-    formatted_string = template.format(placeholder_value) if placeholder_value else template
-    admin_app3.name = formatted_string
+        template = "Area di controllo 3 - Contratti e documenti"
+        placeholder_value = company_name
+        formatted_string = template.format(placeholder_value) if placeholder_value else template
+        admin_app3.name = formatted_string
 
-    print('*** admin_app3.name', admin_app3.name)
-    return redirect(url_for('open_admin_3.index'))
+        print('*** admin_app3.name okay', admin_app3.name)
+        return redirect(url_for('open_admin_3.index'))
+        pass
+
+    except Exception as e:
+        app.logger.error('Error occurred: %s', e)
+        return render_template('500.html'), 500
 
 
 @login_required
