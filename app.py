@@ -221,8 +221,9 @@ login_manager.login_message_category = 'info'  # Specify the category for flash 
 user_manager = UserManager(db)
 user_roles = []
 
-# TODO DEBUG deactivate in prod or after first debug row
-app.config['DEBUG'] = False
+# TODO DEBUG deactivate in PROD or after first debug row
+app.config['DEBUG'] = True
+
 app.config['SQLALCHEMY_ECHO'] = True  # This will log all the SQL queries
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 
@@ -8859,8 +8860,7 @@ def back():
 
 @app.route('/')
 def home():
-
-    app.logger.debug("Home route accessed")
+    # app.logger.debug("Home route accessed")
     return render_template('index.html')  # Render your home page template
 
 
@@ -8920,8 +8920,10 @@ if __name__ == '__main__':
     '''
     #port = int(os.environ.get('PORT', 5000))
 
-    port = int(os.environ.get('PORT', 10000))
+    port = int(os.environ.get('PORT', 5000))
+    # TODO it was 10000 for the Render-based deployment
+
     #logging.basicConfig(level=logging.DEBUG)
     # logging.debug(f"Starting app on port {port}")
     # TODO DEBUG
-    app.run(debug=False, host='0.0.0.0', port=port, extra_files=['./static/js/menuStructure101.json'])
+    app.run(debug=True, host='0.0.0.0', port=port, extra_files=['./static/js/menuStructure101.json'])

@@ -35,6 +35,7 @@ def create_app(conf=None):
 
     # Set up logging based on the environment
     if os.getenv('FLASK_ENV') == 'development':
+
         app.config['DEBUG'] = True
         # Configure Flask app logger
         app.logger.setLevel(logging.INFO)
@@ -48,7 +49,9 @@ def create_app(conf=None):
         werkzeug_logger.addFilter(request_filter)
 
     else:
-        app.config['DEBUG'] = False
+        # TODO reset to 'False' after prod debugged okay
+        app.config['DEBUG'] = True
+
         # Configure Flask app logger
         app.logger.setLevel(logging.INFO)
 
