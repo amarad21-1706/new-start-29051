@@ -1,149 +1,220 @@
+{% macro render_menu(menu_items, user_roles, level=1) %}
+    {% for menu_item in menu_items %}
+        {% if menu_item_allowed(menu_item, user_roles) %}
+            <li class="nav-item{% if menu_item.submenus %} has-submenu{% endif %}">
+                <a class="nav-link" href="{{ menu_item.url }}">
+                    {{ menu_item.label }}
+                    {% if menu_item.submenus %}
+                        <span class="submenu-indicator"></span>
+                    {% endif %}
+                </a>
+                {% if menu_item.submenus %}
+                    <!-- Submenus -->
+                    <ul class="submenu">
+                        {{ render_menu(menu_item.submenus, user_roles, level+1) }}
+                    </ul>
+                {% endif %}
+            </li>
+        {% endif %}
+    {% endfor %}
+{% endmacro %}
+
+
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+    <!-- Add meta tag for responsive design -->
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>My App</title>
+
+    <!-- Bootstrap CSS -->
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+
+    <!-- Include the custom font -->
     <style>
         @font-face {
             font-family: 'Geneve';
             src: url('{{ url_for('static', filename='fonts/Geneve.ttf') }}') format('truetype');
         }
+
         body {
             font-family: 'Geneve', sans-serif;
             background-image: url("{{ url_for('static', filename='images/background_image.jpg') }}");
-            background-size: cover;
-            background-repeat: no-repeat;
+            background-size: cover; /* Cover the entire viewport */
+            background-repeat: no-repeat; /* Prevent repeating of the image */
         }
+
+        /* Styles for flashed messages */
         .flashes {
             margin: 0;
             padding: 0;
             list-style: none;
         }
+
         .flashes li {
-            margin-bottom: 5px;
+            margin-bottom: 5px; /* Adjust spacing between messages */
         }
+
         .alert {
-            padding: 8px 12px;
-            font-size: 14px;
-            border-radius: 4px;
+            padding: 8px 12px; /* Adjust padding as needed */
+            font-size: 14px; /* Adjust font size as needed */
+            border-radius: 4px; /* Add border radius for rounded corners */
         }
+
+        /* Adjust colors based on the type of message */
         .alert-success {
-            background-color: #d4edda;
-            color: #155724;
+            background-color: #d4edda; /* Adjust background color for success messages */
+            color: #155724; /* Adjust text color for success messages */
         }
+
         .alert-danger {
-            background-color: #f8d7da;
-            color: #721c24;
+            background-color: #f8d7da; /* Adjust background color for error messages */
+            color: #721c24; /* Adjust text color for error messages */
         }
+
         .alert-info {
-            background-color: #cce5ff;
-            color: #004085;
+            background-color: #cce5ff; /* Adjust background color for info messages */
+            color: #004085; /* Adjust text color for info messages */
         }
+
         .alert-warning {
-            background-color: #fff3cd;
-            color: #856404;
+            background-color: #fff3cd; /* Adjust background color for warning messages */
+            color: #856404; /* Adjust text color for warning messages */
         }
+
+        /* Add your custom styles here */
         .gray-text {
             color: gray;
         }
+
         .white-text {
             color: white;
         }
+
+        /* Define the color for h1 and p */
         h1 {
-            color: gray;
+            color: gray; /* Change 'blue' to the desired color */
         }
+
         p {
-            color: green;
+            color: green; /* Change 'green' to the desired color */
         }
+
+        /* Style for the main navigation items */
         .main-menu {
             list-style: none;
             display: flex;
             margin: 0;
             padding: 0;
             z-index: 1000;
-            position: relative;
+            position: relative; /* Ensure proper stacking context */
         }
+
         .navbar-nav > li {
             position: relative;
         }
+
         .navbar-nav > li:not(:last-child) {
             margin-right: 10px;
-            background-color: lightgray;
+            background-color: lightgray; /* Change this to the desired background color */
         }
+
+        /* Style for the submenus */
         .submenu {
             position: absolute;
             top: 100%;
             left: 0;
-            background-color: #f8f9fa;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            background-color: #f8f9fa; /* Adjust as needed */
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Add a box shadow for a subtle effect */
             display: none;
         }
+
+        /* Show the submenu when hovering over the main navigation item */
         .navbar-nav > li:hover > .submenu {
             display: block;
         }
+
+        /* Style for the indicator (triangle) */
         .has-submenu .submenu-indicator::after {
-            content: '\25B6';
+            content: '\25B6'; /* Unicode character for a right-pointing triangle */
             margin-left: 5px;
             display: inline-block;
             transform: rotate(90deg);
-            transition: transform 0.3s ease;
+            transition: transform 0.3s ease; /* Add a smooth transition effect */
         }
+
+        /* Hide level 3 submenus by default */
         .submenu .submenu {
             display: none;
             position: absolute;
             top: 0;
-            left: 100%;
+            left: 100%; /* Adjust to position level 3 menus to the right of level 2 items */
         }
+
+        /* Show level 3 submenu on click */
         .submenu.show {
             display: block;
         }
+
+        /* Rotate the triangle indicator when level 3 submenu is shown */
         .has-submenu.active .submenu-indicator::after {
             transform: rotate(0deg);
         }
+
         .sticky-top {
             position: sticky;
             top: 0;
             z-index: 1000;
         }
+
         .navbar.shrink {
             transition: padding 0.3s;
             padding-top: 10px;
             padding-bottom: 10px;
         }
+
         .left-menu {
-            border-right: 1px solid #dee2e6;
+            border-right: 1px solid #dee2e6; /* Add a border to separate the left menu from the content */
             float: left;
-            width: 20%;
-            background-color: #f8f9fa;
+            width: 20%; /* Adjust the width as needed */
+            background-color: #f8f9fa; /* Adjust as needed */
             padding: 20px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Add a box shadow for a subtle effect */
         }
+
         .left-menu h3 {
             margin-top: 0;
-            margin-bottom: 15px;
+            margin-bottom: 15px; /* Add some spacing below the heading */
         }
+
         .left-menu ul li {
             margin-bottom: 10px;
         }
+
         .left-menu ul {
             list-style: none;
             padding: 0;
         }
+
         .sidebar {
-            padding: 20px;
+            padding: 20px; /* Add padding to the sidebar */
         }
+
         #greeting-section {
             text-align: right;
         }
+
+        /* Adjust left menu width for smaller screens */
         @media (max-width: 768px) {
             .left-menu {
-                width: 100%;
-                border-right: none;
-                padding-right: 0;
+                width: 100%; /* Full width on smaller screens */
+                border-right: none; /* Remove the border on smaller screens */
+                padding-right: 0; /* Remove right padding on smaller screens */
             }
         }
+
         .navbar-logo {
             height: 50px;
             position: absolute;
@@ -151,62 +222,35 @@
             top: 0;
         }
     </style>
-</head>
-<body>
-    {% macro render_menu(menu_items, user_roles, level=1) %}
-        {% for menu_item in menu_items %}
-            {% if menu_item_allowed(menu_item, user_roles) %}
-                <li class="nav-item{% if menu_item.submenus %} has-submenu{% endif %}">
-                    <a class="nav-link" href="{{ menu_item.url }}">
-                        {{ menu_item.label }}
-                        {% if menu_item.submenus %}
-                            <span class="submenu-indicator"></span>
-                        {% endif %}
-                    </a>
-                    {% if menu_item.submenus %}
-                        <ul class="submenu">
-                            {{ render_menu(menu_item.submenus, user_roles, level+1) }}
-                        </ul>
-                    {% endif %}
-                </li>
-            {% endif %}
-        {% endfor %}
-    {% endmacro %}
 
+</head>
+
+<body>
     <!-- Greeting message -->
     <div id="greeting-section" class="gray-text">
-        <!-- Debugging print -->
-        <p>Unread notices count: {{ unread_notices_count }}</p>
         <!-- Display personalized greeting if the user is authenticated -->
-        {% if is_authenticated %}
-            {% set role_initials = {'Admin': 'A', 'Authority': 'Au', 'Manager': 'M', 'Employee': 'E', 'Provider': 'P', 'Guest': 'G'} %}
-            {% set role_initial = '' %}
-            {% for role in user_roles %}
-                {% if role in role_initials %}
-                    {% set role_initial = role_initials[role] %}
-                {% endif %}
-            {% endfor %}
-            Welcome - {{ username }}[{{ role_initial }}]!
-            {% if unread_notices_count > 0 %}
-                <a href="/noticeboard">
-                    <img src="{{ url_for('static', filename='images/mail-unread-outline.svg') }}" alt="Messages Icon" id="messages-icon">
-                    <span>You have {{ unread_notices_count }} new messages</span>
-                </a>
-            {% endif %}
+        {% if current_user.is_authenticated %}
+            Welcome, {{ current_user.username }}!
+            <a href="/noticeboard">
+                <img src="{{ url_for('static', filename='images/mail-unread-outline.svg') }}" alt="Messages Icon" id="messages-icon">
+                <!-- Example of displaying a message -->
+                <span>You have {{ num_messages }} new messages</span> <!-- Assuming num_messages is the number of new messages -->
+            </a>
         {% else %}
             Please <a href="{{ url_for('login') }}">log in</a> or <a href="{{ url_for('signup') }}">sign up</a>.
         {% endif %}
-    </div>
 
-    <!-- Render cards dynamically -->
-    {% for card in cards_data %}
-        <div class="card">
-            <div class="card-header">{{ card.title }}</div>
-            <div class="card-body">
-                {{ card.content }}
+        <!-- Render cards dynamically -->
+        {% for card in cards_data %}
+            <div class="card">
+                <div class="card-header">{{ card.title }}</div>
+                <div class="card-body">
+                    {{ card.content }}
+                </div>
             </div>
-        </div>
-    {% endfor %}
+        {% endfor %}
+
+    </div>
 
     <!-- Flash messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -229,6 +273,7 @@
             <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
             <script>
                 $(document).ready(function() {
+                    // Function to hide flashed messages after a specified time interval
                     setTimeout(function() {
                         $('.flashes').fadeOut('fast');
                     }, 2000); // Change '2000' to the desired time interval in milliseconds (e.g., 3000 for 3 seconds)
@@ -266,6 +311,7 @@
                 {% if "Admin" in user_roles %}
                     <p>(Admin)</p>
                     <p>This is the admin landing page - to be customized as needed (v.1.3.1).</p>
+
                 {% endif %}
                 {% if "Authority" in user_roles %}
                     <p>(Authority)</p>
@@ -276,7 +322,7 @@
                     <!-- Add more content specific to Manager users -->
                 {% endif %}
                 {% if "Employee" in user_roles %}
-                    <p>(Employee)</p>
+                    <p>(e. user)</p>
                     <!-- Add more content specific to Employee users -->
                 {% endif %}
             </div>
@@ -359,10 +405,10 @@
             });
 
             // Display personalized greeting if the user is authenticated
-            var username = "{{ username }}"; // Use the username from the Flask route
+            var username = "{{ current_user.username }}"; // Use the username from the Flask route
 
             if (username && username !== "Guest") {
-                $("#greeting-section").html("W e l c o m e,  " + username + "!");
+                $("#greeting-section").html("Welcome, " + username + "!");
                 $("#greeting-section").show(); // Show the greeting section
             } else {
                 $("#greeting-section").html("Please <a href='{{ url_for('login') }}'>log in</a> or <a href='{{ url_for('signup') }}'>sign up</a>");
@@ -383,4 +429,5 @@
     </script>
 
 </body>
+
 </html>

@@ -11,7 +11,7 @@ def get_user_roles(session=None, user_id=None):
     # Query Role table to get role names for the extracted role IDs
     roles = session.query(Role).filter(Role.id.in_(role_ids)).all()
     # Extract role names from roles
-    role_names = [role.name.lower() for role in roles]
+    role_names = [role.name for role in roles]
     print('Roles for user', user_id, 'are:', role_names)
     if not role_names:
         return None

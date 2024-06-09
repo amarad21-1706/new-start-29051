@@ -317,7 +317,7 @@ def is_user_role(session, user_id, role_name):
     # Get user roles for the specified user ID
     user_roles = get_user_roles(session, user_id)
     # Check if the specified role name (in lowercase) is in the user's roles
-    return role_name in user_roles
+    return role_name.lower() in user_roles
 
 
 def role_required(required_role):
@@ -507,100 +507,6 @@ def confirmation_page():
     return redirect(url_for('login'))
 
 
-def generate_route_and_menu(route, allowed_roles, template, include_protected=False, limited_menu=False):
-    def decorator(func):
-        @app.route(route)
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            if callable(getattr(current_user, 'is_authenticated', None)):
-                is_authenticated = current_user.is_authenticated()
-            else:
-                is_authenticated = current_user.is_authenticated
-
-            username = current_user.username if current_user.is_authenticated else "Guest"
-
-            user_roles = session.get('user_roles', [])
-
-            # Check if the lists intersect
-            intersection = set(user_roles) & set(["Employee", "Manager", "Authority", "Admin"])
-            allowed_roles = []
-            left_menu_items = {}
-            if intersection:
-                left_menu_items = get_left_menu_items(list(intersection))
-                allowed_roles = list(intersection)
-                # prova left menu
-                #left_menu_items = ["Area 1", "Area 2", "Area 3", "Item 4", "Item 5", "Item 6"]
-            else:
-                allowed_roles= ["Guest"]
-
-            menu_builder_instance = MenuBuilder(main_menu_items, allowed_roles=allowed_roles)
-
-            if limited_menu:
-                menu_data = menu_builder_instance.parse_menu_data(user_roles=user_roles,
-                                        is_authenticated=False, include_protected=False)
-            else:
-                menu_data = menu_builder_instance.parse_menu_data(user_roles=user_roles,
-                                        is_authenticated=is_authenticated, include_protected=include_protected)
-
-            buttons = []
-            '''for company, records in companyRecords.items():
-                buttons.append(CompanyButton(companyName=company, companyRecords=records))'''
-
-            # Example: Generate dynamic URL for 'admin_2.admin_blueprint.index'
-            admin_url = url_for('open_admin.index')
-            admin_2_url = url_for('open_admin_2.index')
-            admin_3_url = url_for('open_admin_3.index')
-            admin_4_url = url_for('open_admin_4.index')
-            admin_10_url = url_for('open_admin_10.index')
-
-            company_name = ' '
-            if current_user:
-                user_id = current_user.id if current_user.is_authenticated else 0
-                company_name = db.session.query(Company.name) \
-                    .join(CompanyUsers, CompanyUsers.company_id == Company.id) \
-                    .filter(CompanyUsers.user_id == user_id) \
-                    .first()
-            else:
-                pass
-
-            # Check for unread notices
-            if is_authenticated:
-                unread_notices_count = Post.query.filter_by(user_id=current_user.id, marked_as_read=False).count()
-
-            else:
-                unread_notices_count = 0
-
-            additional_data = {
-                "username": username,
-                "company_name": company_name,
-                "is_authenticated": is_authenticated,
-                "main_menu_items": menu_data,
-                "admin_menu_data": None,
-                "authority_menu_data": None,
-                "manager_menu_data": None,
-                "employee_menu_data": None,
-                "guest_menu_data": None,
-                "user_roles": user_roles,
-                "allowed_roles": allowed_roles,
-                "limited_menu": limited_menu,  # Added this line
-                "left_menu_items": left_menu_items,
-                "buttons": buttons,
-                "admin_url": admin_url,
-                "admin_2_url": admin_2_url,
-                "admin_3_url": admin_3_url,
-                "admin_4_url": admin_4_url,
-                "admin_10_url": admin_10_url,
-                "unread_notices_count": unread_notices_count,
-            }
-
-            return render_template(template, **additional_data)
-
-        return wrapper
-
-    return decorator
-
-
-
 class MoveDocumentForm(FlaskForm):
     next_step = SelectField('Next Step')
     submit = SubmitField('Move Document')
@@ -638,90 +544,10 @@ def get_documents_query(session, current_user):
     return query.filter(BaseData.id < 0)
 
 
+
 @app.route('/access/login', methods=['GET', 'POST'])
 @limiter.limit("200/day;96/hour;12/minute")
 def login():
-    if request.method == 'POST':
-        # Verify CAPTCHA
-        user_captcha = request.form['captcha']
-        if 'captcha' in session and session['captcha'] == user_captcha:
-            # CAPTCHA entered correctly
-            username = request.form.get('username')
-            password = request.form.get('password')
-            user = user_manager.authenticate_user(username, password)
-            if user:
-                if not current_user.is_authenticated:
-                    login_user(user)
-                    flash('Login Successful')
-                    cet_time = get_cet_time()
-                    try:
-                        create_message(db.session, user_id=user.id, message_type='email', subject='Security check',
-                                       body='È stato rilevato un nuovo accesso al tuo account il ' +
-                                            cet_time.strftime('%Y-%m-%d') + '. Se eri tu, non devi fare nulla. ' +
-                                            'In caso contrario, ti aiuteremo a proteggere il tuo account; ' +
-                                            "non rispondere a questa mail e contatta l'amministratore del sistema.",
-                                       sender='System', company_id=None,
-                                       lifespan='one-off', allow_overwrite=True)
-                    except Exception as e:
-                        print('Error creating logon message:', e)
-
-                    session['user_roles'] = [role.name for role in user.roles] if user.roles else []
-                    session['user_id'] = user.id
-                    session['username'] = username
-
-                    try:
-                        company_user = CompanyUsers.query.filter_by(user_id=user.id).first()
-                        company_id = company_user.company_id if company_user else None
-                    except Exception as e:
-                        print('Error retrieving company ID:', e)
-                        company_id = None
-
-                    if company_id is not None and isinstance(company_id, int):
-                        try:
-                            subfolder = datetime.now().year
-                        except Exception as e:
-                            print('Error setting subfolder:', e)
-
-                # Redirect based on user roles
-                return redirect_based_on_role(user)
-
-            else:
-                flash('Invalid username or password. Please try again.', 'error')
-                captcha_text, captcha_image = generate_captcha(300, 100, 5)
-                session['captcha'] = captcha_text
-                return render_template('access/login.html', captcha=captcha_text, captcha_image=captcha_image)
-        else:
-            # CAPTCHA entered incorrectly
-            flash('Incorrect CAPTCHA! Please try again.', 'error')
-            captcha_text, captcha_image = generate_captcha(300, 100, 5)
-            session['captcha'] = captcha_text
-            return render_template('access/login.html', captcha=captcha_text, captcha_image=captcha_image)
-
-    # Generate and render CAPTCHA image within the template
-    captcha_text, captcha_image = generate_captcha(300, 100, 5)
-    session['captcha'] = captcha_text
-    return render_template('access/login.html', captcha=captcha_text, captcha_image=captcha_image)
-
-def redirect_based_on_role(user):
-    if user.has_role('Admin'):
-        return redirect(url_for('admin_page'))
-    elif user.has_role('Authority'):
-        return redirect(url_for('authority_page'))
-    elif user.has_role('Manager'):
-        return redirect(url_for('manager_page'))
-    elif user.has_role('Employee'):
-        return redirect(url_for('employee_page'))
-    elif user.has_role('Provider'):
-        return redirect(url_for('provider_page'))
-    elif user.has_role('Guest'):
-        return redirect(url_for('guest_page'))
-    else:
-        return redirect(url_for('guest_page'))
-
-
-@app.route('/access/login', methods=['GET', 'POST'])
-@limiter.limit("200/day;96/hour;12/minute")
-def login555():
     if request.method == 'POST':
         # Verify CAPTCHA
         user_captcha = request.form['captcha']
@@ -736,9 +562,10 @@ def login555():
                 if not current_user.is_authenticated:  # Check if the user is already logged in
                     login_user(user)
                     flash('Login Successful')
-                    # Proceed with other session settings
+
                     cet_time = get_cet_time()
                     print('time', cet_time)
+
                     try:
                         create_message(db.session, user_id=user.id, message_type='email', subject='Security check',
                                        body='È stato rilevato un nuovo accesso al tuo account il ' +
@@ -769,7 +596,6 @@ def login555():
 
                     user_roles = session['user_roles']
 
-                    # Redirect based on user roles
                     if user.has_role('Admin'):
                         return redirect(url_for('admin_page'))
                     elif user.has_role('Authority'):
@@ -804,18 +630,16 @@ def login555():
                         return redirect(url_for('guest_page'))
             else:
                 flash('Invalid username or password. Please try again.', 'error')
-                captcha_text, captcha_image = generate_captcha(300, 100, 5)
-                session['captcha'] = captcha_text
-                return render_template('access/login.html', captcha=captcha_text, captcha_image=captcha_image)
+                return redirect(url_for('login'))  # Redirect to clear POST data and show message
+
         else:
             # CAPTCHA entered incorrectly
             flash('Incorrect CAPTCHA! Please try again.', 'error')
-            captcha_text, captcha_image = generate_captcha(300, 100, 5)
-            session['captcha'] = captcha_text
-            return render_template('access/login.html', captcha=captcha_text, captcha_image=captcha_image)
+            return redirect(url_for('login'))  # Redirect to clear POST data and show message
 
     # Generate and render CAPTCHA image within the template
     captcha_text, captcha_image = generate_captcha(300, 100, 5)
+
     session['captcha'] = captcha_text
     return render_template('access/login.html', captcha=captcha_text, captcha_image=captcha_image)
 
@@ -852,19 +676,19 @@ def left_menu():
         unread_notices_count = 0
 
     additional_data = {
-        "username": current_user.username,
-        "is_authenticated": current_user.is_authenticated,
-        "user_roles": user_roles,
-        "unread_notices_count": unread_notices_count,
+        "username": username,
+        "is_authenticated": is_authenticated,
         "main_menu_items": None,
         "admin_menu_data": None,
         "authority_menu_data": None,
         "manager_menu_data": None,
         "employee_menu_data": None,
         "guest_menu_data": None,
+        "user_roles": user_roles,
         "allowed_roles": allowed_roles,
         "limited_menu": limited_menu,
         "left_menu_items": left_menu_items,
+        "unread_notices_count": unread_notices_count
     }
     print('additional data', additional_data)
     return render_template('home/home.html', **additional_data)
@@ -6726,6 +6550,99 @@ def custom_roles_required(*roles):
     return decorator
 
 
+def generate_route_and_menu(route, allowed_roles, template, include_protected=False, limited_menu=False):
+    def decorator(func):
+        @app.route(route)
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            if callable(getattr(current_user, 'is_authenticated', None)):
+                is_authenticated = current_user.is_authenticated()
+            else:
+                is_authenticated = current_user.is_authenticated
+
+            username = current_user.username if current_user.is_authenticated else "Guest"
+
+            user_roles = session.get('user_roles', [])
+
+            # Check if the lists intersect
+            intersection = set(user_roles) & set(["Employee", "Manager", "Authority", "Admin"])
+            allowed_roles = []
+            left_menu_items = {}
+            if intersection:
+                left_menu_items = get_left_menu_items(list(intersection))
+                allowed_roles = list(intersection)
+                # prova left menu
+                #left_menu_items = ["Area 1", "Area 2", "Area 3", "Item 4", "Item 5", "Item 6"]
+            else:
+                allowed_roles= ["Guest"]
+
+            menu_builder_instance = MenuBuilder(main_menu_items, allowed_roles=allowed_roles)
+
+            if limited_menu:
+                menu_data = menu_builder_instance.parse_menu_data(user_roles=user_roles,
+                                        is_authenticated=False, include_protected=False)
+            else:
+                menu_data = menu_builder_instance.parse_menu_data(user_roles=user_roles,
+                                        is_authenticated=is_authenticated, include_protected=include_protected)
+
+            buttons = []
+            '''for company, records in companyRecords.items():
+                buttons.append(CompanyButton(companyName=company, companyRecords=records))'''
+
+            # Example: Generate dynamic URL for 'admin_2.admin_blueprint.index'
+            admin_url = url_for('open_admin.index')
+            admin_2_url = url_for('open_admin_2.index')
+            admin_3_url = url_for('open_admin_3.index')
+            admin_4_url = url_for('open_admin_4.index')
+            admin_10_url = url_for('open_admin_10.index')
+
+            company_name = ' '
+            if current_user:
+                user_id = current_user.id if current_user.is_authenticated else 0
+                company_name = db.session.query(Company.name) \
+                    .join(CompanyUsers, CompanyUsers.company_id == Company.id) \
+                    .filter(CompanyUsers.user_id == user_id) \
+                    .first()
+            else:
+                pass
+
+            # Check for unread notices
+            if is_authenticated:
+                unread_notices_count = Post.query.filter_by(user_id=current_user.id, marked_as_read=False).count()
+
+            else:
+                unread_notices_count = 0
+
+            additional_data = {
+                "username": username,
+                "company_name": company_name,
+                "is_authenticated": is_authenticated,
+                "main_menu_items": menu_data,
+                "admin_menu_data": None,
+                "authority_menu_data": None,
+                "manager_menu_data": None,
+                "employee_menu_data": None,
+                "guest_menu_data": None,
+                "user_roles": user_roles,
+                "allowed_roles": allowed_roles,
+                "limited_menu": limited_menu,  # Added this line
+                "left_menu_items": left_menu_items,
+                "buttons": buttons,
+                "admin_url": admin_url,
+                "admin_2_url": admin_2_url,
+                "admin_3_url": admin_3_url,
+                "admin_4_url": admin_4_url,
+                "admin_10_url": admin_10_url,
+                "unread_notices_count": unread_notices_count,
+            }
+
+            return render_template(template, **additional_data)
+
+        return wrapper
+
+    return decorator
+
+
 
 @app.route('/admin')
 @generate_route_and_menu('/admin', allowed_roles=["Admin"], template='home/home.html', include_protected=True)
@@ -7399,8 +7316,10 @@ def company_overview_historical():
                 filtered_records.append(record)
         return filtered_records
 
+    print('hist')
     sorted_values_raw = get_pd_report_from_base_data_wtq(engine)
 
+    print('hist', sorted_values_raw)
     # Example usage to filter 'current' records
     sorted_values = filter_records_by_time_qualifier(sorted_values_raw, time_scope)
 
@@ -7675,14 +7594,14 @@ def manage_workflow_base_data():
             existing_workflow_base_data = WorkflowBaseData.query.filter_by(workflow_id=workflow_id, base_data_id=base_data_id).first()
 
             if existing_workflow_base_data:
-                message = f"Document link to <{workflow_name}> already exists."
+                message = f"Document link to <{workflow_name.lower()}> already exists."
             else:
                 # Add logic to associate the workflow to the selected base_data
                 new_workflow_base_data = WorkflowBaseData(workflow_id=workflow_id, base_data_id=base_data_id)
                 db.session.add(new_workflow_base_data)
                 db.session.commit()
                 # Set a success message
-                message = f"Document linked to the <{workflow_name}> workflow."
+                message = f"Document linked to the <{workflow_name.lower()}> workflow."
 
         elif form.delete.data:
             # Handle delete button
@@ -7699,7 +7618,7 @@ def manage_workflow_base_data():
             if workflow_base_data_to_delete:
                 db.session.delete(workflow_base_data_to_delete)
                 db.session.commit()
-                message = f"Document link to <{workflow_name}> deleted successfully."
+                message = f"Document link to <{workflow_name.lower()}> deleted successfully."
             else:
                 message = "Workflow-document link not found."
 

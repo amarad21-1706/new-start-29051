@@ -1175,6 +1175,8 @@ def generate_html_cards_progression_with_progress_bars111(sorted_values, current
             # Start card body using the stored last values
             html_code += f"<div class='col-md-4'>"  # Bootstrap column to contain the card
             html_code += f"<div class='card' style='width: 22rem;'>"
+            # print('area id hyperlink and other values 1)', area.id, '2)', company_name, '3)', area.name, '4)', last_fi0, '5)', last_interval_ord)
+            # print(f'Route is open_admin_app_{area.id}')
             html_code += f"<div class='card-header'><h5 class='card-title' style='font-size: 1rem;'><a href='/open_admin_app_{area.id}'>\
             {company_name} - {area.name}</a> - {last_fi0} / {last_interval_ord}</h5></div>"
 

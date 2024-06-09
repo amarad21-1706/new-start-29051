@@ -20,6 +20,7 @@ from sqlalchemy.dialects.sqlite import JSON  # for SQLite
 # OR
 # from sqlalchemy.dialects.oracle import JSON  # for Oracle
 import json
+from wtforms.validators import DataRequired, Regexp
 
 class CheckboxField(BooleanField):
     def process_formdata(self, valuelist):
@@ -38,10 +39,10 @@ class Users(db.Model, UserMixin):
     email = db.Column(String(120), unique=True, nullable=False)
     password_hash = db.Column(String(255), nullable=False)
     user_2fa_secret = db.Column(String(255), nullable=True)
-    title = db.Column(String(12), nullable=True)
-    first_name = db.Column(String(128), nullable=True)
+    title = db.Column(String(12), nullable=False)
+    first_name = db.Column(String(128), nullable=False)
     mid_name = db.Column(String(128), nullable=True)
-    last_name = db.Column(String(128), nullable=True)
+    last_name = db.Column(String(128), nullable=False)
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)
     company = db.Column(String(128), nullable=True)
     address = db.Column(String(128), nullable=False)
@@ -52,8 +53,14 @@ class Users(db.Model, UserMixin):
     zip_code = db.Column(String(24), nullable=True)
     country = db.Column(String(64), nullable=False)
     tax_code = db.Column(String(128), nullable=True)
-    mobile_phone = db.Column(db.Integer, nullable=False)
-    work_phone = db.Column(db.Integer, nullable=True)
+    mobile_phone = StringField('Phone Number', validators=[
+        DataRequired(),
+        Regexp(r'^\+?1?\d{9,15}$', message="Phone number must be entered in the format: '+999999999'. Up to 15 digits allowed.")
+    ], nullable=False)
+    work_phone = StringField('Phone Number', validators=[
+        DataRequired(),
+        Regexp(r'^\+?1?\d{9,15}$', message="Phone number must be entered in the format: '+999999999'. Up to 15 digits allowed.")
+    ], nullable=True)
 
     #password_hash = db.Column(db.String(128))
     created_on = Column(TIMESTAMP(timezone=True), server_default=func.now())

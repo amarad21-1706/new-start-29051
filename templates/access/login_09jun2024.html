@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
+
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -15,6 +16,7 @@
             height: 100vh;
             flex-direction: column;
         }
+
         .form-container {
             background-color: #fff;
             padding: 20px;
@@ -23,15 +25,18 @@
             width: 300px;
             margin-bottom: 20px;
         }
+
         h2 {
             text-align: center;
             color: #333;
         }
+
         label {
             display: block;
             margin-bottom: 8px;
             color: #555;
         }
+
         input {
             width: 100%;
             padding: 8px;
@@ -40,6 +45,7 @@
             border: 1px solid #ccc;
             border-radius: 4px;
         }
+
         button {
             background-color: #4caf50;
             color: #fff;
@@ -49,13 +55,16 @@
             cursor: pointer;
             width: 100%;
         }
+
         button:hover {
             background-color: #45a049;
         }
+
         .signup-link {
             margin-bottom: 10px;
             text-align: center;
         }
+
         .signup-button {
             background-color: #007bff;
             color: #fff;
@@ -65,60 +74,37 @@
             cursor: pointer;
             width: 100%;
         }
+
         .signup-button:hover {
             background-color: #0056b3;
         }
+
         .forgot-password-link {
             text-align: center;
         }
-        .flashes {
-            list-style: none;
-            padding: 0;
-            margin: 0 0 20px;
-        }
-        .flashes li {
-            margin-bottom: 10px;
-        }
-        .alert {
-            padding: 10px;
-            border-radius: 5px;
-        }
-        .alert-success {
-            background-color: #d4edda;
-            color: #155724;
-        }
-        .alert-error {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
     </style>
 </head>
-<body>
 
+
+<body>
     <div class="form-container" id="loginFormContainer">
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                <ul class="flashes">
-                    {% for category, message in messages %}
-                        <li class="alert alert-{{ category }}">
-                            {{ message }}
-                        </li>
-                    {% endfor %}
-                </ul>
-            {% endif %}
-        {% endwith %}
-        <form id="loginForm" method="POST" action="{{ url_for('login') }}">
+        <form id="loginForm" method="POST">
             <h2>Login</h2>
             <label for="username">Username:</label>
             <input type="text" id="username" name="username" required>
+
             <label for="password">Password:</label>
             <input type="password" id="password" name="password" required>
+
             <!-- Add the <img> tag for the captcha image -->
             <img src="data:image/png;base64,{{ captcha_image }}" alt="CAPTCHA">
             <!-- CAPTCHA input field -->
             <label for="captcha">Please enter this text in the field below:</label>
+
             <input type="text" name="captcha" required>
+
             <button type="submit">Login</button>
+
         </form>
     </div>
 
@@ -126,11 +112,81 @@
         <div class="signup-link">
             Not registered yet? <a href="{{ url_for('signup') }}">Signup here</a>
         </div>
+
         <!-- Forgot your password link -->
         <div class="forgot-password-link">
             <a href="/forgot_password">Forgot your password?</a>
         </div>
+
     </div>
 
+    <script>
+
+        // Form submission handling (unchanged)
+        document.getElementById('loginFormContainer').addEventListener('submit', function(event) {
+            event.preventDefault(); // Prevent default form submission
+
+            // Construct the XMLHttpRequest or fetch request (unchanged)
+            const xhr = new XMLHttpRequest();
+            xhr.open('POST', '/access/login'); // Update the URL to match your Flask route
+            xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+
+            // Get the form data (unchanged)
+            const formData = new FormData(document.getElementById('loginForm'));
+
+            // Send the request (unchanged)
+            xhr.send(new URLSearchParams(formData));
+
+            // Handle the response (unchanged)
+            xhr.onload = function() {
+                if (xhr.status === 200) {
+                    // The login was successful
+                    console.log('Login successful');
+                    // Redirect to the protected page or home page
+                    window.location.href = '/';
+                } else {
+                    // The login failed
+                    console.error('Login failed');
+                }
+            };
+
+            // Handle network errors (unchanged)
+            xhr.onerror = function() {
+                console.error('Network error occurred');
+            };
+
+            // Handle timeouts (unchanged)
+            xhr.ontimeout = function() {
+                console.error('Request timed out');
+            };
+        });
+
+        // Add an event listener to the signup link (unchanged)
+        document.getElementById('signupLink').addEventListener('click', function(event) {
+            event.preventDefault(); // Prevent default link behavior
+
+            // Clear flashed messages via an asynchronous request (unchanged)
+            fetch('/clear_flashed_messages', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+            })
+            .then(response => response.json())
+            .then(data => {
+                console.log(data.message); // Log the server response
+
+                // After clearing flashed messages, proceed to the signup page
+                window.location.href = event.target.href;
+            })
+            .catch(error => {
+                console.error('Error clearing flashed messages:', error);
+                // Proceed to the signup page even if an error occurs
+                window.location.href = event.target.href;
+            });
+        });
+    </script>
+
 </body>
+
 </html>
