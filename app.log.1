@@ -1,0 +1,121 @@
+2024-06-10 13:00:51,773 - app_factory - INFO - Admin route 2 accessed.
+2024-06-10 13:00:51,777 - app_factory - ERROR - Admin Route Error: /open_admin_2/
+2024-06-10 13:00:51,779 - app_factory - ERROR - Unhandled Exception: 500.html
+2024-06-10 13:00:51,780 - app_factory - ERROR - Request Data: b''
+2024-06-10 13:00:51,781 - app_factory - ERROR - Exception on /open_admin_app_2 [GET]
+Traceback (most recent call last):
+  File "/Users/aradulescu/PycharmProjects/ILM501/new-repository-28051/app.py", line 5914, in open_admin_app_2
+    return render_template(url_for('open_admin_2.index'))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aradulescu/PycharmProjects/ILM501/new-repository-28051/venv/lib/python3.11/site-packages/flask/templating.py", line 149, in render_template
+    template = app.jinja_env.get_or_select_template(template_name_or_list)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aradulescu/PycharmProjects/ILM501/new-repository-28051/venv/lib/python3.11/site-packages/jinja2/environment.py", line 1081, in get_or_select_template
+    return self.get_template(template_name_or_list, parent, globals)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aradulescu/PycharmProjects/ILM501/new-repository-28051/venv/lib/python3.11/site-packages/jinja2/environment.py", line 1010, in get_template
+    return self._load_template(name, globals)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aradulescu/PycharmProjects/ILM501/new-repository-28051/venv/lib/python3.11/site-packages/jinja2/environment.py", line 969, in _load_template
+    template = self.loader.load(self, name, self.make_globals(globals))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aradulescu/PycharmProjects/ILM501/new-repository-28051/venv/lib/python3.11/site-packages/jinja2/loaders.py", line 126, in load
+    source, filename, uptodate = self.get_source(environment, name)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aradulescu/PycharmProjects/ILM501/new-repository-28051/venv/lib/python3.11/site-packages/flask/templating.py", line 65, in get_source
+    return self._get_source_fast(environment, template)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aradulescu/PycharmProjects/ILM501/new-repository-28051/venv/lib/python3.11/site-packages/flask/templating.py", line 99, in _get_source_fast
+    raise TemplateNotFound(template)
+jinja2.exceptions.TemplateNotFound: /open_admin_2/
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/aradulescu/PycharmProjects/ILM501/new-repository-28051/venv/lib/python3.11/site-packages/flask/app.py", line 880, in full_dispatch_request
+    rv = self.dispatch_request()
+         ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aradulescu/PycharmProjects/ILM501/new-repository-28051/venv/lib/python3.11/site-packages/flask/app.py", line 865, in dispatch_request
+    return self.ensure_sync(self.view_functions[rule.endpoint])(**view_args)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aradulescu/PycharmProjects/ILM501/new-repository-28051/app.py", line 5918, in open_admin_app_2
+    return render_template('500.html'), 500
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aradulescu/PycharmProjects/ILM501/new-repository-28051/venv/lib/python3.11/site-packages/flask/templating.py", line 149, in render_template
+    template = app.jinja_env.get_or_select_template(template_name_or_list)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aradulescu/PycharmProjects/ILM501/new-repository-28051/venv/lib/python3.11/site-packages/jinja2/environment.py", line 1081, in get_or_select_template
+    return self.get_template(template_name_or_list, parent, globals)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aradulescu/PycharmProjects/ILM501/new-repository-28051/venv/lib/python3.11/site-packages/jinja2/environment.py", line 1010, in get_template
+    return self._load_template(name, globals)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aradulescu/PycharmProjects/ILM501/new-repository-28051/venv/lib/python3.11/site-packages/jinja2/environment.py", line 969, in _load_template
+    template = self.loader.load(self, name, self.make_globals(globals))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aradulescu/PycharmProjects/ILM501/new-repository-28051/venv/lib/python3.11/site-packages/jinja2/loaders.py", line 126, in load
+    source, filename, uptodate = self.get_source(environment, name)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aradulescu/PycharmProjects/ILM501/new-repository-28051/venv/lib/python3.11/site-packages/flask/templating.py", line 65, in get_source
+    return self._get_source_fast(environment, template)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aradulescu/PycharmProjects/ILM501/new-repository-28051/venv/lib/python3.11/site-packages/flask/templating.py", line 99, in _get_source_fast
+    raise TemplateNotFound(template)
+jinja2.exceptions.TemplateNotFound: 500.html
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/Users/aradulescu/PycharmProjects/ILM501/new-repository-28051/venv/lib/python3.11/site-packages/flask/app.py", line 1473, in wsgi_app
+    response = self.full_dispatch_request()
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aradulescu/PycharmProjects/ILM501/new-repository-28051/venv/lib/python3.11/site-packages/flask/app.py", line 882, in full_dispatch_request
+    rv = self.handle_user_exception(e)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aradulescu/PycharmProjects/ILM501/new-repository-28051/venv/lib/python3.11/site-packages/flask_cors/extension.py", line 176, in wrapped_function
+    return cors_after_request(app.make_response(f(*args, **kwargs)))
+                                                ^^^^^^^^^^^^^^^^^^
+  File "/Users/aradulescu/PycharmProjects/ILM501/new-repository-28051/venv/lib/python3.11/site-packages/flask/app.py", line 772, in handle_user_exception
+    return self.ensure_sync(handler)(e)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aradulescu/PycharmProjects/ILM501/new-repository-28051/app.py", line 345, in unhandled_exception
+    return render_template('500.html'), 500
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aradulescu/PycharmProjects/ILM501/new-repository-28051/venv/lib/python3.11/site-packages/flask/templating.py", line 149, in render_template
+    template = app.jinja_env.get_or_select_template(template_name_or_list)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aradulescu/PycharmProjects/ILM501/new-repository-28051/venv/lib/python3.11/site-packages/jinja2/environment.py", line 1081, in get_or_select_template
+    return self.get_template(template_name_or_list, parent, globals)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aradulescu/PycharmProjects/ILM501/new-repository-28051/venv/lib/python3.11/site-packages/jinja2/environment.py", line 1010, in get_template
+    return self._load_template(name, globals)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aradulescu/PycharmProjects/ILM501/new-repository-28051/venv/lib/python3.11/site-packages/jinja2/environment.py", line 969, in _load_template
+    template = self.loader.load(self, name, self.make_globals(globals))
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aradulescu/PycharmProjects/ILM501/new-repository-28051/venv/lib/python3.11/site-packages/jinja2/loaders.py", line 126, in load
+    source, filename, uptodate = self.get_source(environment, name)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aradulescu/PycharmProjects/ILM501/new-repository-28051/venv/lib/python3.11/site-packages/flask/templating.py", line 65, in get_source
+    return self._get_source_fast(environment, template)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/Users/aradulescu/PycharmProjects/ILM501/new-repository-28051/venv/lib/python3.11/site-packages/flask/templating.py", line 99, in _get_source_fast
+    raise TemplateNotFound(template)
+jinja2.exceptions.TemplateNotFound: 500.html
+2024-06-10 13:00:51,796 - app_factory - ERROR - Unhandled Exception: 500 Internal Server Error: The server encountered an internal error and was unable to complete your request. Either the server is overloaded or there is an error in the application.
+2024-06-10 13:00:51,797 - app_factory - ERROR - Request Data: b''
+2024-06-10 13:10:41,081 - app_factory - INFO - Flask-Admin initialized and routes set up.
+Flask-Admin initialized and routes set up.
+2024-06-10 13:11:09,680 - app_factory - INFO - Admin route 2 accessed.
+Admin route 2 accessed.
+2024-06-10 13:11:09,683 - app_factory - ERROR - Admin Route Error: /open_admin_2/
+Admin Route Error: /open_admin_2/
+2024-06-10 13:11:36,230 - app_factory - INFO - Admin route 2 accessed.
+Admin route 2 accessed.
+2024-06-10 13:11:36,231 - app_factory - ERROR - Admin Route Error: /open_admin_2/
+Admin Route Error: /open_admin_2/
+2024-06-10 13:13:49,601 - app_factory - INFO - Flask-Admin initialized and routes set up.
+Flask-Admin initialized and routes set up.
+2024-06-10 13:13:59,315 - app_factory - INFO - Admin route 2 accessed.
+Admin route 2 accessed.
+2024-06-10 13:13:59,316 - app_factory - ERROR - Admin Route Error: Could not build url for endpoint 'open_admin_app_2.index'. Did you mean 'open_admin_2.index' instead?
