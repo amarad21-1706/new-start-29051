@@ -28,6 +28,17 @@ def create_app(conf=None):
 
     #app = Flask(__name__, static_folder='frontend/dist', template_folder='frontend/dist')
     app = Flask(__name__)
+
+    @app.before_request
+    def before_request():
+        app.logger.debug("Handling request for %s", request.path)
+
+    @app.errorhandler(Exception)
+    def handle_exception(e):
+        app.logger.error("Exception occurred: %s", str(e))
+        return "Internal Server Error", 500
+
+
     # Wrap the Flask app with ProxyFix
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
 

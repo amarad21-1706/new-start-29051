@@ -140,6 +140,8 @@ from werkzeug.datastructures import ImmutableMultiDict
 from flask_login import login_user, logout_user, current_user
 import os
 
+from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as _
+
 # for graphical representation of workflows
 # Additional libraries for visualization (choose one)
 # Option 1: Flask-Vis (lightweight)
@@ -349,6 +351,16 @@ def role_required(required_role):
     return decorator
 
 
+@app.errorhandler(500)
+def internal_error(error):
+    app.logger.error(f"Server Error: {error}, Route: {request.url}")
+    return "Internal Server Error", 500
+
+@app.errorhandler(Exception)
+def unhandled_exception(e):
+    app.logger.error(f"Unhandled Exception: {e}, Route: {request.url}")
+    return "Internal Server Error", 500
+
 @app.errorhandler(SMTPAuthenticationError)
 def handle_smtp_authentication_error(error):
     # Handle SMTP authentication errors gracefully
@@ -438,8 +450,6 @@ def verify_password_reset_token(token, expiration=1800):
         return None
     return email
 
-
-from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as _
 
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
@@ -607,11 +617,8 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
                 "admin_10_url": admin_10_url,
                 "unread_notices_count": unread_notices_count,
             }
-
             return render_template(template, **additional_data)
-
         return wrapper
-
     return decorator
 
 
@@ -5657,7 +5664,7 @@ with app.app_context():
     admin_app1 = Admin(app,
        name='Area di controllo 1 - Documenti e atti',
        url='/open_admin',
-       template_mode='bootstrap3',
+       template_mode='bootstrap4',
        endpoint='open_admin',
    )
 
@@ -5750,6 +5757,10 @@ with app.app_context():
         admin_app2.add_view(CustomTabella27DataView(BaseData, db.session, name="Livello di contendibilta'",
                                       endpoint="view_livello_contendibilita'"))
 
+    if not app.debug:
+        handler = logging.StreamHandler()
+        handler.setLevel(logging.INFO)
+        app.logger.addHandler(handler)
 
 # Initialize Flask-Admin
 #admin_app4 = Admin(app, name='Setup', url = '/open_setup_basic', template_mode='bootstrap4', endpoint = 'setup_basic')
@@ -5771,6 +5782,11 @@ admin_app4.add_view(AuditLogView(AuditLog, db.session, name='Audit Log', endpoin
 admin_app4.add_view(PostView(Post, db.session, name='Posts', endpoint='posts_data_view'))
 admin_app4.add_view(TicketView(Ticket, db.session, name='Tickets', endpoint='tickets_data_view'))
 admin_app4.add_view(BaseDataView(BaseData, db.session, name='Data', endpoint='base_data_view'))
+
+if not app.debug:
+    handler = logging.StreamHandler()
+    handler.setLevel(logging.INFO)
+    app.logger.addHandler(handler)
 
 # Add other ModelViews as needed...
 
