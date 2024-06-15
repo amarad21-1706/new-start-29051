@@ -59,14 +59,7 @@ def create_app(conf=None):
     csrf = CSRFProtect(app)
 
     app.config.from_object(conf)
-    app.config['STATIC_FOLDER'] = 'static'
-    app.config['ASSETS_FOLDER'] = 'assets'
-    app.config['SESSION_TYPE'] = 'filesystem'
-    app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
-    app.config['TEMPLATES_AUTO_RELOAD'] = True
-    app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
-    app.config['PERMANENT_SESSION_LIFETIME'] = 3600
-    app.config['WTF_CSRF_ENABLED'] = True
+
 
     app.debug = True
     app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False

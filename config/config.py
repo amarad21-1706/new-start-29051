@@ -76,9 +76,16 @@ class Config:
         self.CRUD_ADD_TEMPLATE = f"/{self.current_directory}/templates/crud_add_template.html"
 
         self.SECURITY_PASSWORD_SALT = os.environ.get('SECURITY_PASSWORD_SALT_')
+
         self.STATIC_FOLDER = 'static'
         self.ASSETS_FOLDER = 'assets'
+        self.SESSION_TYPE = 'filesystem'
+        self.SEND_FILE_MAX_AGE_DEFAULT = 0
+        self.TEMPLATES_AUTO_RELOAD = True
+        self.SQLALCHEMY_COMMIT_ON_TEARDOWN = True
+        self.PERMANENT_SESSION_LIFETIME = 3600
         self.MAX_RECURSION_DEPTH = 12
+        self.WTF_CSRF_ENABLED = True
 
         self.RECAPTCHA_PUBLIC_KEY = os.environ.get('RECAPTCHA_PUBLIC_KEY')
         self.RECAPTCHA_PRIVATE_KEY = os.environ.get('RECAPTCHA_PRIVATE_KEY')
@@ -89,7 +96,6 @@ class Config:
 
         #self.SESSION_COOKIE_HTTPONLY = True
         #self.SESSION_COOKIE_SECURE = True  # Only set to True if using HTTPS
-
 
         # Emailing
         '''
