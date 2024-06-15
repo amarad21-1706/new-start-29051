@@ -2,35 +2,87 @@
 # DEBUG LOGGING LOGGER TOOLBAR: see app_factory.py
 
 # app.py (or run.py)
+import os
 import re
+import datetime
+from datetime import datetime, timedelta
 
 import logging
-from logging.handlers import RotatingFileHandler
 from logging import FileHandler, Formatter
+from logging.handlers import RotatingFileHandler
+
+from flask_sqlalchemy import SQLAlchemy
+from flask import Flask, session, abort, send_file, render_template, flash, redirect, url_for, request, current_app, get_flashed_messages, g
 
 from sqlalchemy import or_, and_, desc, func, not_, null, exists, extract, select
 from sqlalchemy import distinct
 from sqlalchemy.orm import sessionmaker
-from db import db
-from flask import g
-from flask import flash
-import datetime
+
+from flask_admin import Admin
+from flask_session import Session
+from flask_admin.contrib.sqla import ModelView
+from flask_admin import BaseView, expose, expose_plugview
+from flask_admin.actions import action  # Import the action decorator
+from flask_admin.contrib.sqla import ModelView
+from flask_admin.model.widgets import XEditableWidget
+
+from flask_admin.form import FileUploadField
+from flask_login import LoginManager, current_user
 
 from flask_wtf import FlaskForm
-from wtforms import EmailField
+from wtforms import (EmailField, StringField, SubmitField, SelectField, BooleanField, ValidationError,
+    EmailField, FileField, MultipleFileField, SelectMultipleField, SearchField)
 from wtforms.validators import DataRequired, Email, InputRequired, NumberRange
 
-from flask_session import Session
-from wtforms import SubmitField
-from itsdangerous import URLSafeTimedSerializer, SignatureExpired
+from flask_login import login_required, LoginManager
+from flask_login import login_user, current_user
+from flask_cors import CORS
 
-from flask import Flask, render_template, flash, redirect, url_for, request
+from flask_bootstrap import Bootstrap
+
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from flask_login import login_user, logout_user, current_user
+
+from flask import jsonify
+# from flask_admin.exceptions import ValidationError
+
+from flask_bcrypt import Bcrypt
+from flask import abort
+from functools import wraps
+
+from wtforms import IntegerField
+from wtforms.fields import DateField
+from crud_blueprint import create_crud_blueprint
+from wtforms import Form, SubmitField
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField
-from wtforms.validators import DataRequired, Email
 from flask_mail import Mail, Message
-from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from flask_babel import Babel, lazy_gettext as _
+from mail_service import send_simple_message, send_simple_message333
+
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
+
+from smtplib import SMTPAuthenticationError
+
+from jinja2 import Undefined
+
+from PIL import Image, ImageDraw, ImageFont, ImageFilter
+import random
+import base64
+import io
+from pathlib import Path
+import json
+import pdb
+import pyotp
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.exc import IntegrityError
+
+from werkzeug.utils import secure_filename
+
+# Example of using the function with ImmutableMultiDict
+from werkzeug.datastructures import ImmutableMultiDict
+
+from db import db
 
 from userManager101 import UserManager
 from workflow_manager import (add_transition_log, create_card,
@@ -38,6 +90,7 @@ from workflow_manager import (add_transition_log, create_card,
                               create_model_card, deadline_approaching)
 
 from app_defs import get_user_roles, create_message, generate_menu_tree
+
 from models.user import (Users, UserRoles, Role, Table, Questionnaire, Question,
         QuestionnaireQuestions,
         Answer, Company, Area, Subarea, AreaSubareas,
@@ -57,9 +110,6 @@ from forms.forms import (ForgotPasswordForm, ResetPasswordForm101, RegistrationF
         create_dynamic_form, CustomFileLoaderForm,
         CustomSubjectAjaxLoader, BaseSurveyForm)
 
-from flask_mail import Mail, Message
-from app_factory import create_app
-
 from config.config import (extract_year_from_fy, get_current_interval, get_current_intervals,
         get_subarea_interval_type, generate_company_questionnaire_report_data, generate_area_subarea_report_data,
         check_status, check_status_limited, check_status_extended, generate_html_cards, get_session_workflows,
@@ -76,69 +126,10 @@ from admin_views import (CompanyView, QuestionnaireView, QuestionView,
         QuestionnaireQuestionsView, WorkflowStepsView, QuestionnaireCompaniesView,
                          OpenQuestionnairesView, BaseDataView, UsersView)
 
-from mail_service import send_simple_message, send_simple_message333
-from wtforms import Form
-
 from utils.utils import get_current_directory
-from wtforms import (SelectField, BooleanField, ValidationError, EmailField)
-from flask_login import login_required, LoginManager
-from flask_login import login_user, current_user
-from flask_cors import CORS
-
-from flask import flash, current_app, get_flashed_messages
-# from flask_admin.exceptions import ValidationError
-
-from flask_bcrypt import Bcrypt
-from flask import abort
-from functools import wraps
-
-from wtforms import IntegerField
-from wtforms.fields import DateField
-from crud_blueprint import create_crud_blueprint
 
 from menu_builder import MenuBuilder
-
-from flask_bootstrap import Bootstrap
-
-import datetime
-from datetime import datetime, timedelta
-from jinja2 import Undefined
-
-from flask_admin.form import FileUploadField
-from flask import session
-from flask_admin import Admin, expose, expose_plugview
-from flask_admin.actions import action  # Import the action decorator
-from flask_admin.contrib.sqla import ModelView
-
-from flask_admin.model.widgets import XEditableWidget
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
-from smtplib import SMTPAuthenticationError
-from flask import send_file
-from flask import render_template, redirect, url_for
-from wtforms import StringField, FileField, MultipleFileField, SelectMultipleField, SearchField
-
-from PIL import Image, ImageDraw, ImageFont, ImageFilter
-import random
-import base64
-import io
-from pathlib import Path
-import json
-import pdb
-import pyotp
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy.exc import IntegrityError
-from flask import request
-
-from flask_admin import BaseView, expose
-from flask import jsonify
-from werkzeug.utils import secure_filename
-
-# Example of using the function with ImmutableMultiDict
-from werkzeug.datastructures import ImmutableMultiDict
-
-from flask_login import login_user, logout_user, current_user
-import os
+from app_factory import create_app
 
 # for graphical representation of workflows
 # Additional libraries for visualization (choose one)
@@ -156,6 +147,22 @@ app = create_app()
 
 mail = Mail(app)
 babel = Babel(app)
+
+# Configure logging
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+# Optionally, create a custom logger
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+# Add a StreamHandler to output logs to the console
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.DEBUG)
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+console_handler.setFormatter(formatter)
+logger.addHandler(console_handler)
+
+
 
 limiter = Limiter(
     get_remote_address,
@@ -561,12 +568,16 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
             '''for company, records in companyRecords.items():
                 buttons.append(CompanyButton(companyName=company, companyRecords=records))'''
 
-            # Example: Generate dynamic URL for 'admin_2.admin_blueprint.index'
+            # Example: Generate dynamic URL for 'admin_x.admin_blueprint.index'
+
+            logging.debug("Generate dynamic URL for admins accessed")
+
             admin_url = url_for('open_admin.index')
             admin_2_url = url_for('open_admin_2.index')
             admin_3_url = url_for('open_admin_3.index')
             admin_4_url = url_for('open_admin_4.index')
             admin_10_url = url_for('open_admin_10.index')
+
 
             company_name = ' '
             if current_user:
@@ -608,8 +619,11 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
                 "unread_notices_count": unread_notices_count,
             }
 
-            return render_template(template, **additional_data)
-
+            try:
+                return render_template(template, **additional_data)
+            except Exception as e:
+                logging.error(f"Error rendering template: {e}")
+                raise
         return wrapper
 
     return decorator
@@ -1857,6 +1871,8 @@ class Flussi_dataView(ModelView):
     }
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        logging.debug("flussi...Admin view initialized")
         #self.class_name = self.__class__.__name__  # Store the class name
         self.subarea_id = Flussi_dataView.subarea_id  # Initialize subarea_id in __init__
         self.area_id = Flussi_dataView.area_id  # Initialize area_id in __init__
@@ -2155,6 +2171,8 @@ class Atti_dataView(ModelView):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        logging.debug("atti...Admin view initialized")
         #self.class_name = self.__class__.__name__  # Store the class name
         self.subarea_id = Atti_dataView.subarea_id  # Initialize subarea_id in __init__
         self.area_id = Atti_dataView.area_id  # Initialize area_id in __init__
@@ -2477,6 +2495,8 @@ class Contingencies_dataView(ModelView):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        logging.debug("conting...Admin view initialized")
         # self.class_name = self.__class__.__name__  # Store the class name
         self.subarea_id = Contingencies_dataView.subarea_id  # Initialize subarea_id in __init__
         self.area_id = Contingencies_dataView.area_id  # Initialize area_id in __init__
@@ -2798,6 +2818,8 @@ class Contenziosi_dataView(ModelView):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        logging.debug("contenz...Admin view initialized")
         # self.class_name = self.__class__.__name__  # Store the class name
         self.subarea_id = Contenziosi_dataView.subarea_id  # Initialize subarea_id in __init__
         self.area_id = Contenziosi_dataView.area_id  # Initialize area_id in __init__
@@ -3120,6 +3142,8 @@ class Iniziative_dso_as_dataView(ModelView):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        logging.debug("iniz...dso as Admin view initialized")
         # self.class_name = self.__class__.__name__  # Store the class name
         self.subarea_id = Iniziative_dso_as_dataView.subarea_id  # Initialize subarea_id in __init__
         self.area_id = Iniziative_dso_as_dataView.area_id  # Initialize area_id in __init__
@@ -3442,6 +3466,8 @@ class Iniziative_as_dso_dataView(ModelView):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        logging.debug("iniz as dso...Admin view initialized")
         # self.class_name = self.__class__.__name__  # Store the class name
         self.subarea_id = Iniziative_as_dso_dataView.subarea_id  # Initialize subarea_id in __init__
         self.area_id = Iniziative_as_dso_dataView.area_id  # Initialize area_id in __init__
@@ -3765,6 +3791,8 @@ class Iniziative_dso_dso_dataView(ModelView):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
+        logging.debug("iniz dso dso...Admin view initialized")
         # self.class_name = self.__class__.__name__  # Store the class name
         self.subarea_id = Iniziative_dso_dso_dataView.subarea_id  # Initialize subarea_id in __init__
         self.area_id = Iniziative_dso_dso_dataView.area_id  # Initialize area_id in __init__
@@ -3831,6 +3859,8 @@ class Iniziative_dso_dso_dataView(ModelView):
     }
 
     def scaffold_form(self):
+
+        logging.debug("Scaffolding form for UserAdmin dso dso")
         form_class = super(Iniziative_dso_dso_dataView, self).scaffold_form()
         current_year = datetime.now().year
         year_choices = [(str(year), str(year)) for year in range(current_year - 5, current_year + 2)]
@@ -6350,13 +6380,6 @@ with app.app_context():
     #admin_app10.add_view(StatusView(Status, db.session, name='E. Dictionary of Status',
     #                                endpoint='status_questionnaire_view'))
 
-@login_required
-@role_required('Admin')
-# Define the index route
-@app.route('/open_admin_app_4')
-def open_admin_app_4():
-    user_id = current_user.id
-    return redirect(url_for('open_admin_4.index'))
 
 
 @login_required
@@ -6369,6 +6392,12 @@ def master_reset_password():
 # Route to open F l a s k -Admin
 @app.route('/open_admin_app_1')
 def open_admin_app_1():
+    logging.debug("Admin 1 index accessed")
+
+    logger.debug(f"Request headers: {request.headers}")
+    logger.debug(f"Referrer: {request.referrer}")
+    logger.debug(f"Request path: {request.path}")
+
     user_id = current_user.id
 
     company_row = db.session.query(Company.name) \
@@ -6390,6 +6419,8 @@ def open_admin_app_1():
 
 @app.route('/open_admin_app_2')
 def open_admin_app_2():
+
+    logging.debug("Admin 2 index accessed")
     user_id = current_user.id
     company_row = db.session.query(Company.name) \
         .join(CompanyUsers, CompanyUsers.company_id == Company.id) \
@@ -6408,6 +6439,8 @@ def open_admin_app_2():
 # Define the index route
 @app.route('/open_admin_app_3')
 def open_admin_app_3():
+
+    logging.debug("Admin 3 index accessed")
     try:
         user_id = current_user.id
         company_row = db.session.query(Company.name) \
@@ -6430,12 +6463,36 @@ def open_admin_app_3():
         app.logger.error('Error occurred: %s', e)
         return render_template('500.html'), 500
 
+@login_required
+@role_required('Admin')
+# Define the index route
+@app.route('/open_admin_app_4')
+def open_admin_app_4():
+
+    logging.debug("Admin 4 index accessed")
+    user_id = current_user.id
+    company_row = db.session.query(Company.name) \
+        .join(CompanyUsers, CompanyUsers.company_id == Company.id) \
+        .filter(CompanyUsers.user_id == user_id) \
+        .first()
+
+    company_name = company_row[0] if company_row else None  # Extracting the name attribute
+
+    template = "Admin Area 4"
+    placeholder_value = company_name
+    formatted_string = template.format(placeholder_value) if placeholder_value else template
+    admin_app4.name = formatted_string
+
+    return redirect(url_for('open_admin_4.index'))
+
 
 @login_required
 @role_required('Admin')
 # Define the index route
 @app.route('/open_admin_app_10')
 def open_admin_app_10():
+
+    logging.debug("Admin 10 index accessed")
     user_id = current_user.id
     company_row = db.session.query(Company.name) \
         .join(CompanyUsers, CompanyUsers.company_id == Company.id) \
@@ -8886,4 +8943,8 @@ if __name__ == '__main__':
     #logging.basicConfig(level=logging.DEBUG)
     # logging.debug(f"Starting app on port {port}")
     # TODO DEBUG
-    app.run(debug=True, host='0.0.0.0', port=port, extra_files=['./static/js/menuStructure101.json'])
+    try:
+        app.run(debug=True, host='0.0.0.0', port=port, extra_files=['./static/js/menuStructure101.json'])
+    except Exception as e:
+        logger.error(f"Exception occurred during app run: {e}")
+        raise

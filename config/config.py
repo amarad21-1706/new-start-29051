@@ -1,30 +1,22 @@
 
 import secrets
 import os
-from db import db
-
-from models.user import (Company, CompanyUsers, Users, Role, UserRoles,
-                         Area, Subarea, AreaSubareas, Deadline, Interval,
-                         QuestionnaireCompanies, Questionnaire, Question, QuestionnaireQuestions,
-                         get_config_values, Workflow, Step, BaseData, WorkflowSteps,
-                         WorkflowBaseData, StepBaseData, Post, AuditLog)
-
-# from sqlalchemy import or_, and_, desc, func, null
-# import pandas as pd
-# from sqlalchemy.orm import subqueryload
-# from flask import Flask, session, redirect, url_for
-
-from dateutil.relativedelta import relativedelta
-
 import pandas as pd
 
 from flask_login import current_user
 import json
 import pytz
 
-import os
-from dotenv import load_dotenv
+from db import db
+from models.user import (Company, CompanyUsers, Users, Role, UserRoles,
+                         Area, Subarea, AreaSubareas, Deadline, Interval,
+                         QuestionnaireCompanies, Questionnaire, Question, QuestionnaireQuestions,
+                         get_config_values, Workflow, Step, BaseData, WorkflowSteps,
+                         WorkflowBaseData, StepBaseData, Post, AuditLog)
 
+from dateutil.relativedelta import relativedelta
+
+from dotenv import load_dotenv
 load_dotenv()  # Load environment variables from .env file if present
 
 def user_has_edit_workflow_permission(current_user):

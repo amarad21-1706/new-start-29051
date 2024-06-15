@@ -1,26 +1,28 @@
+# user.py
 
-from db import db
+from datetime import datetime
+import json
 from flask_bcrypt import generate_password_hash, check_password_hash
 from flask_security import RoleMixin, UserMixin
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, LargeBinary, Numeric, func
 from sqlalchemy import func
 from sqlalchemy.orm import relationship
 from sqlalchemy import or_, and_, Enum
+from sqlalchemy.exc import IntegrityError
+# from sqlalchemy.dialects.mysql import JSON  # for MySQL
+# OR
+# from sqlalchemy.dialects.sqlite import JSON  # for SQLite
+# OR
+# from sqlalchemy.dialects.oracle import JSON  # for Oracle
+# OR
+from sqlalchemy.dialects.postgresql import JSON, JSONB # for PostgreSQL
 
 from sqlalchemy import Column, Integer, String, ForeignKey, TIMESTAMP, DATE, func
 
 from wtforms.fields import StringField, TextAreaField, DateTimeField, SelectField, BooleanField, SubmitField
-from datetime import datetime
-
-from sqlalchemy.exc import IntegrityError
-# OR
-# from sqlalchemy.dialects.mysql import JSON  # for MySQL
-# OR
-from sqlalchemy.dialects.sqlite import JSON  # for SQLite
-# OR
-# from sqlalchemy.dialects.oracle import JSON  # for Oracle
-import json
 from wtforms.validators import DataRequired, Regexp
+
+from db import db
 
 class CheckboxField(BooleanField):
     def process_formdata(self, valuelist):
