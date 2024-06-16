@@ -1,0 +1,370 @@
+<!-- app/templates/home/home.html -->
+{% macro render_menu(menu_items, user_roles, level=1) %}
+    {% for menu_item in menu_items %}
+        {% if menu_item_allowed(menu_item, user_roles) %}
+            <li class="nav-item{% if menu_item.submenus %} has-submenu{% endif %}">
+                <a class="nav-link" href="{{ menu_item.url }}">
+                    {{ menu_item.label }}
+                    {% if menu_item.submenus %}
+                        <span class="submenu-indicator"></span>
+                    {% endif %}
+                </a>
+                {% if menu_item.submenus %}
+                    <!-- Submenus -->
+                    <ul class="submenu">
+                        {{ render_menu(menu_item.submenus, user_roles, level+1) }}
+                    </ul>
+                {% endif %}
+            </li>
+        {% endif %}
+    {% endfor %}
+{% endmacro %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Add meta tag for responsive design -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>My App</title>
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+
+    <style>
+        /* Styles for flashed messages */
+        .flashes {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .flashes li {
+            margin-bottom: 5px; /* Adjust spacing between messages */
+        }
+
+        .alert {
+            padding: 8px 12px; /* Adjust padding as needed */
+            font-size: 14px; /* Adjust font size as needed */
+            border-radius: 4px; /* Add border radius for rounded corners */
+        }
+
+        /* Adjust colors based on the type of message */
+        .alert-success {
+            background-color: #d4edda; /* Adjust background color for success messages */
+            color: #155724; /* Adjust text color for success messages */
+        }
+
+        .alert-danger {
+            background-color: #f8d7da; /* Adjust background color for error messages */
+            color: #721c24; /* Adjust text color for error messages */
+        }
+
+        .alert-info {
+            background-color: #cce5ff; /* Adjust background color for info messages */
+            color: #004085; /* Adjust text color for info messages */
+        }
+
+        .alert-warning {
+            background-color: #fff3cd; /* Adjust background color for warning messages */
+            color: #856404; /* Adjust text color for warning messages */
+        }
+
+        /* Add your custom styles here */
+        .gray-text {
+            color: gray;
+        }
+        .white-text {
+            color: white;
+        }
+
+        /* Define the color for h1 and p */
+        h1 {
+            color: gray; /* Change 'blue' to the desired color */
+        }
+
+        p {
+            color: green; /* Change 'green' to the desired color */
+        }
+
+        body {
+            background-image: url("{{ url_for('static', filename='images/background_image.jpg') }}");
+            background-size: cover; /* Cover the entire viewport */
+            background-repeat: no-repeat; /* Prevent repeating of the image */
+        }
+
+        .main-menu {
+            list-style: none;
+            display: flex;
+            margin: 0;
+            padding: 0;
+            z-index: 1000;
+            position: relative;
+        }
+
+        body {
+            background-color: lightslategray; /* Change this to the desired background color */
+        }
+
+        .navbar-nav > li {
+            position: relative;
+        }
+
+        .navbar-nav > li:not(:last-child) {
+            margin-right: 10px;
+            background-color: lightgray; /* Change this to the desired background color */
+        }
+
+        .submenu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background-color: #f8f9fa;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            display: none;
+        }
+
+        .navbar-nav > li:hover > .submenu {
+            display: block;
+        }
+
+        .has-submenu .submenu-indicator::after {
+            content: '\25B6';
+            margin-left: 5px;
+            display: inline-block;
+            transform: rotate(90deg);
+            transition: transform 0.3s ease;
+        }
+
+        .submenu .submenu {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 100%;
+        }
+
+        .submenu.show {
+            display: block;
+        }
+
+        .has-submenu.active .submenu-indicator::after {
+            transform: rotate(0deg);
+        }
+
+        .sticky-top {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar.shrink {
+            transition: padding 0.3s;
+            padding-top: 10px;
+            padding-bottom: 10px;
+        }
+
+        .left-menu {
+            border-right: 1px solid #dee2e6;
+            float: left;
+            width: 20%;
+            background-color: #f8f9fa;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .left-menu h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+        .left-menu ul li {
+            margin-bottom: 10px;
+        }
+        .left-menu ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .sidebar {
+            padding: 20px;
+        }
+        #greeting-section {
+          text-align: right;
+        }
+
+        @media (max-width: 768px) {
+            .left-menu {
+            width: 100%;
+            border-right: none;
+            padding-right: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="greeting-section" class="gray-text">
+        {% if current_user.is_authenticated %}
+            Welcome, {{ current_user.username }}!
+            <a href="/noticeboard">
+                <img src="{{ url_for('static', filename='images/mail-unread-outline.svg') }}" alt="Messages Icon" id="messages-icon">
+                <span>You have {{ num_messages }} new messages</span>
+            </a>
+        {% else %}
+            Please <a href="{{ url_for('routes.login') }}">log in</a> or <a href="{{ url_for('routes.signup') }}">sign up</a>.
+        {% endif %}
+
+        {% for card in cards_data %}
+            <div class="card">
+                <div class="card-header">{{ card.title }}</div>
+                <div class="card-body">
+                    {{ card.content }}
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container mt-4">
+                <div class="row">
+                    <div class="col-md-12">
+                        <ul class="flashes">
+                            {% for category, message in messages %}
+                                <li>
+                                    <div class="alert alert-{{ category }}">
+                                        {{ message }}
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+            <script>
+                $(document).ready(function() {
+                    setTimeout(function() {
+                        $('.flashes').fadeOut('fast');
+                    }, 2000);
+                });
+            </script>
+        {% endif %}
+    {% endwith %}
+
+    <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top">
+        <img src="{{ url_for('static', filename='ilm_logo_1.png') }}" alt="My Logo" style="height: 50px;">
+        <a class="navbar-brand" href="{{ url_for('routes.index') }}"></a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav main-menu">
+                {{ render_menu(main_menu_items, user_roles) }}
+            </ul>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-9">
+                <h1>ILM - piattaforma digitale</h1>
+                <p>This is the home page content - to be customized as needed (v.1.3.1).</p>
+
+                {% if "Admin" in user_roles %}
+                    <p>(Admin)</p>
+                    <p>This is the admin landing page - to be customized as needed (v.1.3.1).</p>
+                {% endif %}
+                {% if "Authority" in user_roles %}
+                    <p>(Authority)</p>
+                {% endif %}
+                {% if "Manager" in user_roles %}
+                    <p>(Manager)</p>
+                {% endif %}
+                {% if "Employee" in user_roles %}
+                    <p>(e. user)</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.7.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
+    <script>
+        $(document).ready(function () {
+            function toggleImmediateChildren(submenu) {
+                submenu.children('.has-submenu').toggleClass('show');
+            }
+
+            function toggleSubmenu(submenu) {
+                var parentSubMenu = submenu.closest('.has-submenu');
+                var siblings = parentSubMenu.siblings('.has-submenu');
+
+                siblings.removeClass('active').find('.submenu').removeClass('show');
+                toggleImmediateChildren(submenu);
+                parentSubMenu.toggleClass('active').find('.submenu').toggleClass('show');
+            }
+
+            $('.has-submenu > a').click(function (e) {
+                var submenu = $(this).siblings('.submenu');
+                if (submenu.length) {
+                    e.preventDefault();
+                    toggleSubmenu(submenu);
+                }
+            });
+
+            $('.has-submenu').each(function () {
+                var submenu = $(this).children('.submenu');
+                if (submenu.length) {
+                    var topPosition = $(this).position().top + $(this).outerHeight();
+                    submenu.css('top', topPosition);
+                }
+            });
+
+            $(document).on('click', function (e) {
+                if (!$(e.target).closest('.has-submenu').length) {
+                    $('.has-submenu.active').removeClass('active').find('.submenu').removeClass('show');
+                }
+            });
+
+            $('.submenu a').click(function (e) {
+                var submenu = $(this).siblings('.submenu');
+                if (submenu.length) {
+                    e.preventDefault();
+                }
+            });
+
+            var navbar = $(".navbar");
+            var sticky = navbar.offset().top;
+
+            $(window).scroll(function () {
+                if (window.pageYOffset >= sticky) {
+                    navbar.addClass("sticky-top shrink");
+                } else {
+                    navbar.removeClass("sticky-top shrink");
+                }
+            });
+
+            var username = "{{ current_user.username }}";
+            if (username && username !== "Guest") {
+                $("#greeting-section").html("Welcome, " + username + "!");
+                $("#greeting-section").show();
+            } else {
+                $("#greeting-section").html("Please <a href='{{ url_for('routes.login') }}'>log in</a> or <a href='{{ url_for('routes.signup') }}'>sign up</a>");
+                $("#greeting-section").show();
+            }
+
+            document.getElementById("messages-icon").addEventListener("click", function() {
+              document.getElementById("noticeboard-modal").style.display = "block";
+            });
+
+            document.getElementsByClassName("close")[0].addEventListener("click", function() {
+              document.getElementById("noticeboard-modal").style.display = "none";
+            });
+        });
+    </script>
+</body>
+
+</html>

@@ -1,12 +1,11 @@
 from flask_bcrypt import check_password_hash
 from flask import current_app
-from db import db
 from flask import session
 
 class UserManager:
     def authenticate_user(self, username, password):
         try:
-            from db import users  # Import inside the function to avoid circular import
+            from app.modules.db import users  # Import inside the function to avoid circular import
             current_app.logger.info(f'Attempting to authenticate user: {username} with password: {password}')
             user = user.query.filter_by(username=username).first()
             if user and check_password_hash(user.password, password):

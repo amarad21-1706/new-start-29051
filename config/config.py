@@ -1,18 +1,17 @@
 
 import secrets
 import os
-import pandas as pd
 
 from flask_login import current_user
 import json
 import pytz
 
-from db import db
-from models.user import (Company, CompanyUsers, Users, Role, UserRoles,
-                         Area, Subarea, AreaSubareas, Deadline, Interval,
-                         QuestionnaireCompanies, Questionnaire, Question, QuestionnaireQuestions,
-                         get_config_values, Workflow, Step, BaseData, WorkflowSteps,
-                         WorkflowBaseData, StepBaseData, Post, AuditLog)
+from app.modules.db import db
+from app.models.user import (Company, CompanyUsers, Users, Role, UserRoles,
+                             Area, Subarea, AreaSubareas, Interval,
+                             QuestionnaireCompanies, Questionnaire, Question, QuestionnaireQuestions,
+                             get_config_values, Workflow, BaseData, WorkflowSteps,
+                             WorkflowBaseData, StepBaseData, Post, AuditLog)
 
 from dateutil.relativedelta import relativedelta
 
@@ -408,7 +407,6 @@ def extract_year_from_fy(fy_string):
     return parts[-1]  # Return the last part, which should be the year
 
 
-from datetime import datetime
 def get_current_interval(interval):
     now = datetime.now()
 
@@ -436,9 +434,8 @@ def get_current_interval(interval):
     else:
         raise ValueError(f"Unsupported interval: {interval}")
 
-from datetime import datetime, timedelta
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 def set_to_first_day(date, interval_ord, interval_id):
     if interval_id == 1:
@@ -842,10 +839,7 @@ def get_record_counts(session):
     return company_records, past_records
 
 
-from datetime import datetime
-
 import pandas as pd
-from datetime import datetime
 
 
 def get_time_qualifier(interval_id, interval_ord, year):
@@ -989,7 +983,6 @@ def get_pd_report_from_base_data(session):
     return sorted_records
 
 
-from sqlalchemy import func
 def get_pd_report_from_base_data_wtq(engine):
     try:
         # Assuming BaseData and Company are your SQLAlchemy models

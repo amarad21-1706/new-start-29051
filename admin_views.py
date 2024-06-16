@@ -1,20 +1,13 @@
 # admin_views.py
 # You can continue defining other ModelViews for your models
-from flask_admin.model import typefmt
-from flask_admin.model.fields import InlineFormField, InlineFieldList
-from wtforms.fields import StringField, TextAreaField, DateTimeField, SelectField, BooleanField, SubmitField
+from wtforms.fields import StringField, SelectField, SubmitField
 #from wtforms.ext.sqlalchemy.fields import QuerySelectField
-from wtforms.validators import InputRequired, DataRequired, Length, Email, EqualTo
-from flask_admin.form import Select2Widget
-from flask_admin.contrib.sqla import ModelView
+from wtforms.validators import DataRequired
 from flask_admin import BaseView
 from flask_admin.base import expose
 from datetime import datetime
-from db import db
+from app.modules.db import db
 from sqlalchemy import and_
-from flask_wtf import FlaskForm
-from flask_admin.form import rules
-from flask import current_app
 from flask_login import current_user
 from flask_admin.actions import action  # Import the action decorator
 
@@ -23,13 +16,8 @@ from flask_admin.contrib.sqla import ModelView
 from copy import deepcopy
 
 
-from models.user import (Users, UserRoles, Role, Table, Questionnaire, Question,
-        QuestionnaireQuestions, BaseData,
-        Answer, Company, Area, Subarea, AreaSubareas,
-        QuestionnaireCompanies, CompanyUsers, Status, Lexic,
-        Interval, Subject,
-        AuditLog, Post, Ticket, StepQuestionnaire,
-        Workflow, Step, BaseData, WorkflowSteps, WorkflowBaseData, StepBaseData, Config, get_config_values)
+from app.models.user import (Questionnaire, Question,
+                             Answer, QuestionnaireCompanies, CompanyUsers)
 
 
 # Custom view for surveys open for editing

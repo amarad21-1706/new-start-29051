@@ -6,69 +6,55 @@ import re
 
 import logging
 from logging.handlers import RotatingFileHandler
-from logging import FileHandler, Formatter
 
-from sqlalchemy import or_, and_, desc, func, not_, null, exists, extract, select
 from sqlalchemy import distinct
-from sqlalchemy.orm import sessionmaker
-from db import db
+from app.modules.db import db
 from flask import g
-from flask import flash
-import datetime
 
-from flask_wtf import FlaskForm
-from wtforms import EmailField
-from wtforms.validators import DataRequired, Email, InputRequired, NumberRange
+from wtforms.validators import InputRequired, NumberRange
 
 from flask_session import Session
-from wtforms import SubmitField
-from itsdangerous import URLSafeTimedSerializer, SignatureExpired
 
-from flask import Flask, render_template, flash, redirect, url_for, request
 from flask_wtf import FlaskForm
-from wtforms import StringField, SubmitField
-from wtforms.validators import DataRequired, Email
-from flask_mail import Mail, Message
+from wtforms import SubmitField
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
-from flask_babel import Babel, lazy_gettext as _
+from flask_babel import Babel
 
-from userManager101 import UserManager
-from workflow_manager import (add_transition_log, create_card,
-                              get_model_statistics, create_deadline_card,
-                              create_model_card, deadline_approaching)
+from app.modules.userManager101 import UserManager
+from app.modules.workflow_manager import (create_card,
+                                          get_model_statistics, create_deadline_card,
+                                          deadline_approaching)
 
 from app_defs import get_user_roles, create_message, generate_menu_tree
-from models.user import (Users, UserRoles, Role, Table, Questionnaire, Question,
-        QuestionnaireQuestions,
-        Answer, Company, Area, Subarea, AreaSubareas,
-        QuestionnaireCompanies, CompanyUsers, Status, Lexic,
-        Interval, Subject,
-        AuditLog, Post, Ticket, StepQuestionnaire,
-        Workflow, Step, BaseData, WorkflowSteps, WorkflowBaseData,
-                         StepBaseData, Config, get_config_values)
+from app.models.user import (Users, UserRoles, Role, Table, Questionnaire, Question,
+                             QuestionnaireQuestions,
+                             Answer, Company, Area, Subarea, QuestionnaireCompanies, CompanyUsers, Status, Lexic,
+                             Interval, Subject,
+                             AuditLog, Post, Ticket, StepQuestionnaire,
+                             Workflow, Step, BaseData, WorkflowSteps, WorkflowBaseData,
+                             StepBaseData, get_config_values)
 
-from master_password_reset import admin_reset_password, AdminResetPasswordForm
+from master_password_reset import admin_reset_password
 
-from forms.forms import (ForgotPasswordForm, ResetPasswordForm101, RegistrationForm,
-                         QuestionnaireCompanyForm, CustomBaseDataForm,
-        QuestionnaireQuestionForm, WorkflowStepForm, WorkflowBaseDataForm,
-                         BaseDataWorkflowStepForm,
-        UserRoleForm, CompanyUserForm, UserDocumentsForm, StepBaseDataInlineForm,
-        create_dynamic_form, CustomFileLoaderForm,
-        CustomSubjectAjaxLoader, BaseSurveyForm)
+from app.forms.forms import (ForgotPasswordForm, ResetPasswordForm101, RegistrationForm,
+                             QuestionnaireCompanyForm, CustomBaseDataForm,
+                             QuestionnaireQuestionForm, WorkflowStepForm, WorkflowBaseDataForm,
+                             BaseDataWorkflowStepForm,
+                             UserRoleForm, CompanyUserForm, UserDocumentsForm, StepBaseDataInlineForm,
+                             create_dynamic_form, CustomFileLoaderForm,
+                             CustomSubjectAjaxLoader, BaseSurveyForm)
 
 from flask_mail import Mail, Message
-from app_factory import create_app
+from app.app_factory import create_app
 
-from config.config import (extract_year_from_fy, get_current_interval, get_current_intervals,
-        get_subarea_interval_type, generate_company_questionnaire_report_data, generate_area_subarea_report_data,
-        check_status, check_status_limited, check_status_extended, generate_html_cards, get_session_workflows,
-        generate_html_cards_progression_with_progress_bars111, generate_html_cards_progression_with_progress_bars_in_short,
-        get_subarea_name, get_pd_report_from_base_data_wtq, get_if_active, get_areas, create_notification,
-        get_subareas, generate_company_user_report_data, generate_user_role_report_data, create_audit_log,
-        generate_questionnaire_question_report_data, generate_workflow_step_report_data, get_company_id,
-        generate_workflow_document_report_data, generate_document_step_report_data, get_cet_time, remove_duplicates,
-        normalize_structure, compare_structures, some_keys)
+from config.config import (get_current_interval, get_current_intervals,
+                           get_subarea_interval_type, generate_company_questionnaire_report_data, generate_area_subarea_report_data,
+                           check_status, check_status_limited, check_status_extended, generate_html_cards, get_session_workflows,
+                           generate_html_cards_progression_with_progress_bars111, generate_html_cards_progression_with_progress_bars_in_short,
+                           get_subarea_name, get_pd_report_from_base_data_wtq, get_if_active, get_areas, create_notification,
+                           get_subareas, generate_company_user_report_data, generate_user_role_report_data, create_audit_log,
+                           generate_questionnaire_question_report_data, generate_workflow_step_report_data,
+                           generate_workflow_document_report_data, generate_document_step_report_data, get_cet_time, remove_duplicates)
 
 from admin_views import (CompanyView, QuestionnaireView, QuestionView,
                          StatusView, LexicView, AreaView, StepQuestionnaireView,
@@ -76,13 +62,12 @@ from admin_views import (CompanyView, QuestionnaireView, QuestionView,
         QuestionnaireQuestionsView, WorkflowStepsView, QuestionnaireCompaniesView,
                          OpenQuestionnairesView, BaseDataView, UsersView)
 
-from mail_service import send_simple_message, send_simple_message333
+from mail_service import send_simple_message333
 from wtforms import Form
 
-from utils.utils import get_current_directory
-from wtforms import (SelectField, BooleanField, ValidationError, EmailField)
+from app.utils.utils import get_current_directory
+from wtforms import (SelectField, BooleanField, ValidationError)
 from flask_login import login_required, LoginManager
-from flask_login import login_user, current_user
 from flask_cors import CORS
 
 from flask import flash, current_app, get_flashed_messages
@@ -94,9 +79,9 @@ from functools import wraps
 
 from wtforms import IntegerField
 from wtforms.fields import DateField
-from crud_blueprint import create_crud_blueprint
+from app.modules.crud_blueprint import create_crud_blueprint
 
-from menu_builder import MenuBuilder
+from app.modules.menu_builder import MenuBuilder
 
 from flask_bootstrap import Bootstrap
 
@@ -106,7 +91,7 @@ from jinja2 import Undefined
 
 from flask_admin.form import FileUploadField
 from flask import session
-from flask_admin import Admin, expose, expose_plugview
+from flask_admin import Admin
 from flask_admin.actions import action  # Import the action decorator
 from flask_admin.contrib.sqla import ModelView
 
@@ -116,7 +101,7 @@ from flask_limiter.util import get_remote_address
 from smtplib import SMTPAuthenticationError
 from flask import send_file
 from flask import render_template, redirect, url_for
-from wtforms import StringField, FileField, MultipleFileField, SelectMultipleField, SearchField
+from wtforms import StringField
 
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 import random
@@ -126,7 +111,6 @@ from pathlib import Path
 import json
 import pdb
 import pyotp
-from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import IntegrityError
 from flask import request
 
@@ -135,9 +119,8 @@ from flask import jsonify
 from werkzeug.utils import secure_filename
 
 # Example of using the function with ImmutableMultiDict
-from werkzeug.datastructures import ImmutableMultiDict
 
-from flask_login import login_user, logout_user, current_user
+from flask_login import login_user, current_user
 import os
 
 from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as _
@@ -6644,7 +6627,7 @@ def manage_deadline():
 
 
 
-from custom_encoder import CustomJSONEncoder
+from app.modules.custom_encoder import CustomJSONEncoder
 # Use the custom JSON encoder
 app.json_encoder = CustomJSONEncoder
 
@@ -6960,11 +6943,11 @@ def create_step():
 
 @app.route('/home/contact/email',  methods=['GET', 'POST'])
 def contact_email():
-    return render_template('home/contact.html')
+    return render_template('home/contact_two.html')
 
 @app.route('/home/contact/phone',  methods=['GET', 'POST'])
 def contact_phone():
-    return render_template('home/contact.html')
+    return render_template('home/contact_two.html')
 
 
 @app.route('/home/privacy_policy',  methods=['GET', 'POST'])

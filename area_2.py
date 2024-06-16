@@ -1,9 +1,9 @@
 # area_2.py
 from flask import Blueprint, render_template, redirect, url_for, request, jsonify
 from flask_login import current_user
-from models.user import Table
-from forms.forms import TableForm
-from db import db
+from app.models.user import Table
+from app.forms.forms import TableForm
+from app.modules.db import db
 from config.config import Config
 crt_directory = Config.CURRENT_DIR
 

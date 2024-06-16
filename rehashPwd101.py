@@ -2,7 +2,7 @@ from werkzeug.security import generate_password_hash
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from config.config import Config
-from models.user import User
+from app.models.user import User
 
 #from dbb import dbb
 appb = Flask(__name__)

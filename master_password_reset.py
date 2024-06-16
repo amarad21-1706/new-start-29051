@@ -1,12 +1,11 @@
-from flask import Flask, render_template, flash, redirect, url_for, request
-from flask_sqlalchemy import SQLAlchemy
+from flask import render_template, flash, redirect, url_for, request
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import FlaskForm
-from models.user import Users
+from app.models.user import Users
 from wtforms import StringField, PasswordField, SubmitField
 from wtforms.validators import DataRequired
-from db import db
-from app_factory import create_app
+from app.modules.db import db
+from app.app_factory import create_app
 
 app = create_app()
 db.init_app(app)

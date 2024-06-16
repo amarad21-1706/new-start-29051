@@ -1,0 +1,222 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Your Flask App</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+
+    <style>
+        body {
+            font-family: Cambria, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f8f9fa;
+        }
+
+        nav {
+            position: sticky;
+            top: 0;
+            background-color: #343a40;
+            color: #ffffff;
+            padding: 10px;
+            text-align: center;
+            z-index: 1000;
+            transition: padding 0.3s, font-size 0.3s;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+        }
+
+        nav.shrink {
+            padding: 5px;
+            font-size: 14px;
+        }
+
+        nav a {
+            color: #ffffff;
+            text-decoration: none;
+            padding: 10px;
+            position: relative;
+        }
+
+        .menu-item {
+            position: relative;
+            display: inline-block;
+            margin-top: 20px;  /* Adjust this value as needed */
+        }
+
+        .submenu {
+            display: none;
+            position: absolute;
+            top: 30px;
+            left: 0;
+            background-color: #343a40;
+            color: #ffffff;
+            z-index: 1000;
+            text-align: center;
+            font-size: 12px;
+        }
+
+        .menu-item:hover .submenu {
+            display: block;
+        }
+
+        .submenu a {
+            display: block;
+            padding: 10px;
+            text-decoration: none;
+            color: #ffffff;
+            margin-right: 5px;
+        }
+
+        .line {
+            border-bottom: 1px solid #770000; /* Adjust the thickness as needed */
+            margin: .5px 0;
+        }
+
+        .second-header {
+            background-color: #343a40;
+            color: #7b7b7b;
+            padding: 5px;
+            text-align: left;
+        }
+
+        #second-menu {
+            font-size: 12px;
+            color: #770000 !important;
+        }
+
+        .main-content {
+            padding: 15px 15px;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .section {
+            margin-bottom: 40px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <nav id="main-menu">
+        {% for item in main_menu_items %}
+            <div class="menu-item">
+                <a href="{{ item.url }}">{{ item.label }}</a>
+                {% if item.submenus %}
+                    <div class="submenu">
+                        {% for submenu in item.submenus %}
+                            <a href="{{ submenu.url }}">{{ submenu.label }}</a>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+            {# Add print statement here #}
+            <script>console.log("Generated URL:", "{{ item.url }}");</script>
+        {% endfor %}
+    </nav>
+
+
+    <div class="line"></div>
+
+    <div class="second-header">
+        <h2 id="second-menu-title" class="hidden">Energy of the Future</h2>
+        <nav id="second-menu" class="hidden"></nav>
+    </div>
+
+    <div class="line"></div>
+        <!-- Add sections as needed -->
+    </div>
+
+    <!-- Main content -->
+    <div class="main-content">
+        <!-- Add Home button here -->
+        <a href="/static">Home</a>
+        <!-- Your existing main content -->
+    </div>
+
+    <script>
+        $(document).ready(function () {
+            const mainMenu = $("#main-menu");
+            const secondMenu = $("#second-menu");
+            const mainContent = $(".main-content");
+
+            mainMenu.on("mouseenter", ".menu-item", function () {
+                const category = $(this).find("a").text().toLowerCase();
+                updateSecondMenu(category);
+            });
+
+            mainMenu.on("mouseleave", function () {
+                // Clear second menu when mouse leaves the main menu
+                secondMenu.html("").hide();
+            });
+
+            secondMenu.on("mouseleave", function () {
+                // Hide the second menu when mouse leaves it
+                secondMenu.html("").hide();
+            });
+
+            secondMenu.on("mouseenter", function () {
+                // Prevent hiding the second menu when interacting with it
+                secondMenu.show();
+            });
+
+            secondMenu.on("click", "a", function (event) {
+                event.preventDefault();
+                const url = $(this).attr("href");
+                console.log('Clicked on submenu item. URL:', url);
+                print(url)
+                if (url) {
+                    loadContent(url);
+                }
+            });
+
+            function updateSecondMenu(category) {
+                // Clear existing content
+                secondMenu.html("");
+
+                // Check if submenus exist for the selected category
+                const submenus = subMenus[category];
+                if (submenus && submenus.length > 0) {
+                    // Add submenu items to the second menu
+                    submenus.forEach(function (submenu) {
+                        const submenuItem = $("<a>")
+                            .text(submenu.label)
+                            .attr("href", submenu.url);
+                        secondMenu.append(submenuItem);
+                    });
+
+                    // Show the second menu
+                    secondMenu.show();
+                } else {
+                    // Hide the second menu if there are no submenus
+                    secondMenu.hide();
+                }
+            }
+
+            function loadContent(url) {
+                // Use AJAX to load the content
+                $.ajax({
+                    url: url,
+                    method: "GET",
+                    success: function (data) {
+                        // Update the main content with the loaded HTML
+                        mainContent.html(data);
+                    },
+                    error: function () {
+                        // Handle errors if needed
+                        console.error("Error loading content");
+                    }
+                });
+            }
+        });
+    </script>
+
+
+</body>
+
+</html>

@@ -1,6 +1,6 @@
 
 from flask import Blueprint, request, render_template
-from models.user import Question
+from app.models.user import Question
 from flask.views import MethodView
 
 bp = Blueprint('question_management', __name__)

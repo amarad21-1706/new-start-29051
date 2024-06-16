@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contact Us</title>
+    <style>
+        body {
+            background-color: #001f3f;
+            color: #fff;
+            font-family: 'Cambria', sans-serif;
+            margin: 20px; /* 30% margin on left and right */
+            padding: 20px;
+        }
+
+        h1 {
+            color: #5cdb95;
+            font-size: 20px;
+            margin-bottom: 20px; /* Add some space below headers */
+        }
+
+        p {
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        div {
+            color: #5cdb95;
+            font-size: 14px;
+            margin-top: 20px; /* Add space above the debug message */
+        }
+
+        button {
+            background-color: #5cdb95;
+            color: #001f3f;
+            padding: 10px 15px;
+            margin-right: 10px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+
+        /* Add more styles as needed */
+    </style>
+</head>
+<body>
+    <h1>You can reach us at:</h1>
+    <p>...</p>
+    <p>Email: ___@___.it</p>
+    <p>...</p>
+    <p>Phone: +39.02.1111111.</p>
+    <p>...</p>
+    <p>Address: ... ITALY</p>
+    <p>...</p>
+
+    <div>
+        <p>{{ debug_message }}</p>
+    </div>
+
+    <!-- Back Button -->
+    <button onclick="goBack()">Back</button>
+
+    <!-- Home Button -->
+    <button onclick="goHome()">Home</button>
+
+    <script>
+        // Function to navigate back
+        function goBack() {
+            window.history.back();
+        }
+
+        // Function to navigate to the home page
+        function goHome() {
+            window.location.href = "{{ url_for('routes.index') }}";  // Replace 'index' with the actual route for your home page
+        }
+    </script>
+</body>
+</html>
