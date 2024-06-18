@@ -1,10 +1,8 @@
 #from app_factory import create_app
-from config.config import Config
 from flask import session, flash
 
 from models.user import (
-        Answer, Company, Area, Subarea, AreaSubareas)
-from flask import Flask
+    Area, Subarea, AreaSubareas)
 from config.config import Config
 from flask_wtf import FlaskForm
 
@@ -40,6 +38,7 @@ def get_subareas(area_id):
     return subareas_list
 
 
+
 def get_except_fields():
     return config_instance.EXCEPT_FIELDS
 
@@ -47,7 +46,7 @@ def get_current_directory():
     return config_instance.CURRENT_DIRECTORY
 
 def reset_to_guest():
-    from utils import reset_current_user_to_guest
+    from app.utils import reset_current_user_to_guest
     from app import logout_user, redirect, url_for  # Import other necessary functions
 
     logout_user()

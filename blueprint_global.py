@@ -1,8 +1,7 @@
 # blueprint_global.py
 from flask import Blueprint, render_template, request, flash, redirect, url_for, abort
-from db import db  # Assuming you have a SQLAlchemy database instance
-from models.user import (User, UserRoles, Role, Table, Questionnaire, Question, Answer, Company,
-                         QuestionnaireCompanies, CompanyUsers)
+from app.modules.db import db  # Assuming you have a SQLAlchemy database instance
+from models.user import (User)
 
 blueprint_global = Blueprint('blueprint_global', __name__)
 

@@ -1,18 +1,19 @@
 from flask_bcrypt import check_password_hash
-from models.user import Users, UserRoles, Role
+from models.user import Users
 from flask import current_app
 from flask import session
-from flask_login import login_user, logout_user, current_user, UserMixin
+from flask_login import UserMixin
 from sqlalchemy.orm import joinedload
 from flask_login import current_user
 
 from flask_sqlalchemy import SQLAlchemy
-from flask_babel import Domain
-
-
 class UserManager:
     def __init__(self, db: SQLAlchemy):
         self.db = db
+
+    def manage_users(self):
+        # Implement the user management logic here
+        print("Managing users... implement logic here")
 
     def authenticate_user222(self, username, password):
         try:
@@ -74,7 +75,7 @@ class UserManager:
 
     def load_user_by_username(self, username):
         try:
-            from db import db
+            from app.modules.db import db
             current_app.logger.info(f'***Loading user by username***: {username}')
             user_instance = db.Users.query.filter_by(username=username).first()
             # Commit the session if necessary

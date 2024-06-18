@@ -4,10 +4,9 @@ from datetime import datetime
 import json
 from flask_bcrypt import generate_password_hash, check_password_hash
 from flask_security import RoleMixin, UserMixin
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, LargeBinary, Numeric, func
-from sqlalchemy import func
+from sqlalchemy import DateTime
 from sqlalchemy.orm import relationship
-from sqlalchemy import or_, and_, Enum
+from sqlalchemy import or_, Enum
 from sqlalchemy.exc import IntegrityError
 # from sqlalchemy.dialects.mysql import JSON  # for MySQL
 # OR
@@ -15,14 +14,13 @@ from sqlalchemy.exc import IntegrityError
 # OR
 # from sqlalchemy.dialects.oracle import JSON  # for Oracle
 # OR
-from sqlalchemy.dialects.postgresql import JSON, JSONB # for PostgreSQL
 
 from sqlalchemy import Column, Integer, String, ForeignKey, TIMESTAMP, DATE, func
 
-from wtforms.fields import StringField, TextAreaField, DateTimeField, SelectField, BooleanField, SubmitField
+from wtforms.fields import StringField, SelectField, BooleanField
 from wtforms.validators import DataRequired, Regexp
 
-from db import db
+from app.modules.db import db
 
 class CheckboxField(BooleanField):
     def process_formdata(self, valuelist):
@@ -745,7 +743,6 @@ class BaseData(db.Model):
         return steps[0] if steps else None
     '''
 
-    from sqlalchemy.orm import aliased
     @classmethod
     def get_combined_subset(cls, lexic_id=None, area_id_list=None, subarea_id_list=None,
                             company_id=None, user_id=None, user_role=None,

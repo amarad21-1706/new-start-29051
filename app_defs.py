@@ -1,6 +1,5 @@
-from db import db
 from datetime import datetime
-from models.user import Post, UserRoles, Role, Users, AuditLog
+from models.user import Post, UserRoles, Role
 from sqlalchemy.exc import IntegrityError
 
 def get_user_roles(session=None, user_id=None):

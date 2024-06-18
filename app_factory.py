@@ -1,36 +1,33 @@
-import logging
-from flask import Flask, request
-from flask_sqlalchemy import SQLAlchemy
-from flask_login import current_user
-from flask_debugtoolbar import DebugToolbarExtension
-from flask_wtf.csrf import CSRFProtect
-from werkzeug.middleware.proxy_fix import ProxyFix
-from config.config import Config
+
+# app_factory.py
 import os
-import psycopg2
+import logging
+from flask_debugtoolbar import DebugToolbarExtension  # Ensure this import is present
 
+from app.app import create_app
+from app.modules.db import db
 
-class ExcludeRequestsFilter(logging.Filter):
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger(__name__)
+
+app = create_app()
+
+# Define ExcludeRequestsFilter if it's not defined elsewhere
+class ExcludeRequestsFilter:
+    def __init__(self):
+        pass  # Implement the necessary initialization
+
     def filter(self, record):
-        return not (record.args and len(record.args) > 0 and record.args[0] in ["GET", "POST", "PUT", "DELETE"])
+        # Implement the filter logic here
+        return True
+
+# Now you can use ExcludeRequestsFilter
+request_filter = ExcludeRequestsFilter()
+# Other code follows...
 
 
-def create_app(conf=None):
-    if conf is None:
-        conf = Config()
-
-    app = Flask(__name__)
-
-    @app.before_request
-    def before_request():
-        app.logger.debug("Handling request for %s", request.path)
-
-    @app.errorhandler(Exception)
-    def handle_exception(e):
-        app.logger.error("Exception occurred: %s", str(e))
-        return "Internal Server Error", 500
-
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
+with app.app_context():
+    # Initialize Flask-Admin instance
 
     if os.getenv('FLASK_ENV') == 'development':
         app.config['DEBUG'] = True
@@ -56,15 +53,14 @@ def create_app(conf=None):
     handler.setFormatter(formatter)
     app.logger.addHandler(handler)
 
-    csrf = CSRFProtect(app)
+    # csrf = CSRFProtect(app)
 
-    app.config.from_object(conf)
-
+    # app.config.from_object(conf)
 
     app.debug = True
     app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
     toolbar = DebugToolbarExtension(app)
 
     app.logger.debug("app_factory initialized")
-    return app
+
 

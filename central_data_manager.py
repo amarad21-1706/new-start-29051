@@ -1,4 +1,4 @@
-from db import db
+from app.modules.db import db
 
 class CentralDataManager:
     def __init__(self):

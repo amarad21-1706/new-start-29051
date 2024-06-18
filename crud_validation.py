@@ -1,5 +1,5 @@
 from sqlalchemy import inspect
-from utils.utils import get_except_fields
+from app.utils.utils import get_except_fields
 from flask import jsonify
 
 # validate each field

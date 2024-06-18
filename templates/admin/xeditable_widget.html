@@ -1,0 +1,18 @@
+{% block xeditable_widget %}
+<div class="editable-container">
+    <a href="#" class="xeditable"
+       data-type="{{ field_type }}"
+       data-name="{{ field_name }}"
+       data-pk="{{ record_id }}"
+       data-url="{{ update_url }}"
+       data-title="{{ field_label }}"
+       data-value="{{ field_value }}">
+       {{ field_value }}
+    </a>
+</div>
+<script>
+    $(document).ready(function() {
+        $('.xeditable').editable();
+    });
+</script>
+{% endblock %}

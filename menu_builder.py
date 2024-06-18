@@ -1,7 +1,7 @@
 # app/menu_builder.py
 from pathlib import Path
 import json
-from utils.utils import get_current_directory
+from app.utils.utils import get_current_directory
 from jinja2.runtime import Undefined
 
 class MenuBuilder:

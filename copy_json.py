@@ -1,10 +1,8 @@
 # not working
 import sqlite3
 import json
-from db import db
+from app.modules.db import db
 import os
-from models.user import (Questionnaire)
-from flask_session import Session
 
 # Connect to the SQLite database
 current_directory = os.getcwd()
@@ -27,11 +25,6 @@ with open('data.json', 'w') as json_file:
 
 # Close the SQLite connection
 sqlite_conn.close()
-
-
-import psycopg2
-import json
-from config import Config
 
 with app.app_context():
     bind_key = 'db1'  # Use the bind key corresponding to the desired database

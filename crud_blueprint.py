@@ -1,14 +1,12 @@
 # crud_blueprint.py
-from flask import Blueprint, render_template, request, flash, redirect, url_for, abort, jsonify, send_from_directory
+from flask import Blueprint, render_template, request, flash, redirect, url_for, jsonify
 from datetime import datetime
-from utils.utils import get_except_fields
+from app.utils.utils import get_except_fields
 
-from db import db  # Assuming you have a SQLAlchemy database instance
-from models.user import (Users, UserRoles, Role, Table, Questionnaire, Question, Answer, Company, CompanyUsers,
-                         QuestionnaireQuestions, QuestionnaireCompanies, CompanyUsers, Subject, Status,
+from app.modules.db import db  # Assuming you have a SQLAlchemy database instance
+from models.user import (Users, UserRoles, Role, Questionnaire, Answer, Company, QuestionnaireQuestions, QuestionnaireCompanies, CompanyUsers, Subject, Status,
                          Config, Workflow, Step, BaseData, Lexic, Question,
-                         WorkflowSteps, WorkflowBaseData, StepBaseData, Area, Subarea, AreaSubareas,
-                         Post)
+                         WorkflowSteps, WorkflowBaseData, StepBaseData, Area, Subarea, AreaSubareas)
 # crud_blueprint.py
 from sqlalchemy import inspect
 from crud_validation import validate_and_add_item

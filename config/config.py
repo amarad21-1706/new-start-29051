@@ -1,43 +1,22 @@
 
 import secrets
 import os
-import pandas as pd
 
 from flask_login import current_user
 import json
 import pytz
 
-from db import db
+from app.modules.db import db
 from models.user import (Company, CompanyUsers, Users, Role, UserRoles,
-                         Area, Subarea, AreaSubareas, Deadline, Interval,
+                         Area, Subarea, AreaSubareas, Interval,
                          QuestionnaireCompanies, Questionnaire, Question, QuestionnaireQuestions,
-                         get_config_values, Workflow, Step, BaseData, WorkflowSteps,
+                         get_config_values, Workflow, BaseData, WorkflowSteps,
                          WorkflowBaseData, StepBaseData, Post, AuditLog)
 
 from dateutil.relativedelta import relativedelta
 
 from dotenv import load_dotenv
 load_dotenv()  # Load environment variables from .env file if present
-
-def user_has_edit_workflow_permission(current_user):
-    # Replace this with your logic to check user roles or permissions
-    return current_user.role in ['Admin', 'Authority']  # Example based on user roles
-
-def user_has_edit_step_permission(current_user):
-    # Replace this with your logic to check user roles or permissions
-    return current_user.role in ['Admin', 'Authority']  # Example based on user roles
-
-def get_cet_time():
-    # Get the current time in UTC
-    utc_now = datetime.utcnow()
-
-    # Convert UTC time to CET
-    utc_timezone = pytz.timezone('UTC')
-    cet_timezone = pytz.timezone('CET')
-    utc_now = utc_timezone.localize(utc_now)
-    cet_now = utc_now.astimezone(cet_timezone)
-
-    return cet_now
 
 class Config:
     def __init__(self):
@@ -114,6 +93,7 @@ class Config:
         self.MAIL_USE_TLS = True
         self.MAIL_USE_SSL = False
 
+
 # Define a custom JSON encoder class to handle datetime serialization
 class DateTimeEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -155,6 +135,52 @@ encoding_scheme = {
   'DDT': {'type': 'Date', 'characteristic': 'Date and Time'},
   'BYN': {'type': 'Boolean', 'characteristic': 'Yes/No'},
 }
+
+from flask import current_app
+
+def initialize_intervals_and_configs(db):
+    with current_app.app_context():
+        if get_areas():
+            current_app.config['AREAS'] = get_areas()
+
+        for i in range(len(get_areas())):
+            if get_subareas(i):
+                current_app.config['SUBAREAS_' + str(i)] = get_subareas(i)
+
+        intervals = get_current_intervals(db.session)
+        current_app.config['CURRENT_INTERVALS'] = intervals
+
+def user_has_edit_workflow_permission(current_user):
+    # Replace this with your logic to check user roles or permissions
+    return current_user.role in ['Admin', 'Authority']  # Example based on user roles
+
+def user_has_edit_step_permission(current_user):
+    # Replace this with your logic to check user roles or permissions
+    return current_user.role in ['Admin', 'Authority']  # Example based on user roles
+
+def get_cet_time():
+    # Get the current time in UTC
+    utc_now = datetime.utcnow()
+
+    # Convert UTC time to CET
+    utc_timezone = pytz.timezone('UTC')
+    cet_timezone = pytz.timezone('CET')
+    utc_now = utc_timezone.localize(utc_now)
+    cet_now = utc_now.astimezone(cet_timezone)
+
+    return cet_now
+
+def get_subarea_name(area_id, subarea_id):
+    # Query the association table to fetch the Subarea ID associated with the given area_id and subarea_id
+    association_record = AreaSubareas.query.filter_by(area_id=area_id, subarea_id=subarea_id).first()
+    if association_record:
+        subarea_id = association_record.subarea_id
+        # Query the Subarea table to fetch the name based on the obtained subarea_id
+        subarea = Subarea.query.get(subarea_id)
+        if subarea:
+            return subarea.name
+    return None
+
 
 
 def decode_question_type(code, encoding_scheme):
@@ -408,7 +434,6 @@ def extract_year_from_fy(fy_string):
     return parts[-1]  # Return the last part, which should be the year
 
 
-from datetime import datetime
 def get_current_interval(interval):
     now = datetime.now()
 
@@ -436,9 +461,8 @@ def get_current_interval(interval):
     else:
         raise ValueError(f"Unsupported interval: {interval}")
 
-from datetime import datetime, timedelta
 
-from datetime import datetime, timedelta
+from datetime import timedelta
 
 def set_to_first_day(date, interval_ord, interval_id):
     if interval_id == 1:
@@ -842,10 +866,7 @@ def get_record_counts(session):
     return company_records, past_records
 
 
-from datetime import datetime
-
 import pandas as pd
-from datetime import datetime
 
 
 def get_time_qualifier(interval_id, interval_ord, year):
@@ -989,7 +1010,6 @@ def get_pd_report_from_base_data(session):
     return sorted_records
 
 
-from sqlalchemy import func
 def get_pd_report_from_base_data_wtq(engine):
     try:
         # Assuming BaseData and Company are your SQLAlchemy models
@@ -2029,17 +2049,6 @@ def get_pd_report_from_base_data_2(session, report_name):
 
     print(df.head())
 
-
-def get_subarea_name(area_id, subarea_id):
-    # Query the association table to fetch the Subarea ID associated with the given area_id and subarea_id
-    association_record = AreaSubareas.query.filter_by(area_id=area_id, subarea_id=subarea_id).first()
-    if association_record:
-        subarea_id = association_record.subarea_id
-        # Query the Subarea table to fetch the name based on the obtained subarea_id
-        subarea = Subarea.query.get(subarea_id)
-        if subarea:
-            return subarea.name
-    return None
 
 def get_subarea_interval_type(area_id, subarea_id):
     # Query the association table to fetch the Subarea ID associated with the given area_id and subarea_id

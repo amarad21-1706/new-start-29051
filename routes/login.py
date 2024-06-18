@@ -1,10 +1,10 @@
 # app/routes/login.py
 from flask import Blueprint
-from flask import render_template, request, redirect, url_for, flash
-from flask import current_app, redirect, render_template, url_for, flash
+from flask import request
+from flask import redirect, url_for, flash
 from flask_login import login_user
-from db import db
-from userManager101 import UserManager, Usr
+from app.modules.db import db
+from userManager101 import UserManager
 
 user_manager = UserManager(db)
 
