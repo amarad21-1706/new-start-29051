@@ -1,34 +1,26 @@
 
 # Create a dynamic form based on questions
 
-from wtforms import (Form, FormField, IntegerField, BooleanField, FloatField, SelectField, DateField,
-                     TimeField, FileField, StringField, TextAreaField, PasswordField, SubmitField)
-from wtforms.fields import (BooleanField, HiddenField, StringField, SelectField, FloatField, DecimalField,
-                            TimeField, DateField, DateTimeField,
-                            FileField, PasswordField, SubmitField, DateField, TextAreaField,
-                            MonthField, IntegerField)
+from datetime import datetime
+from wtforms import (DecimalField, StringField, BooleanField, FloatField, FileField, DateField,
+                     SelectField, FloatField, IntegerField, IntegerField, DateTimeField, FileField,
+                     Form, FormField, IntegerField, HiddenField, DateTimeField, MonthField,
+                     TimeField, FileField, TextAreaField, PasswordField, SubmitField, EmailField,
+                     RadioField
+                     )
 
 from wtforms.validators import DataRequired, Length, Email, EqualTo, Optional, NumberRange
 import re
 from datetime import datetime
 from wtforms import IntegerField, DateField, validators
 from flask_wtf import FlaskForm
-from wtforms import StringField, IntegerField, DateTimeField, FileField
-from wtforms.validators import DataRequired, Optional
 from wtforms_sqlalchemy.fields import QuerySelectField
-
 from models.user import (Subject, Step, Workflow, StepBaseData, WorkflowSteps, BaseData, Question, Questionnaire, QuestionnaireQuestions)
 from flask_admin.model.form import InlineFormAdmin
-
-from wtforms import IntegerField, EmailField  # Import necessary field type
-from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField, RadioField, SelectField, HiddenField, FormField, SubmitField
-from wtforms.validators import DataRequired, Optional, Length
 from enum import Enum
 
 from flask_admin.contrib.sqla.ajax import QueryAjaxModelLoader
 from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as _
-
 
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
@@ -508,17 +500,6 @@ class RegistrationForm(FlaskForm):
     submit = SubmitField('Sign Up')
 
 
-class TableForm(FlaskForm):
-    id = HiddenField('id')
-    name = StringField('Name', validators=[DataRequired()])
-    description = StringField('Description')
-    user_id = StringField('User ID', validators=[DataRequired()])
-    column1 = StringField('Column 1')
-    column2 = StringField('Column 2')
-    creation_date = StringField('Creation Date')
-    action = SelectField('Action', choices=[('add', 'Add'), ('update', 'Update'), ('remove', 'Remove')], default='add', validators=[DataRequired()])
-
-
 class UserRoleForm(FlaskForm):
     user = SelectField('User')
     role = SelectField('Role')
@@ -636,11 +617,6 @@ from wtforms import StringField, IntegerField, SelectField
 
 class DynamicForm(Form):
     pass
-
-
-from flask_wtf import FlaskForm as Form
-from wtforms import StringField, BooleanField, FloatField, FileField, DateField, SelectField, IntegerField
-from datetime import datetime
 
 
 # TODO unused?

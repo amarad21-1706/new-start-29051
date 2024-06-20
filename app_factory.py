@@ -24,6 +24,11 @@ class ExcludeRequestsFilter(logging.Filter):
         return not (record.args and len(record.args) > 0 and record.args[0] in ["GET", "POST", "PUT", "DELETE"])
 '''
 
+def my_locale_selector():
+    # Your logic to determine user locale
+    return 'en_EN'  # Example for French
+
+
 def create_app(conf=None):
     if conf is None:
         conf = Config()
@@ -53,13 +58,9 @@ def create_app(conf=None):
         #werkzeug_logger.setLevel(logging.WARNING)
 
     csrf = CSRFProtect(app)
-    babel = Babel(app)
+    # babel = Babel(app, locale_selector=my_locale_selector)
     mail = Mail(app)
     CORS(app)  # Allow all origins (for development only)
-
-    @babel.localeselector
-    def get_locale():
-        return request.accept_languages.best_match(['en', 'it', 'es', 'fr'])
 
     limiter = Limiter(
         get_remote_address,

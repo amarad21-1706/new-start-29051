@@ -29,8 +29,6 @@ from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired, Email
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
-from flask_babel import Babel, lazy_gettext as _
-
 from userManager101 import UserManager
 from workflow_manager import (add_transition_log, create_card,
                               get_model_statistics, create_deadline_card,
@@ -57,6 +55,8 @@ from forms.forms import (LoginForm, ForgotPasswordForm, ResetPasswordForm101, Re
         CustomSubjectAjaxLoader, BaseSurveyForm)
 
 from flask_mail import Mail, Message
+from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as _
+
 from app_factory import create_app
 
 from config.config import (extract_year_from_fy, get_current_interval, get_current_intervals,
@@ -381,11 +381,6 @@ def generate_password_reset_token(email):
     salt = app.config['SECURITY_PASSWORD_SALT']
     return serializer.dumps(email, salt=salt)
 
-'''
-@babel.localeselector
-def get_locale():
-    return request.accept_languages.best_match(['en', 'it', 'es', 'fr', 'de'])
-'''
 
 # TODO unused?
 def verify_password_reset_token(token, expiration=1800):
@@ -396,8 +391,6 @@ def verify_password_reset_token(token, expiration=1800):
         return None
     return email
 
-
-from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as _
 
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
@@ -8248,7 +8241,6 @@ def merge_answer_fields(base_fields_json, answer_data_json):
             merged_fields.append(field)
 
     return json.dumps(merged_fields)  # Return as JSON string if needed for consistency
-
 
 
 
