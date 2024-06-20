@@ -2,7 +2,7 @@
 # Create a dynamic form based on questions
 
 from wtforms import (Form, FormField, IntegerField, BooleanField, FloatField, SelectField, DateField,
-                     TimeField, FileField, StringField, TextAreaField)
+                     TimeField, FileField, StringField, TextAreaField, PasswordField, SubmitField)
 from wtforms.fields import (BooleanField, HiddenField, StringField, SelectField, FloatField, DecimalField,
                             TimeField, DateField, DateTimeField,
                             FileField, PasswordField, SubmitField, DateField, TextAreaField,
@@ -28,6 +28,12 @@ from enum import Enum
 
 from flask_admin.contrib.sqla.ajax import QueryAjaxModelLoader
 from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as _
+
+
+class LoginForm(FlaskForm):
+    username = StringField('Username', validators=[DataRequired()])
+    password = PasswordField('Password', validators=[DataRequired()])
+    submit = SubmitField('Login')
 
 
 class ForgotPasswordForm(FlaskForm):

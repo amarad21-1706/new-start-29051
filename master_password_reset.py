@@ -1,15 +1,12 @@
-from flask import Flask, render_template, flash, redirect, url_for, request
-from flask_sqlalchemy import SQLAlchemy
+# master_password_reset.py
+
+from flask import render_template, flash, redirect, url_for, request
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_wtf import FlaskForm
-from models.user import Users
-from wtforms import StringField, PasswordField, SubmitField
-from wtforms.validators import DataRequired
+from wtforms import PasswordField, SubmitField
+from wtforms.validators import DataRequired, EqualTo
 from db import db
-from app_factory import create_app
-
-app = create_app()
-db.init_app(app)
+from models.user import Users
 
 class PasswordResetManager:
     def authenticate_user(self, username, password):
@@ -26,6 +23,13 @@ class PasswordResetManager:
             print("User not found")
         return None
 
+
+class AdminResetPasswordForm(FlaskForm):
+    password = PasswordField('New Password', validators=[DataRequired()])
+    confirm_password = PasswordField('Confirm New Password', validators=[DataRequired(), EqualTo('password')])
+    submit = SubmitField('Reset Password')
+
+
 def reset_password(username, new_password):
     user = Users.query.filter_by(username=username).first()
     if user:
@@ -35,12 +39,7 @@ def reset_password(username, new_password):
     else:
         print(f"No user found with username {username}.")
 
-class AdminResetPasswordForm(FlaskForm):
-    username = StringField('Username', validators=[DataRequired()])
-    new_password = PasswordField('New Password', validators=[DataRequired()])
-    submit = SubmitField('Reset Password')
 
-@app.route('/admin_reset_password', methods=['GET', 'POST'])
 def admin_reset_password():
     form = AdminResetPasswordForm()
     if request.method == 'POST':
@@ -50,11 +49,3 @@ def admin_reset_password():
         flash('Password has been reset for the user.', 'success')
         return redirect(url_for('index'))
     return render_template('admin_reset_password.html', form=form)
-
-@app.route('/')
-def index():
-    form = AdminResetPasswordForm()
-    return render_template('admin_reset_password.html', form=form)
-
-if __name__ == '__main__':
-    app.run(debug=True)

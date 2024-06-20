@@ -6,7 +6,7 @@ import re
 
 # import logging
 # from logging import FileHandler, Formatter
-
+from flask_wtf.csrf import CSRFProtect
 from sqlalchemy import or_, and_, desc, func, not_, null, exists, extract, select
 from sqlalchemy import distinct
 from sqlalchemy.orm import sessionmaker
@@ -48,7 +48,7 @@ from models.user import (Users, UserRoles, Role, Table, Questionnaire, Question,
 
 from master_password_reset import admin_reset_password, AdminResetPasswordForm
 
-from forms.forms import (ForgotPasswordForm, ResetPasswordForm101, RegistrationForm,
+from forms.forms import (LoginForm, ForgotPasswordForm, ResetPasswordForm101, RegistrationForm,
                          QuestionnaireCompanyForm, CustomBaseDataForm,
         QuestionnaireQuestionForm, WorkflowStepForm, WorkflowBaseDataForm,
                          BaseDataWorkflowStepForm,
@@ -150,32 +150,24 @@ import os
 
 import plotly.graph_objects as go
 
-# app.py
 app = create_app()
 
+# Setup Mail
 mail = Mail(app)
-babel = Babel(app)
 
+# Setup Limiter
 limiter = Limiter(
     get_remote_address,
     app=app,
     default_limits=["200 per day", "50 per hour"],
     storage_uri="memory://",
 )
-db.init_app(app)
 
-CORS(app)  # Allow all origins (for development only)
+# Setup CORS
+CORS(app)
 
-# Create tables on app startup
-with app.app_context():
-    #print("App context is active:", app.app_context().stack)
-    db.create_all()
-
-# Function to generate a random CAPTCHA string
-
+# Setup LoginManager
 login_manager = LoginManager(app)
-# Define your custom template path
-
 # Register the password reset route
 app.add_url_rule('/admin_reset_password', 'admin_reset_password', admin_reset_password, methods=['GET', 'POST'])
 
@@ -184,10 +176,12 @@ def set_session():
     session['key'] = 'value'
     return 'Session set'
 
+
 @app.route('/get_session')
 def get_session():
     value = session.get('key')
     return f'Session value: {value}'
+
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -220,27 +214,6 @@ login_manager.login_message_category = 'info'  # Specify the category for flash 
 # Use the userManager101 for authentication
 user_manager = UserManager(db)
 user_roles = []
-
-# TODO DEBUG deactivate in prod or after first debug row
-app.config['DEBUG'] = False
-app.config['SQLALCHEMY_ECHO'] = True  # This will log all the SQL queries
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
-
-app.config['TEMPLATES_AUTO_RELOAD'] = True
-app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=15)  # Set session to expire in 5 minutes
-app.config['MAX_RECURSION_DEPTH'] = 12  # Example: 1 hour
-
-# CAPTCHA
-#app.config['RECAPTCHA_PUBLIC_KEY'] = some_keys['recaptcha_public_key']
-#app.config['RECAPTCHA_PRIVATE_KEY'] = some_keys['recaptcha_private_key']
-app.config['WTF_CSRF_ENABLED'] = False  # Disable CSRF protection for local development
-
-app.config['SQLALCHEMY_ENGINE_OPTIONS'] = {
-    'connect_args': {
-        'options': '-c statement_timeout=60000'  # Set timeout to 60 seconds
-    }
-}
 
 # TODO check directory for the prod env in Render!
 session_dir = get_current_directory() + '/static/files/'
@@ -641,13 +614,14 @@ def get_documents_query(session, current_user):
 @app.route('/access/login', methods=['GET', 'POST'])
 @limiter.limit("200/day;96/hour;12/minute")
 def login():
-    if request.method == 'POST':
+    form = LoginForm()
+    if form.validate_on_submit() and request.method == 'POST':
         # Verify CAPTCHA
         user_captcha = request.form['captcha']
         if 'captcha' in session and session['captcha'] == user_captcha:
             # CAPTCHA entered correctly
-            username = request.form.get('username')
-            password = request.form.get('password')
+            username = form.username.data
+            password = form.password.data
             user = user_manager.authenticate_user(username, password)
             if user:
                 if not current_user.is_authenticated:
@@ -684,23 +658,23 @@ def login():
 
                 # Redirect based on user roles
                 return redirect_based_on_role(user)
-
             else:
                 flash('Invalid username or password. Please try again.', 'error')
                 captcha_text, captcha_image = generate_captcha(300, 100, 5)
                 session['captcha'] = captcha_text
-                return render_template('access/login.html', captcha=captcha_text, captcha_image=captcha_image)
+                return render_template('access/login.html', form=form, captcha_image=captcha_image)
         else:
             # CAPTCHA entered incorrectly
             flash('Incorrect CAPTCHA! Please try again.', 'error')
             captcha_text, captcha_image = generate_captcha(300, 100, 5)
             session['captcha'] = captcha_text
-            return render_template('access/login.html', captcha=captcha_text, captcha_image=captcha_image)
+            return render_template('access/login.html', form=form, captcha_image=captcha_image)
 
     # Generate and render CAPTCHA image within the template
     captcha_text, captcha_image = generate_captcha(300, 100, 5)
     session['captcha'] = captcha_text
-    return render_template('access/login.html', captcha=captcha_text, captcha_image=captcha_image)
+    return render_template('access/login.html', form=form, captcha_image=captcha_image)
+
 
 def redirect_based_on_role(user):
     if user.has_role('Admin'):
@@ -717,107 +691,6 @@ def redirect_based_on_role(user):
         return redirect(url_for('guest_page'))
     else:
         return redirect(url_for('guest_page'))
-
-
-@app.route('/access/login', methods=['GET', 'POST'])
-@limiter.limit("200/day;96/hour;12/minute")
-def login555():
-    if request.method == 'POST':
-        # Verify CAPTCHA
-        user_captcha = request.form['captcha']
-        if 'captcha' in session and session['captcha'] == user_captcha:
-            # CAPTCHA entered correctly
-            username = request.form.get('username')
-            password = request.form.get('password')
-            print('username, pwd', username, password)
-            user = user_manager.authenticate_user(username, password)
-            print('user', user)
-            if user:
-                if not current_user.is_authenticated:  # Check if the user is already logged in
-                    login_user(user)
-                    flash('Login Successful')
-                    # Proceed with other session settings
-                    cet_time = get_cet_time()
-                    print('time', cet_time)
-                    try:
-                        create_message(db.session, user_id=user.id, message_type='email', subject='Security check',
-                                       body='È stato rilevato un nuovo accesso al tuo account il ' +
-                                            cet_time.strftime('%Y-%m-%d') + '. Se eri tu, non devi fare nulla. ' +
-                                            'In caso contrario, ti aiuteremo a proteggere il tuo account; ' +
-                                            "non rispondere a questa mail e contatta l'amministratore del sistema. ",
-                                       sender='System', company_id=None,
-                                       lifespan='one-off', allow_overwrite=True)
-                    except:
-                        print('Error creating logon message')
-
-                    session['user_roles'] = [role.name for role in user.roles] if user.roles else []
-                    session['user_id'] = getattr(user, 'id')
-                    session['username'] = username
-
-                    try:
-                        company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-                    except:
-                        company_id = None
-                        pass
-
-                    if company_id is not None and isinstance(company_id, int):
-                        try:
-                            subfolder = datetime.now().year
-                            pass
-                        except Exception as e:
-                            pass
-
-                    user_roles = session['user_roles']
-
-                    # Redirect based on user roles
-                    if user.has_role('Admin'):
-                        return redirect(url_for('admin_page'))
-                    elif user.has_role('Authority'):
-                        return redirect(url_for('authority_page'))
-                    elif user.has_role('Manager'):
-                        return redirect(url_for('manager_page'))
-                    elif user.has_role('Employee'):
-                        return redirect(url_for('employee_page'))
-                    elif user.has_role('Provider'):
-                        return redirect(url_for('provider_page'))
-                    elif user.has_role('Guest'):
-                        return redirect(url_for('guest_page'))
-                    else:
-                        return redirect(url_for('guest_page'))
-
-                else:
-                    # User is already authenticated, just redirect based on user roles
-                    user_roles = session['user_roles']
-                    if user.has_role('Admin'):
-                        return redirect(url_for('admin_page'))
-                    elif user.has_role('Authority'):
-                        return redirect(url_for('authority_page'))
-                    elif user.has_role('Manager'):
-                        return redirect(url_for('manager_page'))
-                    elif user.has_role('Employee'):
-                        return redirect(url_for('employee_page'))
-                    elif user.has_role('Provider'):
-                        return redirect(url_for('provider_page'))
-                    elif user.has_role('Guest'):
-                        return redirect(url_for('guest_page'))
-                    else:
-                        return redirect(url_for('guest_page'))
-            else:
-                flash('Invalid username or password. Please try again.', 'error')
-                captcha_text, captcha_image = generate_captcha(300, 100, 5)
-                session['captcha'] = captcha_text
-                return render_template('access/login.html', captcha=captcha_text, captcha_image=captcha_image)
-        else:
-            # CAPTCHA entered incorrectly
-            flash('Incorrect CAPTCHA! Please try again.', 'error')
-            captcha_text, captcha_image = generate_captcha(300, 100, 5)
-            session['captcha'] = captcha_text
-            return render_template('access/login.html', captcha=captcha_text, captcha_image=captcha_image)
-
-    # Generate and render CAPTCHA image within the template
-    captcha_text, captcha_image = generate_captcha(300, 100, 5)
-    session['captcha'] = captcha_text
-    return render_template('access/login.html', captcha=captcha_text, captcha_image=captcha_image)
 
 
 
@@ -8920,7 +8793,7 @@ if __name__ == '__main__':
     '''
     #port = int(os.environ.get('PORT', 5000))
 
-    port = int(os.environ.get('PORT', 10000))
+    port = int(os.environ.get('PORT', 5000))
     #logging.basicConfig(level=logging.DEBUG)
     # logging.debug(f"Starting app on port {port}")
     # TODO DEBUG

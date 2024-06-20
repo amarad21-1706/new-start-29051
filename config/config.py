@@ -65,17 +65,21 @@ class Config:
         '''
 
         self.SECRET_KEY = os.environ.get('SECRET_KEY_2')
+        self.SECURITY_PASSWORD_SALT = os.environ.get('SECURITY_PASSWORD_SALT_')
 
         # PostgreSQL
         self.SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
         self.SQLALCHEMY_BINDS = {
             'db1': os.environ.get('DATABASE_URL_DB1')
         }
+        # TODO DEBUG deactivate in prod or after first debug row
+        # self.DEBUG = True
+        self.SQLALCHEMY_ECHO = False  # This will log all or none of the SQL queries
+        self.SQLALCHEMY_TRACK_MODIFICATIONS = True
+        # self.DEBUG_TB_INTERCEPT_REDIRECTS = False
 
-        self.SQLALCHEMY_TRACK_MODIFICATIONS = False
         self.BOOTSTRAP_USE_MINIFIED = False
         self.BOOTSTRAP_SERVE_LOCAL = True
-        self.SQLALCHEMY_ECHO = False
         self.EXCEPT_FIELDS = ["id", "email", "user_id", "role_id", "created_on", "updated_on",
                               "end_of_registration", "password", "company_id", "company"]
         self.CURRENT_DIRECTORY = self.current_directory
@@ -83,13 +87,29 @@ class Config:
         self.COMPANY_FILES_DIR =f"/{self.current_directory}/static/docs/company_files/"
         self.CRUD_ADD_TEMPLATE = f"/{self.current_directory}/templates/crud_add_template.html"
 
-        self.SECURITY_PASSWORD_SALT = os.environ.get('SECURITY_PASSWORD_SALT_')
         self.STATIC_FOLDER = 'static'
         self.ASSETS_FOLDER = 'assets'
-        self.MAX_RECURSION_DEPTH = 12
+        self.MAX_RECURSION_DEPTH = 1000
+        self.TEMPLATES_AUTO_RELOAD = True
+        self.SQLALCHEMY_COMMIT_ON_TEARDOWN = True
+        self.PERMANENT_SESSION_LIFETIME = timedelta(minutes=60)  # Set session to expire in 5 minutes
+        self.SEND_FILE_MAX_AGE_DEFAULT = 0  # Disable caching for development
+
+        self.SESSION_TYPE = 'filesystem'
 
         self.RECAPTCHA_PUBLIC_KEY = os.environ.get('RECAPTCHA_PUBLIC_KEY')
         self.RECAPTCHA_PRIVATE_KEY = os.environ.get('RECAPTCHA_PRIVATE_KEY')
+
+        # CAPTCHA
+        # selfRECAPTCHA_PUBLIC_KEY = some_keys['recaptcha_public_key']
+        # selfRECAPTCHA_PRIVATE_KEY = some_keys['recaptcha_private_key']
+        self.WTF_CSRF_ENABLED = False  # Disable CSRF protection for local development
+
+        self.SQLALCHEMY_ENGINE_OPTIONS = {
+            'connect_args': {
+                'options': '-c statement_timeout=60000'  # Set timeout to 60 seconds
+            }
+        }
 
         self.TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
         self.TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
@@ -97,7 +117,6 @@ class Config:
 
         #self.SESSION_COOKIE_HTTPONLY = True
         #self.SESSION_COOKIE_SECURE = True  # Only set to True if using HTTPS
-
 
         # Emailing
         '''

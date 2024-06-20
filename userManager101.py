@@ -14,26 +14,6 @@ class UserManager:
     def __init__(self, db: SQLAlchemy):
         self.db = db
 
-    def authenticate_user222(self, username, password):
-        try:
-            print('auth', username, password)
-            user = Users.query.filter_by(username=username).options(joinedload(Users.roles)).first()
-            print('user', user)
-            if user and check_password_hash(user.password_hash, password):
-                print('checked ok', user)
-                session['user_id'] = user.id
-                session['username'] = user.username
-                print('just logged in', user.id, user.username, user)
-
-                return user
-            else:
-                print('not logged in!')
-
-                return None
-        except Exception as e:
-            print(f'Db error (4): {e}')
-            return None
-
 
     def authenticate_user(self, username, password):
         try:

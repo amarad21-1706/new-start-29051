@@ -1,93 +1,89 @@
+
+
 # app_factory.py
 
 import logging
-from flask import Flask
-
-from werkzeug.middleware.proxy_fix import ProxyFix
-from config.config import Config, some_keys
-#import secrets
-#from flask_bootstrap import Bootstrap
-from flask_wtf.csrf import CSRFProtect
-
-from flask_debugtoolbar import DebugToolbarExtension
-from flask import Flask, request, render_template, redirect, url_for, flash, session
-from twilio.rest import Client
 import os
-
-import psycopg2
-from sqlalchemy import dialects
-
+from flask import Flask, request
+from flask_login import LoginManager
+from flask_wtf.csrf import CSRFProtect
+from werkzeug.middleware.proxy_fix import ProxyFix
+from flask_babelex import Babel
+from flask_debugtoolbar import DebugToolbarExtension
+from flask_mail import Mail
+from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
+from config.config import Config
+from db import db
 
 class ExcludeRequestsFilter(logging.Filter):
     def filter(self, record):
         return not (record.args and len(record.args) > 0 and record.args[0] in ["GET", "POST", "PUT", "DELETE"])
 
+
 def create_app(conf=None):
     if conf is None:
         conf = Config()
 
-    #app = Flask(__name__, static_folder='frontend/dist', template_folder='frontend/dist')
     app = Flask(__name__)
-    # Wrap the Flask app with ProxyFix
+    app.config.from_object(conf)
+
+    print(f"SECRET_KEY in create_app: {app.config.get('SECRET_KEY')[:10]}")
+
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
 
-    # Set up logging based on the environment
-
-    # Set up logging based on the environment
     if os.getenv('FLASK_ENV') == 'development':
         app.config['DEBUG'] = True
-        # Configure Flask app logger
-        app.logger.setLevel(logging.INFO)
-
-        # Configure Werkzeug logger to suppress HTTP request logs
+        app.config['SQLALCHEMY_ECHO'] = True
+        app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = True
+        app.config['WTF_CSRF_ENABLED'] = False  # Disable CSRF protection for local development
+        app.logger.setLevel(logging.DEBUG)
         werkzeug_logger = logging.getLogger('werkzeug')
         werkzeug_logger.setLevel(logging.INFO)
-
-        # Apply custom filter to suppress HTTP request logs
-        request_filter = ExcludeRequestsFilter()
-        werkzeug_logger.addFilter(request_filter)
-
     else:
         app.config['DEBUG'] = False
-        # Configure Flask app logger
-        app.logger.setLevel(logging.INFO)
-
-        # Configure Werkzeug logger to suppress HTTP request logs
+        app.config['SQLALCHEMY_ECHO'] = False
+        app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
+        app.config['WTF_CSRF_ENABLED'] = True
+        app.logger.setLevel(logging.WARNING)
         werkzeug_logger = logging.getLogger('werkzeug')
         werkzeug_logger.setLevel(logging.WARNING)
 
     csrf = CSRFProtect(app)
+    babel = Babel(app)
+    mail = Mail(app)
+    CORS(app)  # Allow all origins (for development only)
 
-    #Bootstrap(app)
+    @babel.localeselector
+    def get_locale():
+        return request.accept_languages.best_match(['en', 'it', 'es', 'fr'])
 
-    #app.config['SESSION_TYPE'] = 'filesystem'  # You can choose other session types as well
-    #Session(app)
+    limiter = Limiter(
+        get_remote_address,
+        app=app,
+        default_limits=["200 per day", "50 per hour"],
+        storage_uri="memory://",
+    )
 
-    app.config.from_object(conf)
-    app.config['STATIC_FOLDER'] = 'static'
-    app.config['ASSETS_FOLDER'] = 'assets'
-    app.config['SESSION_TYPE'] = 'filesystem'
+    db.init_app(app)
 
-    app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0  # Disable caching for development
+    login_manager = LoginManager()
+    login_manager.init_app(app)
+    login_manager.login_view = "login"
 
-    app.config['TEMPLATES_AUTO_RELOAD'] = True
-    app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
-    app.config['PERMANENT_SESSION_LIFETIME'] = 3600  # Example: 1 hour
+    with app.app_context():
+        from models import user  # Importing models to create tables
+        from routes import routes  # Importing routes to register them
+        db.create_all()
 
-    # CAPTCHA
-    # app.config['SECRET_KEY'] = some_keys['secret_key_2']
+    # Configure logging
+    if app.config['DEBUG']:
+        logging.basicConfig(level=logging.DEBUG)
+    else:
+        logging.basicConfig(level=logging.WARNING)
 
-    print('mail server', app.config['SECRET_KEY'][:10], app.config['MAIL_SERVER'])
-    # TODO reactivate for production!
-    app.config['WTF_CSRF_ENABLED'] = True  # Disable CSRF protection for local development
 
-    # Set the logging level to DEBUG
-    # logging.basicConfig(level=logging.DEBUG)
-
-    # environment variablesg
-
-    app.debug = False
-    app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
-    # toolbar = DebugToolbarExtension(app)
+    toolbar = DebugToolbarExtension(app)  # Ensure this line comes after app.config is set
 
     return app
