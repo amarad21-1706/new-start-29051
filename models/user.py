@@ -16,9 +16,12 @@ from sqlalchemy.exc import IntegrityError
 # OR
 # from sqlalchemy.dialects.mysql import JSON  # for MySQL
 # OR
-from sqlalchemy.dialects.sqlite import JSON  # for SQLite
+from sqlalchemy.dialects.sqlite import JSON # for SQLite
 # OR
 # from sqlalchemy.dialects.oracle import JSON  # for Oracle
+# OR
+from sqlalchemy.dialects.postgresql import JSONB
+
 import json
 from wtforms.validators import DataRequired, Regexp
 
@@ -30,6 +33,17 @@ class CheckboxField(BooleanField):
             self.data = False
     def populate_obj(self, obj, name):
         setattr(obj, name, "Yes" if self.data else "No")  # Customize as per your model
+
+
+# TODO create ContainerCompanies and ContainerRoles?
+class Container(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    page = db.Column(db.String(255), nullable=False)
+    position = db.Column(db.String(255))
+    content_type = db.Column(db.String(50), nullable=False)
+    content = db.Column(JSONB, nullable=False)
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    updated_at = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
 
 
 class Users(db.Model, UserMixin):

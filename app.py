@@ -37,7 +37,7 @@ from workflow_manager import (add_transition_log, create_card,
                               create_model_card, deadline_approaching)
 
 from app_defs import get_user_roles, create_message, generate_menu_tree
-from models.user import (Users, UserRoles, Role, Table, Questionnaire, Question,
+from models.user import (Users, UserRoles, Role, Container, Questionnaire, Question,
         QuestionnaireQuestions,
         Answer, Company, Area, Subarea, AreaSubareas,
         QuestionnaireCompanies, CompanyUsers, Status, Lexic,
@@ -69,7 +69,7 @@ from config.config import (extract_year_from_fy, get_current_interval, get_curre
         generate_workflow_document_report_data, generate_document_step_report_data, get_cet_time, remove_duplicates,
         normalize_structure, compare_structures, some_keys)
 
-from admin_views import (CompanyView, QuestionnaireView, QuestionView,
+from admin_views import (ContainerAdmin, CompanyView, QuestionnaireView, QuestionView,
                          StatusView, LexicView, AreaView, StepQuestionnaireView,
         SubareaView, SubjectView, PostView, TicketView, WorkflowView, StepView, AuditLogView,
         QuestionnaireQuestionsView, WorkflowStepsView, QuestionnaireCompaniesView,
@@ -697,7 +697,7 @@ def redirect_based_on_role(user):
 @app.route('/left_menu', methods=['GET', 'POST'])
 @generate_route_and_menu('/home', allowed_roles=["Employee"], template='home/left_menu.html')
 def left_menu():
-    app.logger.debug("Home route accessed")
+    #app.logger.debug("Home route accessed")
 
     username = current_user.username if current_user.is_authenticated else "Guest"
     if callable(getattr(current_user, 'is_authenticated', None)):
@@ -707,6 +707,11 @@ def left_menu():
     user_roles = session.get('user_roles', [])
     allowed_roles = ["Employee", "Manager", "Authority", "Admin", "Provider"]
     #menu_builder_instance = MenuBuilder(main_menu_items, allowed_roles=allowed_roles)
+
+    # TODO select containers by role, company etc!
+    containers = Container.query.filter_by(page=1).all()
+
+    print('containers', containers)
 
     # Check if the lists intersect
     intersection = set(user_roles) & set(allowed_roles)
@@ -738,6 +743,7 @@ def left_menu():
         "allowed_roles": allowed_roles,
         "limited_menu": limited_menu,
         "left_menu_items": left_menu_items,
+        "containers": containers,
     }
     print('additional data', additional_data)
     return render_template('home/home.html', **additional_data)
@@ -748,7 +754,7 @@ def left_menu():
                          limited_menu=True)
 def index():
 
-    app.logger.debug("Home route accessed")
+    # app.logger.debug("Home route accessed")
     user_id = session.get('user_id')
     user_roles = session.get('user_roles', [])
     #user_roles = ['Guest']
@@ -5687,6 +5693,8 @@ admin_app10.add_view(StepView(Step, db.session, name='D.2 List of Steps',
 admin_app10.add_view(WorkflowStepsView(WorkflowSteps, db.session,
                                        name='C.3 Association of Steps to Workflows',
                                        endpoint='workflow_steps_questionnaire_view'))
+
+admin_app10.add_view(ContainerAdmin(Container, db.session, name='Containers'))
 #admin_app10.add_view(StatusView(Status, db.session, name='E. Dictionary of Status',
 #                                endpoint='status_questionnaire_view'))
 
@@ -6675,8 +6683,8 @@ def get_left_menu_items_limited(role, area):
 @generate_route_and_menu('/index', allowed_roles=["Guest"], template='home/home.html', include_protected=False)
 def guest_page():
 
-    app.logger.debug("Home route accessed")
-    print('guest page')
+    # app.logger.debug("Home route accessed")
+    # print('guest page')
     is_authenticated = current_user.is_autenticated
     # Render the home page with 'Guest' menu
     additional_data = {
@@ -8733,7 +8741,7 @@ def back():
 @app.route('/')
 def home():
 
-    app.logger.debug("Home route accessed")
+    # app.logger.debug("Home route accessed")
     return render_template('index.html')  # Render your home page template
 
 

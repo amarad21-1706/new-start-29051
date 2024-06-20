@@ -260,12 +260,12 @@
             <!-- Main content area -->
             <div class="col-md-9">
                 <h1>ILM - piattaforma digitale</h1>
-                <p>This is the home page content - to be customized as needed (v.1.3.1).</p>
+                <p>This is the general home page content - to be customized as needed (v.1.3.1).</p>
 
                 <!-- Display content based on user roles -->
                 {% if "Admin" in user_roles %}
                     <p>(Admin)</p>
-                    <p>This is the admin landing page - to be customized as needed (v.1.3.1).</p>
+                    <p>This is the Admin landing page - to be customized as needed (v.1.3.2).</p>
                 {% endif %}
                 {% if "Authority" in user_roles %}
                     <p>(Authority)</p>
@@ -279,6 +279,21 @@
                     <p>(Employee)</p>
                     <!-- Add more content specific to Employee users -->
                 {% endif %}
+
+                <!-- Containers -->
+
+                <p>"Containers" (text, documents, multimedia files, charts, cards etc.) to be placed here.</p>
+                {% for container in containers %}
+                    {% if container.content_type == 'text' %}
+                        <div>{{ container.content.text }}</div>
+                    {% elif container.content_type == 'file' %}
+                        <a href="{{ url_for('static', filename=container.content.file_path) }}">Download</a>
+                    {% elif container.content_type == 'multimedia' %}
+                        <video src="{{ url_for('static', filename=container.content.video_path) }}" controls></video>
+                    {% elif container.content_type == 'chart' %}
+                        <img src="{{ url_for('static', filename=container.content.chart_path) }}" alt="Chart">
+                    {% endif %}
+                {% endfor %}
             </div>
         </div>
     </div>

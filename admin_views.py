@@ -5,7 +5,7 @@ from flask_admin.model.fields import InlineFormField, InlineFieldList
 from wtforms.fields import StringField, TextAreaField, DateTimeField, SelectField, BooleanField, SubmitField
 #from wtforms.ext.sqlalchemy.fields import QuerySelectField
 from wtforms.validators import InputRequired, DataRequired, Length, Email, EqualTo
-from flask_admin.form import Select2Widget
+from flask_admin.form import Select2Widget, rules
 from flask_admin.contrib.sqla import ModelView
 from flask_admin import BaseView
 from flask_admin.base import expose
@@ -17,7 +17,7 @@ from flask_admin.form import rules
 from flask import current_app
 from flask_login import current_user
 from flask_admin.actions import action  # Import the action decorator
-
+from flask_admin.form import JSONField
 from flask.views import MethodView
 from flask_admin.contrib.sqla import ModelView
 from copy import deepcopy
@@ -31,6 +31,14 @@ from models.user import (Users, UserRoles, Role, Table, Questionnaire, Question,
         AuditLog, Post, Ticket, StepQuestionnaire,
         Workflow, Step, BaseData, WorkflowSteps, WorkflowBaseData, StepBaseData, Config, get_config_values)
 
+
+class ContainerAdmin(ModelView):
+    form_overrides = {
+        'content': JSONField
+    }
+    form_create_rules = [
+        rules.FieldSet(('page', 'position', 'content_type', 'content'), 'Container Details')
+    ]
 
 # Custom view for surveys open for editing
 class OpenQuestionnairesView(BaseView):

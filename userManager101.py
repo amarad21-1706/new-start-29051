@@ -26,10 +26,9 @@ class UserManager:
                 session['username'] = user.username
                 session['roles'] = [role.name for role in user.roles]
                 print('roles', session['roles'])
-                print('just logged in', user.id, user.username, user)
                 return user
             else:
-                print('not logged in!')
+                print('Not logged in!')
                 session['user_id'] = None
                 session['username'] = 'guest'
                 session['roles'] = ['guest']
@@ -55,7 +54,7 @@ class UserManager:
     def load_user_by_username(self, username):
         try:
             from db import db
-            current_app.logger.info(f'***Loading user by username***: {username}')
+            #current_app.logger.info(f'***Loading user by username***: {username}')
             user_instance = db.Users.query.filter_by(username=username).first()
             # Commit the session if necessary
             db.session.commit()
