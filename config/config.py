@@ -97,6 +97,8 @@ class Config:
 
         self.SESSION_TYPE = 'filesystem'
 
+        self.SEND_FILE_MAX_AGE_DEFAULT = 0  # Disable caching for development
+
         self.RECAPTCHA_PUBLIC_KEY = os.environ.get('RECAPTCHA_PUBLIC_KEY')
         self.RECAPTCHA_PRIVATE_KEY = os.environ.get('RECAPTCHA_PRIVATE_KEY')
 
@@ -105,9 +107,23 @@ class Config:
         # selfRECAPTCHA_PRIVATE_KEY = some_keys['recaptcha_private_key']
         self.WTF_CSRF_ENABLED = False  # Disable CSRF protection for local development
 
+        '''
         self.SQLALCHEMY_ENGINE_OPTIONS = {
             'connect_args': {
-                'options': '-c statement_timeout=60000'  # Set timeout to 60 seconds
+                'options': '-c statement_timeout=60000',  # Set timeout to 60 seconds
+                'connect_timeout': 30  # Set connection timeout to 30 seconds
+            }
+        }
+        '''
+
+        self.SQLALCHEMY_ENGINE_OPTIONS = {
+            'pool_size': 10,
+            'pool_timeout': 30,
+            'pool_recycle': 1800,  # Recycle connections after 30 minutes
+            'pool_pre_ping': True,  # Check connections before using them
+            'connect_args': {
+                'options': '-c statement_timeout=60000',  # Set timeout to 60 seconds
+                'connect_timeout': 30  # Set connection timeout to 30 seconds
             }
         }
 

@@ -15,7 +15,9 @@ from datetime import datetime
 from wtforms import IntegerField, DateField, validators
 from flask_wtf import FlaskForm
 from wtforms_sqlalchemy.fields import QuerySelectField
-from models.user import (Subject, Step, Workflow, StepBaseData, WorkflowSteps, BaseData, Question, Questionnaire, QuestionnaireQuestions)
+from models.user import (Users, Company, Subject, Step, Workflow, StepBaseData, WorkflowSteps, BaseData,
+                         Question, Questionnaire, QuestionnaireQuestions, Status, LegalDocument,
+                         Area, Subarea, Lexic, Workflow, Interval, Step)
 from flask_admin.model.form import InlineFormAdmin
 from enum import Enum
 
@@ -240,7 +242,6 @@ class CustomBaseDataForm(FlaskForm):
     fn9 = StringField('FN9', validators=[Optional()])
     file_path = StringField('File Path', validators=[Optional()])
     no_action = IntegerField('No Action', validators=[Optional()])
-
 
 
 # Define the UserForm class

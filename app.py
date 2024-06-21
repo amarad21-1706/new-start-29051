@@ -150,10 +150,13 @@ import os
 
 import plotly.graph_objects as go
 
+print('1')
 app = create_app()
+print('app created')
 
 # Setup Mail
 mail = Mail(app)
+print('mail server active')
 
 # Setup Limiter
 limiter = Limiter(
@@ -162,14 +165,19 @@ limiter = Limiter(
     default_limits=["200 per day", "50 per hour"],
     storage_uri="memory://",
 )
+print('limiter active')
 
 # Setup CORS
 CORS(app)
+print('CORS active')
 
 # Setup LoginManager
 login_manager = LoginManager(app)
+print('login manager active')
+
 # Register the password reset route
 app.add_url_rule('/admin_reset_password', 'admin_reset_password', admin_reset_password, methods=['GET', 'POST'])
+print('url rule set')
 
 @app.route('/set_session')
 def set_session():
@@ -205,7 +213,6 @@ def before_request():
     g.current_user = current_user
     pass
 
-app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0  # Disable caching for development
 bcrypt = Bcrypt(app)
 # Set the login view (replace 'login' with your actual login route)
 login_manager.login_view = 'login'

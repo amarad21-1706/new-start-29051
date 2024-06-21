@@ -36,7 +36,8 @@ def create_app(conf=None):
     app = Flask(__name__)
     app.config.from_object(conf)
 
-    print(f"SECRET_KEY in create_app: {app.config.get('SECRET_KEY')[:10]}")
+    lun_sk = len(conf.SECRET_KEY)
+    print(f"SECRET_KEY in create_app: [{lun_sk}]")
 
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
 
