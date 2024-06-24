@@ -16,6 +16,13 @@
             background-size: cover;
             background-repeat: no-repeat;
         }
+        .content-block {
+            color: #f1f1f1;  /* Light color for dark background */
+            background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent background */
+            padding: 10px;
+            border-radius: 5px;
+            text-shadow: 1px 1px 2px #000; /* Adding text shadow for better readability */
+        }
         .flashes {
             margin: 0;
             padding: 0;
@@ -153,6 +160,7 @@
     </style>
 </head>
 <body>
+
     {% macro render_menu(menu_items, user_roles, level=1) %}
         {% for menu_item in menu_items %}
             {% if menu_item_allowed(menu_item, user_roles) %}
@@ -281,19 +289,19 @@
                 {% endif %}
 
                 <!-- Containers -->
-
                 <p>"Containers" (text, documents, multimedia files, charts, cards etc.) to be placed here.</p>
                 {% for container in containers %}
                     {% if container.content_type == 'text' %}
-                        <div>{{ container.content.text }}</div>
+                        <div class="content-block">{{ container.content['content'] }}</div>
                     {% elif container.content_type == 'file' %}
-                        <a href="{{ url_for('static', filename=container.content.file_path) }}">Download</a>
+                        <a class="content-block" href="{{ url_for('static', filename=container.content['file_path']) }}">Download</a>
                     {% elif container.content_type == 'multimedia' %}
-                        <video src="{{ url_for('static', filename=container.content.video_path) }}" controls></video>
+                        <video class="content-block" src="{{ url_for('static', filename=container.content['video_path']) }}" controls></video>
                     {% elif container.content_type == 'chart' %}
-                        <img src="{{ url_for('static', filename=container.content.chart_path) }}" alt="Chart">
+                        <img class="content-block" src="{{ url_for('static', filename=container.content['chart_path']) }}" alt="Chart">
                     {% endif %}
                 {% endfor %}
+
             </div>
         </div>
     </div>

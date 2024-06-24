@@ -10,6 +10,8 @@ from flask_wtf.csrf import CSRFProtect
 from sqlalchemy import or_, and_, desc, func, not_, null, exists, extract, select
 from sqlalchemy import distinct
 from sqlalchemy.orm import sessionmaker
+
+from sqlalchemy.exc import OperationalError
 from db import db
 from flask import g
 from flask import flash
@@ -41,7 +43,7 @@ from models.user import (Users, UserRoles, Role, Container, Questionnaire, Quest
         QuestionnaireCompanies, CompanyUsers, Status, Lexic,
         Interval, Subject,
         AuditLog, Post, Ticket, StepQuestionnaire,
-        Workflow, Step, BaseData, WorkflowSteps, WorkflowBaseData,
+        Workflow, Step, BaseData, Container, WorkflowSteps, WorkflowBaseData,
                          StepBaseData, Config, get_config_values)
 
 from master_password_reset import admin_reset_password, AdminResetPasswordForm
@@ -340,6 +342,11 @@ def verify_reset_token(token, expiration=3600):
     return email
 
 
+@app.errorhandler(OperationalError)
+def handle_db_error(error):
+   return render_template('db_error.html'), 500
+
+
 def create_company_folder222(company_id, subfolder):
     try:
         base_path = '/path/to/company/folders'
@@ -543,6 +550,13 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
             else:
                 unread_notices_count = 0
 
+            # TODO select containers by role, company etc!
+            containers = Container.query.filter_by(page='1').all()
+
+            # Iterate over the containers and print the 'container' field
+            for container in containers:
+                print('container:', container.page, container.content_type, container.content)
+
             additional_data = {
                 "username": username,
                 "company_name": company_name,
@@ -564,6 +578,7 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
                 "admin_4_url": admin_4_url,
                 "admin_10_url": admin_10_url,
                 "unread_notices_count": unread_notices_count,
+                "containers": containers
             }
 
             return render_template(template, **additional_data)
@@ -611,9 +626,79 @@ def get_documents_query(session, current_user):
     return query.filter(BaseData.id < 0)
 
 
+from sqlalchemy.exc import OperationalError
+
 @app.route('/access/login', methods=['GET', 'POST'])
 @limiter.limit("200/day;96/hour;12/minute")
 def login():
+    form = LoginForm()
+    if form.validate_on_submit() and request.method == 'POST':
+        # Verify CAPTCHA
+        user_captcha = request.form['captcha']
+        if 'captcha' in session and session['captcha'] == user_captcha:
+            try:
+                # CAPTCHA entered correctly
+                username = form.username.data
+                password = form.password.data
+                user = user_manager.authenticate_user(username, password)
+                if user:
+                    if not current_user.is_authenticated:
+                        login_user(user)
+                        flash('Login Successful')
+                        cet_time = get_cet_time()
+                        try:
+                            create_message(db.session, user_id=user.id, message_type='email', subject='Security check',
+                                           body='È stato rilevato un nuovo accesso al tuo account il ' +
+                                                cet_time.strftime('%Y-%m-%d') + '. Se eri tu, non devi fare nulla. ' +
+                                                'In caso contrario, ti aiuteremo a proteggere il tuo account; ' +
+                                                "non rispondere a questa mail e contatta l'amministratore del sistema.",
+                                           sender='System', company_id=None,
+                                           lifespan='one-off', allow_overwrite=True)
+                        except Exception as e:
+                            print('Error creating logon message:', e)
+
+                        session['user_roles'] = [role.name for role in user.roles] if user.roles else []
+                        session['user_id'] = user.id
+                        session['username'] = username
+
+                        try:
+                            company_user = CompanyUsers.query.filter_by(user_id=user.id).first()
+                            company_id = company_user.company_id if company_user else None
+                        except Exception as e:
+                            print('Error retrieving company ID:', e)
+                            company_id = None
+
+                        if company_id is not None and isinstance(company_id, int):
+                            try:
+                                subfolder = datetime.now().year
+                            except Exception as e:
+                                print('Error setting subfolder:', e)
+
+                    # Redirect based on user roles
+                    return redirect_based_on_role(user)
+                else:
+                    flash('Invalid username or password. Please try again.', 'error')
+                    captcha_text, captcha_image = generate_captcha(300, 100, 5)
+                    session['captcha'] = captcha_text
+                    return render_template('access/login.html', form=form, captcha_image=captcha_image)
+            except OperationalError as e:
+                return handle_db_error(e)
+        else:
+            # CAPTCHA entered incorrectly
+            flash('Incorrect CAPTCHA! Please try again.', 'error')
+            captcha_text, captcha_image = generate_captcha(300, 100, 5)
+            session['captcha'] = captcha_text
+            return render_template('access/login.html', form=form, captcha_image=captcha_image)
+
+    # Generate and render CAPTCHA image within the template
+    captcha_text, captcha_image = generate_captcha(300, 100, 5)
+    session['captcha'] = captcha_text
+    return render_template('access/login.html', form=form, captcha_image=captcha_image)
+
+
+@app.route('/access/login___', methods=['GET', 'POST'])
+@limiter.limit("200/day;96/hour;12/minute")
+def login___():
     form = LoginForm()
     if form.validate_on_submit() and request.method == 'POST':
         # Verify CAPTCHA
@@ -709,9 +794,9 @@ def left_menu():
     #menu_builder_instance = MenuBuilder(main_menu_items, allowed_roles=allowed_roles)
 
     # TODO select containers by role, company etc!
-    containers = Container.query.filter_by(page=1).all()
+    containers = Container.query.filter_by(page='1').all()
 
-    print('containers', containers)
+    print('containers 3', containers)
 
     # Check if the lists intersect
     intersection = set(user_roles) & set(allowed_roles)
@@ -5635,6 +5720,7 @@ admin_app4.add_view(AuditLogView(AuditLog, db.session, name='Audit Log', endpoin
 admin_app4.add_view(PostView(Post, db.session, name='Posts', endpoint='posts_data_view'))
 admin_app4.add_view(TicketView(Ticket, db.session, name='Tickets', endpoint='tickets_data_view'))
 admin_app4.add_view(BaseDataView(BaseData, db.session, name='Data', endpoint='base_data_view'))
+admin_app4.add_view(BaseDataView(Container, db.session, name='Container', endpoint='container_view'))
 
 # Add other ModelViews as needed...
 

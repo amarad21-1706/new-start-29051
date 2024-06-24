@@ -5,6 +5,7 @@
 # import logging
 import os
 from flask import Flask, request
+
 from flask_login import LoginManager
 from flask_wtf.csrf import CSRFProtect
 from werkzeug.middleware.proxy_fix import ProxyFix
