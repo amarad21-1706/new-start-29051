@@ -60,30 +60,31 @@ from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as
 
 from app_factory import create_app
 
-from config.config import (extract_year_from_fy, get_current_intervals,
-        get_subarea_interval_type, generate_company_questionnaire_report_data, generate_area_subarea_report_data,
-        check_status, check_status_limited, check_status_extended, generate_html_cards, get_session_workflows,
+from config.config import (get_current_intervals,
+                           generate_company_questionnaire_report_data, generate_area_subarea_report_data,
+        generate_html_cards, get_session_workflows,
         generate_html_cards_progression_with_progress_bars111, generate_html_cards_progression_with_progress_bars_in_short,
-        get_subarea_name, get_pd_report_from_base_data_wtq, get_areas, create_notification,
-        get_subareas, generate_company_user_report_data, generate_user_role_report_data, create_audit_log,
-        generate_questionnaire_question_report_data, generate_workflow_step_report_data, get_company_id,
-        generate_workflow_document_report_data, generate_document_step_report_data, get_cet_time, remove_duplicates,
-        normalize_structure, compare_structures, some_keys)
-
-from admin_views import (ContainerAdmin, CompanyView, QuestionnaireView, QuestionView,
-        StatusView, LexicView, AreaView, StepQuestionnaireView,
-        SubareaView, SubjectView, PostView, TicketView, WorkflowView, StepView, AuditLogView,
-        QuestionnaireQuestionsView, WorkflowStepsView, QuestionnaireCompaniesView,
-        OpenQuestionnairesView, BaseDataView, UsersView)
+        get_pd_report_from_base_data_wtq, get_areas,
+        get_subareas, generate_company_user_report_data, generate_user_role_report_data,
+        generate_questionnaire_question_report_data, generate_workflow_step_report_data,
+        generate_workflow_document_report_data, generate_document_step_report_data, get_cet_time)
 
 from mail_service import send_simple_message, send_simple_message333
 from wtforms import Form
 
 from utils.utils import get_current_directory
-from wtforms import (SelectField, BooleanField, ValidationError, EmailField)
+from wtforms import (SelectField)
 from flask_login import login_required, LoginManager
 from flask_login import login_user, current_user
 from flask_cors import CORS
+
+'''
+from admin_views import (ContainerAdmin, CompanyView, QuestionnaireView, QuestionView,
+        StatusView, LexicView, AreaView, StepQuestionnaireView,
+        SubareaView, SubjectView, PostView, TicketView, WorkflowView, StepView, AuditLogView,
+        QuestionnaireQuestionsView, WorkflowStepsView, QuestionnaireCompaniesView,
+        OpenQuestionnairesView, BaseDataView, UsersView)
+'''
 
 from flask import flash, current_app, get_flashed_messages
 # from flask_admin.exceptions import ValidationError
@@ -92,7 +93,6 @@ from flask_bcrypt import Bcrypt
 from flask import abort
 from functools import wraps
 
-from wtforms import IntegerField
 from crud_blueprint import create_crud_blueprint
 
 from menu_builder import MenuBuilder
@@ -148,6 +148,8 @@ import os
 # import plotly.graph_objects as go
 
 import plotly.graph_objects as go
+from custom_encoder import CustomJSONEncoder
+# Use the custom JSON encoder
 
 from admin_views import create_admin_views  # Import the admin views module
 
@@ -158,6 +160,9 @@ print('app created')
 # Setup Mail
 mail = Mail(app)
 print('mail server active')
+
+app.json_encoder = CustomJSONEncoder
+print('JSON decoder on')
 
 # Setup Limiter
 limiter = Limiter(
@@ -199,6 +204,7 @@ print('intervals', intervals)
 
 # Initialize the admin views
 admin_app1, admin_app2, admin_app3, admin_app4, admin_app10 = create_admin_views(app, intervals)
+
 
 @app.route('/set_session')
 def set_session():
@@ -256,18 +262,6 @@ Session(app)
 
 bootstrap = Bootstrap(app)
 
-'''
-# TODO (de)activate LOGGER here
-logging.basicConfig(level=logging.DEBUG)
-# Set up file handler
-file_handler = FileHandler('error.log')
-file_handler.setLevel(logging.DEBUG)
-file_handler.setFormatter(Formatter(
-    '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-))
-app.logger.addHandler(file_handler)
-'''
-
 # Serializer for generating tokens
 serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
@@ -297,6 +291,22 @@ with app.app_context():
     model_document = create_crud_blueprint('model_document', __name__)
 
 
+# Load menu items from JSON file
+json_file_path = os.path.join(os.path.dirname(__file__), 'static', 'js', 'menuStructure101.json')
+# json_file_path = get_current_directory() + "/static/js/menuStructure101.json"
+with open(Path(json_file_path), 'r') as file:
+    main_menu_items = json.load(file)
+
+
+# Create an instance of MenuBuilder
+menu_builder = MenuBuilder(main_menu_items, ["Guest"])
+parsed_menu_data = menu_builder.parse_menu_data(user_roles=["Guest"], is_authenticated=False, include_protected=False)
+
+def print_routes():
+    with current_app.test_request_context():
+        print(current_app.url_map)
+
+
 def is_user_role(session, user_id, role_name):
     # Get user roles for the specified user ID
     user_roles = get_user_roles(session, user_id)
@@ -316,12 +326,6 @@ def role_required(required_role):
                 abort(403)
         return wrapper
     return decorator
-
-
-@app.errorhandler(SMTPAuthenticationError)
-def handle_smtp_authentication_error(error):
-    # Handle SMTP authentication errors gracefully
-    return "SMTP Authentication Error: Failed to authenticate with the SMTP server.", 500
 
 
 def generate_reset_token(email):
@@ -344,9 +348,26 @@ def verify_reset_token(token, expiration=3600):
     return email
 
 
-@app.errorhandler(OperationalError)
-def handle_db_error(error):
-   return render_template('db_error.html'), 500
+# Function to get documents query based on user's role
+def get_documents_query(session, current_user):
+    query = session.query(BaseData).filter(BaseData.file_path != None).all()
+    if current_user.is_authenticated:
+        if current_user.has_role('Admin') or current_user.has_role('Authority'):
+            return query
+        elif current_user.has_role('Manager'):
+            # Manager can only see records related to their company_users
+            # Assuming you have a relationship named 'user_companies' between Users and CompanyUsers models
+            subquery = session.query(CompanyUsers.company_id).filter(
+                CompanyUsers.user_id == current_user.id
+            ).subquery()
+            query = query.filter(BaseData.company_id.in_(subquery))
+        elif current_user.has_role('Employee'):
+            # Employee can only see their own records
+            query = query.filter(BaseData.user_id == current_user.id)
+            return query
+
+    # For other roles or anonymous users, return an empty query
+    return query.filter(BaseData.id < 0)
 
 
 def create_company_folder222(company_id, subfolder):
@@ -408,85 +429,33 @@ def verify_password_reset_token(token, expiration=1800):
     return email
 
 
-@app.route('/forgot_password', methods=['GET', 'POST'])
-def forgot_password():
-    form = ForgotPasswordForm()
-    if form.validate_on_submit():
-        try:
-            user = Users.query.filter_by(email=form.email.data).first()
-            if user:
-                user_email = form.email.data
-                token = generate_password_reset_token(user_email)
-                user.user_2fa_secret = token
-                db.session.commit()
-                # Send password reset email using Flask-Mail (example)
-                msg = Message(sender="Auditors Digital Platform <info@firstauditors.org>",
-                              recipients=[user.email])
-                reset_url = url_for('reset_password', token=token, _external=True)
-                msg.body = f'Click the link to reset your password: {reset_url}'
 
-                mail.send(msg)
+# Define the custom Jinja2 filter
+def list_intersection(lst1, lst2):
+    return list(set(lst1) & set(lst2))
 
-                flash(_('An email has been sent with instructions to reset your password.'), 'success')
-            else:
-                flash(_('No user found with that email address.'), 'danger')
-            return redirect(url_for('forgot_password'))
-        except Exception as e:
-            print(f"Error: {e}")  # Log the error for debugging purposes
-            flash(_('An error occurred while processing your request. Please try again later.'), 'danger')
-            return render_template('access/forgot_password.html', form=form)
-    return render_template('access/forgot_password.html', form=form)
+# Create a custom filter to replace Undefined with None
+def replace_undefined(value):
+    return None if value is Undefined else value
 
 
-@app.route('/reset_password/<token>', methods=['GET', 'POST'])
-def reset_password(token):
-    user = Users.query.filter_by(user_2fa_secret=token).first()
-    if not user:
-        flash('The password reset token is invalid or expired.', 'warning')
-        return redirect(url_for('login'))
-
-    form = ResetPasswordForm101()  # Assuming you have a ResetPasswordForm for new password entry
-    if form.validate_on_submit():
-        user.set_password(form.password.data)  # Use a secure password hashing method
-        user.user_2fa_secret = None  # Invalidate the token after reset
-        db.session.commit()
-        flash('Your password has been reset successfully!', 'success')
-        return redirect(url_for('login'))
-    return render_template('access/reset_password.html', form=form, token=token)
+def next_is_valid(next_url):
+    # Check if the provided next_url is a valid URL
+    # This is a basic example; you might want to check against a list of allowed URLs
+    pdb.set_trace()
+    allowed_urls = ['index', 'protected']  # Add your allowed URLs here
+    if next_url and next_url in allowed_urls:
+        return True
+    else:
+        return False
 
 
-@app.route("/send_email222")
-def send_email222():
-    mail = Mail(app)
-    msg = Message("Hello from ILM",
-                  sender="amarad21@gmail.com",
-                  recipients=["astridel.radulescu1@gmail.com"])
-    msg.body = "This is a test email sent from my App using Postfix."
-    mail.send(msg)
-    return "Email sent successfully!"
-
-
-@app.route("/send_email")
-def send_email():
-    # Example usage
-    api_key = "20cb76ced830ab536fa7cd718d1c1141-b02bcf9f-5936b742"
-    domain =  "sandbox8fe87aee4b91456c9d17ffcb802d8b20.mailgun.org"
-    sender = "Mailgun Sandbox <postmaster@sandbox8fe87aee4b91456c9d17ffcb802d8b20.mailgun.org>"
-    recipient = "amarad21@gmail.com"
-    subject = "Test MG Email"
-    text = "This is a test email sent via Mailgun."
-
-    # Call the function to send the email
-    # send_simple_message(api_key, domain, sender, recipient, subject, text)
-    send_simple_message333()
-    # Set flash message
-    flash('Mail sent successfully', 'success')
-    return redirect(url_for('index'))  # Redirect to your home page
-
-
-@app.route('/confirmation')
-def confirmation_page():
-    return redirect(url_for('login'))
+# Define the menu_item_allowed function
+def menu_item_allowed(menu_item, user_roles):
+    # Your implementation here
+    # Example: Check if the user has the required role to access the menu_item
+    # WHEN the phrase on the right was present, the landing page was empty A.R. 15Feb2024
+    return True #menu_item['allowed_roles'] and any(role in user_roles for role in menu_item['allowed_roles'])
 
 
 def generate_route_and_menu(route, allowed_roles, template, include_protected=False, limited_menu=False):
@@ -553,11 +522,28 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
                 unread_notices_count = 0
 
             # TODO select containers by role, company etc!
-            containers = Container.query.filter_by(page='1').all()
 
-            # Iterate over the containers and print the 'container' field
-            for container in containers:
-                print('container:', container.page, container.content_type, container.content)
+            role_ids = []
+            for role_name in user_roles:
+                role = Role.query.filter_by(name=role_name).first()
+                if role:
+                    role_ids.append(role.id)
+
+            print('role_ids', role_ids)
+
+            # TODO select containers by role, company etc!
+            # containers = Container.query.filter_by(page='link').all()
+            try:
+                containers = Container.query.filter(
+                    Container.role_id.in_(role_ids)
+                ).order_by(Container.page.desc()).all()
+
+                # Iterate over the containers and print the 'container' field
+                for container in containers:
+                    print('container 2:', container.page, container.content_type, container.content)
+            except:
+                print('No container data found 2')
+                containers = None
 
             additional_data = {
                 "username": username,
@@ -590,6 +576,35 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
     return decorator
 
 
+def redirect_based_on_role(user):
+    if user.has_role('Admin'):
+        return redirect(url_for('admin_page'))
+    elif user.has_role('Authority'):
+        return redirect(url_for('authority_page'))
+    elif user.has_role('Manager'):
+        return redirect(url_for('manager_page'))
+    elif user.has_role('Employee'):
+        return redirect(url_for('employee_page'))
+    elif user.has_role('Provider'):
+        return redirect(url_for('provider_page'))
+    elif user.has_role('Guest'):
+        return redirect(url_for('guest_page'))
+    else:
+        return redirect(url_for('guest_page'))
+
+
+
+# TODO unused?
+def generate_new_id(model):
+    # Get the maximum ID from the database
+    max_id = db.session.query(db.func.max(model.id)).scalar()
+    # If there are no records in the table, start with ID 1
+    if max_id is None:
+        return 1
+    else:
+        # Otherwise, increment the maximum ID by one
+        return max_id + 1
+
 
 class MoveDocumentForm(FlaskForm):
     next_step = SelectField('Next Step')
@@ -606,29 +621,98 @@ class MoveDocumentForm(FlaskForm):
         return True
 
 
-# Function to get documents query based on user's role
-def get_documents_query(session, current_user):
-    query = session.query(BaseData).filter(BaseData.file_path != None).all()
-    if current_user.is_authenticated:
-        if current_user.has_role('Admin') or current_user.has_role('Authority'):
-            return query
-        elif current_user.has_role('Manager'):
-            # Manager can only see records related to their company_users
-            # Assuming you have a relationship named 'user_companies' between Users and CompanyUsers models
-            subquery = session.query(CompanyUsers.company_id).filter(
-                CompanyUsers.user_id == current_user.id
-            ).subquery()
-            query = query.filter(BaseData.company_id.in_(subquery))
-        elif current_user.has_role('Employee'):
-            # Employee can only see their own records
-            query = query.filter(BaseData.user_id == current_user.id)
-            return query
-
-    # For other roles or anonymous users, return an empty query
-    return query.filter(BaseData.id < 0)
+@app.errorhandler(SMTPAuthenticationError)
+def handle_smtp_authentication_error(error):
+    # Handle SMTP authentication errors gracefully
+    return "SMTP Authentication Error: Failed to authenticate with the SMTP server.", 500
 
 
-from sqlalchemy.exc import OperationalError
+@app.errorhandler(OperationalError)
+def handle_db_error(error):
+   return render_template('db_error.html'), 500
+
+
+
+@app.route('/forgot_password', methods=['GET', 'POST'])
+def forgot_password():
+    form = ForgotPasswordForm()
+    if form.validate_on_submit():
+        try:
+            user = Users.query.filter_by(email=form.email.data).first()
+            if user:
+                user_email = form.email.data
+                token = generate_password_reset_token(user_email)
+                user.user_2fa_secret = token
+                db.session.commit()
+                # Send password reset email using Flask-Mail (example)
+                msg = Message(sender="Auditors Digital Platform <info@firstauditors.org>",
+                              recipients=[user.email])
+                reset_url = url_for('reset_password', token=token, _external=True)
+                msg.body = f'Click the link to reset your password: {reset_url}'
+
+                mail.send(msg)
+
+                flash(_('An email has been sent with instructions to reset your password.'), 'success')
+            else:
+                flash(_('No user found with that email address.'), 'danger')
+            return redirect(url_for('forgot_password'))
+        except Exception as e:
+            print(f"Error: {e}")  # Log the error for debugging purposes
+            flash(_('An error occurred while processing your request. Please try again later.'), 'danger')
+            return render_template('access/forgot_password.html', form=form)
+    return render_template('access/forgot_password.html', form=form)
+
+
+@app.route('/reset_password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    user = Users.query.filter_by(user_2fa_secret=token).first()
+    if not user:
+        flash('The password reset token is invalid or expired.', 'warning')
+        return redirect(url_for('login'))
+
+    form = ResetPasswordForm101()  # Assuming you have a ResetPasswordForm for new password entry
+    if form.validate_on_submit():
+        user.set_password(form.password.data)  # Use a secure password hashing method
+        user.user_2fa_secret = None  # Invalidate the token after reset
+        db.session.commit()
+        flash('Your password has been reset successfully!', 'success')
+        return redirect(url_for('login'))
+    return render_template('access/reset_password.html', form=form, token=token)
+
+
+@app.route("/send_email___")
+def send_email___():
+    mail = Mail(app)
+    msg = Message("Hello from ILM",
+                  sender="amarad21@gmail.com",
+                  recipients=["astridel.radulescu1@gmail.com"])
+    msg.body = "This is a test email sent from my App using Postfix."
+    mail.send(msg)
+    return "Email sent successfully!"
+
+
+@app.route("/send_email")
+def send_email():
+    # Example usage
+    api_key = "20cb76ced830ab536fa7cd718d1c1141-b02bcf9f-5936b742"
+    domain =  "sandbox8fe87aee4b91456c9d17ffcb802d8b20.mailgun.org"
+    sender = "Mailgun Sandbox <postmaster@sandbox8fe87aee4b91456c9d17ffcb802d8b20.mailgun.org>"
+    recipient = "amarad21@gmail.com"
+    subject = "Test MG Email"
+    text = "This is a test email sent via Mailgun."
+
+    # Call the function to send the email
+    # send_simple_message(api_key, domain, sender, recipient, subject, text)
+    send_simple_message333()
+    # Set flash message
+    flash('Mail sent successfully', 'success')
+    return redirect(url_for('index'))  # Redirect to your home page
+
+
+@app.route('/confirmation')
+def confirmation_page():
+    return redirect(url_for('login'))
+
 
 @app.route('/access/login', methods=['GET', 'POST'])
 @limiter.limit("200/day;96/hour;12/minute")
@@ -698,89 +782,6 @@ def login():
     return render_template('access/login.html', form=form, captcha_image=captcha_image)
 
 
-@app.route('/access/login___', methods=['GET', 'POST'])
-@limiter.limit("200/day;96/hour;12/minute")
-def login___():
-    form = LoginForm()
-    if form.validate_on_submit() and request.method == 'POST':
-        # Verify CAPTCHA
-        user_captcha = request.form['captcha']
-        if 'captcha' in session and session['captcha'] == user_captcha:
-            # CAPTCHA entered correctly
-            username = form.username.data
-            password = form.password.data
-            user = user_manager.authenticate_user(username, password)
-            if user:
-                if not current_user.is_authenticated:
-                    login_user(user)
-                    flash('Login Successful')
-                    cet_time = get_cet_time()
-                    try:
-                        create_message(db.session, user_id=user.id, message_type='email', subject='Security check',
-                                       body='È stato rilevato un nuovo accesso al tuo account il ' +
-                                            cet_time.strftime('%Y-%m-%d') + '. Se eri tu, non devi fare nulla. ' +
-                                            'In caso contrario, ti aiuteremo a proteggere il tuo account; ' +
-                                            "non rispondere a questa mail e contatta l'amministratore del sistema.",
-                                       sender='System', company_id=None,
-                                       lifespan='one-off', allow_overwrite=True)
-                    except Exception as e:
-                        print('Error creating logon message:', e)
-
-                    session['user_roles'] = [role.name for role in user.roles] if user.roles else []
-                    session['user_id'] = user.id
-                    session['username'] = username
-
-                    try:
-                        company_user = CompanyUsers.query.filter_by(user_id=user.id).first()
-                        company_id = company_user.company_id if company_user else None
-                    except Exception as e:
-                        print('Error retrieving company ID:', e)
-                        company_id = None
-
-                    if company_id is not None and isinstance(company_id, int):
-                        try:
-                            subfolder = datetime.now().year
-                        except Exception as e:
-                            print('Error setting subfolder:', e)
-
-                # Redirect based on user roles
-                return redirect_based_on_role(user)
-            else:
-                flash('Invalid username or password. Please try again.', 'error')
-                captcha_text, captcha_image = generate_captcha(300, 100, 5)
-                session['captcha'] = captcha_text
-                return render_template('access/login.html', form=form, captcha_image=captcha_image)
-        else:
-            # CAPTCHA entered incorrectly
-            flash('Incorrect CAPTCHA! Please try again.', 'error')
-            captcha_text, captcha_image = generate_captcha(300, 100, 5)
-            session['captcha'] = captcha_text
-            return render_template('access/login.html', form=form, captcha_image=captcha_image)
-
-    # Generate and render CAPTCHA image within the template
-    captcha_text, captcha_image = generate_captcha(300, 100, 5)
-    session['captcha'] = captcha_text
-    return render_template('access/login.html', form=form, captcha_image=captcha_image)
-
-
-def redirect_based_on_role(user):
-    if user.has_role('Admin'):
-        return redirect(url_for('admin_page'))
-    elif user.has_role('Authority'):
-        return redirect(url_for('authority_page'))
-    elif user.has_role('Manager'):
-        return redirect(url_for('manager_page'))
-    elif user.has_role('Employee'):
-        return redirect(url_for('employee_page'))
-    elif user.has_role('Provider'):
-        return redirect(url_for('provider_page'))
-    elif user.has_role('Guest'):
-        return redirect(url_for('guest_page'))
-    else:
-        return redirect(url_for('guest_page'))
-
-
-
 @app.route('/left_menu', methods=['GET', 'POST'])
 @generate_route_and_menu('/home', allowed_roles=["Employee"], template='home/left_menu.html')
 def left_menu():
@@ -795,10 +796,28 @@ def left_menu():
     allowed_roles = ["Employee", "Manager", "Authority", "Admin", "Provider"]
     #menu_builder_instance = MenuBuilder(main_menu_items, allowed_roles=allowed_roles)
 
-    # TODO select containers by role, company etc!
-    containers = Container.query.filter_by(page='1').all()
+    role_ids = []
+    for role_name in user_roles:
+        role = Role.query.filter_by(name=role_name).first()
+        if role:
+            role_ids.append(role.id)
 
-    print('containers 3', containers)
+    print('role_ids', role_ids)
+
+    # TODO select containers by role, company etc!
+    # containers = Container.query.filter_by(page='link').all()
+    try:
+        containers = Container.query.filter(
+            Container.role_id.in_(role_ids)
+        ).order_by(Container.page.desc()).all()
+
+        # Iterate over the containers and print the 'container' field
+        for container in containers:
+            print('container 3:', container.page, container.content_type, container.content)
+    except:
+
+        print('No container data found 3')
+        containers = None
 
     # Check if the lists intersect
     intersection = set(user_roles) & set(allowed_roles)
@@ -989,7 +1008,7 @@ def custom_action():
         # Render the data input template
         return render_template('set_dws_rich_data.html')
 
-
+@login_required
 @app.route('/user_documents')
 def user_documents():
     form = UserDocumentsForm()
@@ -1049,7 +1068,6 @@ def user_documents():
         return render_template('error.html', error_message=str(e))  # Render a generic error page
 
 
-
 # Document workflow view route (using Plotly)
 @app.route('/documents/<int:company_id>/<int:base_data_id>/<int:workflow_id>', methods=['GET', 'POST'])
 def document_workflow(company_id, base_data_id, workflow_id):
@@ -1077,6 +1095,7 @@ def document_workflow(company_id, base_data_id, workflow_id):
     return render_template('workflow/document_workflow.html', document=document, figure=fig)
 
 
+# TODO unused?
 class CustomStepQuestionnaireForm(Form):
     inline_form = None
 
@@ -1136,18 +1155,6 @@ def load_workflow_controls():
 
     return jsonify({'controls': controls_html})
 
-
-def generate_new_id(model):
-    # Get the maximum ID from the database
-    max_id = db.session.query(db.func.max(model.id)).scalar()
-    # If there are no records in the table, start with ID 1
-    if max_id is None:
-        return 1
-    else:
-        # Otherwise, increment the maximum ID by one
-        return max_id + 1
-
-
 # TOD how to eliminate relationship fields in the Question and workflow CREATE templates?
 
 @login_required
@@ -1167,6 +1174,8 @@ def master_reset_password():
 
 
 # Route to open F l a s k -Admin
+
+@login_required
 @app.route('/open_admin_app_1')
 def open_admin_app_1():
     user_id = current_user.id
@@ -1188,6 +1197,8 @@ def open_admin_app_1():
     return redirect(url_for('open_admin.index'))
 
 
+
+@login_required
 @app.route('/open_admin_app_2')
 def open_admin_app_2():
     user_id = current_user.id
@@ -1205,6 +1216,8 @@ def open_admin_app_2():
     print('*** admin_app2.name', admin_app2.name)
     return redirect(url_for('open_admin_2.index'))
 
+
+@login_required
 # Define the index route
 @app.route('/open_admin_app_3')
 def open_admin_app_3():
@@ -1248,14 +1261,9 @@ def open_admin_app_10():
     return redirect(url_for('open_admin_10.index'))
 
 
-# ADMIN
-# unassigned documents (all), to be distributed to workflows and steps
-# ====================================================================
-
-
-
 # TODO: ***** inserire come action: move one step forward!
 
+@login_required
 @app.route('/detach_documents_from_workflow_step', methods=['POST'])
 def detach_documents_from_workflow_step():
     try:
@@ -1298,6 +1306,7 @@ def detach_documents_from_workflow_step():
         return jsonify({'success_message': None, 'error_message': error_message})
 
 
+@login_required
 @app.route('/attach_documents_to_workflow_step', methods=['POST'])
 def attach_documents_to_workflow_step():
     #try:
@@ -1344,7 +1353,7 @@ def attach_documents_to_workflow_step():
     return jsonify({'success_message': success_message, 'error_message': None})
 
 
-
+@login_required
 @app.route('/action_manage_dws_deadline', methods=['POST'])
 def manage_deadline():
     # Parse the list of IDs
@@ -1385,12 +1394,7 @@ def manage_deadline():
         return jsonify({'error_message': 'Failed to set deadline.'}), 400
 
 
-
-from custom_encoder import CustomJSONEncoder
-# Use the custom JSON encoder
-app.json_encoder = CustomJSONEncoder
-
-
+# TODO unused?
 def execute_workflow(workflow_id):
     workflow = session.query(Workflow).get(workflow_id)
     if workflow.status == 'active':
@@ -1429,44 +1433,6 @@ def handle_dynamic_url(endpoint):
     # You can handle the dynamic URL here, for example, redirect to a default view
     return redirect(url_for('index'))
 
-
-# Define the custom Jinja2 filter
-def list_intersection(lst1, lst2):
-    return list(set(lst1) & set(lst2))
-
-# Create a custom filter to replace Undefined with None
-def replace_undefined(value):
-    return None if value is Undefined else value
-
-
-# Load menu items from JSON file
-json_file_path = os.path.join(os.path.dirname(__file__), 'static', 'js', 'menuStructure101.json')
-# json_file_path = get_current_directory() + "/static/js/menuStructure101.json"
-with open(Path(json_file_path), 'r') as file:
-    main_menu_items = json.load(file)
-
-
-# Create an instance of MenuBuilder
-menu_builder = MenuBuilder(main_menu_items, ["Guest"])
-parsed_menu_data = menu_builder.parse_menu_data(user_roles=["Guest"], is_authenticated=False, include_protected=False)
-
-def next_is_valid(next_url):
-    # Check if the provided next_url is a valid URL
-    # This is a basic example; you might want to check against a list of allowed URLs
-    pdb.set_trace()
-    allowed_urls = ['index', 'protected']  # Add your allowed URLs here
-    if next_url and next_url in allowed_urls:
-        return True
-    else:
-        return False
-
-
-# Define the menu_item_allowed function
-def menu_item_allowed(menu_item, user_roles):
-    # Your implementation here
-    # Example: Check if the user has the required role to access the menu_item
-    # WHEN the phrase on the right was present, the landing page was empty A.R. 15Feb2024
-    return True #menu_item['allowed_roles'] and any(role in user_roles for role in menu_item['allowed_roles'])
 
 # Register the context processor
 @app.context_processor
@@ -2753,6 +2719,8 @@ def manage_base_data_workflow_step():
     return render_template('manage_base_data_workflow_step.html', form=form, message=message)
 
 
+@login_required
+@role_required('Admin')
 @app.route('/manage_company_users', methods=['GET', 'POST'])
 def manage_company_users():
     form = CompanyUserForm()
@@ -2804,6 +2772,7 @@ def manage_company_users():
     return render_template('manage_company_users.html', form=form, message=message)
 
 
+@login_required
 @app.route('/manage_questionnaire_companies', methods=['GET', 'POST'])
 def manage_questionnaire_companies():
     form = QuestionnaireCompanyForm()
@@ -2861,6 +2830,7 @@ def manage_questionnaire_companies():
 
 
 
+@login_required
 @app.route('/submit_confirmed', methods=['POST'])
 def submit_confirmed():
     pending_data = session.pop('pending_answer_data', None)
@@ -3008,6 +2978,7 @@ def fetch_answer_data(questionnaire_id):
         return None
 
 
+@login_required
 @app.route('/overwrite_answer', methods=['POST'])
 def overwrite_answer():
 
@@ -3129,9 +3100,8 @@ def merge_answer_fields(base_fields_json, answer_data_json):
     return json.dumps(merged_fields)  # Return as JSON string if needed for consistency
 
 
-
+@login_required
 @app.route('/show_survey/<int:questionnaire_id>', methods=['GET', 'POST'])
-@login_required  # This decorator ensures that the route is only accessible to authenticated users
 def show_survey(questionnaire_id):
     form = BaseSurveyForm()
     headers = None
@@ -3211,8 +3181,8 @@ def show_survey(questionnaire_id):
 
 
 # Example use within the Flask view function
+@login_required
 @app.route('/show_survey_sqlite/<int:questionnaire_id>', methods=['GET', 'POST'])
-@login_required  # This decorator ensures that the route is only accessible to authenticated users
 def show_survey_sqlite(questionnaire_id):
 
     form = BaseSurveyForm()
@@ -3432,6 +3402,7 @@ def save_answers(data):
         return redirect(url_for('show_survey', questionnaire_id=questionnaire_id))
 
 
+@login_required
 @app.route('/load_survey', methods=['GET', 'POST'])
 def load_survey():
     company_id = request.args.get('company_id')
@@ -3469,8 +3440,8 @@ def validate_form_structure(form_data, json_data):
         return False
 
 
+@login_required
 @app.route('/company_files/<company_id>', methods=['GET'])
-@login_required  # Ensure user is logged in
 def list_company_files(company_id):
     user = current_user  # Retrieve current user
     if user.company_id != company_id:  # Verify company access
@@ -3491,8 +3462,8 @@ def list_company_files(company_id):
     return render_template('files_list.html', files=file_info, company_id=company_id)
 
 
-@app.route('/download_file/<company_id>/<filename>', methods=['GET'])
 @login_required
+@app.route('/download_file/<company_id>/<filename>', methods=['GET'])
 def download_file(company_id, filename):
     user = current_user
     if user.company_id != company_id:
@@ -3507,6 +3478,7 @@ def download_file(company_id, filename):
 
 
 # Other functions for retrieving file paths, verifying permissions, etc.
+@login_required
 @app.route('/company_files/<int:company_id>/<path:filename>', methods=['GET'])
 def serve_company_file(company_id, filename):
     # Construct the path to the file within the company folder
@@ -3622,9 +3594,8 @@ def home():
     # app.logger.debug("Home route accessed")
     return render_template('index.html')  # Render your home page template
 
-
+@login_required
 @app.route('/noticeboard')
-@login_required  # Ensure user is logged in
 def noticeboard():
     # Retrieve unmarked messages from the database
     user_id = current_user.id
@@ -3634,9 +3605,9 @@ def noticeboard():
     return render_template('home/noticeboard.html', unmarked_messages=unmarked_messages)
 
 
+@login_required
+@role_required('Admin')
 @app.route('/auditlog')
-@login_required  # Ensure user is logged in
-@role_required('Admin') # only for the admin
 def auditlog():
     # Retrieve unmarked messages from the database
     audit_log = AuditLog.query.order_by(AuditLog.timestamp.desc()).all()
@@ -3644,10 +3615,6 @@ def auditlog():
     # Pass the messages to the template for rendering
     return render_template('home/auditlog.html', audit_log=audit_log)
 
-
-def print_routes():
-    with current_app.test_request_context():
-        print(current_app.url_map)
 
 
 

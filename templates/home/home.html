@@ -262,45 +262,47 @@
         <img src="{{ url_for('static', filename='ilm_logo_1.png') }}" alt="My Logo" class="navbar-logo">
     </nav>
 
-    <!-- Left-side menu (conditionally displayed based on user role) -->
     <div class="container mt-4">
         <div class="row">
-            <!-- Main content area -->
             <div class="col-md-9">
                 <h1>ILM - piattaforma digitale</h1>
                 <p>This is the general home page content - to be customized as needed (v.1.3.1).</p>
 
-                <!-- Display content based on user roles -->
                 {% if "Admin" in user_roles %}
                     <p>(Admin)</p>
                     <p>This is the Admin landing page - to be customized as needed (v.1.3.2).</p>
                 {% endif %}
                 {% if "Authority" in user_roles %}
                     <p>(Authority)</p>
-                    <!-- Add more content specific to Authority users -->
-                {% endif %}
+                    {% endif %}
                 {% if "Manager" in user_roles %}
                     <p>(Manager)</p>
-                    <!-- Add more content specific to Manager users -->
-                {% endif %}
+                    {% endif %}
                 {% if "Employee" in user_roles %}
                     <p>(Employee)</p>
-                    <!-- Add more content specific to Employee users -->
-                {% endif %}
+                    {% endif %}
 
-                <!-- Containers -->
-                <p>"Containers" (text, documents, multimedia files, charts, cards etc.) to be placed here.</p>
-                {% for container in containers %}
+                <p>"[...] content" (text, documents, multimedia files, charts, cards etc.) to be placed here.</p>
+                {% if containers %}  {% for container in containers %}
                     {% if container.content_type == 'text' %}
                         <div class="content-block">{{ container.content['content'] }}</div>
-                    {% elif container.content_type == 'file' %}
+                    {% endif %}
+                    {% if container.content_type == 'documents' %}
                         <a class="content-block" href="{{ url_for('static', filename=container.content['file_path']) }}">Download</a>
-                    {% elif container.content_type == 'multimedia' %}
+                    {% endif %}
+                    {% if container.content_type == 'gallery' %}
                         <video class="content-block" src="{{ url_for('static', filename=container.content['video_path']) }}" controls></video>
-                    {% elif container.content_type == 'chart' %}
+                    {% endif %}
+                    {% if container.content_type == 'chart' %}
                         <img class="content-block" src="{{ url_for('static', filename=container.content['chart_path']) }}" alt="Chart">
                     {% endif %}
-                {% endfor %}
+                    {% if container.content_type == 'link' %}
+                        <a class="content-block" href="{{ container.content['url'] }}">{{ container.content['title'] }}</a>
+                    {% endif %}
+                    {% endfor %}
+                  {% else %}
+                  <p>No containers found to display.</p>
+                {% endif %}
 
             </div>
         </div>

@@ -42,6 +42,11 @@ class Container(db.Model):
     position = db.Column(db.String(255))
     content_type = db.Column(db.String(50), nullable=False)
     content = db.Column(JSONB, nullable=False)
+
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)
+    role_id = db.Column(db.Integer, db.ForeignKey('role.id'), nullable=False)
+    area_id = db.Column(db.Integer, db.ForeignKey('area.id'), nullable=False)
+
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     updated_at = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
 
@@ -134,6 +139,7 @@ class Users(db.Model, UserMixin):
 class Role(db.Model, RoleMixin):
     __tablename__ = 'role'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    role_id = db.Column(db.Integer)
     name = db.Column(String(80), unique=True)
     description = db.Column(String(255))
 
