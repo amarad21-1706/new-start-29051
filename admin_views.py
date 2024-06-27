@@ -30,7 +30,7 @@ from sqlalchemy import distinct
 from copy import deepcopy
 
 from config.config import (get_if_active, get_subarea_name, get_current_interval, get_subarea_interval_type,
-create_audit_log, remove_duplicates)
+create_audit_log, remove_duplicates, create_notification)
 
 from config.custom_fields import CustomFileUploadField  # Import the custom field
 
@@ -55,16 +55,28 @@ from forms.forms import (LoginForm, ForgotPasswordForm, ResetPasswordForm101, Re
 from flask_admin.form import FileUploadField
 
 from wtforms import (SelectField, BooleanField, ValidationError, EmailField)
-from config.config import Config
+from config.config import Config, check_status, check_status_limited, check_status_extended
 
 config = Config()
 
+def check_record_exists(form, company_id):
+    # Assuming form fields map to model fields
+    query = BaseData.query.filter_by(
+        date_of_doc=form.date_of_doc.data,
+        number_of_doc=form.number_of_doc.data,
+        fi0=form.fi0.data,
+        interval_ord=form.interval_ord.data,
+        subject_id=form.subject_id.data,
+        company_id=company_id,
+    )
+    return query.first() is not None
+
 class CustomBooleanField(BooleanField):
     def process_formdata(self, valuelist):
-        if valuelist:
-            self.data = 1 if valuelist[0].lower() in ('yes', 'true', 't', '1') else 0
-        else:
+        if not valuelist or valuelist[0] == '':  # Check for empty string or empty list
             self.data = 0
+        else:
+            self.data = 1 if valuelist[0].lower() in ('y', 'yes', 'true', 't', '1', 's') else 0
 
 class CheckboxField(BooleanField):
     def process_formdata(self, valuelist):
@@ -898,7 +910,7 @@ class Flussi_dataView(ModelView):
 
         # no "attached file missing check" here
         # perform actions relevant to both creation and edit:
-        with app.app_context():
+        with current_app.app_context():
 
             # include fi1-3, fn1-3, fc1-3 AS NEEDED
             # interval_id = 1
@@ -1049,7 +1061,8 @@ class Atti_dataView(ModelView):
         return form_class #ExtendedForm
 
     def _validate_no_action(self, model, form):
-        if model.file_path is None and not form.no_action.data:
+        print('*** no_action.data', form.no_action.data, '. model.file_path ***', model.file_path)
+        if model.file_path is None and form.no_action.data == 0:
             raise ValidationError('If no file exists, then this absence must be acknowledged by checking the "no documents" box.')
 
     def _uncheck_if_document(self, model, form):
@@ -1093,13 +1106,26 @@ class Atti_dataView(ModelView):
         year_id = form.fi0.data
         interval_ord = form.interval_ord.data
         subject_id = form.subject_id.data
+        no_action = form.no_action.data
 
         # chg 2
-        if form.date_of_doc.data > datetime.today().date():
-            raise ValidationError("Date of document cannot be a future date.")
 
-        if form.date_of_doc.data.year != form.fi0.data:
-            raise ValidationError("Date of document must be consistent with the reporting year.")
+        if form.date_of_doc.data and form.number_of_doc.data and form.fi0.data and form.interval_ord.data \
+            and form.subject_id.data:
+            print('form.company_id', company_id)
+            if check_record_exists(form, company_id):
+                raise ValidationError("Document already exists!")
+
+        if not form.date_of_doc.data and not form.number_of_doc.data:
+            raise ValidationError("Document data is missing.")
+
+        if form.date_of_doc.data:
+            if form.date_of_doc.data > datetime.today().date():
+                raise ValidationError("Date of document cannot be a future date.")
+
+        if form.date_of_doc.data:
+            if form.date_of_doc.data.year != form.fi0.data:
+                raise ValidationError("Date of document must be consistent with the reporting year.")
 
         if not form.fi0.data or not form.interval_ord.data:
             raise ValidationError("Time interval reference fields cannot be null.")
@@ -1118,7 +1144,7 @@ class Atti_dataView(ModelView):
         if self._validate_no_action(model, form):
             pass
 
-        with app.app_context():
+        with current_app.app_context():
             result, message = check_status_limited(is_created, company_id, subject_id, None, year_id, interval_ord, interval_id, area_id, subarea_id, datetime.today(), db.session)
 
         if not result:
@@ -1137,6 +1163,7 @@ class Atti_dataView(ModelView):
         model.status_id = status_id
         model.subject_id = subject_id
         model.legal_document_id = None
+        model.no_action = no_action
 
         if is_created:
             self.session.add(model)
@@ -1147,39 +1174,46 @@ class Atti_dataView(ModelView):
         remove_duplicates(self.session, StepBaseData, ['base_data_id', 'workflow_id', 'step_id'])
 
         inline_form_data = form.data.get('steps_relationship', [])
-        inline_data_string = f"At {datetime.now()} a new document dated {form.date_of_doc.data.year} "
-        inline_data_string += f"was created by the user {user_id} ({company_id}. "
-        inline_data_string += f"Area {area_id}, subarea {subarea_id}, reference period {interval_ord}/{interval_id}/{year_id}. "
+        if form.date_of_doc.data:
+            inline_data_string = f"At {datetime.now()} a new document dated {form.date_of_doc.data.year} "
+            inline_data_string += f"was created by the user {user_id} ({company_id}. "
+            inline_data_string += f"Area {area_id}, subarea {subarea_id}, reference period {interval_ord}/{interval_id}/{year_id}. "
 
         for data in inline_form_data:
             for field_name, field_value in data.items():
                 inline_data_string += f"{field_name}: {field_value}\n"
 
-        create_notification(
-            self.session,
-            company_id=company_id,
-            user_id=user_id,
-            sender="System",
-            message_type="noticeboard",
-            subject="Document and Workflow Created",
-            body=inline_data_string,
-            lifespan='one-off'
-        )
+        try:
+            create_notification(
+                self.session,
+                company_id=company_id,
+                user_id=user_id,
+                sender="System",
+                message_type="noticeboard",
+                subject="Document and Workflow Created",
+                body=inline_data_string,
+                lifespan='one-off'
+            )
+        except:
+            print('Error creating notification')
 
         action_type = 'update'
         if is_created:
             action_type = 'create'
 
-        create_audit_log(
-            self.session,
-            company_id=company_id,
-            user_id=user_id,
-            base_data_id=None,
-            workflow_id=None,
-            step_id=None,
-            action=action_type,
-            details=inline_data_string
-        )
+        try:
+            create_audit_log(
+                self.session,
+                company_id=company_id,
+                user_id=user_id,
+                base_data_id=None,
+                workflow_id=None,
+                step_id=None,
+                action=action_type,
+                details=inline_data_string
+            )
+        except:
+            print('Error creating audit trail record')
 
         return model
 
@@ -1319,6 +1353,7 @@ class Contingencies_dataView(ModelView):
 
     def _validate_no_action(self, model, form):
         no_action_value = form.no_action.data
+        print('no_action_value', no_action_value, '. model.file_path', model.file_path)
         if model.file_path is None and not no_action_value:
             raise ValidationError(
                 'If no file exists, then this absence must be acknowledged by checking the "no documents" box.')
@@ -1405,7 +1440,7 @@ class Contingencies_dataView(ModelView):
             pass
 
         # Perform actions relevant to both creation and edit:
-        with app.app_context():
+        with current_app.app_context():
             result, message = check_status_limited(is_created, company_id,
                                 subject_id, None, year_id, interval_ord,
                                     interval_id, area_id, subarea_id, datetime.today(), db.session)
@@ -1740,7 +1775,7 @@ class Contenziosi_dataView(ModelView):
 
 
         # Perform actions relevant to both creation and edit:
-        with app.app_context():
+        with current_app.app_context():
             result, message = check_status_limited(is_created, company_id,
                                 subject_id, None, year_id, interval_ord,
                                     interval_id, area_id, subarea_id, datetime.today(), db.session)
@@ -2060,7 +2095,7 @@ class Iniziative_dso_as_dataView(ModelView):
             pass
 
         # Perform actions relevant to both creation and edit:
-        with app.app_context():
+        with current_app.app_context():
             result, message = check_status_limited(is_created, company_id,
                                                    subject_id, None, year_id, interval_ord,
                                                    interval_id, area_id, subarea_id, datetime.today(), db.session)
@@ -2382,7 +2417,7 @@ class Iniziative_as_dso_dataView(ModelView):
             pass
 
         # Perform actions relevant to both creation and edit:
-        with app.app_context():
+        with current_app.app_context():
             result, message = check_status_limited(is_created, company_id,
                                                    subject_id, None, year_id, interval_ord,
                                                    interval_id, area_id, subarea_id, datetime.today(), db.session)
@@ -2703,7 +2738,7 @@ class Iniziative_dso_dso_dataView(ModelView):
             pass
 
         # Perform actions relevant to both creation and edit:
-        with app.app_context():
+        with current_app.app_context():
             result, message = check_status_limited(is_created, company_id,
                                                    subject_id, None, year_id, interval_ord,
                                                    interval_id, area_id, subarea_id, datetime.today(), db.session)
@@ -3533,7 +3568,7 @@ class Tabella23_dataView(ModelView):
         if form.fi0.data == None or form.interval_ord.data == None:
             raise ValidationError(f"Time interval reference fields cannot be null")
 
-        with app.app_context():
+        with current_app.app_context():
             result, message = check_status(is_created, company_id,
                                            None, None, form.fi0.data, form.interval_ord.data,
                                            interval_id, area_id, subarea_id, datetime.today(), db.session)
@@ -3807,7 +3842,7 @@ class Tabella24_dataView(ModelView):
         fields_to_check = ['fi0',
                            'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fc1', 'interval_ord']
 
-        with app.app_context():
+        with current_app.app_context():
             result, message = check_status(is_created, company_id,
                                            None, None, form.fi0.data, form.interval_ord.data,
                                            interval_id, area_id, subarea_id, datetime.today(), db.session)
@@ -4086,7 +4121,7 @@ class Tabella25_dataView(ModelView):
         if form.fi0.data == None or form.interval_ord.data == None:
             raise ValidationError(f"Time interval reference fields cannot be null")
 
-        with app.app_context():
+        with current_app.app_context():
             result, message = check_status(is_created, company_id, None,
                                            None, form.fi0.data, form.interval_ord.data,
                                            interval_id, area_id, subarea_id, datetime.today(), db.session)
@@ -4400,7 +4435,7 @@ class Tabella26_dataView(ModelView):
                            'fn1', 'fn2', 'fn3', 'fn4', 'fn5', 'fn6', 'fn7', 'fn8',
                            'fc1']
 
-        with app.app_context():
+        with current_app.app_context():
             result, message = check_status(is_created, company_id,
                                            None, None, form.fi0.data, form.interval_ord.data,
                                            interval_id, area_id, subarea_id, datetime.today(), db.session)
@@ -4701,7 +4736,7 @@ class Tabella27_dataView(ModelView):
                            'fn1', 'fn2', 'fn3', 'fn4',
                            'fc1']
 
-        with app.app_context():
+        with current_app.app_context():
             result, message = check_status(is_created, company_id,
                                            None, None, form.fi0.data, form.interval_ord.data,
                                            interval_id, area_id, subarea_id, datetime.today(), db.session)
