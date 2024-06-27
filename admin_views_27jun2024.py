@@ -286,6 +286,7 @@ class DocumentsAssignedBaseDataView(ModelView):
                                selected_documents=selected_documents)
 
 
+
 class DocumentsNewBaseDataView(ModelView):
     can_create = False  # Optionally disable creation
     can_edit = True  # Optionally disable editing
@@ -482,6 +483,7 @@ class DocumentsNewBaseDataView(ModelView):
                                selected_documents=selected_documents)
 
 
+
 # for document workflow management (forward, backward, deadlines etc) - for already distributed documents
 class DocumentsBaseDataDetails(ModelView):
     can_create = True  # Optionally disable creation
@@ -647,7 +649,9 @@ class DocumentsBaseDataDetails(ModelView):
 
 
 
-# admin  -  f l u s s i   d i   p r e - c o m p l a i n t
+
+
+# admin -  f l u s s i  precomplaint
 class Flussi_dataView(ModelView):
     create_template = 'admin/area_1/create_base_data_1.html'
     subarea_id = 1  # Define subarea_id as a class attribute
@@ -951,24 +955,22 @@ class Flussi_dataView(ModelView):
 
 
 
-# BASE PER LE View 2, 3, 4, 6, 7 e 8
-# ==================================
-class BaseDataViewCommon(ModelView):
+class BaseDataView(ModelView):
     can_export = True
     inline_models = (StepBaseDataInlineForm(StepBaseData),)
     form_extra_fields = {
         'file_path': CustomFileUploadField('File', base_path=config.UPLOAD_FOLDER)
     }
 
-    def __init__(self, model, session, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         self.intervals = kwargs.pop('intervals', None)
         self.area_id = kwargs.pop('area_id', None)
         self.subarea_id = kwargs.pop('subarea_id', None)
-        super().__init__(model, session, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
 
     def scaffold_form(self):
-        form_class = super().scaffold_form()
+        form_class = super(BaseDataView, self).scaffold_form()
         current_year = datetime.now().year
         year_choices = [(str(year), str(year)) for year in range(current_year - 5, current_year + 2)]
         default_year = str(current_year)
@@ -1169,6 +1171,1893 @@ class BaseDataViewCommon(ModelView):
         return model
 
 
+class AttiDataView(BaseDataView):
+    create_template = 'admin/area_1/create_base_data_2.html'
+    subarea_id = 2
+    area_id = 1
+    column_list = ('fi0', 'interval_ord', 'subject', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
+    form_columns = ('fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
+    column_labels = {'fi0': 'Anno di rif.', 'interval_ord': 'Periodo di rif.', 'subject': 'Oggetto',
+                     'number_of_doc': 'Nr. documento', 'date_of_doc': 'Data documento', 'file_path': 'Allegati',
+                     'no_action': 'Conferma assenza doc.', 'fc2': 'Note'}
+    column_descriptions = {'interval_ord': '(inserire il numero; es. 1: primo quadrimestre; 2: secondo ecc.)',
+                           'fi0': 'Inserire anno (es. 2024)', 'subject_id': 'Seleziona oggetto',
+                           'fc2': 'Note', 'file_path': 'Allegati', 'no_action': 'Dichiarazione di assenza di documenti (1)'}
+    column_filters = ('subject', 'fc2', 'no_action')
+    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
+
+
+class Atti_dataView(ModelView):
+    can_export = True  # Default to enabled
+
+    inline_models = (StepBaseDataInlineForm(StepBaseData),)
+    # form_base_class = CustomBaseDataForm  # Use our custom form class
+    form_extra_fields = {
+        'file_path': CustomFileUploadField('File', base_path=config.UPLOAD_FOLDER)  # Use the custom field
+    }
+    create_template = 'admin/area_1/create_base_data_2.html'
+    subarea_id = 2
+    area_id = 1
+
+    # Specify the fields to be edited inline using XEditableWidget
+    column_editable_list = ['fc2']
+    form_widget_args = {
+        'fc2': {'widget': XEditableWidget()},
+    }
+
+    def __init__(self, *args, **kwargs):
+        self.intervals = kwargs.pop('intervals', None)
+        super().__init__(*args, **kwargs)
+        self.subarea_id = Atti_dataView.subarea_id  # Initialize subarea_id in __init__
+        self.area_id = Atti_dataView.area_id  # Initialize area_id in __init__
+        self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
+
+    column_list = ('fi0', 'interval_ord', 'subject', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
+    form_columns = ('fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
+    column_labels = {'fi0': 'Anno di rif.', 'interval_ord': 'Periodo di rif.', 'subject': 'Oggetto',
+                     'number_of_doc': 'Nr. documento', 'date_of_doc': 'Data documento', 'file_path': 'Allegati',
+                     'no_action': 'Conferma assenza doc.', 'fc2': 'Note'}
+    column_descriptions = {'interval_ord': '(inserire il numero; es. 1: primo quadrimestre; 2: secondo ecc.)',
+                           'fi0': 'Inserire anno (es. 2024)', 'subject_id': 'Seleziona oggetto',
+                           'fc2': 'Note', 'file_path': 'Allegati', 'no_action': 'Dichiarazione di assenza di documenti (1)'}
+    form_overrides = {
+        'no_action': CheckboxField
+    }
+    column_filters = ('subject', 'fc2', 'no_action')  # Adjust based on your model structure
+    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
+
+    @action('custom_action', 'List Workflows of Documents')
+    def custom_action(self, ids):
+        step_base_data_records = StepBaseData.query.filter(StepBaseData.base_data_id.in_(ids)).all()
+        model_records = BaseData.query.filter(BaseData.id.in_(ids)).all()
+        return self.render('basedata_workflow_step_list.html', step_base_data_records=step_base_data_records, model_records=model_records)
+
+    @action('custom_action_next_step', 'Transition to next Step')
+    def custom_action_next_step(self, ids):
+        print('Implement next step action')
+        pass
+
+    def _subject_formatter(view, context, model, name):
+        if model.subject:
+            if isinstance(model.subject, Subject):
+                return model.subject.name
+            else:
+                return Subject.query.get(model.subject).name
+        return ''
+
+    column_formatters = {
+        'subject': _subject_formatter
+    }
+
+    def scaffold_form(self):
+        form_class = super(Atti_dataView, self).scaffold_form()
+        current_year = datetime.now().year
+        year_choices = [(str(year), str(year)) for year in range(current_year - 5, current_year + 2)]
+        default_year = str(current_year)
+        form_class.fi0 = SelectField(
+            'Anno di rif.',
+            coerce=int,
+            choices=year_choices,
+            default=default_year
+        )
+        # NEW
+        config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
+                                          subarea_id=None)
+        nr_intervals = config_values[0]
+
+        current_interval = [t[2] for t in self.intervals if t[0] == nr_intervals] #int(get_current_interval(3))  # quadriester
+        first_element = current_interval[0] if current_interval else None
+        interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
+
+        form_class.interval_ord = SelectField(
+            'Periodo di rif.',
+            coerce=int,
+            choices=interval_choices,  # Example choices, replace with your logic
+            default=first_element
+        )
+
+        # Remove 'subject_id' field from the form
+        form_class.subject_id = SelectField(
+            'Tipo di documento',
+            validators=[InputRequired()],
+            coerce=int,
+            choices=[(subject.id, subject.name) for subject in Subject.query.filter_by(tier_1="Legale").all()]
+        )
+        #delattr(form_class, 'subject_id')
+        #form_class.no_action = CheckboxField('Confirm no documents to attach',
+        #                                     default=False)  # Set default value to False
+
+        form_class.no_action = CustomBooleanField('Confirm no documents to attach', default=False)
+
+        form_class.form_excluded_columns = ('user_id', 'company_id', 'status_id',
+                                            'created_by', 'created_on', 'updated_on', 'data_type')
+        # Set default values for specific fields
+        form_class.fc2 = MyStringField('Note')
+
+        return form_class #ExtendedForm
+
+    def _validate_no_action(self, model, form):
+        print('*** no_action.data', form.no_action.data, '. model.file_path ***', model.file_path)
+        if model.file_path is None and form.no_action.data == 0:
+            raise ValidationError('If no file exists, then this absence must be acknowledged by checking the "no documents" box.')
+
+    def _uncheck_if_document(self, model, form):
+        if model.file_path is not None and form.no_action.data:
+            raise ValidationError('The no-document box is checked but a document was uploaded - please confirm either of the two.')
+
+    def get_query(self):
+        query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
+        if current_user.is_authenticated:
+            if current_user.has_role('Admin') or current_user.has_role('Authority'):
+                return query
+            elif current_user.has_role('Manager'):
+                subquery = db.session.query(CompanyUsers.company_id).filter(CompanyUsers.user_id == current_user.id).subquery()
+                query = query.filter(self.model.company_id.in_(subquery))
+            elif current_user.has_role('Employee'):
+                return query.filter(self.model.user_id == current_user.id)
+        return query.filter(self.model.id < 0)
+
+    def on_model_change(self, form, model, is_created):
+        super().on_model_change(form, model, is_created)
+        form.populate_obj(model)
+
+        uploaded_file = form.file_path.data
+        if is_created:
+            model.created_on = datetime.now()
+
+        user_id = current_user.id
+        try:
+            company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
+        except:
+            company_id = None
+
+        area_id = self.area_id
+        subarea_id = self.subarea_id
+        data_type = self.subarea_name
+        nr_intervals = get_subarea_interval_type(self.area_id, self.subarea_id)
+        interval_id = nr_intervals
+        status_id = 1
+        record_type = 'control_area'
+
+        year_id = form.fi0.data
+        interval_ord = form.interval_ord.data
+        subject_id = form.subject_id.data
+        no_action = form.no_action.data
+
+        # chg 2
+
+        if form.date_of_doc.data and form.number_of_doc.data and form.fi0.data and form.interval_ord.data \
+            and form.subject_id.data:
+            print('form.company_id', company_id)
+            if check_record_exists(form, company_id):
+                raise ValidationError("Document already exists!")
+
+        if not form.date_of_doc.data and not form.number_of_doc.data:
+            raise ValidationError("Document data is missing.")
+
+        if form.date_of_doc.data:
+            if form.date_of_doc.data > datetime.today().date():
+                raise ValidationError("Date of document cannot be a future date.")
+
+        if form.date_of_doc.data:
+            if form.date_of_doc.data.year != form.fi0.data:
+                raise ValidationError("Date of document must be consistent with the reporting year.")
+
+        if not form.fi0.data or not form.interval_ord.data:
+            raise ValidationError("Time interval reference fields cannot be null.")
+
+        if not form.subject_id.data:
+            raise ValidationError("Document type can not be null.")
+
+        if form.interval_ord.data > 3 or form.interval_ord.data < 0:
+            raise ValidationError("Period must be less than or equal to the number of fractions (e.g. 4 for quarters, 12 for months).")
+
+        if form.fi0.data < 2000 or form.fi0.data > 2099:
+            raise ValidationError("Please check the year")
+
+        if self._uncheck_if_document(model, form):
+            pass
+        if self._validate_no_action(model, form):
+            pass
+
+        with current_app.app_context():
+            result, message = check_status_limited(is_created, company_id, subject_id, None, year_id, interval_ord, interval_id, area_id, subarea_id, datetime.today(), db.session)
+
+        if not result:
+            raise ValidationError(message)
+
+        model.updated_on = datetime.now()
+        model.user_id = user_id
+        model.company_id = company_id
+        model.data_type = data_type
+        model.record_type = record_type
+        model.area_id = area_id
+        model.subarea_id = subarea_id
+        model.fi0 = year_id
+        model.interval_id = interval_id
+        model.interval_ord = interval_ord
+        model.status_id = status_id
+        model.subject_id = subject_id
+        model.legal_document_id = None
+        model.no_action = no_action
+
+        if is_created:
+            self.session.add(model)
+        else:
+            self.session.merge(model)
+        self.session.commit()
+
+        remove_duplicates(self.session, StepBaseData, ['base_data_id', 'workflow_id', 'step_id'])
+
+        inline_form_data = form.data.get('steps_relationship', [])
+        if form.date_of_doc.data:
+            inline_data_string = f"At {datetime.now()} a new document dated {form.date_of_doc.data.year} "
+            inline_data_string += f"was created by the user {user_id} ({company_id}. "
+            inline_data_string += f"Area {area_id}, subarea {subarea_id}, reference period {interval_ord}/{interval_id}/{year_id}. "
+
+        for data in inline_form_data:
+            for field_name, field_value in data.items():
+                inline_data_string += f"{field_name}: {field_value}\n"
+
+        try:
+            create_notification(
+                self.session,
+                company_id=company_id,
+                user_id=user_id,
+                sender="System",
+                message_type="noticeboard",
+                subject="Document and Workflow Created",
+                body=inline_data_string,
+                lifespan='one-off'
+            )
+        except:
+            print('Error creating notification')
+
+        action_type = 'update'
+        if is_created:
+            action_type = 'create'
+
+        try:
+            create_audit_log(
+                self.session,
+                company_id=company_id,
+                user_id=user_id,
+                base_data_id=None,
+                workflow_id=None,
+                step_id=None,
+                action=action_type,
+                details=inline_data_string
+            )
+        except:
+            print('Error creating audit trail record')
+
+        return model
+
+
+class Contingencies_dataView(ModelView):
+
+    can_export = True  # Default to enabled
+
+    inline_models = (StepBaseDataInlineForm(StepBaseData),)
+    # inline_models = [(StepBaseDataInlineForm, StepBaseData, 'ONE_TO_MANY')]  # Assuming a one-to-one relationship
+    # form_base_class = CustomBaseDataForm  # Use our custom form class
+    form_extra_fields = {
+        'file_path': CustomFileUploadField('File', base_path=config.UPLOAD_FOLDER)  # Use the custom field
+    }
+
+    create_template = 'admin/area_1/create_base_data_3.html'
+    subarea_id = 3
+    area_id = 1
+
+    # Specify the fields to be edited inline using XEditableWidget
+    column_editable_list = ['fc2']
+    # Customize the widget for inline editing
+    form_widget_args = {
+        # 'fi0': {'widget': XEditableWidget()},
+        # 'interval_ord': {'widget': XEditableWidget()},
+        # 'fi1': {'widget': XEditableWidget()},
+        # 'fi2': {'widget': XEditableWidget()},
+        'fc2': {'widget': XEditableWidget()},
+    }
+    def __init__(self, *args, **kwargs):
+        self.intervals = kwargs.pop('intervals', None)
+        super().__init__(*args, **kwargs)
+        #self.class_name = self.__class__.__name__  # Store the class name
+        self.subarea_id = Contingencies_dataView.subarea_id  # Initialize subarea_id in __init__
+        self.area_id = Contingencies_dataView.area_id  # Initialize area_id in __init__
+        self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
+
+
+    column_list = ('fi0', 'interval_ord', 'subject', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
+    # Specify the columns to display in the edit view
+    form_columns = ('fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
+    #'interval_ord', 'fi0', 'subject_id', 'fc2',
+    # Replace the StringField with FileUploadField
+
+    column_labels = {'fi0': 'Anno di rif.', 'interval_ord': 'Periodo di rif.', 'subject': 'Oggetto',
+                     'number_of_doc': 'Nr. documento', 'date_of_doc': 'Data documento', 'file_path': 'Allegati',
+                     'no_action': 'Conferma assenza doc.', 'fc2': 'Note'}
+    column_descriptions = {'interval_ord': '(inserire il numero; es. 1: primo quadrimestre; 2: secondo ecc.)',
+                           'fi0': 'Inserire anno (es. 2024)', 'subject_id': 'Seleziona oggetto',
+                           'fc2': 'Note', 'file_path': 'Allegati', 'no_action': 'Dichiarazione di assenza di documenti (1)'}
+
+    form_overrides = {
+        'no_action': CheckboxField
+    }
+
+    column_filters = ('subject', 'fc2', 'no_action')  # Adjust based on your model structure
+    # Specify fields to be excluded from the form
+    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
+
+    @action('custom_action', 'List Workflows of Documents')
+    def custom_action(self, ids):
+        # Fetch StepBaseData records related to the provided model IDs
+        step_base_data_records = StepBaseData.query.filter(StepBaseData.base_data_id.in_(ids)).all()
+
+        # Fetch model records related to the provided model IDs
+        model_records = BaseData.query.filter(BaseData.id.in_(ids)).all()
+
+        # Render the template to display the records
+        return self.render('basedata_workflow_step_list.html', step_base_data_records=step_base_data_records, model_records=model_records)
+
+
+    # TODO ***** Implement Next Step Action
+    @action('custom_action_next_step', 'Transition to next Step')
+    def custom_action_next_step(self, ids):
+        print('Implement next step action')
+        pass
+
+
+    def _subject_formatter(view, context, model, name):
+        # This function will be used to format the 'subject' column
+        if model.subject:
+            if isinstance(model.subject, Subject):  # Check if the subject is an instance of Subject
+                return model.subject.name
+            else:
+                return Subject.query.get(model.subject).name  # If not, query the subject object
+        return ''
+
+    column_formatters = {
+        'subject': _subject_formatter
+    }
+
+    def scaffold_form(self):
+        form_class = super(Contingencies_dataView, self).scaffold_form()
+        current_year = datetime.now().year
+        year_choices = [(str(year), str(year)) for year in range(current_year - 5, current_year + 2)]
+        default_year = str(current_year)
+        form_class.fi0 = SelectField(
+            'Anno di rif.',
+            coerce=int,
+            choices=year_choices,
+            default=default_year
+        )
+        # NEW
+        config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
+                                          subarea_id=None)
+        nr_intervals = config_values[0]
+
+        current_interval = [t[2] for t in self.intervals if t[0] == nr_intervals] #int(get_current_interval(3))  # quadriester
+        first_element = current_interval[0] if current_interval else None
+        interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
+
+        form_class.interval_ord = SelectField(
+            'Periodo di rif.',
+            coerce=int,
+            choices=interval_choices,  # Example choices, replace with your logic
+            default=first_element
+        )
+
+        # Remove 'subject_id' field from the form
+        form_class.subject_id = SelectField(
+            'Tipo di documento',
+            validators=[InputRequired()],
+            coerce=int,
+            choices=[(subject.id, subject.name) for subject in Subject.query.filter_by(tier_1="Legale").all()]
+        )
+        #delattr(form_class, 'subject_id')
+        form_class.no_action = CheckboxField('Confirm no documents to attach',
+                                             default=False)  # Set default value to False
+
+        form_class.form_excluded_columns = ('user_id', 'company_id', 'status_id',
+                                            'created_by', 'created_on', 'updated_on', 'data_type')
+        # Set default values for specific fields
+        form_class.fc2 = MyStringField('Note')
+
+        return form_class #ExtendedForm
+
+
+    def _validate_no_action(self, model, form):
+        no_action_value = form.no_action.data
+        print('no_action_value', no_action_value, '. model.file_path', model.file_path)
+        if model.file_path is None and not no_action_value:
+            raise ValidationError(
+                'If no file exists, then this absence must be acknowledged by checking the "no documents" box.')
+
+    def _uncheck_if_document(self, model, form):
+        no_action_value = form.no_action.data
+        if model.file_path is not None and no_action_value:
+            raise ValidationError(
+                'The no-document box is checked but a document was uploaded - please confirm either of the two.')
+
+    def get_query(self):
+        query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
+
+        if current_user.is_authenticated:
+            if current_user.has_role('Admin') or current_user.has_role('Authority'):
+                return query
+            elif current_user.has_role('Manager'):
+                # Manager can only see records related to their company_users
+                subquery = db.session.query(CompanyUsers.company_id).filter(
+                    CompanyUsers.user_id == current_user.id
+                ).subquery()
+
+                query = query.filter(self.model.company_id.in_(subquery))
+            elif current_user.has_role('Employee'):
+                # Employee can only see their own records
+                query = query.filter(self.model.user_id == current_user.id)
+                return query
+
+        # For other roles or anonymous users, return an empty query
+        return query.filter(self.model.id < 0)
+
+    def on_model_change(self, form, model, is_created):
+        super().on_model_change(form, model, is_created)
+
+        # Reset form data
+        form.populate_obj(model)
+
+        uploaded_file = form.file_path.data
+        user_id = current_user.id  # Get the current user's ID or any other criteria
+        try:
+            company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
+        except:
+            company_id = None
+            pass
+
+        area_id = self.area_id
+        subarea_id = self.subarea_id
+        data_type = self.subarea_name
+        nr_intervals = get_subarea_interval_type(self.area_id, self.subarea_id)
+        interval_id = nr_intervals
+        status_id = 1
+        record_type = 'control_area'
+
+        year_id = form.fi0.data
+        interval_ord = form.interval_ord.data
+        subject_id = form.subject_id.data
+
+        if form.date_of_doc.data > datetime.today().date():
+            raise ValidationError("Date of document cannot be a future date.")
+
+        if form.date_of_doc.data.year != form.fi0.data:
+            raise ValidationError(f"Date of document must be consistent with the reporting year.")
+
+        if form.fi0.data == None or form.interval_ord.data == None:
+            raise ValidationError(f"Time interval reference fields cannot be null.")
+
+        if form.subject_id.data == None:
+            raise ValidationError(f"Document type can not be null.")
+
+        # - Validate data - Save the model
+        if form.interval_ord.data > 3 or form.interval_ord.data < 0:
+            raise ValidationError(
+                "Period must be less than or equal to the number of fractions (e.g. 4 for quarters, 12 for months).")
+            pass
+
+        if form.fi0.data < 2000 or form.fi0.data > 2099:
+            raise ValidationError(
+                "Please check the year")
+            pass
+
+        if self._uncheck_if_document(model, form):
+            pass
+        if self._validate_no_action(model, form):
+            pass
+
+        # Perform actions relevant to both creation and edit:
+        with current_app.app_context():
+            result, message = check_status_limited(is_created, company_id,
+                                subject_id, None, year_id, interval_ord,
+                                    interval_id, area_id, subarea_id, datetime.today(), db.session)
+
+        if result == False:
+            raise ValidationError(message)
+            pass
+
+        model.updated_on = datetime.now()  # Set the created_on
+        model.user_id = user_id
+        model.company_id = company_id
+        model.data_type = data_type
+        model.record_type = record_type
+        model.area_id = area_id
+        model.subarea_id = subarea_id
+        model.fi0 = year_id
+        model.interval_id = interval_id
+        model.interval_ord = interval_ord
+        model.status_id = status_id
+        model.subject_id = subject_id
+        model.legal_document_id = None
+        # for upload actions
+        # model.file_path = form.file_path.data
+
+        # workflow_controls = f"{dropdown_html}<br>{date_picker_html}<br>{checkbox_html}"  # Adjusted variable name
+        # Determine if workflow controls need to be generated
+        # Save the model to the database
+
+        if is_created:
+            self.session.add(model)
+        else:
+            self.session.merge(model)
+        self.session.commit()
+
+        # Return the model after saving
+          # Replace 'YourModelBase' with the base class of your models if different
+        remove_duplicates(self.session, StepBaseData, ['base_data_id', 'workflow_id', 'step_id'])
+
+        # Accessing inline form data directly from the main form object
+        inline_form_data = form.data.get('steps_relationship', [])
+        inline_data_string = f"At {datetime.now()} a new document dated {form.date_of_doc.data.year} "
+        inline_data_string += f"was created by the user {user_id} ({company_id}. "
+        inline_data_string += f"Area {area_id}, subarea {subarea_id}, reference period {interval_ord}/{interval_id}/{year_id}. "
+
+        # Initialize an empty string to hold the inline form data
+        for data in inline_form_data:
+            for field_name, field_value in data.items():
+                inline_data_string += f"{field_name}: {field_value}\n"  # Append field name and value to the string
+
+        # Now you have the inline form data as a string, you can use it to create a system message
+        # For example, you can use it to create a message using your `create_notification` function
+
+        create_notification(
+            self.session,
+            company_id=company_id,
+            user_id=user_id,
+            sender="System",
+            message_type="noticeboard",
+            subject="Document and Workflow Created",
+            body=inline_data_string,
+            lifespan='one-off'
+        )
+        #except:
+        #    print('Error adding inline data')
+
+        # TODO create ADMIN message too
+
+        action_type = 'update'
+        if is_created:
+            action_type = 'create'
+
+        create_audit_log(
+            self.session,
+            company_id=company_id,
+            user_id=user_id,
+            base_data_id=None,
+            workflow_id=None,
+            step_id=None,
+            action=action_type,
+            details=inline_data_string
+        )
+
+        return model
+
+
+
+class Contenziosi_dataView(ModelView):
+
+    create_template = 'admin/area_1/create_base_data_4.html'
+    subarea_id = 4  # Define subarea_id as a class attribute
+    area_id = 1
+    can_export = True  # Default to enabled
+    inline_models = (StepBaseDataInlineForm(StepBaseData),)
+
+    # inline_models = [(StepBaseDataInlineForm, StepBaseData, 'ONE_TO_MANY')]  # Assuming a one-to-one relationship
+    # form_base_class = CustomBaseDataForm  # Use our custom form class
+    form_extra_fields = {
+        'file_path': CustomFileUploadField('File', base_path=config.UPLOAD_FOLDER)  # Use the custom field
+    }
+    # Specify the fields to be edited inline using XEditableWidget
+    column_editable_list = ['fc2']
+    # Customize the widget for inline editing
+    form_widget_args = {
+        # 'fi0': {'widget': XEditableWidget()},
+        # 'interval_ord': {'widget': XEditableWidget()},
+        # 'fi1': {'widget': XEditableWidget()},
+        # 'fi2': {'widget': XEditableWidget()},
+        'fc2': {'widget': XEditableWidget()},
+    }
+
+    def __init__(self, *args, **kwargs):
+
+        self.intervals = kwargs.pop('intervals', None)
+        super().__init__(*args, **kwargs)
+        #self.class_name = self.__class__.__name__  # Store the class name
+        self.subarea_id = Contenziosi_dataView.subarea_id  # Initialize subarea_id in __init__
+        self.area_id = Contenziosi_dataView.area_id  # Initialize area_id in __init__
+        self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
+
+    '''
+    def is_accessible(self):
+        if current_user.is_authenticated:
+            if (current_user.has_role('Admin') or current_user.has_role('Authority')
+                or current_user.has_role('Manager') or current_user.has_role('Employee')):
+                # Allow access for Admin, Manager, and Employee
+                return True
+        return False
+    '''
+
+    column_list = ('fi0', 'interval_ord', 'subject', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
+    # Specify the columns to display in the edit view
+    form_columns = ('fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
+    #'interval_ord', 'fi0', 'subject_id', 'fc2',
+    # Replace the StringField with FileUploadField
+
+    column_labels = {'fi0': 'Anno di rif.', 'interval_ord': 'Periodo di rif.', 'subject': 'Oggetto',
+                     'number_of_doc': 'Nr. documento', 'date_of_doc': 'Data documento', 'file_path': 'Allegati',
+                     'no_action': 'Conferma assenza doc.', 'fc2': 'Note'}
+    column_descriptions = {'interval_ord': '(inserire il numero; es. 1: primo quadrimestre; 2: secondo ecc.)',
+                           'fi0': 'Inserire anno (es. 2024)', 'subject_id': 'Seleziona oggetto',
+                           'fc2': 'Note', 'file_path': 'Allegati', 'no_action': 'Dichiarazione di assenza di documenti (1)'}
+
+    form_overrides = {
+        'no_action': CheckboxField
+    }
+
+    column_filters = ('subject', 'fc2', 'no_action')  # Adjust based on your model structure
+    # Specify fields to be excluded from the form
+    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
+
+    @action('custom_action', 'List Workflows of Documents')
+    def custom_action(self, ids):
+        # Fetch StepBaseData records related to the provided model IDs
+        step_base_data_records = StepBaseData.query.filter(StepBaseData.base_data_id.in_(ids)).all()
+
+        # Fetch model records related to the provided model IDs
+        model_records = BaseData.query.filter(BaseData.id.in_(ids)).all()
+
+        # Render the template to display the records
+        return self.render('basedata_workflow_step_list.html', step_base_data_records=step_base_data_records, model_records=model_records)
+
+
+    # TODO ***** Implement Next Step Action
+    @action('custom_action_next_step', 'Transition to next Step')
+    def custom_action_next_step(self, ids):
+        pass
+
+
+    def _subject_formatter(view, context, model, name):
+        # This function will be used to format the 'subject' column
+        if model.subject:
+            if isinstance(model.subject, Subject):  # Check if the subject is an instance of Subject
+                return model.subject.name
+            else:
+                return Subject.query.get(model.subject).name  # If not, query the subject object
+        return ''
+
+    column_formatters = {
+        'subject': _subject_formatter
+    }
+
+    def scaffold_form(self):
+        form_class = super(Contenziosi_dataView, self).scaffold_form()
+        current_year = datetime.now().year
+        year_choices = [(str(year), str(year)) for year in range(current_year - 5, current_year + 2)]
+        default_year = str(current_year)
+        form_class.fi0 = SelectField(
+            'Anno di rif.',
+            coerce=int,
+            choices=year_choices,
+            default=default_year
+        )
+        # NEW
+        config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
+                                          subarea_id=None)
+        nr_intervals = config_values[0]
+
+        current_interval = [t[2] for t in self.intervals if t[0] == nr_intervals] #int(get_current_interval(3))  # quadriester
+        first_element = current_interval[0] if current_interval else None
+        interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
+
+        form_class.interval_ord = SelectField(
+            'Periodo di rif.',
+            coerce=int,
+            choices=interval_choices,  # Example choices, replace with your logic
+            default=first_element
+        )
+
+        # Remove 'subject_id' field from the form
+        form_class.subject_id = SelectField(
+            'Tipo di documento',
+            validators=[InputRequired()],
+            coerce=int,
+            choices=[(subject.id, subject.name) for subject in Subject.query.filter_by(tier_1="Legale").all()]
+        )
+        #delattr(form_class, 'subject_id')
+        form_class.no_action = CheckboxField('Confirm no documents to attach',
+                                             default=False)  # Set default value to False
+
+        form_class.form_excluded_columns = ('user_id', 'company_id', 'status_id',
+                                            'created_by', 'created_on', 'updated_on', 'data_type')
+        # Set default values for specific fields
+        form_class.fc2 = MyStringField('Note')
+
+        return form_class #ExtendedForm
+
+
+    def _validate_no_action(self, model, form):
+        no_action_value = form.no_action.data
+        if model.file_path is None and not no_action_value:
+            raise ValidationError(
+                'If no file exists, then this absence must be acknowledged by checking the "no documents" box.')
+
+    def _uncheck_if_document(self, model, form):
+        no_action_value = form.no_action.data
+        if model.file_path is not None and no_action_value:
+            raise ValidationError(
+                'The no-document box is checked but a document was uploaded - please confirm either of the two.')
+
+    def get_query(self):
+        query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
+
+        if current_user.is_authenticated:
+            if current_user.has_role('Admin') or current_user.has_role('Authority'):
+                return query
+            elif current_user.has_role('Manager'):
+                # Manager can only see records related to their company_users
+                subquery = db.session.query(CompanyUsers.company_id).filter(
+                    CompanyUsers.user_id == current_user.id
+                ).subquery()
+
+                query = query.filter(self.model.company_id.in_(subquery))
+            elif current_user.has_role('Employee'):
+                # Employee can only see their own records
+                query = query.filter(self.model.user_id == current_user.id)
+                return query
+
+        # For other roles or anonymous users, return an empty query
+        return query.filter(self.model.id < 0)
+
+
+    def on_model_change(self, form, model, is_created):
+        super().on_model_change(form, model, is_created)
+
+        # Reset form data
+        form.populate_obj(model)
+
+        # Get the inline form data
+        # TODO eliminated on 26Mar to cope with duplicated records in the INLINE
+        # inline_form_data = form.inline_form  # Assuming 'inline_form' is the attribute holding the inline form data
+
+        uploaded_file = form.file_path.data
+        if is_created:
+            # Handle new model creation:
+            # - Set default values
+            # - Send notification
+            # Apply your custom logic to set data_type
+            model.created_on = datetime.now()  # Set the created_on
+            pass
+        else:
+            # Handle existing model edit:
+            # - Compare previous and updated values
+            # - Trigger specific actions based on changes
+            pass
+
+        user_id = current_user.id  # Get the current user's ID or any other criteria
+        try:
+            company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
+        except:
+            company_id = None
+            pass
+
+        area_id = self.area_id
+        subarea_id = self.subarea_id
+        data_type = self.subarea_name
+        nr_intervals = get_subarea_interval_type(self.area_id, self.subarea_id)
+        interval_id = nr_intervals
+        status_id = 1
+        record_type = 'control_area'
+
+        year_id = form.fi0.data
+        interval_ord = form.interval_ord.data
+        subject_id = form.subject_id.data
+
+        if form.date_of_doc.data > datetime.today().date():
+            raise ValidationError("Date of document cannot be a future date.")
+
+        if form.date_of_doc.data.year != form.fi0.data:
+            raise ValidationError(f"Date of document must be consistent with the reporting year.")
+
+        if form.fi0.data == None or form.interval_ord.data == None:
+            raise ValidationError(f"Time interval reference fields cannot be null.")
+
+        if form.subject_id.data == None:
+            raise ValidationError(f"Document type can not be null.")
+
+        # - Validate data - Save the model
+        if form.interval_ord.data > 3 or form.interval_ord.data < 0:
+            raise ValidationError(
+                "Period must be less than or equal to the number of fractions (e.g. 4 for quarters, 12 for months).")
+            pass
+
+        if form.fi0.data < 2000 or form.fi0.data > 2099:
+            raise ValidationError(
+                "Please check the year")
+            pass
+
+        if self._uncheck_if_document(model, form):
+            pass
+        if self._validate_no_action(model, form):
+            pass
+
+
+        # Perform actions relevant to both creation and edit:
+        with current_app.app_context():
+            result, message = check_status_limited(is_created, company_id,
+                                subject_id, None, year_id, interval_ord,
+                                    interval_id, area_id, subarea_id, datetime.today(), db.session)
+
+        if result == False:
+            raise ValidationError(message)
+            pass
+
+        model.updated_on = datetime.now()  # Set the created_on
+        model.user_id = user_id
+        model.company_id = company_id
+        model.data_type = data_type
+        model.record_type = record_type
+        model.area_id = area_id
+        model.subarea_id = subarea_id
+        model.fi0 = year_id
+        model.interval_id = interval_id
+        model.interval_ord = interval_ord
+        model.status_id = status_id
+        model.subject_id = subject_id
+        model.legal_document_id = None
+        # for upload actions
+        # model.file_path = form.file_path.data
+        # workflow_controls = f"{dropdown_html}<br>{date_picker_html}<br>{checkbox_html}"  # Adjusted variable name
+        # Determine if workflow controls need to be generated
+        # Save the model to the database
+        if is_created:
+            self.session.add(model)
+        else:
+            self.session.merge(model)
+        self.session.commit()
+
+        # Return the model after saving
+          # Replace 'YourModelBase' with the base class of your models if different
+        remove_duplicates(self.session, StepBaseData, ['base_data_id', 'workflow_id', 'step_id'])
+
+        # Accessing inline form data directly from the main form object
+        inline_form_data = form.data.get('steps_relationship', [])
+        inline_data_string = f"At {datetime.now()} a new document dated {form.date_of_doc.data.year} "
+        inline_data_string += f"was created by the user {user_id} ({company_id}. "
+        inline_data_string += f"Area {area_id}, subarea {subarea_id}, reference period {interval_ord}/{interval_id}/{year_id}. "
+
+        # Initialize an empty string to hold the inline form data
+        for data in inline_form_data:
+            for field_name, field_value in data.items():
+                inline_data_string += f"{field_name}: {field_value}\n"  # Append field name and value to the string
+
+        # Now you have the inline form data as a string, you can use it to create a system message
+        # For example, you can use it to create a message using your `create_notification` function
+
+        create_notification(
+            self.session,
+            company_id=company_id,
+            user_id=user_id,
+            sender="System",
+            message_type="noticeboard",
+            subject="Document and Workflow Created",
+            body=inline_data_string,
+            lifespan='one-off'
+        )
+        #except:
+        #    print('Error adding inline data')
+
+        # TODO create ADMIN message too
+
+        action_type = 'update'
+        if is_created:
+            action_type = 'create'
+
+        create_audit_log(
+            self.session,
+            company_id=company_id,
+            user_id=user_id,
+            base_data_id=None,
+            workflow_id=None,
+            step_id=None,
+            action='create',
+            details=inline_data_string
+        )
+
+        return model
+
+
+class Iniziative_dso_as_dataView(ModelView):
+
+    create_template = 'admin/area_1/create_base_data_6.html'
+    subarea_id = 6  # Define subarea_id as a class attribute
+    area_id = 1
+
+    inline_models = (StepBaseDataInlineForm(StepBaseData),)
+    # inline_models = [(StepBaseDataInlineForm, StepBaseData, 'ONE_TO_MANY')]  # Assuming a one-to-one relationship
+    # form_base_class = CustomBaseDataForm  # Use our custom form class
+    form_extra_fields = {
+        'file_path': CustomFileUploadField('File', base_path=config.UPLOAD_FOLDER)  # Use the custom field
+    }
+    # Specify the fields to be edited inline using XEditableWidget
+    column_editable_list = ['fc2']
+    # Customize the widget for inline editing
+    form_widget_args = {
+        # 'fi0': {'widget': XEditableWidget()},
+        # 'interval_ord': {'widget': XEditableWidget()},
+        # 'fi1': {'widget': XEditableWidget()},
+        # 'fi2': {'widget': XEditableWidget()},
+        'fc2': {'widget': XEditableWidget()},
+    }
+    def __init__(self, *args, **kwargs):
+        self.intervals=kwargs.pop('intervals', None)
+        super().__init__(*args, **kwargs)
+        # self.class_name = self.__class__.__name__  # Store the class name
+        self.subarea_id = Iniziative_dso_as_dataView.subarea_id  # Initialize subarea_id in __init__
+        self.area_id = Iniziative_dso_as_dataView.area_id  # Initialize area_id in __init__
+        self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
+
+    column_list = ('fi0', 'interval_ord', 'subject', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
+    # Specify the columns to display in the edit view
+    form_columns = ('fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
+    # 'interval_ord', 'fi0', 'subject_id', 'fc2',
+    # Replace the StringField with FileUploadField
+
+    column_labels = {'fi0': 'Anno di rif.', 'interval_ord': 'Periodo di rif.', 'subject': 'Oggetto',
+                     'number_of_doc': 'Nr. documento', 'date_of_doc': 'Data documento', 'file_path': 'Allegati',
+                     'no_action': 'Conferma assenza doc.', 'fc2': 'Note'}
+    column_descriptions = {'interval_ord': '(inserire il numero; es. 1: primo quadrimestre; 2: secondo ecc.)',
+                           'fi0': 'Inserire anno (es. 2024)', 'subject_id': 'Seleziona oggetto',
+                           'fc2': 'Note', 'file_path': 'Allegati',
+                           'no_action': 'Dichiarazione di assenza di documenti (1)'}
+
+    form_overrides = {
+        'no_action': CheckboxField
+    }
+
+    column_filters = ('subject', 'fc2', 'no_action')  # Adjust based on your model structure
+    # Specify fields to be excluded from the form
+    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
+
+    @action('custom_action', 'List Workflows of Documents')
+    def custom_action(self, ids):
+        # Fetch StepBaseData records related to the provided model IDs
+        step_base_data_records = StepBaseData.query.filter(StepBaseData.base_data_id.in_(ids)).all()
+
+        # Fetch model records related to the provided model IDs
+        model_records = BaseData.query.filter(BaseData.id.in_(ids)).all()
+
+        # Render the template to display the records
+        return self.render('basedata_workflow_step_list.html', step_base_data_records=step_base_data_records,
+                           model_records=model_records)
+
+    # TODO ***** Implement Next Step Action
+    @action('custom_action_next_step', 'Transition to next Step')
+    def custom_action_next_step(self, ids):
+        print('Implement next step action')
+        pass
+
+    def _subject_formatter(view, context, model, name):
+        # This function will be used to format the 'subject' column
+        if model.subject:
+            if isinstance(model.subject, Subject):  # Check if the subject is an instance of Subject
+                return model.subject.name
+            else:
+                return Subject.query.get(model.subject).name  # If not, query the subject object
+        return ''
+
+    column_formatters = {
+        'subject': _subject_formatter
+    }
+
+    def scaffold_form(self):
+        form_class = super(Iniziative_dso_as_dataView, self).scaffold_form()
+        current_year = datetime.now().year
+        year_choices = [(str(year), str(year)) for year in range(current_year - 5, current_year + 2)]
+        default_year = str(current_year)
+        form_class.fi0 = SelectField(
+            'Anno di rif.',
+            coerce=int,
+            choices=year_choices,
+            default=default_year
+        )
+        # NEW
+        config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
+                                          subarea_id=None)
+        nr_intervals = config_values[0]
+
+        current_interval = [t[2] for t in self.intervals if
+                            t[0] == nr_intervals]  # int(get_current_interval(3))  # quadriester
+        first_element = current_interval[0] if current_interval else None
+        interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
+
+        form_class.interval_ord = SelectField(
+            'Periodo di rif.',
+            coerce=int,
+            choices=interval_choices,  # Example choices, replace with your logic
+            default=first_element
+        )
+
+        # Remove 'subject_id' field from the form
+        form_class.subject_id = SelectField(
+            'Tipo di documento',
+            validators=[InputRequired()],
+            coerce=int,
+            choices=[(subject.id, subject.name) for subject in Subject.query.filter_by(tier_1="Legale").all()]
+        )
+        # delattr(form_class, 'subject_id')
+        form_class.no_action = CheckboxField('Confirm no documents to attach',
+                                             default=False)  # Set default value to False
+
+        form_class.form_excluded_columns = ('user_id', 'company_id', 'status_id',
+                                            'created_by', 'created_on', 'updated_on', 'data_type')
+        # Set default values for specific fields
+        form_class.fc2 = MyStringField('Note')
+
+        return form_class  # ExtendedForm
+
+    def _validate_no_action(self, model, form):
+        no_action_value = form.no_action.data
+        if model.file_path is None and not no_action_value:
+            raise ValidationError(
+                'If no file exists, then this absence must be acknowledged by checking the "no documents" box.')
+
+    def _uncheck_if_document(self, model, form):
+        no_action_value = form.no_action.data
+        if model.file_path is not None and no_action_value:
+            raise ValidationError(
+                'The no-document box is checked but a document was uploaded - please confirm either of the two.')
+
+    def get_query(self):
+        query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
+
+        if current_user.is_authenticated:
+            if current_user.has_role('Admin') or current_user.has_role('Authority'):
+                return query
+            elif current_user.has_role('Manager'):
+                # Manager can only see records related to their company_users
+                subquery = db.session.query(CompanyUsers.company_id).filter(
+                    CompanyUsers.user_id == current_user.id
+                ).subquery()
+
+                query = query.filter(self.model.company_id.in_(subquery))
+            elif current_user.has_role('Employee'):
+                # Employee can only see their own records
+                query = query.filter(self.model.user_id == current_user.id)
+                return query
+
+        # For other roles or anonymous users, return an empty query
+        return query.filter(self.model.id < 0)
+
+    def on_model_change(self, form, model, is_created):
+        super().on_model_change(form, model, is_created)
+
+        # Reset form data
+        form.populate_obj(model)
+
+        # Get the inline form data
+        # TODO eliminated on 26Mar to cope with duplicated records in the INLINE
+        # inline_form_data = form.inline_form  # Assuming 'inline_form' is the attribute holding the inline form data
+
+        uploaded_file = form.file_path.data
+        print('1 - uploaded file', uploaded_file)
+
+        if is_created:
+            # Handle new model creation:
+            # - Set default values
+            # - Send notification
+            # Apply your custom logic to set data_type
+            model.created_on = datetime.now()  # Set the created_on
+            pass
+        else:
+            # Handle existing model edit:
+            # - Compare previous and updated values
+            # - Trigger specific actions based on changes
+            pass
+
+        user_id = current_user.id  # Get the current user's ID or any other criteria
+        try:
+            company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
+        except:
+            company_id = None
+            pass
+
+        area_id = self.area_id
+        subarea_id = self.subarea_id
+        data_type = self.subarea_name
+        nr_intervals = get_subarea_interval_type(self.area_id, self.subarea_id)
+        interval_id = nr_intervals
+        status_id = 1
+        record_type = 'control_area'
+
+        year_id = form.fi0.data
+        interval_ord = form.interval_ord.data
+        subject_id = form.subject_id.data
+
+        if form.date_of_doc.data > datetime.today().date():
+            raise ValidationError("Date of document cannot be a future date.")
+
+        if form.date_of_doc.data.year != form.fi0.data:
+            raise ValidationError(f"Date of document must be consistent with the reporting year.")
+
+        if form.fi0.data == None or form.interval_ord.data == None:
+            raise ValidationError(f"Time interval reference fields cannot be null.")
+
+        if form.subject_id.data == None:
+            raise ValidationError(f"Document type can not be null.")
+
+        # - Validate data - Save the model
+        if form.interval_ord.data > 3 or form.interval_ord.data < 0:
+            raise ValidationError(
+                "Period must be less than or equal to the number of fractions (e.g. 4 for quarters, 12 for months).")
+            pass
+
+        if form.fi0.data < 2000 or form.fi0.data > 2099:
+            raise ValidationError(
+                "Please check the year")
+            pass
+
+        if self._uncheck_if_document(model, form):
+            pass
+        if self._validate_no_action(model, form):
+            pass
+
+        # Perform actions relevant to both creation and edit:
+        with current_app.app_context():
+            result, message = check_status_limited(is_created, company_id,
+                                                   subject_id, None, year_id, interval_ord,
+                                                   interval_id, area_id, subarea_id, datetime.today(), db.session)
+
+        if result == False:
+            raise ValidationError(message)
+            pass
+
+        model.updated_on = datetime.now()  # Set the created_on
+        model.user_id = user_id
+        model.company_id = company_id
+        model.data_type = data_type
+        model.record_type = record_type
+        model.area_id = area_id
+        model.subarea_id = subarea_id
+        model.fi0 = year_id
+        model.interval_id = interval_id
+        model.interval_ord = interval_ord
+        model.status_id = status_id
+        model.subject_id = subject_id
+        model.legal_document_id = None
+        # for upload actions
+        # model.file_path = form.file_path.data
+        # workflow_controls = f"{dropdown_html}<br>{date_picker_html}<br>{checkbox_html}"  # Adjusted variable name
+        # Determine if workflow controls need to be generated
+        # Save the model to the database
+        if is_created:
+            self.session.add(model)
+        else:
+            self.session.merge(model)
+        self.session.commit()
+
+        # Return the model after saving
+        # Replace 'YourModelBase' with the base class of your models if different
+        remove_duplicates(self.session, StepBaseData, ['base_data_id', 'workflow_id', 'step_id'])
+
+        # Accessing inline form data directly from the main form object
+        inline_form_data = form.data.get('steps_relationship', [])
+        inline_data_string = f"At {datetime.now()} a new document dated {form.date_of_doc.data.year} "
+        inline_data_string += f"was created by the user {user_id} ({company_id}. "
+        inline_data_string += f"Area {area_id}, subarea {subarea_id}, reference period {interval_ord}/{interval_id}/{year_id}. "
+
+        # Initialize an empty string to hold the inline form data
+        for data in inline_form_data:
+            for field_name, field_value in data.items():
+                inline_data_string += f"{field_name}: {field_value}\n"  # Append field name and value to the string
+
+        # Now you have the inline form data as a string, you can use it to create a system message
+        # For example, you can use it to create a message using your `create_notification` function
+
+        create_notification(
+            self.session,
+            company_id=company_id,
+            user_id=user_id,
+            sender="System",
+            message_type="noticeboard",
+            subject="Document and Workflow Created",
+            body=inline_data_string,
+            lifespan='one-off'
+        )
+        # except:
+        #    print('Error adding inline data')
+
+        # TODO create ADMIN message too
+
+        action_type = 'update'
+        if is_created:
+            action_type = 'create'
+
+        create_audit_log(
+            self.session,
+            company_id=company_id,
+            user_id=user_id,
+            base_data_id=None,
+            workflow_id=None,
+            step_id=None,
+            action='create',
+            details=inline_data_string
+        )
+
+        return model
+
+
+
+class Iniziative_as_dso_dataView(ModelView):
+
+    create_template = 'admin/area_1/create_base_data_7.html'
+    subarea_id = 7  # Define subarea_id as a class attribute
+    area_id = 1
+
+    inline_models = (StepBaseDataInlineForm(StepBaseData),)
+    # inline_models = [(StepBaseDataInlineForm, StepBaseData, 'ONE_TO_MANY')]  # Assuming a one-to-one relationship
+    # form_base_class = CustomBaseDataForm  # Use our custom form class
+    form_extra_fields = {
+        'file_path': CustomFileUploadField('File', base_path=config.UPLOAD_FOLDER)  # Use the custom field
+    }
+    # Specify the fields to be edited inline using XEditableWidget
+    column_editable_list = ['fc2']
+    # Customize the widget for inline editing
+    form_widget_args = {
+        # 'fi0': {'widget': XEditableWidget()},
+        # 'interval_ord': {'widget': XEditableWidget()},
+        # 'fi1': {'widget': XEditableWidget()},
+        # 'fi2': {'widget': XEditableWidget()},
+        'fc2': {'widget': XEditableWidget()},
+    }
+    def __init__(self, *args, **kwargs):
+
+        self.intervals=kwargs.pop('intervals', None)
+        super().__init__(*args, **kwargs)
+        # self.class_name = self.__class__.__name__  # Store the class name
+        self.subarea_id = Iniziative_as_dso_dataView.subarea_id  # Initialize subarea_id in __init__
+        self.area_id = Iniziative_as_dso_dataView.area_id  # Initialize area_id in __init__
+        self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
+
+    column_list = ('fi0', 'interval_ord', 'subject', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
+    # Specify the columns to display in the edit view
+    form_columns = ('fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
+    # 'interval_ord', 'fi0', 'subject_id', 'fc2',
+    # Replace the StringField with FileUploadField
+
+    column_labels = {'fi0': 'Anno di rif.', 'interval_ord': 'Periodo di rif.', 'subject': 'Oggetto',
+                     'number_of_doc': 'Nr. documento', 'date_of_doc': 'Data documento', 'file_path': 'Allegati',
+                     'no_action': 'Conferma assenza doc.', 'fc2': 'Note'}
+    column_descriptions = {'interval_ord': '(inserire il numero; es. 1: primo quadrimestre; 2: secondo ecc.)',
+                           'fi0': 'Inserire anno (es. 2024)', 'subject_id': 'Seleziona oggetto',
+                           'fc2': 'Note', 'file_path': 'Allegati',
+                           'no_action': 'Dichiarazione di assenza di documenti (1)'}
+
+    form_overrides = {
+        'no_action': CheckboxField
+    }
+
+    column_filters = ('subject', 'fc2', 'no_action')  # Adjust based on your model structure
+    # Specify fields to be excluded from the form
+    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
+
+    @action('custom_action', 'List Workflows of Documents')
+    def custom_action(self, ids):
+        # Fetch StepBaseData records related to the provided model IDs
+        step_base_data_records = StepBaseData.query.filter(StepBaseData.base_data_id.in_(ids)).all()
+
+        # Fetch model records related to the provided model IDs
+        model_records = BaseData.query.filter(BaseData.id.in_(ids)).all()
+
+        # Render the template to display the records
+        return self.render('basedata_workflow_step_list.html', step_base_data_records=step_base_data_records,
+                           model_records=model_records)
+
+    # TODO ***** Implement Next Step Action
+    @action('custom_action_next_step', 'Transition to next Step')
+    def custom_action_next_step(self, ids):
+        print('Implement next step action')
+        pass
+
+    def _subject_formatter(view, context, model, name):
+        # This function will be used to format the 'subject' column
+        if model.subject:
+            if isinstance(model.subject, Subject):  # Check if the subject is an instance of Subject
+                return model.subject.name
+            else:
+                return Subject.query.get(model.subject).name  # If not, query the subject object
+        return ''
+
+    column_formatters = {
+        'subject': _subject_formatter
+    }
+
+    def scaffold_form(self):
+        form_class = super(Iniziative_as_dso_dataView, self).scaffold_form()
+        current_year = datetime.now().year
+        year_choices = [(str(year), str(year)) for year in range(current_year - 5, current_year + 2)]
+        default_year = str(current_year)
+        form_class.fi0 = SelectField(
+            'Anno di rif.',
+            coerce=int,
+            choices=year_choices,
+            default=default_year
+        )
+        # NEW
+        config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
+                                          subarea_id=None)
+        nr_intervals = config_values[0]
+
+        current_interval = [t[2] for t in self.intervals if
+                            t[0] == nr_intervals]  # int(get_current_interval(3))  # quadriester
+        first_element = current_interval[0] if current_interval else None
+        interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
+
+        form_class.interval_ord = SelectField(
+            'Periodo di rif.',
+            coerce=int,
+            choices=interval_choices,  # Example choices, replace with your logic
+            default=first_element
+        )
+
+        # Remove 'subject_id' field from the form
+        form_class.subject_id = SelectField(
+            'Tipo di documento',
+            validators=[InputRequired()],
+            coerce=int,
+            choices=[(subject.id, subject.name) for subject in Subject.query.filter_by(tier_1="Legale").all()]
+        )
+        # delattr(form_class, 'subject_id')
+        form_class.no_action = CheckboxField('Confirm no documents to attach',
+                                             default=False)  # Set default value to False
+
+        form_class.form_excluded_columns = ('user_id', 'company_id', 'status_id',
+                                            'created_by', 'created_on', 'updated_on', 'data_type')
+        # Set default values for specific fields
+        form_class.fc2 = MyStringField('Note')
+
+        return form_class  # ExtendedForm
+
+    def _validate_no_action(self, model, form):
+        no_action_value = form.no_action.data
+        if model.file_path is None and not no_action_value:
+            raise ValidationError(
+                'If no file exists, then this absence must be acknowledged by checking the "no documents" box.')
+
+    def _uncheck_if_document(self, model, form):
+        no_action_value = form.no_action.data
+        if model.file_path is not None and no_action_value:
+            raise ValidationError(
+                'The no-document box is checked but a document was uploaded - please confirm either of the two.')
+
+    def get_query(self):
+        query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
+
+        if current_user.is_authenticated:
+            if current_user.has_role('Admin') or current_user.has_role('Authority'):
+                return query
+            elif current_user.has_role('Manager'):
+                # Manager can only see records related to their company_users
+                subquery = db.session.query(CompanyUsers.company_id).filter(
+                    CompanyUsers.user_id == current_user.id
+                ).subquery()
+
+                query = query.filter(self.model.company_id.in_(subquery))
+            elif current_user.has_role('Employee'):
+                # Employee can only see their own records
+                query = query.filter(self.model.user_id == current_user.id)
+                return query
+
+        # For other roles or anonymous users, return an empty query
+        return query.filter(self.model.id < 0)
+
+    def on_model_change(self, form, model, is_created):
+        super().on_model_change(form, model, is_created)
+
+        # Reset form data
+        form.populate_obj(model)
+
+        # Get the inline form data
+        # TODO eliminated on 26Mar to cope with duplicated records in the INLINE
+        # inline_form_data = form.inline_form  # Assuming 'inline_form' is the attribute holding the inline form data
+
+        uploaded_file = form.file_path.data
+        print('1 - uploaded file', uploaded_file)
+
+        if is_created:
+            # Handle new model creation:
+            # - Set default values
+            # - Send notification
+            # Apply your custom logic to set data_type
+            model.created_on = datetime.now()  # Set the created_on
+            pass
+        else:
+            # Handle existing model edit:
+            # - Compare previous and updated values
+            # - Trigger specific actions based on changes
+            pass
+
+        user_id = current_user.id  # Get the current user's ID or any other criteria
+        try:
+            company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
+        except:
+            company_id = None
+            pass
+
+        area_id = self.area_id
+        subarea_id = self.subarea_id
+        data_type = self.subarea_name
+        nr_intervals = get_subarea_interval_type(self.area_id, self.subarea_id)
+        interval_id = nr_intervals
+        status_id = 1
+        record_type = 'control_area'
+
+        year_id = form.fi0.data
+        interval_ord = form.interval_ord.data
+        subject_id = form.subject_id.data
+
+        if form.date_of_doc.data > datetime.today().date():
+            raise ValidationError("Date of document cannot be a future date.")
+
+        if form.date_of_doc.data.year != form.fi0.data:
+            raise ValidationError(f"Date of document must be consistent with the reporting year.")
+
+        if form.fi0.data == None or form.interval_ord.data == None:
+            raise ValidationError(f"Time interval reference fields cannot be null.")
+
+        if form.subject_id.data == None:
+            raise ValidationError(f"Document type can not be null.")
+
+        # - Validate data - Save the model
+        if form.interval_ord.data > 3 or form.interval_ord.data < 0:
+            raise ValidationError(
+                "Period must be less than or equal to the number of fractions (e.g. 4 for quarters, 12 for months).")
+            pass
+
+        if form.fi0.data < 2000 or form.fi0.data > 2099:
+            raise ValidationError(
+                "Please check the year")
+            pass
+
+        if self._uncheck_if_document(model, form):
+            pass
+        if self._validate_no_action(model, form):
+            pass
+
+        # Perform actions relevant to both creation and edit:
+        with current_app.app_context():
+            result, message = check_status_limited(is_created, company_id,
+                                                   subject_id, None, year_id, interval_ord,
+                                                   interval_id, area_id, subarea_id, datetime.today(), db.session)
+
+        if result == False:
+            raise ValidationError(message)
+            pass
+
+        model.updated_on = datetime.now()  # Set the created_on
+        model.user_id = user_id
+        model.company_id = company_id
+        model.data_type = data_type
+        model.record_type = record_type
+        model.area_id = area_id
+        model.subarea_id = subarea_id
+        model.fi0 = year_id
+        model.interval_id = interval_id
+        model.interval_ord = interval_ord
+        model.status_id = status_id
+        model.subject_id = subject_id
+        model.legal_document_id = None
+        # for upload actions
+        # model.file_path = form.file_path.data
+        # workflow_controls = f"{dropdown_html}<br>{date_picker_html}<br>{checkbox_html}"  # Adjusted variable name
+        # Determine if workflow controls need to be generated
+        # Save the model to the database
+        if is_created:
+            self.session.add(model)
+        else:
+            self.session.merge(model)
+        self.session.commit()
+
+        # Return the model after saving
+        # Replace 'YourModelBase' with the base class of your models if different
+        remove_duplicates(self.session, StepBaseData, ['base_data_id', 'workflow_id', 'step_id'])
+
+        # Accessing inline form data directly from the main form object
+        inline_form_data = form.data.get('steps_relationship', [])
+        inline_data_string = f"At {datetime.now()} a new document dated {form.date_of_doc.data.year} "
+        inline_data_string += f"was created by the user {user_id} ({company_id}. "
+        inline_data_string += f"Area {area_id}, subarea {subarea_id}, reference period {interval_ord}/{interval_id}/{year_id}. "
+
+        # Initialize an empty string to hold the inline form data
+        for data in inline_form_data:
+            for field_name, field_value in data.items():
+                inline_data_string += f"{field_name}: {field_value}\n"  # Append field name and value to the string
+
+        # Now you have the inline form data as a string, you can use it to create a system message
+        # For example, you can use it to create a message using your `create_notification` function
+
+        create_notification(
+            self.session,
+            company_id=company_id,
+            user_id=user_id,
+            sender="System",
+            message_type="noticeboard",
+            subject="Document and Workflow Created",
+            body=inline_data_string,
+            lifespan='one-off'
+        )
+        # except:
+        #    print('Error adding inline data')
+
+        # TODO create ADMIN message too
+
+        action_type = 'update'
+        if is_created:
+            action_type = 'create'
+
+        create_audit_log(
+            self.session,
+            company_id=company_id,
+            user_id=user_id,
+            base_data_id=None,
+            workflow_id=None,
+            step_id=None,
+            action='create',
+            details=inline_data_string
+        )
+
+        return model
+
+
+
+class Iniziative_dso_dso_dataView(ModelView):
+
+    create_template = 'admin/area_1/create_base_data_8.html'
+    subarea_id = 8  # Define subarea_id as a class attribute
+    area_id = 1
+
+    inline_models = (StepBaseDataInlineForm(StepBaseData),)
+    # inline_models = [(StepBaseDataInlineForm, StepBaseData, 'ONE_TO_MANY')]  # Assuming a one-to-one relationship
+    # form_base_class = CustomBaseDataForm  # Use our custom form class
+    form_extra_fields = {
+        'file_path': CustomFileUploadField('File', base_path=config.UPLOAD_FOLDER)  # Use the custom field
+    }
+    # Specify the fields to be edited inline using XEditableWidget
+    column_editable_list = ['fc2']
+    # Customize the widget for inline editing
+    form_widget_args = {
+        # 'fi0': {'widget': XEditableWidget()},
+        # 'interval_ord': {'widget': XEditableWidget()},
+        # 'fi1': {'widget': XEditableWidget()},
+        # 'fi2': {'widget': XEditableWidget()},
+        'fc2': {'widget': XEditableWidget()},
+    }
+    def __init__(self, *args, **kwargs):
+
+        self.intervals=kwargs.pop('intervals', None)
+        super().__init__(*args, **kwargs)
+        # self.class_name = self.__class__.__name__  # Store the class name
+        self.subarea_id = Iniziative_dso_dso_dataView.subarea_id  # Initialize subarea_id in __init__
+        self.area_id = Iniziative_dso_dso_dataView.area_id  # Initialize area_id in __init__
+        self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
+
+    column_list = ('fi0', 'interval_ord', 'subject', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
+    # Specify the columns to display in the edit view
+    form_columns = ('fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
+    # 'interval_ord', 'fi0', 'subject_id', 'fc2',
+    # Replace the StringField with FileUploadField
+
+    column_labels = {'fi0': 'Anno di rif.', 'interval_ord': 'Periodo di rif.', 'subject': 'Oggetto',
+                     'number_of_doc': 'Nr. documento', 'date_of_doc': 'Data documento', 'file_path': 'Allegati',
+                     'no_action': 'Conferma assenza doc.', 'fc2': 'Note'}
+    column_descriptions = {'interval_ord': '(inserire il numero; es. 1: primo quadrimestre; 2: secondo ecc.)',
+                           'fi0': 'Inserire anno (es. 2024)', 'subject_id': 'Seleziona oggetto',
+                           'fc2': 'Note', 'file_path': 'Allegati',
+                           'no_action': 'Dichiarazione di assenza di documenti (1)'}
+
+
+    form_overrides = {
+        'no_action': CheckboxField
+    }
+
+    column_filters = ('subject', 'fc2', 'no_action')  # Adjust based on your model structure
+    # Specify fields to be excluded from the form
+    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
+
+    @action('custom_action', 'List Workflows of Documents')
+    def custom_action(self, ids):
+        # Fetch StepBaseData records related to the provided model IDs
+        step_base_data_records = StepBaseData.query.filter(StepBaseData.base_data_id.in_(ids)).all()
+
+        # Fetch model records related to the provided model IDs
+        model_records = BaseData.query.filter(BaseData.id.in_(ids)).all()
+
+        # Render the template to display the records
+        return self.render('basedata_workflow_step_list.html', step_base_data_records=step_base_data_records,
+                           model_records=model_records)
+
+    # TODO ***** Implement Next Step Action
+    @action('custom_action_next_step', 'Transition to next Step')
+    def custom_action_next_step(self, ids):
+        print('Implement next step action')
+        pass
+
+    def _subject_formatter(view, context, model, name):
+        # This function will be used to format the 'subject' column
+        if model.subject:
+            if isinstance(model.subject, Subject):  # Check if the subject is an instance of Subject
+                return model.subject.name
+            else:
+                return Subject.query.get(model.subject).name  # If not, query the subject object
+        return ''
+
+    column_formatters = {
+        'subject': _subject_formatter
+    }
+
+    def scaffold_form(self):
+        form_class = super(Iniziative_dso_dso_dataView, self).scaffold_form()
+        current_year = datetime.now().year
+        year_choices = [(str(year), str(year)) for year in range(current_year - 5, current_year + 2)]
+        default_year = str(current_year)
+        form_class.fi0 = SelectField(
+            'Anno di rif.',
+            coerce=int,
+            choices=year_choices,
+            default=default_year
+        )
+        # NEW
+        config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
+                                          subarea_id=None)
+        nr_intervals = config_values[0]
+
+        current_interval = [t[2] for t in self.intervals if
+                            t[0] == nr_intervals]  # int(get_current_interval(3))  # quadriester
+        first_element = current_interval[0] if current_interval else None
+        interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
+
+        form_class.interval_ord = SelectField(
+            'Periodo di rif.',
+            coerce=int,
+            choices=interval_choices,  # Example choices, replace with your logic
+            default=first_element
+        )
+
+        # Remove 'subject_id' field from the form
+        form_class.subject_id = SelectField(
+            'Tipo di documento',
+            validators=[InputRequired()],
+            coerce=int,
+            choices=[(subject.id, subject.name) for subject in Subject.query.filter_by(tier_1="Legale").all()]
+        )
+        # delattr(form_class, 'subject_id')
+        form_class.no_action = CheckboxField('Confirm no documents to attach',
+                                             default=False)  # Set default value to False
+
+        form_class.form_excluded_columns = ('user_id', 'company_id', 'status_id',
+                                            'created_by', 'created_on', 'updated_on', 'data_type')
+        # Set default values for specific fields
+        form_class.fc2 = MyStringField('Note')
+
+        return form_class  # ExtendedForm
+
+    def _validate_no_action(self, model, form):
+        no_action_value = form.no_action.data
+        if model.file_path is None and not no_action_value:
+            raise ValidationError(
+                'If no file exists, then this absence must be acknowledged by checking the "no documents" box.')
+
+    def _uncheck_if_document(self, model, form):
+        no_action_value = form.no_action.data
+        if model.file_path is not None and no_action_value:
+            raise ValidationError(
+                'The no-document box is checked but a document was uploaded - please confirm either of the two.')
+
+    def get_query(self):
+        query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
+
+        if current_user.is_authenticated:
+            if current_user.has_role('Admin') or current_user.has_role('Authority'):
+                return query
+            elif current_user.has_role('Manager'):
+                # Manager can only see records related to their company_users
+                subquery = db.session.query(CompanyUsers.company_id).filter(
+                    CompanyUsers.user_id == current_user.id
+                ).subquery()
+
+                query = query.filter(self.model.company_id.in_(subquery))
+            elif current_user.has_role('Employee'):
+                # Employee can only see their own records
+                query = query.filter(self.model.user_id == current_user.id)
+                return query
+
+        # For other roles or anonymous users, return an empty query
+        return query.filter(self.model.id < 0)
+
+    def on_model_change(self, form, model, is_created):
+        super().on_model_change(form, model, is_created)
+
+        # Reset form data
+        form.populate_obj(model)
+
+        # Get the inline form data
+        # TODO eliminated on 26Mar to cope with duplicated records in the INLINE
+        # inline_form_data = form.inline_form  # Assuming 'inline_form' is the attribute holding the inline form data
+
+        uploaded_file = form.file_path.data
+        if is_created:
+            # Handle new model creation:
+            # - Set default values
+            # - Send notification
+            # Apply your custom logic to set data_type
+            model.created_on = datetime.now()  # Set the created_on
+            pass
+        else:
+            # Handle existing model edit:
+            # - Compare previous and updated values
+            # - Trigger specific actions based on changes
+            pass
+
+        user_id = current_user.id  # Get the current user's ID or any other criteria
+        try:
+            company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
+        except:
+            company_id = None
+            pass
+
+        area_id = self.area_id
+        subarea_id = self.subarea_id
+        data_type = self.subarea_name
+        nr_intervals = get_subarea_interval_type(self.area_id, self.subarea_id)
+        interval_id = nr_intervals
+        status_id = 1
+        record_type = 'control_area'
+
+        year_id = form.fi0.data
+        interval_ord = form.interval_ord.data
+        subject_id = form.subject_id.data
+
+        if form.date_of_doc.data > datetime.today().date():
+            raise ValidationError("Date of document cannot be a future date.")
+
+        if form.date_of_doc.data.year != form.fi0.data:
+            raise ValidationError(f"Date of document must be consistent with the reporting year.")
+
+        if form.fi0.data == None or form.interval_ord.data == None:
+            raise ValidationError(f"Time interval reference fields cannot be null.")
+
+        if form.subject_id.data == None:
+            raise ValidationError(f"Document type can not be null.")
+
+        # - Validate data - Save the model
+        if form.interval_ord.data > 3 or form.interval_ord.data < 0:
+            raise ValidationError(
+                "Period must be less than or equal to the number of fractions (e.g. 4 for quarters, 12 for months).")
+            pass
+
+        if form.fi0.data < 2000 or form.fi0.data > 2099:
+            raise ValidationError(
+                "Please check the year")
+            pass
+
+        if self._uncheck_if_document(model, form):
+            pass
+        if self._validate_no_action(model, form):
+            pass
+
+        # Perform actions relevant to both creation and edit:
+        with current_app.app_context():
+            result, message = check_status_limited(is_created, company_id,
+                                                   subject_id, None, year_id, interval_ord,
+                                                   interval_id, area_id, subarea_id, datetime.today(), db.session)
+
+        if result == False:
+            raise ValidationError(message)
+            pass
+
+        model.updated_on = datetime.now()  # Set the created_on
+        model.user_id = user_id
+        model.company_id = company_id
+        model.data_type = data_type
+        model.record_type = record_type
+        model.area_id = area_id
+        model.subarea_id = subarea_id
+        model.fi0 = year_id
+        model.interval_id = interval_id
+        model.interval_ord = interval_ord
+        model.status_id = status_id
+        model.subject_id = subject_id
+        model.legal_document_id = None
+        # for upload actions
+        # model.file_path = form.file_path.data
+
+        # workflow_controls = f"{dropdown_html}<br>{date_picker_html}<br>{checkbox_html}"  # Adjusted variable name
+        # Determine if workflow controls need to be generated
+        # Save the model to the database
+        if is_created:
+            self.session.add(model)
+        else:
+            self.session.merge(model)
+        self.session.commit()
+
+        # Return the model after saving
+        # Replace 'YourModelBase' with the base class of your models if different
+        remove_duplicates(self.session, StepBaseData, ['base_data_id', 'workflow_id', 'step_id'])
+
+        # Accessing inline form data directly from the main form object
+        inline_form_data = form.data.get('steps_relationship', [])
+        inline_data_string = f"At {datetime.now()} a new document dated {form.date_of_doc.data.year} "
+        inline_data_string += f"was created by the user {user_id} ({company_id}. "
+        inline_data_string += f"Area {area_id}, subarea {subarea_id}, reference period {interval_ord}/{interval_id}/{year_id}. "
+
+        # Initialize an empty string to hold the inline form data
+        for data in inline_form_data:
+            for field_name, field_value in data.items():
+                inline_data_string += f"{field_name}: {field_value}\n"  # Append field name and value to the string
+
+        print('create msg', company_id, user_id, inline_data_string)
+        # Now you have the inline form data as a string, you can use it to create a system message
+        # For example, you can use it to create a message using your `create_notification` function
+
+        create_notification(
+            self.session,
+            company_id=company_id,
+            user_id=user_id,
+            sender="System",
+            message_type="noticeboard",
+            subject="Document and Workflow Created",
+            body=inline_data_string,
+            lifespan='one-off'
+        )
+        # except:
+        #    print('Error adding inline data')
+
+        # TODO create ADMIN message too
+
+        action_type = 'update'
+        if is_created:
+            action_type = 'create'
+
+        create_audit_log(
+            self.session,
+            company_id=company_id,
+            user_id=user_id,
+            base_data_id=None,
+            workflow_id=None,
+            step_id=None,
+            action='create',
+            details=inline_data_string
+        )
+
+        return model
 
 
 class Tabella21_dataView(ModelView):
@@ -3151,6 +5040,28 @@ class Tabella27_dataView(ModelView):
         return model
 
 
+# Add other ModelViews as needed...
+
+# TODO ***** copy Contingencies "structure" of main and inline forms
+#  - in modo che ogni soc gestisca il suo, con le fasi etc.
+# EXISTA O DIFERENTA: in BaseData exista comp_id si user_id, in QUEST, nu!
+# asa ca probabil ca e mai bine sa fac cum e scris mai jos
+# quindi il form per l'inserimento del quest deve essere più scarno, con inline del (o dei) workflow in cui si vuole inserire
+'''
+probabil ca e mai potrivit sa folosesc asta:
+                                                                    DocumentsAssignedBaseDataView
+        pentru ca get_query e bazata pe mai multe Model decat ModelView!
+
+selectionarea elementelor listei va trebui facuta pt acele
+    Questionnaire cu 
+        scadenta si Status compatibile,
+        si 
+    unde, prin intermediul StepQuestionnaire,
+        questionnaire_id (se gaseste in relatia questionnaire-companies)
+
+SAU user is_admin!
+'''
+
 class MyStringField(StringField):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, default='Enter content here', **kwargs)
@@ -3192,112 +5103,6 @@ class MyIntegerIntervalField(IntegerField):
         self.get_subarea_interval_type = get_subarea_interval_type
 
 # TODO *** salva file (attachment) in folder company (dove si trova? perché non funziona più?)
-
-
-class AttiDataView(BaseDataViewCommon):
-    create_template = 'admin/area_1/create_base_data_2.html'
-    subarea_id = 2
-    area_id = 1
-
-    column_list = ('fi0', 'interval_ord', 'subject', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    form_columns = ('fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    column_labels = {'fi0': 'Anno di rif.', 'interval_ord': 'Periodo di rif.', 'subject': 'Oggetto',
-                     'number_of_doc': 'Nr. documento', 'date_of_doc': 'Data documento', 'file_path': 'Allegati',
-                     'no_action': 'Conferma assenza doc.', 'fc2': 'Note'}
-    column_descriptions = {'interval_ord': '(inserire il numero; es. 1: primo quadrimestre; 2: secondo ecc.)',
-                           'fi0': 'Inserire anno (es. 2024)', 'subject_id': 'Seleziona oggetto',
-                           'fc2': 'Note', 'file_path': 'Allegati', 'no_action': 'Dichiarazione di assenza di documenti (1)'}
-    column_filters = ('subject', 'fc2', 'no_action')
-    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
-
-
-
-class ContingenciesDataView(BaseDataViewCommon):
-    create_template = 'admin/area_1/create_base_data_3.html'
-    subarea_id = 3
-    area_id = 1
-
-    column_list = ('fi0', 'interval_ord', 'subject', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    form_columns = ('fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    column_labels = {'fi0': 'Anno di rif.', 'interval_ord': 'Periodo di rif.', 'subject': 'Oggetto',
-                     'number_of_doc': 'Nr. documento', 'date_of_doc': 'Data documento', 'file_path': 'Allegati',
-                     'no_action': 'Conferma assenza doc.', 'fc2': 'Note'}
-    column_descriptions = {'interval_ord': '(inserire il numero; es. 1: primo quadrimestre; 2: secondo ecc.)',
-                           'fi0': 'Inserire anno (es. 2024)', 'subject_id': 'Seleziona oggetto',
-                           'fc2': 'Note', 'file_path': 'Allegati', 'no_action': 'Dichiarazione di assenza di documenti (1)'}
-    column_filters = ('subject', 'fc2', 'no_action')
-    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
-
-
-class ContenziosiDataView(BaseDataViewCommon):
-    create_template = 'admin/area_1/create_base_data_4.html'
-    subarea_id = 4
-    area_id = 1
-
-    column_list = ('fi0', 'interval_ord', 'subject', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    form_columns = ('fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    column_labels = {'fi0': 'Anno di rif.', 'interval_ord': 'Periodo di rif.', 'subject': 'Oggetto',
-                     'number_of_doc': 'Nr. documento', 'date_of_doc': 'Data documento', 'file_path': 'Allegati',
-                     'no_action': 'Conferma assenza doc.', 'fc2': 'Note'}
-    column_descriptions = {'interval_ord': '(inserire il numero; es. 1: primo quadrimestre; 2: secondo ecc.)',
-                           'fi0': 'Inserire anno (es. 2024)', 'subject_id': 'Seleziona oggetto',
-                           'fc2': 'Note', 'file_path': 'Allegati', 'no_action': 'Dichiarazione di assenza di documenti (1)'}
-    column_filters = ('subject', 'fc2', 'no_action')
-    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
-
-
-
-class IniziativeDsoAsDataView(BaseDataViewCommon):
-    create_template = 'admin/area_1/create_base_data_6.html'
-    subarea_id = 6
-    area_id = 1
-
-    column_list = ('fi0', 'interval_ord', 'subject', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    form_columns = ('fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    column_labels = {'fi0': 'Anno di rif.', 'interval_ord': 'Periodo di rif.', 'subject': 'Oggetto',
-                     'number_of_doc': 'Nr. documento', 'date_of_doc': 'Data documento', 'file_path': 'Allegati',
-                     'no_action': 'Conferma assenza doc.', 'fc2': 'Note'}
-    column_descriptions = {'interval_ord': '(inserire il numero; es. 1: primo quadrimestre; 2: secondo ecc.)',
-                           'fi0': 'Inserire anno (es. 2024)', 'subject_id': 'Seleziona oggetto',
-                           'fc2': 'Note', 'file_path': 'Allegati', 'no_action': 'Dichiarazione di assenza di documenti (1)'}
-    column_filters = ('subject', 'fc2', 'no_action')
-    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
-
-
-
-class IniziativeAsDsoDataView(BaseDataViewCommon):
-    create_template = 'admin/area_1/create_base_data_7.html'
-    subarea_id = 7
-    area_id = 1
-
-    column_list = ('fi0', 'interval_ord', 'subject', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    form_columns = ('fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    column_labels = {'fi0': 'Anno di rif.', 'interval_ord': 'Periodo di rif.', 'subject': 'Oggetto',
-                     'number_of_doc': 'Nr. documento', 'date_of_doc': 'Data documento', 'file_path': 'Allegati',
-                     'no_action': 'Conferma assenza doc.', 'fc2': 'Note'}
-    column_descriptions = {'interval_ord': '(inserire il numero; es. 1: primo quadrimestre; 2: secondo ecc.)',
-                           'fi0': 'Inserire anno (es. 2024)', 'subject_id': 'Seleziona oggetto',
-                           'fc2': 'Note', 'file_path': 'Allegati', 'no_action': 'Dichiarazione di assenza di documenti (1)'}
-    column_filters = ('subject', 'fc2', 'no_action')
-    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
-
-
-class IniziativeDsoDsoDataView(BaseDataViewCommon):
-    create_template = 'admin/area_1/create_base_data_8.html'
-    subarea_id = 8
-    area_id = 1
-
-    column_list = ('fi0', 'interval_ord', 'subject', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    form_columns = ('fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    column_labels = {'fi0': 'Anno di rif.', 'interval_ord': 'Periodo di rif.', 'subject': 'Oggetto',
-                     'number_of_doc': 'Nr. documento', 'date_of_doc': 'Data documento', 'file_path': 'Allegati',
-                     'no_action': 'Conferma assenza doc.', 'fc2': 'Note'}
-    column_descriptions = {'interval_ord': '(inserire il numero; es. 1: primo quadrimestre; 2: secondo ecc.)',
-                           'fi0': 'Inserire anno (es. 2024)', 'subject_id': 'Seleziona oggetto',
-                           'fc2': 'Note', 'file_path': 'Allegati', 'no_action': 'Dichiarazione di assenza di documenti (1)'}
-    column_filters = ('subject', 'fc2', 'no_action')
-    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
-
 
 
 def create_admin_views(app, intervals):
@@ -3349,6 +5154,37 @@ def create_admin_views(app, intervals):
                 super().__init__(*args, **kwargs)
                 self.form = CustomForm1
 
+
+        class CustomAttiDataView(Atti_dataView):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.form = CustomForm1
+
+        class CustomContingenciesDataView(Contingencies_dataView):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.form = CustomForm1
+
+
+        class CustomContenziosiDataView(Contenziosi_dataView):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.form = CustomForm1
+
+        class CustomIniziative_dso_asDataView(Iniziative_dso_as_dataView):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.form = CustomForm1
+
+        class CustomIniziative_as_dsoDataView(Iniziative_as_dso_dataView):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.form = CustomForm1
+
+        class CustomIniziative_dso_dsoDataView(Iniziative_dso_dso_dataView):
+            def __init__(self, *args, **kwargs):
+                super().__init__(*args, **kwargs)
+                self.form = CustomForm1
 
         # =================================================================================================================
         # Define custom form for CustomAdminIndexView2
@@ -3423,32 +5259,79 @@ def create_admin_views(app, intervals):
                            endpoint='open_admin',
                            )
 
-        admin_app1.add_view(CustomFlussiDataView(name='Pre-complaint flows', session=db.session, model=BaseData,
-                                                 intervals=intervals, endpoint='flussi_data_view'))
+        admin_app1.add_view(CustomFlussiDataView(name='Flussi pre-complaint', session=db.session, model=BaseData, intervals=intervals,
+                                                 endpoint='flussi_data_view'))
+        admin_app1.add_view(CustomAttiDataView(name='Atti complaint', session=db.session, model=BaseData, intervals=intervals,
+                                               endpoint='atti_data_view'))
+        # TODO de ce nu Custom?
+        admin_app1.add_view(CustomContingenciesDataView(name='Contingencies', session=db.session, model=BaseData, intervals=intervals))
+        admin_app1.add_view(CustomContenziosiDataView(name='Contenziosi', session=db.session, model=BaseData, intervals=intervals,
+                                                      endpoint='contenziosi_data_view'))
+        admin_app1.add_view(CustomIniziative_dso_asDataView(BaseData, db.session,
+                                                            name='Iniziative DSO vs amministrazioni',
+                                                            endpoint='iniziative_dso_as_data_view', intervals=intervals))
+        admin_app1.add_view(CustomIniziative_as_dsoDataView(BaseData, db.session,
+                                                            name='Amministrazioni vs DSO',
+                                                            endpoint='iniziative_as_dso_data_view', intervals=intervals))
+        admin_app1.add_view(CustomIniziative_dso_dsoDataView(BaseData, db.session,
+                                                             name='DSO vs DSO/TSO',
+                                                             endpoint='iniziative_dso_dso_data_view', intervals=intervals))
 
-        # Example of adding the specific view
-        admin_app1.add_view(
-            AttiDataView(model=BaseData, session=db.session, name='Pre-complaint docs', intervals=intervals, area_id=1,
-                         subarea_id=2, endpoint='atti_data_view'))
-        admin_app1.add_view(
-            ContingenciesDataView(model=BaseData, session=db.session, name='Contingencies', intervals=intervals, area_id=1,
-                                  subarea_id=3, endpoint='contingencies_data_view'))
-        admin_app1.add_view(
-            ContenziosiDataView(model=BaseData, session=db.session, name='Disputes', intervals=intervals, area_id=1,
-                                subarea_id=4, endpoint='contenziosi_data_view'))
-        admin_app1.add_view(
-            IniziativeDsoAsDataView(model=BaseData, session=db.session, name='DSO-AS Initiatives', intervals=intervals, area_id=1,
-                                subarea_id=6, endpoint='iniziative_dso_as_data_view'))
-        admin_app1.add_view(
-            IniziativeAsDsoDataView(model=BaseData, session=db.session, name='AS-DSO Initiatives', intervals=intervals, area_id=1,
-                                subarea_id=7, endpoint='iniziative_as_dso_data_view'))
-        admin_app1.add_view(
-            IniziativeDsoDsoDataView(model=BaseData, session=db.session, name='DSO-DSO Initiatives', intervals=intervals, area_id=1,
-                                subarea_id=8, endpoint='iniziative_dso_dso_data_view'))
+        # Add views to admin_app1
+        admins_off_set += 1
+        sub_off_set = 0
 
+        sub_off_set += 1
+        if get_if_active(admins_off_set, sub_off_set):
+            pass
+            #admin_app1.add_view(CustomFlussiDataView(BaseData, db.session,
+            #                                         name="Flussi pre-complaint", endpoint='flussi_data_view'))
 
-        # Second Flask-Admin instance with the second Area index view
-        # ===========================================================
+        sub_off_set += 1
+        if get_if_active(admins_off_set, sub_off_set):
+            pass
+            # Register the view with Flask Admin
+            # admin_app1.add_view(CustomAttiBaseView(name='Workflow Manager (Atti complaint)',
+            #                    endpoint='custom_base_atti'))
+            #admin_app1.add_view(CustomAttiDataView(BaseData, db.session,
+            #                                       name='Atti di complaint', endpoint='atti_data_view'))
+
+        sub_off_set += 1
+        if get_if_active(admins_off_set, sub_off_set):
+            pass
+            #admin_app1.add_view(Contingencies_dataView(BaseData, db.session,
+            #                                           name='Contingencies', endpoint='contingencies_data_view'))
+
+        sub_off_set += 1
+        if get_if_active(admins_off_set, sub_off_set):
+            pass
+            #admin_app1.add_view(CustomContenziosiDataView(BaseData, db.session,
+            #                                              name='Contenziosi', endpoint='contenziosi_data_view'))
+
+        sub_off_set += 1
+
+        if get_if_active(admins_off_set, sub_off_set):
+            pass
+            #admin_app1.add_view(CustomIniziative_dso_asDataView(BaseData, db.session,
+            #                                                    name='Iniziative DSO vs amministrazioni',
+            #                                                    endpoint='iniziative_dso_as_data_view'))
+
+        sub_off_set += 1
+        if get_if_active(admins_off_set, sub_off_set):
+            pass
+            #admin_app1.add_view(CustomIniziative_as_dsoDataView(BaseData, db.session,
+            #                                                    name='Amministrazioni vs DSO',
+            #                                                    endpoint='iniziative_as_dso_data_view'))
+
+        sub_off_set += 1
+        if get_if_active(admins_off_set, sub_off_set):
+            pass
+            #admin_app1.add_view(CustomIniziative_dso_dsoDataView(BaseData, db.session,
+            #                                                     name='DSO vs DSO/TSO',
+            #                                                     endpoint='iniziative_dso_dso_data_view'))
+
+        # Second Flask-Admin instance with the second custom index view
+
         admin_app2 = Admin(app,
                            name='Area di controllo 2 - Elementi quantitativi',
                            url='/open_admin_2',
@@ -3457,24 +5340,40 @@ def create_admin_views(app, intervals):
                            )
 
         # Add views to admin_app2
-        admin_app2.add_view(CustomTabella21DataView(BaseData, db.session, name="Struttura offerta",
-                                                    endpoint='view_struttura_offerta', intervals=intervals))
+        admins_off_set += 1
+        sub_off_set = len(app.config['SUBAREAS_1'])
 
-        admin_app2.add_view(CustomTabella22DataView(BaseData, db.session, name="Area di contendibilita'",
-                                                    endpoint="view_area_contendibilita'", intervals=intervals))
-        admin_app2.add_view(CustomTabella23DataView(BaseData, db.session, name="Grado di contendibilita'",
-                                                    endpoint="view_grado_contendibilita'", intervals=intervals))
-        admin_app2.add_view(CustomTabella24DataView(BaseData, db.session, name='Accesso venditori a DSO',
-                                                    endpoint='view_accesso_venditori', intervals=intervals))
-        admin_app2.add_view(CustomTabella25DataView(BaseData, db.session, name='Quote mercato IVI',
-                                                    endpoint='view_quote_mercato_ivi', intervals=intervals))
-        admin_app2.add_view(CustomTabella26DataView(BaseData, db.session, name='Trattamento switching',
-                                                    endpoint='view_trattamento_switching', intervals=intervals))
-        admin_app2.add_view(CustomTabella27DataView(BaseData, db.session, name="Livello di contendibilta'",
-                                                    endpoint="view_livello_contendibilita'", intervals=intervals))
+        sub_off_set += 1
+        if get_if_active(admins_off_set, sub_off_set):
+            admin_app2.add_view(CustomTabella21DataView(BaseData, db.session, name="Struttura offerta",
+                                                        endpoint='view_struttura_offerta', intervals=intervals))
+        sub_off_set += 1
+        if get_if_active(admins_off_set, sub_off_set):
+            admin_app2.add_view(CustomTabella22DataView(BaseData, db.session, name="Area di contendibilita'",
+                                                        endpoint="view_area_contendibilita'", intervals=intervals))
+        sub_off_set += 1
+        if get_if_active(admins_off_set, sub_off_set):
+            admin_app2.add_view(CustomTabella23DataView(BaseData, db.session, name="Grado di contendibilita'",
+                                                        endpoint="view_grado_contendibilita'", intervals=intervals))
+        sub_off_set += 1
+        if get_if_active(admins_off_set, sub_off_set):
+            admin_app2.add_view(CustomTabella24DataView(BaseData, db.session, name='Accesso venditori a DSO',
+                                                        endpoint='view_accesso_venditori', intervals=intervals))
+        sub_off_set += 1
+        if get_if_active(admins_off_set, sub_off_set):
+            admin_app2.add_view(CustomTabella25DataView(BaseData, db.session, name='Quote mercato IVI',
+                                                        endpoint='view_quote_mercato_ivi', intervals=intervals))
+        sub_off_set += 1
+        if get_if_active(admins_off_set, sub_off_set):
+            admin_app2.add_view(CustomTabella26DataView(BaseData, db.session, name='Trattamento switching',
+                                                        endpoint='view_trattamento_switching', intervals=intervals))
+        sub_off_set += 1
+        if get_if_active(admins_off_set, sub_off_set):
+            admin_app2.add_view(CustomTabella27DataView(BaseData, db.session, name="Livello di contendibilta'",
+                                                        endpoint="view_livello_contendibilita'", intervals=intervals))
 
-        # Third Flask-Admin instance with the third Area index view
-        # ===========================================================
+
+
         admin_app3 = Admin(app,
                            name='Documents Workflow',
                            url='/open_admin_3',
@@ -3491,8 +5390,7 @@ def create_admin_views(app, intervals):
                                                             endpoint='new_documents'))
         admin_app3.add_view(DocumentsBaseDataDetails(name='Documents Workflow Management', model=StepBaseData, session=db.session))
 
-        # Fourth Flask-Admin instance
-        # ===========================================================
+        # Initialize Flask-Admin
         # admin_app4 = Admin(app, name='Setup', url = '/open_setup_basic', template_mode='bootstrap4', endpoint = 'setup_basic')
 
         admin_app4 = Admin(app, name='System Setup', url='/open_admin_4', template_mode='bootstrap4',
@@ -3517,10 +5415,9 @@ def create_admin_views(app, intervals):
         admin_app4.add_view(BaseDataView(Container, db.session, name='Container', endpoint='container_view'))
 
         # TODO Associazione di 1->m da non consentire qui (can_create = False) , in quanto già fatta (con controllo IF EXISTS) altrove
+
         # TODO ***** le risposte ai questionnari *** - answer - sono da STORE non in Answer, ma in BaseData (cu data_type='answer')!
 
-        # 10-th Flask-Admin instance
-        # ===========================================================
         admin_app10 = Admin(app, name='Surveys & Questionnaires Workflow',
                             url='/open_admin_10', template_mode='bootstrap4',
                             endpoint='open_admin_10')
