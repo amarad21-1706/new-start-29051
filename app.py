@@ -632,7 +632,7 @@ def handle_db_error(error):
    return render_template('db_error.html'), 500
 
 
-
+@login_required
 @app.route('/forgot_password', methods=['GET', 'POST'])
 def forgot_password():
     form = ForgotPasswordForm()
@@ -662,7 +662,7 @@ def forgot_password():
             return render_template('access/forgot_password.html', form=form)
     return render_template('access/forgot_password.html', form=form)
 
-
+@login_required
 @app.route('/reset_password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
     user = Users.query.filter_by(user_2fa_secret=token).first()
@@ -680,6 +680,7 @@ def reset_password(token):
     return render_template('access/reset_password.html', form=form, token=token)
 
 
+
 @app.route("/send_email___")
 def send_email___():
     mail = Mail(app)
@@ -690,7 +691,7 @@ def send_email___():
     mail.send(msg)
     return "Email sent successfully!"
 
-
+@login_required
 @app.route("/send_email")
 def send_email():
     # Example usage
@@ -874,6 +875,7 @@ def index():
     # return render_template('home/home.html', **additional_data)
 
 
+@login_required
 @app.route('/access/logout', methods=['GET'])
 def logout():
 
@@ -903,19 +905,20 @@ def logout():
     return render_template('access/logout.html', **additional_data)
 
 
-
+@login_required
 # TODO add Home and Back buttons
 @app.route('/document_workflow_visualization_d3js')
 def workflow_visualization():
     return render_template('document_workflow_visualization_d3js.html')
 
-
+@login_required
 @app.route('/custom_base_atti')
 def custom_base_atti_index():
     form = CustomFileLoaderForm()  # Instantiate your form object here
     return render_template('custom_file_loader.html', form=form)
 
 
+@login_required
 @app.route('/user_documents_d3')
 def user_documents_d3():
     # Define colors
@@ -988,7 +991,7 @@ def user_documents_d3():
     return jsonify(documents_data)
 
 
-
+@login_required
 @app.route('/custom_action/', methods=['GET', 'POST'])
 def custom_action():
     if request.method == 'POST':
@@ -1068,6 +1071,7 @@ def user_documents():
         return render_template('error.html', error_message=str(e))  # Render a generic error page
 
 
+@login_required
 # Document workflow view route (using Plotly)
 @app.route('/documents/<int:company_id>/<int:base_data_id>/<int:workflow_id>', methods=['GET', 'POST'])
 def document_workflow(company_id, base_data_id, workflow_id):
@@ -1099,7 +1103,7 @@ def document_workflow(company_id, base_data_id, workflow_id):
 class CustomStepQuestionnaireForm(Form):
     inline_form = None
 
-
+@login_required
 @app.route('/file-upload', methods=['POST'])
 def upload_file():
     # Check if file is uploaded
@@ -1129,7 +1133,7 @@ def upload_file():
 
     return jsonify({'controls': dynamic_controls_html})
 
-
+@login_required
 @app.route('/load_workflow_controls', methods=['GET'])
 def load_workflow_controls():
     # Query your database for workflows
@@ -1353,7 +1357,6 @@ def attach_documents_to_workflow_step():
     return jsonify({'success_message': success_message, 'error_message': None})
 
 
-@login_required
 @app.route('/action_manage_dws_deadline', methods=['POST'])
 def manage_deadline():
     # Parse the list of IDs
@@ -1624,7 +1627,9 @@ def signup():
     return render_template('access/signup.html', title='Sign Up', form=form)
 
 
+@login_required
 # TODO this is a test route. TB cancelled
+@role_required('Admin')
 @app.route('/create_step', methods=['GET', 'POST'])
 def create_step():
     if request.method == 'POST':
@@ -1647,7 +1652,6 @@ def create_step():
             <input type="submit" value="Create Step">
         </form>
     '''
-
 
 @app.route('/home/contact/email',  methods=['GET', 'POST'])
 def contact_email():
@@ -1675,7 +1679,7 @@ def services():
 def history():
     return render_template('home/history.html')
 
-
+@login_required
 @app.route('/workflow/control_areas/area_1', methods=['GET', 'POST'])
 def area_1():
     if request.method == 'GET' and current_user.is_authenticated:
@@ -1741,7 +1745,7 @@ def area_1():
 
 
 # ... (Other imports and setup)
-
+@login_required
 # F l a s k  route to handle saving card content
 @app.route('/save_card', methods=['POST'])
 def save_card():
@@ -1760,7 +1764,7 @@ def save_card():
         print(e)
         return jsonify({"message": "Error saving card content"})
 
-
+@login_required
 @app.route('/workflow/control_areas/area_3',  methods=['GET', 'POST'])
 def area_3():
     # Assuming user_id is available, adjust the query accordingly
@@ -1772,7 +1776,7 @@ def area_3():
     return render_template('workflow/control_areas/area_3.html',
                            specific_table=specific_table, tables=tables)
 
-
+@login_required
 @app.route('/update_cell', methods=['POST'])
 def update_cell():
     if request.method == 'POST':
@@ -1798,12 +1802,14 @@ def aboutus_1():
     return render_template('home/aboutus_1.html')
 
 
+@login_required
 @app.route('/dashboard/company')
 def dashboard_company():
     # Your view logic goes here
     return render_template('dashboard/company.html')
 
-
+@login_required
+@role_required('Admin')
 @app.route('/overview_statistics_1')
 def overview_statistics_1():
     user_id = current_user.id  # Implement your user authentication logic
@@ -1841,6 +1847,7 @@ def overview_statistics_1():
     ]
     return render_template('base_cards_template.html', cards=card_data, create_card=create_card)
 
+@login_required
 @app.route('/deadlines_1')
 def deadlines_1():
     user_id = current_user.id  # Implement your user authentication logic
@@ -1865,6 +1872,7 @@ def deadlines_1():
     return render_template('base_cards_deadlines_template.html', cards=cards)
 
 
+@login_required
 @app.route('/dashboard_company_audit')
 def dashboard_company_audit():
 
@@ -1900,6 +1908,7 @@ def dashboard_company_audit():
 
 
 # Define the route for handling card clicks
+@login_required
 @app.route('/handle_card_click')
 def handle_card_click():
     card_id = request.args.get('id')
@@ -1910,6 +1919,8 @@ def handle_card_click():
 ''' 
 System setup, admin: Company->User(s)
 '''
+@login_required
+@role_required('Admin')
 @app.route('/dashboard_setup_companies_users')
 def dashboard_setup_companies_users():
     # Assuming you have access to the session object
@@ -1934,6 +1945,8 @@ def dashboard_setup_companies_users():
 ''' 
 System setup, admin: User->Role(s)
 '''
+@login_required
+@role_required('Admin')
 @app.route('/dashboard_setup_user_roles')
 def dashboard_setup_user_roles():
 
@@ -1947,7 +1960,8 @@ def dashboard_setup_user_roles():
 ''' 
 System setup, admin: Questionnaire->Question(s)
 '''
-
+@login_required
+@role_required('Admin')
 @app.route('/dashboard_setup_questionnaire_questions')
 def dashboard_setup_questionnaire_questions():
     # Assuming you have access to the session object
@@ -1961,6 +1975,7 @@ def dashboard_setup_questionnaire_questions():
 ''' 
 System setup, admin: Company - > Questionnaire(s)
 '''
+@login_required
 @app.route('/generate_setup_company_questionnaire')
 def generate_setup_company_questionnaire():
     # Generate HTML report
@@ -1969,7 +1984,8 @@ def generate_setup_company_questionnaire():
     # Render the template with the report data
     return render_template('generic_report.html', title="Questionnaires and Companies", columns=["Company", "Questionnaire name", "Questionnaire id"], rows=report_data)
 
-
+@login_required
+@role_required('Admin')
 @app.route('/dashboard_setup_workflow_steps')
 def dashboard_setup_workflow_steps():
     # Generate HTML report
@@ -1981,6 +1997,8 @@ def dashboard_setup_workflow_steps():
 '''
 report of workflow of documents
 '''
+@login_required
+@role_required('Admin')
 @app.route('/dashboard_setup_workflow_base_data')
 def dashboard_setup_workflow_base_data():
 
@@ -1998,6 +2016,8 @@ def dashboard_setup_workflow_base_data():
 '''
 Route to manage trilateral link document/workflow/step
 '''
+@login_required
+@role_required('Admin')
 @app.route('/dashboard_setup_step_base_data')
 def dashboard_setup_step_base_data():
     # Generate HTML report
@@ -2029,6 +2049,8 @@ def dashboard_setup_step_base_data():
 ''' 
 System setup, admin: Area->Subareas
 '''
+@login_required
+@role_required('Admin')
 @app.route('/dashboard_setup_area_subareas')
 def dashboard_setup_area_subareas():
     # Generate HTML report
@@ -2037,7 +2059,7 @@ def dashboard_setup_area_subareas():
     # Render the template with the report data
     return render_template('generic_report.html', title="Control Areas and Subareas", columns=["Area", "Subarea", "Data Type"], rows=report_data)
 
-
+@login_required
 @app.route('/dashboard_company_audit_progression')
 def dashboard_company_audit_progression():
 
@@ -2071,7 +2093,7 @@ def dashboard_company_audit_progression():
 
     return render_template('admin_cards_progression.html', html_cards=html_cards, user_roles=user_roles)
 
-
+@login_required
 @app.route('/company_overview_current')
 def company_overview_current():
     # logging.basicConfig(level=logging.DEBUG)
@@ -2111,7 +2133,7 @@ def company_overview_current():
         return render_template('error.html', error_message=str(e)), 500
 
 
-
+@login_required
 @app.route('/company_overview_historical')
 def company_overview_historical():
     session = db.session  # Create a new database session object
@@ -2143,7 +2165,7 @@ def company_overview_historical():
 
     return render_template('admin_cards_progression.html', html_cards=html_cards, user_roles=user_roles)
 
-
+@login_required
 @app.route('/control_area_1')
 def control_area_1():
     # Get the current route from the request object
@@ -2162,7 +2184,7 @@ def control_area_1():
     # If the condition is not met, you should still return a response
     return render_template('control_area_1.html',
                            current_route=current_route, left_menu_items=None)
-
+@login_required
 @app.route('/control_area_2')
 def control_area_2():
     # Get the current route from the request object
@@ -2183,7 +2205,7 @@ def control_area_2():
     return render_template('control_area_2.html',
                            current_route=current_route)
 
-
+@login_required
 @app.route('/control_area_3')
 def control_area_3():
     # Get the current route from the request object
@@ -2205,7 +2227,8 @@ def control_area_3():
                            current_route=current_route_url)
 
 
-
+@login_required
+@role_required('Admin')
 @app.route('/home/site_map',  methods=['GET', 'POST'])
 def site_map():
     # ... (your existing code)
@@ -2539,7 +2562,8 @@ def parse_form_data_bws(form_data):
 
     return parsed_data
 
-
+@login_required
+@role_required('Admin')
 @app.route('/delete_records_bws', methods=['GET', 'POST'])
 def delete_records_bws():
     # Retrieve JSON data sent from the client-side
@@ -2773,6 +2797,7 @@ def manage_company_users():
 
 
 @login_required
+@role_required('Admin')
 @app.route('/manage_questionnaire_companies', methods=['GET', 'POST'])
 def manage_questionnaire_companies():
     form = QuestionnaireCompanyForm()
@@ -2859,7 +2884,7 @@ def submit_confirmed():
         flash('No data to save or session expired.', 'error')
         return redirect(url_for('show_survey', questionnaire_id=request.form.get('questionnaire_id')))
 
-
+@login_required
 @app.route('/manage_questionnaire_questions', methods=['GET', 'POST'])
 def manage_questionnaire_questions():
     form = QuestionnaireQuestionForm()
