@@ -322,14 +322,7 @@
                           {% endif %}
 
                           {% if container.content.get('action_type') == 'button' and container.content.get('url') %}
-                              <button class="card-button">{{ container.content.get('action_text') }}</button>
-                              <script>
-                                // Optional: Add JavaScript functionality to the button (if needed)
-                                document.querySelector('.card-button').addEventListener('click', function() {
-                                  // Your button click logic here (e.g., handle form submission, AJAX request, etc.)
-                                  window.location.href = "{{ container.content.get('url') }}"; // Redirect to the URL on click
-                                });
-                              </script>
+                              <a href="{{ container.content.get('url') }}" class="card-button">{{ container.content.get('action_text') }}</a>
                             {% elif container.content.get('action_type') == 'link' and container.content.get('url') %}
                               <a href="{{ container.content.get('url') }}" class="card-link">{{ container.content.get('title') }}</a>
                           {% endif %}
