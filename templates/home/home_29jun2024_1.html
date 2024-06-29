@@ -14,7 +14,7 @@
         }
 
         .content-block {
-            color: #f1f1f1;  /* Light color for dark background */
+            color: #8cc8f9;  /* Light color for dark background */
             background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent background */
             padding: 10px;
             border-radius: 5px;
@@ -165,6 +165,64 @@
             right: 20px;
             top: 0;
         }
+
+
+
+        .cards-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);  /* Three columns for cards */
+            grid-gap: 10px;  /* Add spacing between cards */
+        }
+
+        .card {
+            background-color: rgba(255, 255, 255, 0.9); /* Semi-transparent white background */
+            border-radius: 10px; /* Rounded corners */
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2); /* Shadow for depth */
+            padding: 20px;
+            text-align: center;
+            transition: transform 0.3s, box-shadow 0.3s; /* Smooth transition for hover effects */
+        }
+
+        .card:hover {
+            transform: translateY(-10px); /* Lift the card on hover */
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3); /* Stronger shadow on hover */
+        }
+
+        .card-header {
+            font-size: 1.5em; /* Larger font size */
+            font-weight: bold;
+            color: #333; /* Dark color for header */
+        }
+
+        .card-body {
+            padding: 15px 0;
+            color: #555; /* Medium color for body text */
+        }
+
+        .card-button {
+            background-color: #007bff; /* Button background color */
+            color: #fff; /* Button text color */
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s; /* Smooth transition for hover effect */
+        }
+
+        .card-button:hover {
+            background-color: #0056b3; /* Darker background color on hover */
+        }
+
+        .card-link {
+            color: #007bff; /* Link color */
+            text-decoration: none;
+            transition: color 0.3s; /* Smooth transition for hover effect */
+        }
+
+        .card-link:hover {
+            color: #0056b3; /* Darker link color on hover */
+        }
+
     </style>
 </head>
 <body>
@@ -322,7 +380,14 @@
                           {% endif %}
 
                           {% if container.content.get('action_type') == 'button' and container.content.get('url') %}
-                              <a href="{{ container.content.get('url') }}" class="card-button">{{ container.content.get('action_text') }}</a>
+                              <button class="card-button">{{ container.content.get('action_text') }}</button>
+                              <script>
+                                // Optional: Add JavaScript functionality to the button (if needed)
+                                document.querySelector('.card-button').addEventListener('click', function() {
+                                  // Your button click logic here (e.g., handle form submission, AJAX request, etc.)
+                                  window.location.href = "{{ container.content.get('url') }}"; // Redirect to the URL on click
+                                });
+                              </script>
                             {% elif container.content.get('action_type') == 'link' and container.content.get('url') %}
                               <a href="{{ container.content.get('url') }}" class="card-link">{{ container.content.get('title') }}</a>
                           {% endif %}

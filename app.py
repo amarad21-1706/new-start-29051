@@ -536,7 +536,7 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
             try:
                 containers = Container.query.filter(
                     Container.role_id.in_(role_ids)
-                ).order_by(Container.page.desc()).all()
+                ).order_by(Container.container_order).all()
 
                 # Iterate over the containers and print the 'container' field
                 for container in containers:
@@ -879,10 +879,18 @@ def index():
 @app.route('/access/logout', methods=['GET'])
 def logout():
 
-    # Clear the user session
-    # session.clear()
+
     # Clear the user roles from the session
-    # session.pop('user_roles', None)
+    session.pop('user_roles', None)
+    # Clear the user session
+    session.clear()
+
+    # Clear user-specific session data but preserve CAPTCHA and other necessary data
+
+    '''user_specific_keys = ['user_id', 'username', 'user_roles']
+    for key in user_specific_keys:
+        session.pop(key, None)
+        '''
 
     # Build 'Guest' menu
     guest_menu_builder = MenuBuilder(main_menu_items, allowed_roles=["Guest"])

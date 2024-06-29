@@ -50,6 +50,11 @@ class Container(db.Model):
     created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
     updated_at = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
 
+    image = db.Column(db.String(255), nullable=True)
+    description = db.Column(db.String(255))
+    action_type = db.Column(db.String(255), nullable=True)
+    action_url = db.Column(db.String(255), nullable=True)
+    container_order = db.Column(db.Integer, nullable=True)
 
 class Users(db.Model, UserMixin):
     __tablename__ = 'users'

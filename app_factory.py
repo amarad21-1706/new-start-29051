@@ -25,6 +25,15 @@ class ExcludeRequestsFilter(logging.Filter):
         return not (record.args and len(record.args) > 0 and record.args[0] in ["GET", "POST", "PUT", "DELETE"])
 '''
 
+'''
+
+HOW TO REPLACE STRING IN container
+
+UPDATE container
+SET content = jsonb_set(content, '{url}', '"\/deadlines_1"', false)
+WHERE content->>'url' = '/dashboard/company/dashboard_audit';
+
+'''
 def my_locale_selector():
     # Your logic to determine user locale
     return 'en_EN'  # Example for French
