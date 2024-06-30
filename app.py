@@ -606,6 +606,32 @@ def generate_new_id(model):
         return max_id + 1
 
 
+def get_cards(company_id):
+  cards = []
+  # Use SQLAlchemy to query the 'container' table
+  containers = db.session.query(Container).filter_by(
+      company_id=company_id, content_type='card'
+  ).all()
+
+  for container in containers:
+    content = container.content
+
+    # Check data type before decoding
+    if isinstance(content, str):
+      card_data = json.loads(content)
+    elif isinstance(content, dict):
+      card_data = content  # Already a dictionary
+    else:
+      # Handle unexpected data type (optional)
+      # You can log a warning or raise an exception here
+      print(f"Unexpected data type for container content: {type(content)}")
+      continue  # Skip this container
+
+    cards.append(card_data)
+
+  return cards
+
+
 class MoveDocumentForm(FlaskForm):
     next_step = SelectField('Next Step')
     submit = SubmitField('Move Document')
@@ -751,6 +777,8 @@ def login():
                         try:
                             company_user = CompanyUsers.query.filter_by(user_id=user.id).first()
                             company_id = company_user.company_id if company_user else None
+                            session['company_id'] = company_id
+                            print(">>>> session['company_id']", session['company_id'])
                         except Exception as e:
                             print('Error retrieving company ID:', e)
                             company_id = None
@@ -911,6 +939,45 @@ def logout():
     }
 
     return render_template('access/logout.html', **additional_data)
+
+
+@login_required
+@app.route('/show_cards')
+def show_cards():
+  company_id = session['company_id']  # Access company ID from session
+  card_data = get_cards(company_id)
+
+  # optional? Alternative to 'cards' above
+  '''
+  card_data = [
+      {
+          'title': 'Area 1',
+          'stats': get_model_statistics(db.session, BaseData, {"area_id": 1}),  # Filter criteria as a dictionary
+          'body': 'This is the body content for Card 1.',
+          'card_class': 'bg-primary'  # Optional card class
+      },
+      {
+          'title': 'Area 2',
+          'stats': get_model_statistics(db.session, BaseData, {"area_id": 2}),  # Filter criteria as a di
+          'footer': 'Footer for Card 2',
+          # 'visibility': 'd-none'  # Initially hide this card
+      },
+      {
+          'title': 'Area 3',
+          'stats': get_model_statistics(db.session, BaseData, {"area_id": 3}),  # Filter criteria as a di
+          'footer': 'Footer for Card 2',
+          # 'visibility': 'd-none'  # Initially hide this card
+      },
+      {
+          'title': 'Upcoming Deadline',
+          'stats': get_model_statistics(db.session, BaseData, {"area_id": 3}),  # Filter criteria as a di
+          'footer': 'Footer for Card 2',
+          # 'visibility': 'd-none'  # Initially hide this card
+      }
+  ]
+  '''
+
+  return render_template('base_cards_template.html', cards=card_data, create_card=create_card)
 
 
 @login_required
@@ -1823,7 +1890,6 @@ def overview_statistics_1():
     user_id = current_user.id  # Implement your user authentication logic
     if not user_id:
         user_id = request.args.get('user_id')  # Assuming you retrieve user_id from the request
-
 
     # get deadline approaching events
 

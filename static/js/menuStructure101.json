@@ -220,6 +220,12 @@
                 "url": "/open_admin_app_10",
                 "protected": true,
                 "allowed_roles": ["Admin", "Employee", "Manager"]
+            },
+            "Cards One": {
+                "label": "My Actions",
+                "url": "/show_cards",
+                "protected": true,
+                "allowed_roles": ["Admin", "Employee", "Manager"]
             }
         }
     },

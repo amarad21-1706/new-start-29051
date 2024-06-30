@@ -55,7 +55,7 @@ def get_model_statistics(session, model, filter_criteria):
     return statistics
 
 
-def create_card(**kwargs):
+def create_card222(**kwargs):
     """
     This function creates a card HTML element with customizable attributes and support for statistics.
 
@@ -120,6 +120,240 @@ def create_card(**kwargs):
     card_html += "</div>"
 
     return card_html
+
+
+
+def create_card333(**kwargs):
+    """
+    This function creates a card HTML element with customizable attributes and support for content and actions.
+
+    Args:
+      **kwargs: Dictionary containing key-value pairs for card attributes and content.
+          - title (str): Title of the card. (Required)
+          - card_class (str): CSS class(es) for the card. (Optional)
+          - visibility (str): Optional CSS class for card visibility (e.g., 'd-none').
+          - (Additional keys): Any other key-value pairs will be treated as content.
+          - action_type (str): Type of action (link, button, None). (Optional)
+          - url (str): URL for the link (if action_type is 'link'). (Optional)
+
+    Returns:
+      str: HTML code for the card element.
+    """
+
+    # Required argument check
+    if 'title' not in kwargs:
+      raise ValueError("Missing required argument 'title'")
+
+    # Define default values for optional arguments
+    card_class = kwargs.get('card_class', 'bg-primary')
+    visibility_class = kwargs.get('visibility', '')
+    action_type = kwargs.get('action_type')
+    url = kwargs.get('url')
+
+    # Build the card HTML
+    card_html = f"""
+    <div class="card {card_class} {visibility_class}">
+      <div class="card-body">
+        <h5 class="card-title">{kwargs['title']}</h5>
+    """
+
+    # Add content based on key-value pairs (unchanged)
+    # ... (same logic as before)
+
+    # Add action link or button if applicable
+    if action_type:
+        if action_type == 'link' and url:
+            card_html += f"""
+            <a href="{url}" class="btn btn-primary"> {kwargs.get('action_text', 'Click Here')} </a>
+            """
+        elif action_type == 'button':
+            card_html += f"""
+            <button type="button" class="btn btn-primary"> {kwargs.get('action_text', 'Click Me')} </button>
+            """
+
+    # Close the card div
+    card_html += "</div></div>"
+
+    return card_html.strip()
+
+
+def create_card444(**kwargs):
+    """
+    This function creates a card HTML element with customizable attributes, content, and actions.
+
+    Args:
+      **kwargs: Dictionary containing key-value pairs for card attributes and content.
+          - title (str): Title of the card. (Required)
+          - image (str): URL of the card image. (Optional)
+          - description (str): Description text for the card body. (Optional)
+          - card_class (str): CSS class(es) for the card. (Optional)
+          - visibility (str): Optional CSS class for card visibility (e.g., 'd-none').
+          - (Additional keys): Any other key-value pairs will be treated as content.
+          - action_type (str): Type of action (link, button, None). (Optional)
+          - url (str): URL for the link (if action_type is 'link'). (Optional)
+
+    Returns:
+      str: HTML code for the card element.
+    """
+
+    # Required argument check
+    if 'title' not in kwargs:
+      raise ValueError("Missing required argument 'title'")
+
+    # Define default values for optional arguments
+    image = kwargs.get('image')
+    description = kwargs.get('description')
+    card_class = kwargs.get('card_class', 'bg-primary')
+    visibility_class = kwargs.get('visibility', '')
+    action_type = kwargs.get('action_type')
+    url = kwargs.get('url')
+
+    # Build the card HTML
+    card_html = f"""
+    <div class="card {card_class} {visibility_class}">
+    """
+
+    # Add card image if provided
+    if image:
+        card_html += f"""
+        <img src="{image}" class="card-img-top" alt="{kwargs.get('title', 'Card Image')}">
+        """
+
+    # Open card body
+    card_html += f"""
+      <div class="card-body">
+        <h5 class="card-title">{kwargs['title']}</h5>
+    """
+
+    # Add description if provided
+    if description:
+        card_html += f"""
+        <p class="card-text">{description}</p>
+        """
+
+    # Add content based on other key-value pairs (unchanged)
+    #
+
+    # Add action link or button if applicable
+    if action_type:
+        if action_type == 'link' and url:
+            card_html += f"""
+            <a href="{url}" class="btn btn-primary"> {kwargs.get('action_text', 'Click Here')} </a>
+            """
+        elif action_type == 'button':
+            card_html += f"""
+            <button type="button" class="btn btn-primary"> {kwargs.get('action_text', 'Click Me')} </button>
+            """
+
+    # Close the card div
+    card_html += "</div></div>"
+
+    return card_html.strip()
+
+
+
+
+def create_card(**kwargs):
+    """
+    This function creates a card HTML element with customizable attributes and support for statistics.
+
+    Args:
+      **kwargs: Dictionary containing key-value pairs for card attributes.
+          - title (str): Title of the card. (Required)
+          - stats (dict): Dictionary containing key-value pairs for statistics. (Optional)
+          - body (str): Content of the card body. (Optional)
+          - footer (str): Content of the card footer. (Optional)
+          - card_class (str): CSS class(es) for the card. (Optional)
+          - visibility (str): Optional CSS class for card visibility (e.g., 'd-none').
+
+    Returns:
+      str: HTML code for the card element.
+    """
+
+    # Required argument check
+    if 'title' not in kwargs:
+      raise ValueError("Missing required argument 'title'")
+
+    # Define default values for optional arguments
+
+    title = kwargs.get('title', '')
+    stats = kwargs.get('stats', {})
+    body = kwargs.get('body', '')
+    footer = kwargs.get('footer', '')
+    card_class = kwargs.get('card_class', 'bg-primary')
+    visibility_class = kwargs.get('visibility', '')
+    image = kwargs.get('image', '')
+    description = kwargs.get('description', '')
+    action_text = kwargs.get('action_text', '')
+    action_type = kwargs.get('action_type', '')
+    url = kwargs.get('url', '')
+
+    # Build the card HTML
+    card_html = f"""
+    <div class="card {card_class} {visibility_class}">  <div class="card-body">
+      <h5 class="card-title">{kwargs['title']}</h5>
+    """
+
+    # Add card image if provided
+    if image:
+        card_html += f"""
+        <img src="{image}" class="card-img-top" alt="{kwargs.get('title', 'Card Image')}">
+        """
+
+    # Open card body
+    card_html += f"""
+      <div class="card-body">
+        <h5 class="card-title">{kwargs['title']}</h5>
+    """
+
+    # Add description if provided
+    if description:
+        card_html += f"""
+        <p class="card-text">{description}</p>
+        """
+
+    # Add statistics section if provided
+    if stats:
+      card_html += """
+      <ul class="list-group list-group-flush">
+      """
+      for stat_name, stat_value in stats.items():
+          card_html += f"""
+          <li class="list-group-item">{stat_name}: {stat_value}</li>
+          """
+      card_html += "</ul>"
+
+    # Add body content if provided
+    if body:
+      card_html += f"""
+      <p class="card-text">{body}</p>
+      """
+
+    # Add footer if provided
+    if footer:
+      card_html += f"""
+      <div class="card-footer text-muted">
+        {footer}
+      </div>
+      """
+
+    # Add action link or button if applicable
+    if action_type:
+        if action_type == 'link' and url:
+            card_html += f"""
+            <a href="{url}" class="btn btn-primary"> {kwargs.get('action_text', 'Click Here')} </a>
+            """
+        elif action_type == 'button':
+            card_html += f"""
+            <button type="button" class="btn btn-primary"> {kwargs.get('action_text', 'Click Me')} </button>
+            """
+
+    # Close the card div
+    card_html += "</div>"
+
+    return card_html
+
+
 
 
 def get_step_base_data_close_to_deadline(session):
