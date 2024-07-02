@@ -545,6 +545,9 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
                 print('No container data found 2')
                 containers = None
 
+            company_id = session.get('company_id')
+            card_data = get_cards(company_id)
+
             additional_data = {
                 "username": username,
                 "company_name": company_name,
@@ -566,9 +569,12 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
                 "admin_4_url": admin_4_url,
                 "admin_10_url": admin_10_url,
                 "unread_notices_count": unread_notices_count,
-                "containers": containers
+                "containers": containers,
+                "cards": card_data,
             }
 
+            print('wrapper rendering')
+            print('card data', card_data)
             return render_template(template, **additional_data)
 
         return wrapper

@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -10,12 +9,12 @@
     <style>
         .container {
             display: grid;
-            grid-template-columns: 1fr; /* Single column for all content */
-            grid-gap: 10px; /* Add spacing between content blocks */
+            grid-template-columns: 1fr;  /* Single column for all content */
+            grid-gap: 10px;  /* Add spacing between content blocks */
         }
 
         .content-block {
-            color: #8cc8f9; /* Light color for dark background */
+            color: #8cc8f9;  /* Light color for dark background */
             background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent background */
             padding: 10px;
             border-radius: 5px;
@@ -26,66 +25,53 @@
             font-family: 'Geneve';
             src: url('{{ url_for('static', filename='fonts/Geneve.ttf') }}') format('truetype');
         }
-
         body {
             font-family: 'Geneve', sans-serif;
             background-image: url("{{ url_for('static', filename='images/background_image.jpg') }}");
             background-size: cover;
             background-repeat: no-repeat;
         }
-
         .flashes {
             margin: 0;
             padding: 0;
             list-style: none;
         }
-
         .flashes li {
             margin-bottom: 5px;
         }
-
         .alert {
             padding: 8px 12px;
             font-size: 14px;
             border-radius: 4px;
         }
-
         .alert-success {
             background-color: #d4edda;
             color: #155724;
         }
-
         .alert-danger {
             background-color: #f8d7da;
             color: #721c24;
         }
-
         .alert-info {
             background-color: #cce5ff;
             color: #004085;
         }
-
         .alert-warning {
             background-color: #fff3cd;
             color: #856404;
         }
-
         .gray-text {
             color: gray;
         }
-
         .white-text {
             color: white;
         }
-
         h1 {
             color: gray;
         }
-
         p {
             color: green;
         }
-
         .main-menu {
             list-style: none;
             display: flex;
@@ -94,16 +80,13 @@
             z-index: 1000;
             position: relative;
         }
-
-        .navbar-nav>li {
+        .navbar-nav > li {
             position: relative;
         }
-
-        .navbar-nav>li:not(:last-child) {
+        .navbar-nav > li:not(:last-child) {
             margin-right: 10px;
             background-color: lightgray;
         }
-
         .submenu {
             position: absolute;
             top: 100%;
@@ -112,11 +95,9 @@
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             display: none;
         }
-
-        .navbar-nav>li:hover>.submenu {
+        .navbar-nav > li:hover > .submenu {
             display: block;
         }
-
         .has-submenu .submenu-indicator::after {
             content: '\25B6';
             margin-left: 5px;
@@ -124,34 +105,28 @@
             transform: rotate(90deg);
             transition: transform 0.3s ease;
         }
-
         .submenu .submenu {
             display: none;
             position: absolute;
             top: 0;
             left: 100%;
         }
-
         .submenu.show {
             display: block;
         }
-
         .has-submenu.active .submenu-indicator::after {
             transform: rotate(0deg);
         }
-
         .sticky-top {
             position: sticky;
             top: 0;
             z-index: 1000;
         }
-
         .navbar.shrink {
             transition: padding 0.3s;
             padding-top: 10px;
             padding-bottom: 10px;
         }
-
         .left-menu {
             border-right: 1px solid #dee2e6;
             float: left;
@@ -160,29 +135,23 @@
             padding: 20px;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
         }
-
         .left-menu h3 {
             margin-top: 0;
             margin-bottom: 15px;
         }
-
         .left-menu ul li {
             margin-bottom: 10px;
         }
-
         .left-menu ul {
             list-style: none;
             padding: 0;
         }
-
         .sidebar {
             padding: 20px;
         }
-
         #greeting-section {
             text-align: right;
         }
-
         @media (max-width: 768px) {
             .left-menu {
                 width: 100%;
@@ -190,7 +159,6 @@
                 padding-right: 0;
             }
         }
-
         .navbar-logo {
             height: 50px;
             position: absolute;
@@ -198,96 +166,63 @@
             top: 0;
         }
 
-        .carousel-item {
-            display: flex;
-            justify-content: center;
-        }
-
-        .carousel-item {
-          height: 300px; /* Adjust the height as needed */
-          display: flex; /* Enable flexbox for better content arrangement */
-          align-items: center; /* Center content vertically within the carousel item */
+        .cards-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);  /* Three columns for cards */
+            grid-gap: 10px;  /* Add spacing between cards */
         }
 
         .card {
-          flex: 1; /* Allow cards to fill available space within carousel item */
-          /* Adjust padding or margin as needed to avoid extra space */
-        }
-
-        .carousel-item .card {
-            margin: 0 10px;
-            background-color: rgba(225, 225, 200, 0.9);
-            border-radius: 10px;
-            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            background-color: rgba(225, 225, 200, 0.9); /* Semi-transparent white background */
+            border-radius: 10px; /* Rounded corners */
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2); /* Shadow for depth */
             padding: 10px;
             text-align: center;
-            transition: transform 0.3s, box-shadow 0.3s;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            height: 100%;
-            font-size: 0.9em;
-            width: 100%;
+            transition: transform 0.3s, box-shadow 0.3s; /* Smooth transition for hover effects */
         }
 
-        .carousel-item .card:hover {
-            transform: translateY(-10px);
-            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+        .card:hover {
+            transform: translateY(-10px); /* Lift the card on hover */
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3); /* Stronger shadow on hover */
         }
 
         .card-header {
-            font-size: 1.1em;
+            font-size: 1.25em; /* Larger font size */
             font-weight: bold;
-            color: #333;
+            color: #333; /* Dark color for header */
         }
 
         .card-body {
-            padding: 10px 0;
-            color: #555;
-            flex: 1;
-        }
-
-        .card-footer {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            flex-direction: column;
-        }
-
-        .card-button,
-        .card-link {
-            margin-top: 10px;
+            padding: 15px 0;
+            color: #555; /* Medium color for body text */
         }
 
         .card-button {
-            background-color: #007bff;
-            color: #fff;
+            background-color: #007bff; /* Button background color */
+            color: #fff; /* Button text color */
             border: none;
-            padding: 8px 15px;
+            padding: 10px 20px;
             border-radius: 5px;
             cursor: pointer;
-            transition: background-color 0.3s;
-            font-size: 0.9em;
-            width: auto;
+            transition: background-color 0.3s; /* Smooth transition for hover effect */
         }
 
         .card-button:hover {
-            background-color: #0056b3;
+            background-color: #0056b3; /* Darker background color on hover */
         }
 
         .card-link {
-            color: #007bff;
+            color: #007bff; /* Link color */
             text-decoration: none;
-            transition: color 0.3s;
-            font-size: 0.9em;
+            transition: color 0.3s; /* Smooth transition for hover effect */
         }
 
         .card-link:hover {
-            color: #0056b3;
+            color: #0056b3; /* Darker link color on hover */
         }
+
     </style>
 </head>
-
 <body>
 
     {% macro render_menu(menu_items, user_roles, level=1) %}
@@ -312,6 +247,8 @@
 
     <!-- Greeting message -->
     <div id="greeting-section" class="gray-text">
+        <!-- Debugging print -->
+        <p>Unread notices count: {{ unread_notices_count }}</p>
         <!-- Display personalized greeting if the user is authenticated -->
         {% if is_authenticated %}
             {% set role_initials = {'Admin': 'A', 'Authority': 'Au', 'Manager': 'M', 'Employee': 'E', 'Provider': 'P', 'Guest': 'G'} %}
@@ -321,6 +258,7 @@
                     {% set role_initial = role_initials[role] %}
                 {% endif %}
             {% endfor %}
+            Welcome - {{ username }}[{{ role_initial }}]!
             {% if unread_notices_count > 0 %}
                 <a href="/noticeboard">
                     <img src="{{ url_for('static', filename='images/mail-unread-outline.svg') }}" alt="Messages Icon" id="messages-icon">
@@ -332,10 +270,21 @@
         {% endif %}
     </div>
 
+    <!-- Render cards dynamically -->
+    {% for card in cards_data %}
+        <div class="card">
+            <div class="card-header">{{ card.title }}</div>
+            <div class="card-body">
+                {{ card.content }}
+            </div>
+        </div>
+    {% endfor %}
+
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top">
         <a class="navbar-brand" href="{{ url_for('index') }}"></a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
@@ -389,124 +338,83 @@
                 {% endif %}
                 {% if "Authority" in user_roles %}
                     <p>(Authority)</p>
-                {% endif %}
+                    {% endif %}
                 {% if "Manager" in user_roles %}
                     <p>(Manager)</p>
-                {% endif %}
+                    {% endif %}
                 {% if "Employee" in user_roles %}
                     <p>(Employee)</p>
-                {% endif %}
-
-                <div class="container mt-4">
-                    <p>"[...] content" (text, documents, multimedia files, charts, cards etc.) to be placed here.</p>
-                    {% if containers %}
-                        {% for container in containers %}
-                            {% if container.content_type == 'text' %}
-                                <div class="content-block">{{ container.content['content'] }}</div>
-                            {% endif %}
-                            {% if container.content_type == 'documents' %}
-                                <a class="content-block" href="{{ url_for('static', filename=container.content['file_path']) }}">Download</a>
-                            {% endif %}
-                            {% if container.content_type == 'gallery' %}
-                                <video class="content-block" src="{{ url_for('static', filename=container.content['video_path']) }}" controls></video>
-                            {% endif %}
-                            {% if container.content_type == 'chart' %}
-                                <img class="content-block" src="{{ url_for('static', filename=container.content['chart_path']) }}" alt="Chart">
-                            {% endif %}
-                            {% if container.content_type == 'link' %}
-                                <a class="content-block" href="{{ container.content['url'] }}">{{ container.content['title'] }}</a>
-                            {% endif %}
-                        {% endfor %}
-                    {% else %}
-                        <p>No containers found to display.</p>
                     {% endif %}
-                </div>
 
-                <!-- Insert the card carousel here -->
-                <div id="myCarousel" class="carousel slide mt-5" data-bs-ride="carousel">
-                    <div class="carousel-inner">
-                        {% for card in cards|batch(3, '') %}
-                            <div class="carousel-item {% if loop.index == 1 %}active{% endif %}">
-                                <div class="row">
-                                    {% for item in card %}
-                                        {% if item %}
-                                            <div class="col-md-4 d-flex">
-                                                <div class="card flex-fill">
-                                                    <div class="card-header">{{ item.title }}</div>
-                                                    <div class="card-body">
-                                                        {% if item.image %}
-                                                            <img src="{{ item.image }}" class="card-img-top" alt="Card Image">
-                                                        {% endif %}
-                                                        {% if item.body %}
-                                                            <p class="card-text">{{ item.body }}</p>
-                                                        {% endif %}
-                                                        {% if item.description %}
-                                                            <p class="card-text">{{ item.description }}</p>
-                                                        {% endif %}
-                                                    </div>
-                                                    {% if item.footer %}
-                                                        <div class="card-footer">
-                                                            {{ item.footer }}
-                                                        </div>
-                                                    {% endif %}
-                                                    {% if item.action_text %}
-                                                        <div class="card-footer">
-                                                            {% if item.action_type == 'button' %}
-                                                                <button class="card-button" onclick="window.location.href='{{ item.url }}'">{{ item.action_text }}</button>
-                                                            {% else %}
-                                                                <a href="{{ item.url }}" class="card-link">{{ item.action_text }}</a>
-                                                            {% endif %}
-                                                        </div>
-                                                    {% endif %}
-                                                </div>
-                                            </div>
-                                        {% endif %}
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        {% endfor %}
-                    </div>
-                    <button class="carousel-control-prev" type="button" data-bs-target="#myCarousel" data-bs-slide="prev">
-                        <span class="carousel-control-prev-icon bg-black rounded-circle" aria-hidden="true"></span>
-                        <span class="visually-hidden">Previous</span>
-                    </button>
-                    <button class="carousel-control-next" type="button" data-bs-target="#myCarousel" data-bs-slide="next">
-                        <span class="carousel-control-next-icon bg-black rounded-circle" aria-hidden="true"></span>
-                        <span class="visually-hidden">Next</span>
-                    </button>
-                </div>
-                <!-- End of card carousel -->
+            <div class="container mt-4">
+                <p>"[...] content" (text, documents, multimedia files, charts, cards etc.) to be placed here.</p>
+                {% if containers %}  {% for container in containers %}
+                    {% if container.content_type == 'text' %}
+                        <div class="content-block">{{ container.content['content'] }}</div>
+                    {% endif %}
+                    {% if container.content_type == 'documents' %}
+                        <a class="content-block" href="{{ url_for('static', filename=container.content['file_path']) }}">Download</a>
+                    {% endif %}
+                    {% if container.content_type == 'gallery' %}
+                        <video class="content-block" src="{{ url_for('static', filename=container.content['video_path']) }}" controls></video>
+                    {% endif %}
+                    {% if container.content_type == 'chart' %}
+                        <img class="content-block" src="{{ url_for('static', filename=container.content['chart_path']) }}" alt="Chart">
+                    {% endif %}
+                    {% if container.content_type == 'link' %}
+                        <a class="content-block" href="{{ container.content['url'] }}">{{ container.content['title'] }}</a>
+                    {% endif %}
+
+                    {% endfor %}
+                  {% else %}
+                  <p>No containers found to display.</p>
+                {% endif %}
 
             </div>
         </div>
     </div>
 
     <!-- Bootstrap JS and jQuery -->
-    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://code.jquery.com/jquery-3.7.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
+    <!-- JavaScript to handle submenu visibility and click events -->
     <script>
-        $(document).ready(function() {
+        $(document).ready(function () {
+            // Function to toggle submenu visibility for immediate children
             function toggleImmediateChildren(submenu) {
                 submenu.children('.has-submenu').toggleClass('show');
             }
 
+            // Function to toggle submenu visibility for all levels
             function toggleSubmenu(submenu) {
                 var parentSubMenu = submenu.closest('.has-submenu');
                 var siblings = parentSubMenu.siblings('.has-submenu');
+
+                // Close all siblings' submenus before opening the clicked one
                 siblings.removeClass('active').find('.submenu').removeClass('show');
+
+                // Toggle visibility for the clicked submenu's immediate children
                 toggleImmediateChildren(submenu);
+
+                // Toggle visibility for the clicked submenu
                 parentSubMenu.toggleClass('active').find('.submenu').toggleClass('show');
             }
 
-            $('.has-submenu > a').click(function(e) {
+            // Handle click events for all levels, including top menu items
+            $('.has-submenu > a').click(function (e) {
                 var submenu = $(this).siblings('.submenu');
                 if (submenu.length) {
                     e.preventDefault(); // Prevent default link behavior
+
+                    // Toggle visibility for the clicked submenu
                     toggleSubmenu(submenu);
                 }
             });
 
-            $('.has-submenu').each(function() {
+            // Set the top position for each submenu based on the height of the parent menu item
+            $('.has-submenu').each(function () {
                 var submenu = $(this).children('.submenu');
                 if (submenu.length) {
                     var topPosition = $(this).position().top + $(this).outerHeight();
@@ -514,23 +422,26 @@
                 }
             });
 
-            $(document).on('click', function(e) {
+            // Close active submenus when clicking outside
+            $(document).on('click', function (e) {
                 if (!$(e.target).closest('.has-submenu').length) {
                     $('.has-submenu.active').removeClass('active').find('.submenu').removeClass('show');
                 }
             });
 
-            $('.submenu a').click(function(e) {
+            // Prevent link behavior for last-level items
+            $('.submenu a').click(function (e) {
                 var submenu = $(this).siblings('.submenu');
                 if (submenu.length) {
                     e.preventDefault(); // Prevent default link behavior
                 }
             });
 
+            // Sticky navbar
             var navbar = $(".navbar");
             var sticky = navbar.offset().top;
 
-            $(window).scroll(function() {
+            $(window).scroll(function () {
                 if (window.pageYOffset >= sticky) {
                     navbar.addClass("sticky-top shrink");
                 } else {
@@ -538,6 +449,7 @@
                 }
             });
 
+            // Display personalized greeting if the user is authenticated
             var username = "{{ username }}"; // Use the username from the Flask route
 
             if (username && username !== "Guest") {
@@ -550,16 +462,16 @@
 
             // Show noticeboard modal when icon is clicked
             document.getElementById("messages-icon").addEventListener("click", function() {
-                document.getElementById("noticeboard-modal").style.display = "block";
+              document.getElementById("noticeboard-modal").style.display = "block";
             });
 
             // Close modal when close button is clicked
             document.getElementsByClassName("close")[0].addEventListener("click", function() {
-                document.getElementById("noticeboard-modal").style.display = "none";
+              document.getElementById("noticeboard-modal").style.display = "none";
             });
+
         });
     </script>
 
 </body>
-
 </html>
