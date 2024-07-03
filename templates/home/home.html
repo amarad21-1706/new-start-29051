@@ -95,13 +95,18 @@
             position: relative;
         }
 
-        .navbar-nav>li {
+        .navbar-nav > li {
             position: relative;
+            background-color: #f8f9fa; /* Set the desired uniform background color */
+            margin-right: 10px;
         }
 
-        .navbar-nav>li:not(:last-child) {
-            margin-right: 10px;
-            background-color: lightgray;
+        .navbar-nav > li:hover {
+            background-color: #e9ecef; /* Set the desired hover background color */
+        }
+
+        .navbar-nav > li.active {
+            background-color: #dee2e6; /* Set the desired active background color */
         }
 
         .submenu {
@@ -111,9 +116,24 @@
             background-color: #f8f9fa;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             display: none;
+            z-index: 1000;
         }
 
-        .navbar-nav>li:hover>.submenu {
+        .navbar-nav > li:hover > .submenu {
+            display: block;
+        }
+
+        .navbar-nav .submenu > li:hover {
+            background-color: #e9ecef; /* Set the desired hover background color for submenu items */
+        }
+
+        .submenu .submenu {
+            left: 100%;
+            top: 0;
+            display: none;
+        }
+
+        .navbar-nav .submenu > li:hover > .submenu {
             display: block;
         }
 
@@ -123,13 +143,6 @@
             display: inline-block;
             transform: rotate(90deg);
             transition: transform 0.3s ease;
-        }
-
-        .submenu .submenu {
-            display: none;
-            position: absolute;
-            top: 0;
-            left: 100%;
         }
 
         .submenu.show {
@@ -200,7 +213,7 @@
 
         .carousel-item {
             height: 300px; /* Adjust the height as needed */
-            display: -moz-inline-stack; /* Enable flexbox for better content arrangement */
+            display: flex; /* Enable flexbox for better content arrangement */
             align-items: center; /* Center content vertically within the carousel item */
         }
 
