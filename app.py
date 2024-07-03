@@ -3,6 +3,7 @@
 
 # app.py (or run.py)
 import re
+import requests
 
 # import logging
 # from logging import FileHandler, Formatter
@@ -188,12 +189,17 @@ print('url rule set')
 
 def initialize_app(app):
     with app.app_context():
-        if get_areas():
-            app.config['AREAS'] = get_areas()
 
-        for i in range(len(get_areas())):
-            if get_subareas(i):
-                app.config['SUBAREAS_' + str(i)] = get_subareas(i)
+        try:
+            if get_areas():
+                app.config['AREAS'] = get_areas()
+
+                for i in range(len(get_areas())):
+                    if get_subareas(i):
+                        app.config['SUBAREAS_' + str(i)] = get_subareas(i)
+
+        except OperationalError:
+            flash('Database connection failed. Please check your internet connection.', 'danger')
 
         intervals = get_current_intervals(db.session)
         app.config['CURRENT_INTERVALS'] = intervals
@@ -204,7 +210,6 @@ print('intervals', intervals)
 
 # Initialize the admin views
 admin_app1, admin_app2, admin_app3, admin_app4, admin_app10 = create_admin_views(app, intervals)
-
 
 @app.route('/set_session')
 def set_session():
@@ -231,6 +236,15 @@ def load_user(user_id):
         #print('roles', session['user_roles'])
     return user
 
+
+def check_internet():
+    url = "https://www.google.com"
+    timeout = 10
+    try:
+        response = requests.get(url, timeout=timeout)
+        return True
+    except (requests.ConnectionError, requests.Timeout) as exception:
+        return False
 
 @app.before_request
 def before_request():
@@ -463,6 +477,7 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
         @app.route(route)
         @wraps(func)
         def wrapper(*args, **kwargs):
+
             if callable(getattr(current_user, 'is_authenticated', None)):
                 is_authenticated = current_user.is_authenticated()
             else:
@@ -573,7 +588,7 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
                 "cards": card_data,
             }
 
-            print('wrapper rendering')
+            print('wrapper rendering - unread messages:', unread_notices_count)
             print('card data', card_data)
             return render_template(template, **additional_data)
 
@@ -1578,7 +1593,6 @@ def employee_page():
 
 def get_left_menu_items(role):
     # Load the left menu structure from the JSON file
-
     json_file_path = get_current_directory() + '/static/js/left_menu_structure.json'
     with open(Path(json_file_path), 'r') as file:
         left_menu_items = json.load(file)
@@ -1925,7 +1939,10 @@ def overview_statistics_1():
             # 'visibility': 'd-none'  # Initially hide this card
         }
     ]
-    return render_template('base_cards_template.html', cards=card_data, create_card=create_card)
+
+    print('card data', card_data)
+
+    return render_template('base_cards_template.html', containers=card_data, create_card=create_card)
 
 @login_required
 @app.route('/deadlines_1')
@@ -3699,15 +3716,27 @@ def home():
     # app.logger.debug("Home route accessed")
     return render_template('index.html')  # Render your home page template
 
-@login_required
-@app.route('/noticeboard')
-def noticeboard():
-    # Retrieve unmarked messages from the database
-    user_id = current_user.id
-    unmarked_messages = Post.query.filter_by(user_id=user_id, marked_as_read=False).all()
 
-    # Pass the messages to the template for rendering
+@app.route('/noticeboard', methods=['GET', 'POST'])
+@login_required
+def noticeboard():
+    user_id = current_user.id
+
+    if request.method == 'POST':
+        message_ids = request.form.getlist('message_ids')
+        if message_ids:
+            messages_to_mark = Post.query.filter(Post.id.in_(message_ids)).all()
+            for message in messages_to_mark:
+                message.marked_as_read = True
+            db.session.commit()
+            flash('Selected messages marked as read.', 'success')
+        else:
+            flash('No messages selected.', 'warning')
+        return redirect(url_for('noticeboard'))
+
+    unmarked_messages = Post.query.filter_by(user_id=user_id, marked_as_read=False).all()
     return render_template('home/noticeboard.html', unmarked_messages=unmarked_messages)
+
 
 
 @login_required
