@@ -88,6 +88,10 @@
             color: white;
         }
 
+        .dark-text {
+            color: #333;
+        }
+
         h1 {
             color: lightgrey;
         }
@@ -416,28 +420,28 @@
                                 <div class="d-flex justify-content-center align-items-center" style="height: 100%;">
                                     <div class="card">
                                         <div class="card-header">{{ card.title }}</div>
-                                        <div class="card-body">
+                                        <div class="card-body dark-text">
                                             {% if card.image %}
                                                 <img src="{{ card.image }}" class="card-img-top" alt="Card Image">
                                             {% endif %}
                                             {% if card.body %}
-                                                <p class="card-text">{{ card.body }}</p>
+                                                <p class="card-text dark-text">{{ card.body }}</p>
                                             {% endif %}
                                             {% if card.description %}
-                                                <p class="card-text">{{ card.description }}</p>
+                                                <p class="card-text dark-text">{{ card.description }}</p>
                                             {% endif %}
                                         </div>
                                         {% if card.footer %}
-                                            <div class="card-footer">
+                                            <div class="card-footer dark-text">
                                                 {{ card.footer }}
                                             </div>
                                         {% endif %}
                                         {% if card.action_text %}
-                                            <div class="card-footer">
+                                            <div class="card-footer dark-text">
                                                 {% if card.action_type == 'button' %}
-                                                    <button class="card-button" onclick="window.location.href='{{ card.url }}'">{{ card.action_text }}</button>
+                                                    <button class="card-button white-text" onclick="window.location.href='{{ card.url }}'">{{ card.action_text }}</button>
                                                 {% else %}
-                                                    <a href="{{ card.url }}" class="card-link">{{ card.action_text }}</a>
+                                                    <a href="{{ card.url }}" class="card-link blue-text">{{ card.action_text }}</a>
                                                 {% endif %}
                                             </div>
                                         {% endif %}

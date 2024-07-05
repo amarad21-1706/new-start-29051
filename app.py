@@ -554,8 +554,8 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
                 ).order_by(Container.container_order).all()
 
                 # Iterate over the containers and print the 'container' field
-                for container in containers:
-                    print('container 2:', container.page, container.content_type, container.content)
+                # for container in containers:
+                #     print('container 2:', container.page, container.content_type, container.content)
             except:
                 print('No container data found 2')
                 containers = None
@@ -589,7 +589,7 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
             }
 
             print('wrapper rendering - unread messages:', unread_notices_count)
-            print('card data', card_data)
+            #print('card data', card_data)
             return render_template(template, **additional_data)
 
         return wrapper
@@ -1762,6 +1762,11 @@ def privacy_policy():
     return render_template('home/privacy_policy.html')
 
 
+@app.route('/test_carousel',  methods=['GET', 'POST'])
+def test_carousel():
+    return render_template('carousel/wrapper_test.html')
+
+
 @app.route('/home/mission',  methods=['GET', 'POST'])
 def mission():
     return render_template('home/mission.html')
@@ -1941,7 +1946,6 @@ def overview_statistics_1():
     ]
 
     print('card data', card_data)
-
     return render_template('base_cards_template.html', containers=card_data, create_card=create_card)
 
 @login_required
