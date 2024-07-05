@@ -483,7 +483,8 @@
                                 <img class="content-block" src="{{ url_for('static', filename='images/' ~ container.content['images']) }}" alt="Image">
                             {% endif %}
                             {% if container.content_type == 'gallery' %}
-                                <video class="content-block" src="{{ url_for('static', filename=container.content['videos']) }}" controls></video>
+                                <video class="content-block" src="{{ url_for('static', filename=container.content['file_name']) }}" controls></video>
+
                             {% endif %}
                             {% if container.content_type == 'chart' %}
                                 <img class="content-block" src="{{ url_for('static', filename=container.content['charts']) }}" alt="Chart">

@@ -82,7 +82,7 @@
     }
 
     h1 {
-        color: gray;
+        color: grey;
     }
 
     p {
@@ -212,10 +212,11 @@
         margin-bottom: 20px;
         transition: transform 0.3s;
         width: 100%;
+        background-color: #ddd; /* Default background color for unselected cards */
     }
 
     .card:hover {
-        background-color: #e6f7ff;
+        background-color: white; /* Background color on hover */
         transform: translateY(-4px);
         box-shadow: 0 9px 17px rgba(0, 0, 0, 0.2);
     }
@@ -225,13 +226,18 @@
     }
 
     .card-title {
-        font-size: 0.9rem;
-        margin-bottom: 5px;
+        font-size: 1.2rem;
+        font-weight: bold;
+        margin-bottom: 10px;
     }
 
-    .card-text {
-        font-size: 0.7rem;
-        line-height: 1;
+    .card-header, .card-footer {
+        font-size: 0.8rem;
+        color: gray;
+    }
+
+    .card-description, .card-content, .card-url {
+        font-size: 0.9rem;
     }
 
     .list-group-item {
@@ -243,9 +249,9 @@
     }
 
     .card-column {
-        flex: 1 1 calc(33.33% - 20px);
-        margin: 10px;
-        box-sizing: border-box;
+        display: grid;
+        grid-template-columns: 1fr 2fr; /* Set left column to 1/3 and right column to 2/3 */
+        grid-gap: 10px;
     }
 
     .card-container {
@@ -256,13 +262,13 @@
 
     @media (max-width: 992px) {
         .card-column {
-            flex: 1 1 calc(50% - 20px);
+            grid-template-columns: 1fr; /* Stack columns on smaller screens */
         }
     }
 
     @media (max-width: 768px) {
         .card-column {
-            flex: 1 1 calc(100% - 20px);
+            grid-template-columns: 1fr; /* Stack columns on smaller screens */
         }
     }
 </style>
@@ -282,39 +288,36 @@
         <div class="container">
             {% for container in containers %}
                 {% if container.content_type == 'card' %}
-                {% if loop.index0 % 3 == 0 %}
-                <div class="card-container">
-                {% endif %}
+                <div class="card">
                     <div class="card-column">
-                        <div class="card">
+                        <div>
                             {% if container.content.get('title') %}
                             <h2 class="card-title">{{ container.content['title'] }}</h2>
                             {% endif %}
 
-                            {% if container.content.get('image') %}
-                            <img class="card-image" src="{{ url_for('static', filename='images/' ~ container.content['image']) }}" alt="Card Image">
+                            {% if container.content.get('header') %}
+                            <p class="card-header">{{ container.content['header'] }}</p>
+                            {% endif %}
+
+                            {% if container.content.get('footer') %}
+                            <p class="card-footer">{{ container.content['footer'] }}</p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            {% if container.content.get('body') %}
+                            <p class="card-content">{{ container.content['body'] }}</p>
                             {% endif %}
 
                             {% if container.content.get('description') %}
                             <p class="card-description">{{ container.content['description'] }}</p>
                             {% endif %}
 
-                            {% if container.content.get('action_type') == 'button' and container.content.get('url') %}
-                                <button class="card-button">{{ container.content.get('action_text') }}</button>
-                                <script>
-                                    document.querySelector('.card-button').addEventListener('click', function() {
-                                        window.location.href = "{{ container.content.get('url') }}";
-                                    });
-                                </script>
-                                {% elif container.content.get('action_type') == 'link' and container.content.get('url') %}
-                                <a href="{{ container.content.get('url') }}" class="card-link" target="_blank">{{ container.content.get('action_text') }}</a>
+                            {% if container.content.get('url') %}
+                            <p class="card-url"><a href="{{ container.content['url'] }}" target="_blank">{{ container.content.get('action_text') }}</a></p>
                             {% endif %}
-
                         </div>
                     </div>
-                {% if loop.index0 % 3 == 2 %}
                 </div>
-                {% endif %}
                 {% else %}
                 <div class="content-block">
                     {% if container.content_type == 'text' %}
@@ -322,7 +325,12 @@
                     {% elif container.content_type == 'documents' %}
                     <a href="{{ url_for('static', filename=container.content['file_path']) }}">Download</a>
                     {% elif container.content_type == 'gallery' %}
-                    <video src="{{ url_for('static', filename=container.content['video_path']) }}" controls></video>
+                        {% set video_path = container.content['file_name'].lstrip('/') %}
+                        <p>Debug: Video Path - {{ video_path }}</p>
+                        <video src="{{ url_for('static', filename=video_path) }}" controls>
+                            Your browser does not support the video tag.
+                        </video>
+
                     {% elif container.content_type == 'chart' %}
                     <img src="{{ url_for('static', filename=container.content['chart_path']) }}" alt="Chart">
                     {% elif container.content_type == 'link' %}

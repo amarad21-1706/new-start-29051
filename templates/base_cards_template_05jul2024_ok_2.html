@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+
+    <title>{% block title %}{% endblock %}</title>
+    {% block head %}{% endblock %}
+</head>
+
+<style>
+    .container {
+        display: grid;
+        grid-template-columns: 1fr;
+        grid-gap: 10px;
+    }
+
+    .content-block {
+        color: #8cc8f9;
+        background-color: rgba(0, 0, 0, 0.6);
+        padding: 10px;
+        border-radius: 5px;
+        text-shadow: 1px 1px 2px #000;
+    }
+
+    @font-face {
+        font-family: 'Geneve';
+        src: url('{{ url_for('static', filename='fonts/Geneve.ttf') }}') format('truetype');
+    }
+
+    body {
+        font-family: 'Geneve', sans-serif;
+        background-image: url("{{ url_for('static', filename='images/background_image.jpg') }}");
+        background-size: cover;
+        background-repeat: no-repeat;
+    }
+
+    .flashes {
+        margin: 0;
+        padding: 0;
+        list-style: none;
+    }
+
+    .flashes li {
+        margin-bottom: 5px;
+    }
+
+    .alert {
+        padding: 8px 12px;
+        font-size: 14px;
+        border-radius: 4px;
+    }
+
+    .alert-success {
+        background-color: #d4edda;
+        color: #155724;
+    }
+
+    .alert-danger {
+        background-color: #f8d7da;
+        color: #721c24;
+    }
+
+    .alert-info {
+        background-color: #cce5ff;
+        color: #004085;
+    }
+
+    .alert-warning {
+        background-color: #fff3cd;
+        color: #856404;
+    }
+
+    .gray-text {
+        color: gray;
+    }
+
+    .white-text {
+        color: white;
+    }
+
+    h1 {
+        color: gray;
+    }
+
+    p {
+        color: green;
+    }
+
+    .main-menu {
+        list-style: none;
+        display: flex;
+        margin: 0;
+        padding: 0;
+        z-index: 1000;
+        position: relative;
+    }
+
+    .navbar-nav > li {
+        position: relative;
+    }
+
+    .navbar-nav > li:not(:last-child) {
+        margin-right: 10px;
+        background-color: lightgray;
+    }
+
+    .submenu {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        background-color: #f8f9fa;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        display: none;
+    }
+
+    .navbar-nav > li:hover > .submenu {
+        display: block;
+    }
+
+    .has-submenu .submenu-indicator::after {
+        content: '\25B6';
+        margin-left: 5px;
+        display: inline-block;
+        transform: rotate(90deg);
+        transition: transform 0.3s ease;
+    }
+
+    .submenu .submenu {
+        display: none;
+        position: absolute;
+        top: 0;
+        left: 100%;
+    }
+
+    .submenu.show {
+        display: block;
+    }
+
+    .has-submenu.active .submenu-indicator::after {
+        transform: rotate(0deg);
+    }
+
+    .sticky-top {
+        position: sticky;
+        top: 0;
+        z-index: 1000;
+    }
+
+    .navbar.shrink {
+        transition: padding 0.3s;
+        padding-top: 10px;
+        padding-bottom: 10px;
+    }
+
+    .left-menu {
+        border-right: 1px solid #dee2e6;
+        float: left;
+        width: 20%;
+        background-color: #f8f9fa;
+        padding: 20px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+
+    .left-menu h3 {
+        margin-top: 0;
+        margin-bottom: 15px;
+    }
+
+    .left-menu ul li {
+        margin-bottom: 10px;
+    }
+
+    .left-menu ul {
+        list-style: none;
+        padding: 0;
+    }
+
+    .sidebar {
+        padding: 20px;
+    }
+
+    #greeting-section {
+        text-align: right;
+    }
+
+    @media (max-width: 768px) {
+        .left-menu {
+            width: 100%;
+            border-right: none;
+            padding-right: 0;
+        }
+    }
+
+    .navbar-logo {
+        height: 50px;
+        position: absolute;
+        right: 20px;
+        top: 0;
+    }
+
+    .card-deadline-approaching {
+        color: brown;
+        background-color: #ffe6e6;
+    }
+
+    .card {
+        border: 1px solid #ddd;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        margin-bottom: 20px;
+        transition: transform 0.3s;
+        width: 100%;
+    }
+
+    .card:hover {
+        background-color: #e6f7ff;
+        transform: translateY(-4px);
+        box-shadow: 0 9px 17px rgba(0, 0, 0, 0.2);
+    }
+
+    .card-body {
+        padding: 10px;
+    }
+
+    .card-title {
+        font-size: 1.2rem;
+        font-weight: bold;
+        margin-bottom: 10px;
+    }
+
+    .card-header, .card-footer {
+        font-size: 0.8rem;
+        color: gray;
+    }
+
+    .card-description, .card-content, .card-url {
+        font-size: 0.9rem;
+    }
+
+    .list-group-item {
+        padding: 3px 5px;
+    }
+
+    .small-font {
+        font-size: 10px;
+    }
+
+    .card-column {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        grid-gap: 10px;
+    }
+
+    .card-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+    }
+
+    @media (max-width: 992px) {
+        .card-column {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .card-column {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<body>
+    <header>
+        <h1>{% block header %}{% endblock %}</h1>
+        <nav>
+            <ul>
+                <li><a href="{{ url_for('home') }}">Home</a></li>
+                <li><a href="{{ url_for('back') }}">Back</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+        {% block content %}
+        <div class="container">
+            {% for container in containers %}
+                {% if container.content_type == 'card' %}
+                <div class="card">
+                    <div class="card-column">
+                        <div>
+                            {% if container.content.get('title') %}
+                            <h2 class="card-title">{{ container.content['title'] }}</h2>
+                            {% endif %}
+
+                            {% if container.content.get('header') %}
+                            <p class="card-header">{{ container.content['header'] }}</p>
+                            {% endif %}
+
+                            {% if container.content.get('footer') %}
+                            <p class="card-footer">{{ container.content['footer'] }}</p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            {% if container.content.get('body') %}
+                            <p class="card-content">{{ container.content['body'] }}</p>
+                            {% endif %}
+
+                            {% if container.content.get('description') %}
+                            <p class="card-description">{{ container.content['description'] }}</p>
+                            {% endif %}
+
+                            {% if container.content.get('url') %}
+                            <p class="card-url"><a href="{{ container.content['url'] }}" target="_blank">{{ container.content.get('action_text') }}</a></p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <div class="content-block">
+                    {% if container.content_type == 'text' %}
+                    {{ container.content['content'] }}
+                    {% elif container.content_type == 'documents' %}
+                    <a href="{{ url_for('static', filename=container.content['file_path']) }}">Download</a>
+                    {% elif container.content_type == 'gallery' %}
+                    <video src="{{ url_for('static', filename=container.content['video_path']) }}" controls></video>
+                    {% elif container.content_type == 'chart' %}
+                    <img src="{{ url_for('static', filename=container.content['chart_path']) }}" alt="Chart">
+                    {% elif container.content_type == 'link' %}
+                    <a href="{{ container.content['url'] }}" target="_blank">{{ container.content['action_text'] }}</a>
+                    {% endif %}
+                </div>
+                {% endif %}
+            {% endfor %}
+        </div>
+        {% endblock %}
+    </main>
+    <footer>
+        <p class="small-font">&copy; 2024 ILM - all rights reserved</p>
+    </footer>
+</body>
+
+</html>

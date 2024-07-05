@@ -3566,6 +3566,8 @@ class ContainerAdmin(ModelView):
     form_create_rules = [
         rules.FieldSet(('page', 'position', 'content_type', 'content'), 'Container Details')
     ]
+    form_columns = ['created_at', 'updated_at', 'image', 'description', 'action_type', 'action_url', 'container_order']
+
 
 # Custom view for surveys open for editing
 class OpenQuestionnairesView(BaseView):
