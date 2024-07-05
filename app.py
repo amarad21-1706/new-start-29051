@@ -653,6 +653,49 @@ def get_cards(company_id):
   return cards
 
 
+def get_containers(company_id):
+    containers = db.session.query(Container).filter_by(company_id=company_id).all()
+    container_data = []
+
+    for container in containers:
+        container_info = {
+            'content_type': container.content_type,
+            'content': container.content
+        }
+        container_data.append(container_info)
+
+    return container_data
+
+
+def get_cards001(company_id):
+    cards = []
+    # Use SQLAlchemy to query the 'container' table
+    containers = db.session.query(Container).filter_by(
+        company_id=company_id
+    ).all()
+
+    for container in containers:
+        content = container.content
+
+        # Check data type before decoding
+        if isinstance(content, str):
+            card_data = json.loads(content)
+        elif isinstance(content, dict):
+            card_data = content  # Already a dictionary
+        else:
+            # Handle unexpected data type (optional)
+            # You can log a warning or raise an exception here
+            print(f"Unexpected data type for container content: {type(content)}")
+            continue  # Skip this container
+
+        # Include content_type in the card data
+        card_data['content_type'] = container.content_type
+        cards.append(card_data)
+
+    return cards
+
+
+
 class MoveDocumentForm(FlaskForm):
     next_step = SelectField('Next Step')
     submit = SubmitField('Move Document')
@@ -966,7 +1009,8 @@ def logout():
 @app.route('/show_cards')
 def show_cards():
   company_id = session['company_id']  # Access company ID from session
-  card_data = get_cards(company_id)
+  #card_data = get_cards(company_id)
+  containers_data = get_containers(company_id)
 
   # optional? Alternative to 'cards' above
   '''
@@ -998,7 +1042,9 @@ def show_cards():
   ]
   '''
 
-  return render_template('base_cards_template.html', cards=card_data, create_card=create_card)
+  print('card data for base_cards_template:', containers_data)
+
+  return render_template('base_cards_template.html', containers=containers_data, create_card=create_card)
 
 
 @login_required

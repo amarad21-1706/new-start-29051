@@ -205,6 +205,13 @@
             }
         }
 
+        .fit-image {
+            width: 100%;
+            height: auto;
+            max-height: 200px; /* Adjust the max-height as needed */
+            object-fit: cover; /* Ensure the image covers the area while maintaining aspect ratio */
+            object-position: center; /* Center the image */
+        }
         .navbar-logo {
             height: 50px;
             position: absolute;
@@ -422,7 +429,7 @@
                                         <div class="card-header">{{ card.title }}</div>
                                         <div class="card-body dark-text">
                                             {% if card.image %}
-                                                <img src="{{ card.image }}" class="card-img-top" alt="Card Image">
+                                                <img src="{{ card.image }}" class="card-img-top fit-image" alt="Card Image" onerror="this.onerror=null; this.src='{{ url_for('static', filename='images/placeholder.png') }}';">
                                             {% endif %}
                                             {% if card.body %}
                                                 <p class="card-text dark-text">{{ card.body }}</p>
@@ -439,9 +446,9 @@
                                         {% if card.action_text %}
                                             <div class="card-footer dark-text">
                                                 {% if card.action_type == 'button' %}
-                                                    <button class="card-button white-text" onclick="window.location.href='{{ card.url }}'">{{ card.action_text }}</button>
+                                                    <button class="card-button" onclick="window.location.href='{{ card.url }}'">{{ card.action_text }}</button>
                                                 {% else %}
-                                                    <a href="{{ card.url }}" class="card-link blue-text">{{ card.action_text }}</a>
+                                                    <a href="{{ card.url }}" class="card-link" target="_blank">{{ card.action_text }}</a>
                                                 {% endif %}
                                             </div>
                                         {% endif %}
@@ -482,8 +489,9 @@
                                 <img class="content-block" src="{{ url_for('static', filename=container.content['charts']) }}" alt="Chart">
                             {% endif %}
                             {% if container.content_type == 'link' %}
-                                <a class="content-block" href="{{ container.content['url'] }}">{{ container.content['title'] }}</a>
+                                <a class="content-block" href="{{ container.content['url'] }}" target="_blank">{{ container.content['title'] }}</a>
                             {% endif %}
+
                         {% endfor %}
                     {% else %}
                         <p>No containers found to display.</p>

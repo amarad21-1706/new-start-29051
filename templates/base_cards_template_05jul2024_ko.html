@@ -11,18 +11,20 @@
 </head>
 
 <style>
+    /* Existing CSS styles */
+
     .container {
         display: grid;
-        grid-template-columns: 1fr;
-        grid-gap: 10px;
+        grid-template-columns: 1fr;  /* Single column for all content */
+        grid-gap: 10px;  /* Add spacing between content blocks */
     }
 
     .content-block {
-        color: #8cc8f9;
-        background-color: rgba(0, 0, 0, 0.6);
+        color: #8cc8f9;  /* Light color for dark background */
+        background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent background */
         padding: 10px;
         border-radius: 5px;
-        text-shadow: 1px 1px 2px #000;
+        text-shadow: 1px 1px 2px #000; /* Text shadow for readability */
     }
 
     @font-face {
@@ -201,50 +203,53 @@
         top: 0;
     }
 
+    /* New CSS for cards */
+
     .card-deadline-approaching {
-        color: brown;
-        background-color: #ffe6e6;
+        color: brown; /* Set text color to brown */
+        background-color: #ffe6e6; /* Very light, pale red */
     }
 
     .card {
-        border: 1px solid #ddd;
-        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-        margin-bottom: 20px;
-        transition: transform 0.3s;
+        border: 1px solid #ddd; /* Add border */
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Add box shadow */
+        margin-bottom: 20px; /* Add margin between cards */
+        transition: transform 0.3s; /* Add transition effect */
         width: 100%;
     }
 
     .card:hover {
-        background-color: #e6f7ff;
-        transform: translateY(-4px);
-        box-shadow: 0 9px 17px rgba(0, 0, 0, 0.2);
+        background-color: #e6f7ff; /* Light blue */
+        transform: translateY(-4px); /* Move the card up slightly on hover */
+        box-shadow: 0 9px 17px rgba(0, 0, 0, 0.2); /* Add larger box shadow on hover */
     }
 
     .card-body {
-        padding: 10px;
+        padding: 10px; /* Reduce padding */
     }
 
     .card-title {
-        font-size: 0.9rem;
-        margin-bottom: 5px;
+        font-size: 0.9rem; /* Reduce font size */
+        margin-bottom: 5px; /* Reduce margin bottom */
     }
 
     .card-text {
-        font-size: 0.7rem;
-        line-height: 1;
+        font-size: 0.7rem; /* Reduce font size */
+        line-height: 1; /* Reduce line height */
     }
 
     .list-group-item {
-        padding: 3px 5px;
+        padding: 3px 5px; /* Reduce padding */
     }
 
     .small-font {
         font-size: 10px;
     }
 
+    /* Adjustments for three cards per row */
     .card-column {
-        flex: 1 1 calc(33.33% - 20px);
-        margin: 10px;
+        flex: 1 1 calc(33.33% - 20px); /* Three columns with space between */
+        margin: 10px; /* Space between cards */
         box-sizing: border-box;
     }
 
@@ -256,13 +261,13 @@
 
     @media (max-width: 992px) {
         .card-column {
-            flex: 1 1 calc(50% - 20px);
+            flex: 1 1 calc(50% - 20px); /* Two columns with space between */
         }
     }
 
     @media (max-width: 768px) {
         .card-column {
-            flex: 1 1 calc(100% - 20px);
+            flex: 1 1 calc(100% - 20px); /* One column */
         }
     }
 </style>
@@ -292,7 +297,7 @@
                             {% endif %}
 
                             {% if container.content.get('image') %}
-                            <img class="card-image" src="{{ url_for('static', filename='images/' ~ container.content['image']) }}" alt="Card Image">
+                            <img class="card-image" src="{{ container.content['image'] }}" alt="Card Image">
                             {% endif %}
 
                             {% if container.content.get('description') %}
@@ -300,16 +305,17 @@
                             {% endif %}
 
                             {% if container.content.get('action_type') == 'button' and container.content.get('url') %}
-                                <button class="card-button">{{ container.content.get('action_text') }}</button>
-                                <script>
-                                    document.querySelector('.card-button').addEventListener('click', function() {
-                                        window.location.href = "{{ container.content.get('url') }}";
-                                    });
-                                </script>
-                                {% elif container.content.get('action_type') == 'link' and container.content.get('url') %}
-                                <a href="{{ container.content.get('url') }}" class="card-link" target="_blank">{{ container.content.get('action_text') }}</a>
+                            <button class="card-button">{{ container.content.get('action_text') }}</button>
+                            <script>
+                                // Optional: Add JavaScript functionality to the button (if needed)
+                                document.querySelector('.card-button').addEventListener('click', function() {
+                                    // Your button click logic here (e.g., handle form submission, AJAX request, etc.)
+                                    window.location.href = "{{ container.content.get('url') }}"; // Redirect to the URL on click
+                                });
+                            </script>
+                            {% elif container.content.get('action_type') == 'link' and container.content.get('url') %}
+                            <a href="{{ container.content.get('url') }}" class="card-link">{{ container.content.get('title') }}</a>
                             {% endif %}
-
                         </div>
                     </div>
                 {% if loop.index0 % 3 == 2 %}
@@ -326,7 +332,7 @@
                     {% elif container.content_type == 'chart' %}
                     <img src="{{ url_for('static', filename=container.content['chart_path']) }}" alt="Chart">
                     {% elif container.content_type == 'link' %}
-                    <a href="{{ container.content['url'] }}" target="_blank">{{ container.content['title'] }}</a>
+                    <a href="{{ container.content['url'] }}">{{ container.content['title'] }}</a>
                     {% endif %}
                 </div>
                 {% endif %}
