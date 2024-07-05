@@ -47,7 +47,7 @@ def create_app(conf=None):
     app.config.from_object(conf)
 
     lun_sk = len(conf.SECRET_KEY)
-    print(f"SECRET_KEY in create_app: [{lun_sk}]")
+    print(f"SECRET_KEY: [{lun_sk}]")
 
     app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
 

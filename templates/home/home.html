@@ -197,11 +197,15 @@
             text-align: right;
         }
 
+        @media (max-width: 992px) {
+            .card-column {
+                grid-template-columns: 1fr; /* Stack columns on smaller screens */
+            }
+        }
+
         @media (max-width: 768px) {
-            .left-menu {
-                width: 100%;
-                border-right: none;
-                padding-right: 0;
+            .card-column {
+                grid-template-columns: 1fr; /* Stack columns on smaller screens */
             }
         }
 
@@ -299,6 +303,13 @@
 
         .card-link:hover {
             color: blue;
+        }
+
+        /* Add CSS for fixed video dimensions */
+        .video-fixed-dimensions {
+            width: 640px; /* Set fixed width */
+            height: 360px; /* Set fixed height */
+            max-width: 100%; /* Ensure responsiveness */
         }
     </style>
 </head>
@@ -483,7 +494,7 @@
                                 <img class="content-block" src="{{ url_for('static', filename='images/' ~ container.content['images']) }}" alt="Image">
                             {% endif %}
                             {% if container.content_type == 'gallery' %}
-                                <video class="content-block" src="{{ url_for('static', filename=container.content['file_name']) }}" controls></video>
+                                <video class="video-fixed-dimensions" src="{{ url_for('static', filename=container.content['file_name']) }}" controls></video>
 
                             {% endif %}
                             {% if container.content_type == 'chart' %}

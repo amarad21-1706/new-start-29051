@@ -271,6 +271,13 @@
             grid-template-columns: 1fr; /* Stack columns on smaller screens */
         }
     }
+    /* Add CSS for fixed video dimensions */
+    .video-fixed-dimensions {
+        width: 640px; /* Set fixed width */
+        height: 360px; /* Set fixed height */
+        max-width: 100%; /* Ensure responsiveness */
+    }
+
 </style>
 
 <body>
@@ -327,7 +334,7 @@
                     {% elif container.content_type == 'gallery' %}
                         {% set video_path = container.content['file_name'].lstrip('/') %}
                         <p>Debug: Video Path - {{ video_path }}</p>
-                        <video src="{{ url_for('static', filename=video_path) }}" controls>
+                        <video class="video-fixed-dimensions" src="{{ url_for('static', filename=video_path) }}" controls>
                             Your browser does not support the video tag.
                         </video>
 
