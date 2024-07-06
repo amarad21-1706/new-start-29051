@@ -23,14 +23,14 @@
     <label for="area">Select Area:</label>
     <select id="area" name="area_id">
         {% for area in areas %}
-            <option value="{{ area.id }}" {% if area.id == selected_area_id %}selected{% endif %}>{{ area.name }}</option>
+            <option value="{{ area.id }}" {% if area.id == selected_area_id %}selected{% endif %}>{{ area.description }}</option>
         {% endfor %}
     </select>
 
     <label for="subarea">Select Subarea:</label>
     <select id="subarea" name="subarea_id">
         {% for subarea in subareas %}
-            <option value="{{ subarea.id }}" {% if subarea.id == selected_subarea_id %}selected{% endif %}>{{ subarea.name }}</option>
+            <option value="{{ subarea.id }}" {% if subarea.id == selected_subarea_id %}selected{% endif %}>{{ subarea.description }}</option>
         {% endfor %}
     </select>
 
