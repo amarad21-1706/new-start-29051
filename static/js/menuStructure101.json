@@ -188,6 +188,15 @@
                     "Employee",
                     "Manager"
                 ]
+            },
+            "Charts and Views 1": {
+                "label": "Control areas - Charts",
+                "url": "/chart_form",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin",
+                    "Authority"
+                ]
             }
         }
     },

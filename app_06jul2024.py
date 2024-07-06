@@ -3834,38 +3834,24 @@ def internal_error(error):
 
 @app.route('/chart_form', methods=['GET', 'POST'])
 def chart_form():
-    areas = Area.query.all()
-    subareas = Subarea.query.all()
-    companies = Company.query.all()
-
-    selected_chart_type = None
-    selected_area_id = None
-    selected_subarea_id = None
-    selected_company_id = None
-    chart_html = None
-
     if request.method == 'POST':
-        selected_chart_type = request.form.get('chart_type')
-        selected_company_id = request.form.get('company_id') if selected_chart_type == '2d' else None
-        selected_area_id = request.form.get('area_id')
-        selected_subarea_id = request.form.get('subarea_id')
+        chart_type = request.form.get('chart_type')
+        company_id = request.form.get('company_id') if chart_type == '2d' else None
+        area_id = request.form.get('area_id')
+        subarea_id = request.form.get('subarea_id')
 
-        try:
-            data = ChartService.query_data(company_id=selected_company_id, area_id=selected_area_id, subarea_id=selected_subarea_id)
-            if selected_chart_type == '2d':
-                chart_html = ChartService.generate_bar_chart(data)
-            elif selected_chart_type == '3d':
-                chart_html = ChartService.generate_3d_chart(data)
-        except Exception as e:
-            chart_html = f"An error occurred: {str(e)}"
+        data = ChartService.query_data(company_id=company_id, area_id=area_id, subarea_id=subarea_id)
 
-        return render_template('charts/chart_form.html', areas=areas, subareas=subareas, companies=companies,
-                               chart_html=chart_html, chart_type=selected_chart_type,
-                               selected_area_id=int(selected_area_id), selected_subarea_id=int(selected_subarea_id),
-                               selected_company_id=int(selected_company_id) if selected_company_id else None)
+        if chart_type == '2d':
+            chart_html = ChartService.generate_bar_chart(data)
+        else:
+            chart_html = ChartService.generate_3d_chart(data)
 
-    return render_template('charts/chart_form.html', areas=areas, subareas=subareas, companies=companies)
+        return render_template('charts/chart_form.html', areas=Area.query.all(), subareas=Subarea.query.all(),
+                               companies=Company.query.all(), chart_html=chart_html, chart_type=chart_type)
 
+    return render_template('charts/chart_form.html', areas=Area.query.all(), subareas=Subarea.query.all(),
+                           companies=Company.query.all())
 
 
 if __name__ == '__main__':
