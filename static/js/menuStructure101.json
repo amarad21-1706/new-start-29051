@@ -212,22 +212,31 @@
                 "protected": true,
                 "allowed_roles": ["Admin", "Employee", "Manager"],
                 "submenus": {
-                    "Area 1": {
+                    "Area 1a": {
                         "label": "Raccolta dati",
                         "url": "/open_admin_app_1",
                         "protected": true,
                         "allowed_roles": [
                             "Admin",
-                            "Authority"
+                            "Authority", "Employee", "Manager"
                         ]
                     },
-                    "Area 2": {
+                    "Area 1b": {
                         "label": "Contingencies",
                         "url": "/redirect_to_survey/1",
                         "protected": true,
                         "allowed_roles": [
                             "Admin",
-                            "Authority"
+                            "Authority", "Employee", "Manager"
+                        ]
+                    },
+                    "Area 1c": {
+                        "label": "Check list",
+                        "url": "/check_list/1",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin",
+                            "Authority", "Employee", "Manager"
                         ]
                     }
                 }
