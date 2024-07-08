@@ -251,11 +251,18 @@ def check_internet():
 
 @app.before_request
 def before_request():
-    if current_user.is_authenticated:
-        session['session_workflows'] = get_session_workflows(db.session, current_user)
-        # print('session w', session['session_workflows'])
-    g.current_user = current_user
+    try:
+        if current_user.is_authenticated:
+            session['session_workflows'] = get_session_workflows(db.session, current_user)
+            # print('session w', session['session_workflows'])
+            g.current_user = current_user
+            session.permanent = True
+            session.modified = True
+    except Exception as e:
+        logging.error(f"Error in before_request: {str(e)}")
+        raise e
     pass
+
 
 bcrypt = Bcrypt(app)
 # Set the login view (replace 'login' with your actual login route)

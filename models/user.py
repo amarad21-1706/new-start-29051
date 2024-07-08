@@ -1,13 +1,16 @@
-
+import json
 from db import db
 from flask_bcrypt import generate_password_hash, check_password_hash
 from flask_security import RoleMixin, UserMixin
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, LargeBinary, Numeric, func
-from sqlalchemy import func
-from sqlalchemy.orm import relationship
-from sqlalchemy import or_, and_, Enum
+from sqlalchemy import (Column, Integer, String, DateTime, ForeignKey,
+                        LargeBinary, Numeric, func, TIMESTAMP, DATE, Sequence)
 
-from sqlalchemy import Column, Integer, String, ForeignKey, TIMESTAMP, DATE, func
+from sqlalchemy import or_, and_, Enum, event
+
+from sqlalchemy.orm import object_session
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import relationship
+from sqlalchemy.orm.session import Session
 
 from wtforms.fields import StringField, TextAreaField, DateTimeField, SelectField, BooleanField, SubmitField
 from datetime import datetime
@@ -22,8 +25,8 @@ from sqlalchemy.dialects.sqlite import JSON # for SQLite
 # OR
 from sqlalchemy.dialects.postgresql import JSONB
 
-import json
 from wtforms.validators import DataRequired, Regexp
+
 
 class CheckboxField(BooleanField):
     def process_formdata(self, valuelist):
@@ -548,7 +551,9 @@ class LegalDocument(db.Model):
 class BaseData(db.Model):
     __tablename__ = 'base_data'
 
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True, unique=True)
+    # id = db.Column(db.Integer, primary_key=True, autoincrement=True, unique=True)
+    id = Column(Integer, Sequence('base_data_id_seq'), primary_key=True, autoincrement=True)
+
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'))
     interval_id = db.Column(db.Integer, db.ForeignKey('interval.interval_id'))
@@ -836,6 +841,50 @@ class BaseData(db.Model):
             })
 
         return results
+
+
+
+class BaseDataInline(db.Model):
+   __tablename__ = 'basedata_inline'
+   id = db.Column(db.Integer, primary_key=True)
+   base_data_id = db.Column(db.Integer, db.ForeignKey('base_data.id'), nullable=False)
+   name = db.Column(db.String(100), nullable=False)
+   type = db.Column(db.String(100), nullable=False)
+   value = db.Column(db.Integer, nullable=False)
+
+   base_data = db.relationship('BaseData', backref=db.backref('n2_names', lazy=True, cascade="all, delete-orphan"))
+
+
+# Define event listeners
+def after_flush_listener(session, flush_context):
+    updates = []
+    for instance in session.new:
+        if isinstance(instance, BaseData):
+            total_value = sum(inline.value for inline in instance.n2_names)
+            updates.append((instance.id, total_value))
+
+    for instance in session.dirty:
+        if isinstance(instance, BaseData):
+            total_value = sum(inline.value for inline in instance.n2_names)
+            updates.append((instance.id, total_value))
+
+    session.info['fi3_updates'] = updates
+
+
+def after_flush_postexec_listener(session, flush_context):
+    if 'fi3_updates' in session.info:
+        for instance_id, total_value in session.info['fi3_updates']:
+            session.execute(
+                BaseData.__table__.update()
+                .where(BaseData.id == instance_id)
+                .values(fi3=total_value)
+            )
+        session.info.pop('fi3_updates', None)
+
+
+# Attach event listeners
+event.listen(Session, 'after_flush', after_flush_listener)
+event.listen(Session, 'after_flush_postexec', after_flush_postexec_listener)
 
 
 class StepBaseData(db.Model):

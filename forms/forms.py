@@ -15,19 +15,33 @@ from datetime import datetime
 from wtforms import IntegerField, DateField, validators
 from flask_wtf import FlaskForm
 from wtforms_sqlalchemy.fields import QuerySelectField
-from models.user import (Users, Company, Subject, Step, Workflow, StepBaseData, WorkflowSteps, BaseData,
+from models.user import (Users, Company, Subject, Step, Workflow, StepBaseData, WorkflowSteps, BaseData, BaseDataInline,
                          Question, Questionnaire, QuestionnaireQuestions, Status, LegalDocument,
                          Area, Subarea, Lexic, Workflow, Interval, Step)
 from flask_admin.model.form import InlineFormAdmin
 from enum import Enum
-
+from flask_admin.form import rules
 from flask_admin.contrib.sqla.ajax import QueryAjaxModelLoader
 from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as _
+
 
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
     password = PasswordField('Password', validators=[DataRequired()])
     submit = SubmitField('Login')
+
+
+# Inline model form for BaseDataInline
+class BaseDataInlineModelForm(InlineFormAdmin):
+    form_columns = ['name', 'type', 'value']
+    form_label = 'Vendor Data'
+    form_extra_fields = {
+        'id': HiddenField('ID')
+    }
+
+    def postprocess_form(self, form_class):
+        form_class.id = HiddenField()
+        return form_class
 
 
 class ForgotPasswordForm(FlaskForm):
