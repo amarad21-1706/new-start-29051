@@ -352,16 +352,18 @@ def role_required(required_role):
     return decorator
 
 
-def roles_required(*roles):
+def roles_required(*required_roles):
     def decorator(func):
         @wraps(func)
-        def decorated_function(*args, **kwargs):
-            # Check if the current user's role is in the list of allowed roles
-            if current_user.role not in roles:
+        def wrapper(*args, **kwargs):
+            # Check if the user has at least one of the required roles
+            if 'user_roles' in session and any(role.lower() in [r.lower() for r in session['user_roles']] for role in required_roles):
+                return func(*args, **kwargs)
+            else:
+                # If the user doesn't have any of the required roles, show a flash message and redirect to the previous page
                 flash("You do not have the necessary permissions to access this page.", "danger")
-                return redirect(url_for('index'))  # Redirect to the appropriate page
-            return func(*args, **kwargs)
-        return decorated_function
+                return redirect(request.referrer or url_for('index'))  # Redirect to the previous page or index if referrer is None
+        return wrapper
     return decorator
 
 def generate_reset_token(email):
@@ -2154,7 +2156,7 @@ def generate_setup_company_questionnaire():
     # Render the template with the report data
     return render_template('generic_report.html', title="Questionnaires and Companies", columns=["Company", "Questionnaire name", "Questionnaire id"], rows=report_data)
 
-@login_required
+#@login_required
 @roles_required('Admin')
 @app.route('/dashboard_setup_workflow_steps')
 def dashboard_setup_workflow_steps():
@@ -2167,7 +2169,7 @@ def dashboard_setup_workflow_steps():
 '''
 report of workflow of documents
 '''
-@login_required
+#@login_required
 @roles_required('Admin')
 @app.route('/dashboard_setup_workflow_base_data')
 def dashboard_setup_workflow_base_data():
@@ -2462,6 +2464,7 @@ def clear_flashed_messages():
 
 
 @app.route('/manage_user_roles', methods=['GET', 'POST'])
+@login_required
 @roles_required('Admin')
 def manage_user_roles():
     form = UserRoleForm()
@@ -2471,53 +2474,52 @@ def manage_user_roles():
     form.user.choices = [(user.id, user.username) for user in Users.query.all()]
     form.role.choices = [(role.id, role.name) for role in Role.query.all()]
 
-    if form.validate_on_submit():
-        if form.cancel.data:
-            # Handle cancel button
-            return redirect(url_for('index'))
-        elif form.add.data:
-            # Handle add button
-            user_id = form.user.data
-            role_id = form.role.data
+    if request.method == 'POST':
+        if form.validate_on_submit():
+            if form.cancel.data:
+                # Handle cancel button
+                return redirect(url_for('index'))
+            elif form.add.data:
+                # Handle add button
+                user_id = form.user.data
+                role_id = form.role.data
 
-            # Check if the user-role association already exists
-            existing_user_role = UserRoles.query.filter_by(user_id=user_id, role_id=role_id).first()
+                # Check if the user-role association already exists
+                existing_user_role = UserRoles.query.filter_by(user_id=user_id, role_id=role_id).first()
 
-            if existing_user_role:
-                message = "User role already exists."
-                #flash('User-role association already exists', 'warning')
+                if existing_user_role:
+                    message = "User role already exists."
+                else:
+                    # Add logic to associate the user with the selected role
+                    new_user_role = UserRoles(user_id=user_id, role_id=role_id)
+                    db.session.add(new_user_role)
+                    db.session.commit()
+                    # Set a success message
+                    message = "User role added successfully."
 
-            else:
-                # Add logic to associate the user with the selected role
-                new_user_role = UserRoles(user_id=user_id, role_id=role_id)
-                db.session.add(new_user_role)
-                db.session.commit()
-                # Set a success message
-                message = "User role added successfully."
-                #flash('User-role association added successfully', 'success')
+            elif form.delete.data:
+                # Handle delete button
+                user_id = form.user.data
+                role_id = form.role.data
 
-        elif form.delete.data:
-            # Handle delete button
-            user_id = form.user.data
-            role_id = form.role.data
+                # Find and delete the user-role association
+                user_role_to_delete = UserRoles.query.filter_by(user_id=user_id, role_id=role_id).first()
 
-            # Find and delete the user-role association
-            user_role_to_delete = UserRoles.query.filter_by(user_id=user_id, role_id=role_id).first()
+                if user_role_to_delete:
+                    db.session.delete(user_role_to_delete)
+                    db.session.commit()
+                    message = "User role deleted successfully."
+                else:
+                    message = "User role not found."
+        else:
+            message = "Form validation failed. Please check your input."
 
-            if user_role_to_delete:
-                db.session.delete(user_role_to_delete)
-                db.session.commit()
-                message = "User role deleted successfully."
-                #flash('User-role association deleted successfully', 'success')        # Set a success message
-
-            else:
-                message = "User role not found."
-                #flash('User-role association not found', 'warning')
-
+    # Handle GET request or any case where form validation failed
     return render_template('manage_user_roles.html', form=form, message=message)
 
 
 @app.route('/manage_workflow_steps', methods=['GET', 'POST'])
+@login_required
 @roles_required('Admin')
 def manage_workflow_steps():
     form = WorkflowStepForm()
@@ -2527,48 +2529,54 @@ def manage_workflow_steps():
     form.workflow.choices = [(workflow.id, workflow.name) for workflow in Workflow.query.all()]
     form.step.choices = [(step.id, step.name) for step in Step.query.all()]
 
-    if form.validate_on_submit():
-        if form.cancel.data:
-            # Handle cancel button
-            return redirect(url_for('index'))
-        elif form.add.data:
-            # Handle add button
-            workflow_id = form.workflow.data
-            step_id = form.step.data
+    if request.method == 'POST':
+        if form.validate_on_submit():
+            if form.cancel.data:
+                # Handle cancel button
+                return redirect(url_for('index'))
+            elif form.add.data:
+                # Handle add button
+                workflow_id = form.workflow.data
+                step_id = form.step.data
 
-            # Check if the workflow-step association already exists
-            existing_workflow_step = WorkflowSteps.query.filter_by(workflow_id=workflow_id, step_id=step_id).first()
+                # Check if the workflow-step association already exists
+                existing_workflow_step = WorkflowSteps.query.filter_by(workflow_id=workflow_id, step_id=step_id).first()
 
-            if existing_workflow_step:
-                message = "Workflow step already exists."
-            else:
-                # Add logic to associate the workflow to the selected step
-                new_workflow_step = WorkflowSteps(workflow_id=workflow_id, step_id=step_id)
-                db.session.add(new_workflow_step)
-                db.session.commit()
-                # Set a success message
-                message = "Workflow step added successfully."
+                if existing_workflow_step:
+                    message = "Workflow step already exists."
+                else:
+                    # Add logic to associate the workflow to the selected step
+                    new_workflow_step = WorkflowSteps(workflow_id=workflow_id, step_id=step_id)
+                    db.session.add(new_workflow_step)
+                    db.session.commit()
+                    # Set a success message
+                    message = "Workflow step added successfully."
 
-        elif form.delete.data:
-            # Handle delete button
-            workflow_id = form.workflow.data
-            step_id = form.step.data
+            elif form.delete.data:
+                # Handle delete button
+                workflow_id = form.workflow.data
+                step_id = form.step.data
 
-            # Find and delete the wkf-step association
-            workflow_step_to_delete = WorkflowSteps.query.filter_by(workflow_id=workflow_id, step_id=step_id).first()
+                # Find and delete the wkf-step association
+                workflow_step_to_delete = WorkflowSteps.query.filter_by(workflow_id=workflow_id, step_id=step_id).first()
 
-            if workflow_step_to_delete:
-                db.session.delete(workflow_step_to_delete)
-                db.session.commit()
-                message = "Workflow step deleted successfully."
-            else:
-                message = "Workflow step not found."
+                if workflow_step_to_delete:
+                    db.session.delete(workflow_step_to_delete)
+                    db.session.commit()
+                    message = "Workflow step deleted successfully."
+                else:
+                    message = "Workflow step not found."
+        else:
+            message = "Form validation failed. Please check your input."
 
+    # Handle GET request or any case where form validation failed
     return render_template('manage_workflow_steps.html', form=form, message=message)
 
 
+
 @app.route('/manage_workflow_base_data', methods=['GET', 'POST'])
-@roles_required('Admin')
+@login_required
+@roles_required('Admin')  # Example roles
 def manage_workflow_base_data():
     form = WorkflowBaseDataForm()
     message = None
@@ -2578,51 +2586,57 @@ def manage_workflow_base_data():
     form.base_data.choices = [(base_data.id, base_data.file_path) for base_data in
                               BaseData.query.filter(BaseData.file_path.isnot(None)).all()]
 
-    if form.validate_on_submit():
-        if form.cancel.data:
-            # Handle cancel button
-            return redirect(url_for('index'))
-        elif form.add.data:
-            # Handle add button
-            workflow_id = form.workflow.data
-            base_data_id = form.base_data.data
-            # Get the selected workflow name
-            selected_workflow = Workflow.query.get(workflow_id)
-            workflow_name = selected_workflow.name
+    if request.method == 'POST':
+        if form.validate_on_submit():
+            if form.cancel.data:
+                # Handle cancel button
+                return redirect(url_for('index'))
+            elif form.add.data:
+                # Handle add button
+                workflow_id = form.workflow.data
+                base_data_id = form.base_data.data
 
-            # Check if the workflow-base_data association already exists
-            existing_workflow_base_data = WorkflowBaseData.query.filter_by(workflow_id=workflow_id, base_data_id=base_data_id).first()
+                # Get the selected workflow name
+                selected_workflow = Workflow.query.get(workflow_id)
+                workflow_name = selected_workflow.name
 
-            if existing_workflow_base_data:
-                message = f"Document link to <{workflow_name}> already exists."
-            else:
-                # Add logic to associate the workflow to the selected base_data
-                new_workflow_base_data = WorkflowBaseData(workflow_id=workflow_id, base_data_id=base_data_id)
-                db.session.add(new_workflow_base_data)
-                db.session.commit()
-                # Set a success message
-                message = f"Document linked to the <{workflow_name}> workflow."
+                # Check if the workflow-base_data association already exists
+                existing_workflow_base_data = WorkflowBaseData.query.filter_by(workflow_id=workflow_id, base_data_id=base_data_id).first()
 
-        elif form.delete.data:
-            # Handle delete button
-            workflow_id = form.workflow.data
-            base_data_id = form.base_data.data
+                if existing_workflow_base_data:
+                    message = f"Document link to <{workflow_name}> already exists."
+                else:
+                    # Add logic to associate the workflow to the selected base_data
+                    new_workflow_base_data = WorkflowBaseData(workflow_id=workflow_id, base_data_id=base_data_id)
+                    db.session.add(new_workflow_base_data)
+                    db.session.commit()
+                    # Set a success message
+                    message = f"Document linked to the <{workflow_name}> workflow."
 
-            # Get the selected workflow name
-            selected_workflow = Workflow.query.get(workflow_id)
-            workflow_name = selected_workflow.name
+            elif form.delete.data:
+                # Handle delete button
+                workflow_id = form.workflow.data
+                base_data_id = form.base_data.data
 
-            # Find and delete the wkf-base_data association
-            workflow_base_data_to_delete = WorkflowBaseData.query.filter_by(workflow_id=workflow_id, base_data_id=base_data_id).first()
+                # Get the selected workflow name
+                selected_workflow = Workflow.query.get(workflow_id)
+                workflow_name = selected_workflow.name
 
-            if workflow_base_data_to_delete:
-                db.session.delete(workflow_base_data_to_delete)
-                db.session.commit()
-                message = f"Document link to <{workflow_name}> deleted successfully."
-            else:
-                message = "Workflow-document link not found."
+                # Find and delete the workflow-base_data association
+                workflow_base_data_to_delete = WorkflowBaseData.query.filter_by(workflow_id=workflow_id, base_data_id=base_data_id).first()
 
+                if workflow_base_data_to_delete:
+                    db.session.delete(workflow_base_data_to_delete)
+                    db.session.commit()
+                    message = f"Document link to <{workflow_name}> deleted successfully."
+                else:
+                    message = "Workflow-document link not found."
+        else:
+            message = "Form validation failed. Please check your input."
+
+    # Handle GET request or any case where form validation failed
     return render_template('manage_workflow_base_data.html', form=form, message=message)
+
 
 
 def extract_filename_and_extension(file_path):

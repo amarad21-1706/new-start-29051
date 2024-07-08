@@ -2864,6 +2864,7 @@ class Tabella27_dataView(ModelView):
         return model
 
 
+
 class MyStringField(StringField):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, default='Enter content here', **kwargs)
@@ -3043,6 +3044,23 @@ class IniziativeDsoDsoDataView(BaseDataViewCommon):
                            'fc2': 'Note', 'file_path': 'Allegati', 'no_action': 'Dichiarazione di assenza di documenti (1)'}
     column_filters = ('subject', 'fc2', 'no_action')
     form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
+
+class DocumentUploadView(BaseDataViewCommon):
+    create_template = 'admin/area_1/create_base_data_8.html'
+    subarea_id = 1
+    area_id = 3
+
+    column_list = ('fi0', 'interval_ord', 'subject', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
+    form_columns = ('fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
+    column_labels = {'fi0': 'Anno di rif.', 'interval_ord': 'Periodo di rif.', 'subject': 'Oggetto',
+                     'number_of_doc': 'Nr. documento', 'date_of_doc': 'Data documento', 'file_path': 'Allegati',
+                     'no_action': 'Conferma assenza doc.', 'fc2': 'Note'}
+    column_descriptions = {'interval_ord': '(inserire il numero; es. 1: primo quadrimestre; 2: secondo ecc.)',
+                           'fi0': 'Inserire anno (es. 2024)', 'subject_id': 'Seleziona oggetto',
+                           'fc2': 'Note', 'file_path': 'Allegati', 'no_action': 'Dichiarazione di assenza di documenti (1)'}
+    column_filters = ('subject', 'fc2', 'no_action')
+    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
+
 
 
 def create_admin_views(app, intervals):
@@ -3480,6 +3498,26 @@ def create_admin_views(app, intervals):
 
         # TODO Associazione di 1->m da non consentire qui (can_create = False) , in quanto già fatta (con controllo IF EXISTS) altrove
         # TODO ***** le risposte ai questionnari *** - answer - sono da STORE non in Answer, ma in BaseData (cu data_type='answer')!
+
+
+        # Area 5: document upload
+
+        # === = ==================================== === ====================================
+        admin_app5 = Admin(app,
+                           name='Area di controllo 3 - Documenti',
+                           url='/open_admin_5',
+                           template_mode='bootstrap4',
+                           endpoint='open_admin_5',
+                           )
+
+        # Add views to admin_app2
+        admin_app5.add_view(
+            DocumentUploadView(model=BaseData, session=db.session, name='Documents Upload', intervals=intervals, area_id=3,
+                                subarea_id=1, endpoint='upload_documenti_view'))
+
+
+        # EOF app5
+        # === = ==================================== === ====================================
 
         # 10-th Flask-Admin instance
         # ===========================================================

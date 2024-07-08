@@ -250,7 +250,7 @@
             },
             "Area di controllo 3": {
                 "label": "Area 3",
-                "url": "/open_admin_app_3",
+                "url": "/open_admin_5",
                 "protected": true,
                 "allowed_roles": ["Admin", "Employee", "Manager"]
             },
@@ -485,7 +485,7 @@
                         ]
                     },
                     "Area 3 - test": {
-                        "label": "Area 3 - Workflows",
+                        "label": "Workflows Area",
                         "url": "/open_admin_3",
                         "protected": true,
                         "allowed_roles": [
