@@ -1,6 +1,7 @@
 # admin_views.py
 # You can continue defining other ModelViews for your models
 from flask_admin import Admin
+
 from flask_admin.model import typefmt
 from flask_admin.model.fields import InlineFormField, InlineFieldList
 from wtforms.fields import StringField, TextAreaField, DateTimeField, SelectField, BooleanField, SubmitField
@@ -56,6 +57,8 @@ from flask_admin.form import FileUploadField
 
 from wtforms import (SelectField, BooleanField, ValidationError, EmailField)
 from config.config import Config, check_status, check_status_limited, check_status_extended
+
+from flask_login import login_required, LoginManager
 
 config = Config()
 
@@ -3211,9 +3214,34 @@ class AttiDataView(BaseDataViewCommon):
     form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
 
 
+class ContingenciesDataView(ModelView):
+    # Inherit from ModelView
+    def __init__(self, intervals, area_id, subarea_id, **kwargs):
+        super().__init__(**kwargs)  # Pass other arguments to ModelView
+        self.intervals = intervals
+        self.area_id = area_id
+        self.subarea_id = subarea_id
 
-class ContingenciesDataView(BaseDataViewCommon):
-    create_template = 'admin/area_1/create_base_data_3.html'
+    def get_show_survey_url(self, context):
+        # Extract relevant data for your route (e.g., questionnaire ID)
+        questionnaire_id = context.model.id  # Assuming 'id' field stores the ID
+        return url_for('your_desired_route', questionnaire_id=questionnaire_id)
+
+    def scaffold_list_columns(self):
+        return ['column1', 'column2', 'show_survey_link']  # Add custom column
+
+    def generate_link(self, context):
+        url = self.get_show_survey_url(context)
+        return Markup('<a href="' + url + '">View Survey</a>')  # Generate HTML link
+
+
+
+
+class ContingenciesDataView222(BaseDataViewCommon):
+
+    '''
+
+    'create_template = 'admin/area_1/create_base_data_3.html'
     subarea_id = 3
     area_id = 1
 
@@ -3227,6 +3255,14 @@ class ContingenciesDataView(BaseDataViewCommon):
                            'fc2': 'Note', 'file_path': 'Allegati', 'no_action': 'Dichiarazione di assenza di documenti (1)'}
     column_filters = ('subject', 'fc2', 'no_action')
     form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
+
+    '''
+
+    @expose('/')
+    def index(self):
+        redirect_url = url_for('redirect_to_survey', questionnaire_id=1)
+        print(f"Generated redirect URL: {redirect_url}")  # Print for debugging
+        return redirect(redirect_url)
 
 
 class ContenziosiDataView(BaseDataViewCommon):
@@ -3299,10 +3335,25 @@ class IniziativeDsoDsoDataView(BaseDataViewCommon):
     form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
 
 
-
 def create_admin_views(app, intervals):
 
     with app.app_context():
+        # Custom admin view
+        # TODO insert custom Contingencies route here
+        '''
+        class CustomContingenciesView(BaseView):
+            @expose('/')
+            @login_required
+            def index(self):
+                # Redirect to /show_survey/1
+                return redirect(url_for('show_survey', questionnaire_id=1))
+        '''
+
+        class CustomRedirectView(BaseView):
+            @expose('/')
+            @login_required
+            def index(self):
+                return redirect(url_for('redirect_to_survey', questionnaire_id=1))
 
         class CustomAdminIndexView1(BaseData):
             default_view = 'flussi_data_view'  # Or any other valid view name
@@ -3311,14 +3362,6 @@ def create_admin_views(app, intervals):
                 # Customize the index view here for the first custom index view
                 return self.render('open_admin.html')
                 # return 'Hello From first admin :{}.'.format(self)
-
-        # Define the second custom index view class
-        class CustomAdminIndexView2(BaseData):
-            default_view = 'view_struttura_offerta'  # Or the intended first view for "Area 2"
-
-            def index(self):
-                # Customize the index view here for the second custom index view
-                return self.render('open_admin_2.html')  # Adjust template path if needed
 
         # Define custom form for CustomAdminIndexView1
         class CustomForm1(FlaskForm):  # was BaseForm
@@ -3378,15 +3421,6 @@ def create_admin_views(app, intervals):
                 super().__init__(*args, **kwargs)
                 self.form = CustomForm2
 
-            '''
-            def on_model_change(self, form, model, is_created):
-                try:
-                    super().on_model_change(form, model, is_created)
-                except ValidationError as e:
-                    flash(str(e) + '2', 'error')
-                    raise e  # Reraise the exception if you want Flask-Admin to handle it further or stop the execution
-            '''
-
         class CustomTabella23DataView(Tabella23_dataView):
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
@@ -3417,22 +3451,41 @@ def create_admin_views(app, intervals):
 
         # First Flask-Admin instance with the first custom index view
         admin_app1 = Admin(app,
-                           name='Area di controllo 1 - Documenti e atti',
-                           url='/open_admin',
-                           template_mode='bootstrap3',
-                           endpoint='open_admin',
-                           )
+                       name='Area di controllo 1 - Documenti e atti',
+                       url='/open_admin',
+                       template_mode='bootstrap3',
+                       endpoint='open_admin',
+        )
 
         admin_app1.add_view(CustomFlussiDataView(name='Pre-complaint flows', session=db.session, model=BaseData,
                                                  intervals=intervals, endpoint='flussi_data_view'))
 
         # Example of adding the specific view
         admin_app1.add_view(
-            AttiDataView(model=BaseData, session=db.session, name='Pre-complaint docs', intervals=intervals, area_id=1,
+            AttiDataView(model=BaseData, session=db.session, name='Complaint documents', intervals=intervals, area_id=1,
                          subarea_id=2, endpoint='atti_data_view'))
+        #admin_app1.add_view(
+        #    ContingenciesDataView(model=BaseData, session=db.session, name='Contingencies', intervals=intervals, area_id=1,
+        #                           subarea_id=3, endpoint='show_survey/1'))
+
+        '''
         admin_app1.add_view(
-            ContingenciesDataView(model=BaseData, session=db.session, name='Contingencies', intervals=intervals, area_id=1,
-                                  subarea_id=3, endpoint='contingencies_data_view'))
+            ContingenciesDataView(model=BaseData, session=db.session, name='Contingencies', intervals=intervals,
+                                  area_id=1,
+                                  subarea_id=3, endpoint='show_survey')
+        )
+        '''
+
+        # Register the custom redirect view for Contingencies without 'open_admin' prefix in endpoint
+        # admin_app1.add_view(CustomRedirectView(name='Contingencies', endpoint='show_survey_view'))
+        #
+        # Register the custom view for Contingencies with 'open_admin' prefix in endpoint
+        # Register the custom redirect view for Contingencies
+        # admin_app1.add_view(CustomRedirectView(name='Contingencies', endpoint='show_survey/1'))
+
+        # Register the atypical custom view (questionnaire, not dat view)
+        # admin_app1.add_view(CustomContingenciesView(name='Contingencies', endpoint='contingencies_data_view'))
+
         admin_app1.add_view(
             ContenziosiDataView(model=BaseData, session=db.session, name='Disputes', intervals=intervals, area_id=1,
                                 subarea_id=4, endpoint='contenziosi_data_view'))

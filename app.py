@@ -1148,6 +1148,7 @@ def user_documents_d3():
     return jsonify(documents_data)
 
 
+
 @login_required
 @app.route('/custom_action/', methods=['GET', 'POST'])
 def custom_action():
@@ -3287,7 +3288,12 @@ def merge_answer_fields(base_fields_json, answer_data_json):
     return json.dumps(merged_fields)  # Return as JSON string if needed for consistency
 
 
-@login_required
+@app.route('/redirect_to_survey/<int:questionnaire_id>')
+def redirect_to_survey(questionnaire_id):
+    return redirect(url_for('show_survey', questionnaire_id=questionnaire_id))
+
+
+# @login_required
 @app.route('/show_survey/<int:questionnaire_id>', methods=['GET', 'POST'])
 def show_survey(questionnaire_id):
     form = BaseSurveyForm()

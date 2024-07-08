@@ -208,10 +208,31 @@
         "submenus": {
             "Area di controllo 1": {
                 "label": "Area 1",
-                "url": "/open_admin_app_1",
+                "url": "/area_di_controllo_1",
                 "protected": true,
-                "allowed_roles": ["Admin", "Employee", "Manager"]
+                "allowed_roles": ["Admin", "Employee", "Manager"],
+                "submenus": {
+                    "Area 1": {
+                        "label": "Raccolta dati",
+                        "url": "/open_admin_app_1",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin",
+                            "Authority"
+                        ]
+                    },
+                    "Area 2": {
+                        "label": "Contingencies",
+                        "url": "/redirect_to_survey/1",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin",
+                            "Authority"
+                        ]
+                    }
+                }
             },
+
             "Area di controllo 2": {
                 "label": "Area 2",
                 "url": "/open_admin_app_2",
