@@ -1,5 +1,6 @@
 # admin_views.py
 # You can continue defining other ModelViews for your models
+from db import db
 from flask_admin import Admin
 from flask_admin.form.rules import FieldSet
 from flask_admin.model import typefmt
@@ -17,7 +18,7 @@ from flask_admin import BaseView
 from flask_admin.base import expose
 from wtforms import IntegerField, FileField
 from datetime import datetime
-from db import db
+
 from sqlalchemy import and_
 from flask_wtf import FlaskForm
 from flask_admin.form import rules
@@ -29,6 +30,8 @@ from flask.views import MethodView
 from flask_admin.contrib.sqla import ModelView
 from sqlalchemy import distinct
 from copy import deepcopy
+
+from sqlalchemy import text
 
 from config.config import (get_if_active, get_subarea_name, get_current_interval, get_subarea_interval_type,
 create_audit_log, remove_duplicates, create_notification)
@@ -59,6 +62,11 @@ from wtforms import (SelectField, BooleanField, ValidationError, EmailField)
 from config.config import Config, check_status, check_status_limited, check_status_extended
 
 from flask_login import login_required, LoginManager
+
+from flask import flash, redirect, url_for
+from flask_admin.contrib.sqla import ModelView
+from sqlalchemy.exc import IntegrityError
+import uuid
 
 config = Config()
 
@@ -3471,6 +3479,7 @@ def create_admin_views(app, intervals):
                                                             endpoint='new_documents'))
         admin_app3.add_view(DocumentsBaseDataDetails(name='Documents Workflow Management', model=StepBaseData, session=db.session))
 
+
         # Fourth Flask-Admin instance
         # ===========================================================
         # admin_app4 = Admin(app, name='Setup', url = '/open_setup_basic', template_mode='bootstrap4', endpoint = 'setup_basic')
@@ -3481,13 +3490,13 @@ def create_admin_views(app, intervals):
         admin_app4.add_view(CompanyView(Company, db.session, name='Companies', endpoint='companies_data_view'))
         admin_app4.add_view(UsersView(Users, db.session, name='Users', endpoint='users_data_view'))
         admin_app4.add_view(
-            QuestionnaireView(Questionnaire, db.session, name='Questionnaires', endpoint='questionnaires_data_view'))
+            QuestionnaireModelView(Questionnaire, db.session, name='Questionnaires', endpoint='questionnaires_data_view'))
         admin_app4.add_view(QuestionView(Question, db.session, name='Questions', endpoint='questions_data_view'))
         admin_app4.add_view(StatusView(Status, db.session, name='Status', endpoint='status_data_view'))
-        admin_app4.add_view(LexicView(Lexic, db.session, name='Dictionary', endpoint='dictionary_data_view'))
-        admin_app4.add_view(AreaView(Area, db.session, name='Areas', endpoint='areas_data_view'))
-        admin_app4.add_view(SubareaView(Subarea, db.session, name='Subareas', endpoint='subareas_data_view'))
-        admin_app4.add_view(SubjectView(Subject, db.session, name='Subjects', endpoint='subjects_data_view'))
+        admin_app4.add_view(LexicModelView(Lexic, db.session, name='Dictionary', endpoint='dictionary_data_view'))
+        admin_app4.add_view(AreaModelView(Area, db.session, name='Areas', endpoint='areas_data_view'))
+        admin_app4.add_view(SubareaModelView(Subarea, db.session, name='Subareas', endpoint='subareas_data_view'))
+        admin_app4.add_view(SubjectModelView(Subject, db.session, name='Subjects', endpoint='subjects_data_view'))
         admin_app4.add_view(WorkflowView(Workflow, db.session, name='Workflows', endpoint='workflows_data_view'))
         admin_app4.add_view(StepView(Step, db.session, name='Steps', endpoint='steps_data_view'))
         admin_app4.add_view(AuditLogView(AuditLog, db.session, name='Audit Log', endpoint='audit_data_view'))
@@ -3530,7 +3539,7 @@ def create_admin_views(app, intervals):
         admin_app10.add_view(StepQuestionnaireView(StepQuestionnaire, db.session,
                                                    name='A. Questionnaires & Surveys (Q&S) Workflow',
                                                    endpoint='stepquestionnaire_questionnaire_view'))
-        admin_app10.add_view(QuestionnaireView(Questionnaire, db.session, name='B.1 Q&S Repository',
+        admin_app10.add_view(QuestionnaireModelView(Questionnaire, db.session, name='B.1 Q&S Repository',
                                                endpoint='questionnaire_questionnaire_view'))
         admin_app10.add_view(QuestionView(Question, db.session, name='B.2 Questions Repository',
                                           endpoint='question_questionnaire_view'))
@@ -3915,8 +3924,6 @@ class CompanyView(CompanyForm):
     column_searchable_list = ['name', 'description', 'address', 'phone_number', 'email']
     column_filters = ['name', 'address', 'phone_number', 'email']
 
-class QuestionnaireView(QuestionnaireForm):
-    pass  # No customizations needed for QuestionnaireView
 
 class StepQuestionnaireView(StepQuestionnaireForm):
     can_create = True
@@ -3949,18 +3956,17 @@ class SubareaView(SubareaForm):
     pass  # No customizations needed for SubareaView
 
 class SubjectView(SubjectForm):
-    pass  # No customizations needed for SubjectView
-
+    pass  # No customizations needed
 
 class LegalDocumentView(LegalDocumentForm):
     pass  # No customizations needed for LegalDocumentView
 
 
 class AuditLogView(AuditLogForm):
-    pass  # No customizations needed for SubjectView
+    pass  # No customizations needed for
 
 class TicketView(TicketForm):
-    pass  # No customizations needed for SubjectView
+    pass  # No customizations needed for
 
 
 class PostView(PostForm):
@@ -3980,3 +3986,241 @@ class QuestionnaireQuestionsView(QuestionnaireQuestionsForm):
 
 class QuestionnaireCompaniesView(QuestionnaireCompaniesForm):
     pass
+
+
+class QuestionnaireModelView(ModelView):
+    form_columns = ['questionnaire_id', 'questionnaire_type', 'name', 'interval', 'deadline_date', 'status_id', 'created_on', 'headers']
+
+    def on_model_change(self, form, model, is_created):
+        if is_created:
+            # Ensure questionnaire_id is unique
+            if not model.questionnaire_id:
+                model.questionnaire_id = str(uuid.uuid4())
+            else:
+                existing_questionnaire = Questionnaire.query.filter_by(questionnaire_id=model.questionnaire_id).first()
+                if existing_questionnaire:
+                    raise ValueError(f"Questionnaire with ID {model.questionnaire_id} already exists.")
+
+    def create_model(self, form):
+        try:
+            model = self.model()
+            form.populate_obj(model)
+            self.on_model_change(form, model, True)
+            self.session.add(model)
+            self.session.commit()
+            return model
+        except IntegrityError as e:
+            if not self.handle_view_exception(e):
+                raise
+            flash('Failed to create record. {}'.format(str(e)), 'error')
+            self.session.rollback()
+            return False
+        except ValueError as e:
+            flash('Failed to create record. {}'.format(str(e)), 'error')
+            self.session.rollback()
+            return False
+
+    def update_model(self, form, model):
+        try:
+            form.populate_obj(model)
+            self.on_model_change(form, model, False)
+            self.session.commit()
+            return True
+        except IntegrityError as e:
+            if not self.handle_view_exception(e):
+                raise
+            flash('Failed to update record. {}'.format(str(e)), 'error')
+            self.session.rollback()
+            return False
+        except ValueError as e:
+            flash('Failed to update record. {}'.format(str(e)), 'error')
+            self.session.rollback()
+            return False
+
+
+class LexicModelView(ModelView):
+    form_columns = ['category', 'name']
+
+    def create_model(self, form):
+        print('Starting create_model method for Lexic')  # Debugging print
+        try:
+            model = self.model()  # Instantiate the model without arguments
+            print(f'Empty Lexic model created: {model}')  # Debugging print
+
+            form.populate_obj(model)
+            print(f'Lexic model populated: {model}')  # Debugging print
+
+            self.session.add(model)
+            print('Lexic model added to session')  # Debugging print
+
+            self.session.commit()
+            print('Lexic session committed')  # Debugging print
+
+            return model
+        except IntegrityError as e:
+            if not self.handle_view_exception(e):
+                raise
+            flash('Failed to create record. {}'.format(str(e)), 'error')
+            self.session.rollback()
+            return False
+        except Exception as e:
+            flash('Failed to create record. {}'.format(str(e)), 'error')
+            self.session.rollback()
+            return False
+
+class AreaModelView(ModelView):
+    form_columns = ['name', 'description']
+
+    def create_model(self, form):
+        print('Starting create_model method for Area')  # Debugging print
+        try:
+            # Print the current sequence value
+            current_sequence_value = self.session.execute(text("SELECT last_value FROM area_id_seq")).fetchone()
+            print(f'Current sequence value: {current_sequence_value[0]}')
+
+            model = self.model()  # Instantiate the model without arguments
+            print(f'Empty Area model created: {model}')  # Debugging print
+
+            form.populate_obj(model)
+            print(f'Area model populated: {model}')  # Debugging print
+
+            self.session.add(model)
+            print('Area model added to session')  # Debugging print
+
+            self.session.commit()
+            print('Area session committed')  # Debugging print
+
+            return model
+        except IntegrityError as e:
+            if not self.handle_view_exception(e):
+                raise
+            flash('Failed to create record. {}'.format(str(e)), 'error')
+            self.session.rollback()
+            return False
+        except Exception as e:
+            flash('Failed to create record. {}'.format(str(e)), 'error')
+            self.session.rollback()
+            return False
+
+
+class SubareaModelView(ModelView):
+    form_columns = ['name', 'description', 'data_type']
+
+    def create_model(self, form):
+        print('Starting create_model method for Subarea')  # Debugging print
+        try:
+            # Print the current sequence value
+            current_sequence_value = self.session.execute(text("SELECT last_value FROM subarea_id_seq")).fetchone()
+            print(f'Current sequence value: {current_sequence_value[0]}')
+
+            model = self.model()  # Instantiate the model without arguments
+            print(f'Empty Subarea model created: {model}')  # Debugging print
+
+            form.populate_obj(model)
+            print(f'Subarea model populated: {model}')  # Debugging print
+
+            self.session.add(model)
+            print('Subarea model added to session')  # Debugging print
+
+            self.session.commit()
+            print('Subarea session committed')  # Debugging print
+
+            return model
+        except IntegrityError as e:
+            if not self.handle_view_exception(e):
+                raise
+            flash('Failed to create record. {}'.format(str(e)), 'error')
+            self.session.rollback()
+            return False
+        except Exception as e:
+            flash('Failed to create record. {}'.format(str(e)), 'error')
+            self.session.rollback()
+            return False
+
+
+class SubjectModelView(ModelView):
+    form_columns = ['name', 'tier_1', 'tier_2', 'tier_3']
+
+    def create_model(self, form):
+        print('Starting create_model method')  # Debugging print
+        try:
+            model = self.model()  # Instantiate the model without arguments
+            print(f'Empty model created: {model}')  # Debugging print
+
+            form.populate_obj(model)
+            '''
+            print(f'Model populated: {model}')  # Debugging print
+
+            # Add specific debug prints for each field
+            print(f'ID: {model.id}')
+            print(f'Name: {model.name}')
+            print(f'Tier 1: {model.tier_1}')
+            print(f'Tier 2: {model.tier_2}')
+            print(f'Tier 3: {model.tier_3}')
+            '''
+
+            self.session.add(model)
+            # print('Model added to session')  # Debugging print
+
+            self.session.commit()
+            # print('Session committed')  # Debugging print
+
+            return model
+        except IntegrityError as e:
+            if not self.handle_view_exception(e):
+                raise
+            flash('Failed to create record. {}'.format(str(e)), 'error')
+            self.session.rollback()
+            return False
+        except Exception as e:
+            flash('Failed to create record. {}'.format(str(e)), 'error')
+            self.session.rollback()
+            return False
+
+
+class ContainerModelView(ModelView):
+    form_rules = [
+        'page',
+        'position',
+        'content_type',
+        'content',
+        'company_id',
+        'role_id',
+        'area_id',
+        'image',
+        'description',
+        'action_type',
+        'action_url',
+        'container_order',
+        rules.Header('Timestamps'),
+        'created_at',
+        'updated_at'
+    ]
+
+    def create_model(self, form):
+        print('Starting create_model method for Container')  # Debugging print
+        try:
+            model = self.model()  # Instantiate the model without arguments
+            print(f'Empty Container model created: {model}')  # Debugging print
+
+            form.populate_obj(model)
+            print(f'Container model populated: {model}')  # Debugging print
+
+            self.session.add(model)
+            print('Container model added to session')  # Debugging print
+
+            self.session.commit()
+            print('Container session committed')  # Debugging print
+
+            return model
+        except IntegrityError as e:
+            if not self.handle_view_exception(e):
+                raise
+            flash('Failed to create record. {}'.format(str(e)), 'error')
+            self.session.rollback()
+            return False
+        except Exception as e:
+            flash('Failed to create record. {}'.format(str(e)), 'error')
+            self.session.rollback()
+            return False
+

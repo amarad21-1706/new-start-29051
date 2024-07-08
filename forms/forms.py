@@ -1,5 +1,6 @@
 
 # Create a dynamic form based on questions
+from db import db
 
 from datetime import datetime
 from wtforms import (DecimalField, StringField, BooleanField, FloatField, FileField, DateField,
@@ -39,11 +40,22 @@ class BaseDataInlineModelForm(InlineFormAdmin):
         'id': HiddenField('ID')
     }
 
-    form_edit_rules = ('id', FieldSet(('name', 'type', 'value'), 'Vendor Data'))
+    form_edit_rules = ('id', rules.FieldSet(('name', 'type', 'value'), 'Vendor Data'))
 
     def postprocess_form(self, form_class):
         form_class.id = HiddenField()
+
+        # Query the Subject table
+        subjects = db.session.query(Subject).filter_by(tier_1='Oggetto').order_by(Subject.tier_2, Subject.tier_3).all()
+
+        # Create choices for the SelectField
+        subject_choices = [(subject.id, f"{subject.tier_2} {subject.tier_3} - {subject.name}") for subject in subjects]
+
+        # Add the SelectField to the form_class
+        form_class.type = SelectField('Type', choices=subject_choices)
+
         return form_class
+
 
 class ForgotPasswordForm(FlaskForm):
     email = EmailField(_('Email Address'), validators=[DataRequired(), Email()])
