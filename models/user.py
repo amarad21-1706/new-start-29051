@@ -623,6 +623,10 @@ class BaseData(db.Model):
     # Define relationship with StepBaseData
     steps_relationship = relationship("StepBaseData", back_populates="base_data")
 
+    # Relationship with BaseDataInline
+    # base_data_inlines = db.relationship('BaseDataInline', backref='base_data', lazy=True, cascade="all, delete-orphan")
+    base_data_inlines = db.relationship('BaseDataInline', backref='parent_base_data', lazy=True, cascade="all, delete-orphan")
+
     def __repr__(self):
         return f'<BaseData {self.id}>'
 
@@ -852,39 +856,30 @@ class BaseDataInline(db.Model):
    type = db.Column(db.String(100), nullable=False)
    value = db.Column(db.Integer, nullable=False)
 
-   base_data = db.relationship('BaseData', backref=db.backref('n2_names', lazy=True, cascade="all, delete-orphan"))
+   # Relationship with BaseData
+   #parent_base_data = db.relationship('BaseData', backref=db.backref('base_data_inlines', lazy=True, cascade="all, delete-orphan"))
 
-
-# Define event listeners
 def after_flush_listener(session, flush_context):
     updates = []
     for instance in session.new:
         if isinstance(instance, BaseData):
-            total_value = sum(inline.value for inline in instance.n2_names)
+            total_value = sum(inline.value for inline in instance.base_data_inlines)
             updates.append((instance.id, total_value))
 
     for instance in session.dirty:
         if isinstance(instance, BaseData):
-            total_value = sum(inline.value for inline in instance.n2_names)
+            total_value = sum(inline.value for inline in instance.base_data_inlines)
             updates.append((instance.id, total_value))
 
     session.info['fi3_updates'] = updates
 
-
 def after_flush_postexec_listener(session, flush_context):
-    if 'fi3_updates' in session.info:
-        for instance_id, total_value in session.info['fi3_updates']:
-            session.execute(
-                BaseData.__table__.update()
-                .where(BaseData.id == instance_id)
-                .values(fi3=total_value)
-            )
-        session.info.pop('fi3_updates', None)
+    updates = session.info.get('fi3_updates', [])
+    for base_data_id, total_value in updates:
+        session.query(BaseData).filter(BaseData.id == base_data_id).update({'fi3': total_value})
 
-
-# Attach event listeners
-event.listen(Session, 'after_flush', after_flush_listener)
-event.listen(Session, 'after_flush_postexec', after_flush_postexec_listener)
+event.listen(db.session, 'after_flush', after_flush_listener)
+event.listen(db.session, 'after_flush_postexec', after_flush_postexec_listener)
 
 
 class StepBaseData(db.Model):

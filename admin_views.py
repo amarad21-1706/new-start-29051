@@ -1,7 +1,7 @@
 # admin_views.py
 # You can continue defining other ModelViews for your models
 from flask_admin import Admin
-
+from flask_admin.form.rules import FieldSet
 from flask_admin.model import typefmt
 from flask_admin.model.fields import InlineFormField, InlineFieldList
 from wtforms.fields import StringField, TextAreaField, DateTimeField, SelectField, BooleanField, SubmitField
@@ -3097,6 +3097,7 @@ def create_admin_views(app, intervals):
             number_of_doc = StringField('number_of_doc')
             date_of_doc = DateField('date_of_doc')
 
+
         class CustomFlussiDataView(ModelView):
             create_template = 'admin/area_1/create_base_data_1.html'
             subarea_id = 1
@@ -3121,7 +3122,7 @@ def create_admin_views(app, intervals):
                 'fi1': 'Totale',
                 'fi2': 'IVI',
                 'fi3': 'Altri',
-                'fc1': 'Nome venditore'
+                'fc1': 'Notes'
             }
 
             column_descriptions = {
@@ -3130,13 +3131,28 @@ def create_admin_views(app, intervals):
                 'fi1': 'Inserisci numero totale di casi registrati',
                 'fi2': 'di cui IVI',
                 'fi3': 'altri (IVI+Altri=Totale)',
-                'fc1': "Nome dell'utente venditore"
+                'fc1': 'Notes'
             }
 
             column_default_sort = ('subject_id', True)
             column_searchable_list = ['lexic.name', 'subject.name', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fc1']
             column_filters = ['lexic.name', 'subject.name', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fc1']
             form_excluded_columns = ['user_id', 'company_id', 'status_id', 'created_by', 'created_on', 'updated_on']
+
+            # Customize the order of fields in the create form
+            form_create_rules = [
+                'lexic_id',
+                'subject_id',
+                'fi0',
+                'interval_ord',
+                'fi1',
+                'fi2',
+                'fi3',
+                'fc1',
+                FieldSet(('base_data_inlines',), 'Vendor Data')  # Include the inline form
+            ]
+
+            # rules.FieldSet(['inline_models'], 'Vendor Data')  # Include the inline model here
 
             def __init__(self, *args, **kwargs):
                 self.intervals = kwargs.pop('intervals', None)
@@ -3148,6 +3164,20 @@ def create_admin_views(app, intervals):
                 current_year = datetime.now().year
                 year_choices = [(str(year), str(year)) for year in range(current_year - 5, current_year + 2)]
                 default_year = str(current_year)
+
+                form_class.lexic_id = SelectField(
+                    'Tipo pre-complaint',
+                    validators=[InputRequired()],
+                    coerce=int,
+                    choices=[(lexic.id, lexic.name) for lexic in Lexic.query.filter_by(category="Precomplaint").all()]
+                )
+
+                form_class.subject_id = SelectField(
+                    'Oggetto',
+                    validators=[InputRequired()],
+                    coerce=int,
+                    choices=[(subject.id, subject.name) for subject in Subject.query.filter_by(tier_1="Utenti").all()]
+                )
 
                 form_class.fi0 = SelectField(
                     'Anno',
@@ -3168,20 +3198,6 @@ def create_admin_views(app, intervals):
                     coerce=int,
                     choices=interval_choices,
                     default=first_element
-                )
-
-                form_class.subject_id = SelectField(
-                    'Oggetto',
-                    validators=[InputRequired()],
-                    coerce=int,
-                    choices=[(subject.id, subject.name) for subject in Subject.query.filter_by(tier_1="Utenti").all()]
-                )
-
-                form_class.lexic_id = SelectField(
-                    'Tipo pre-complaint',
-                    validators=[InputRequired()],
-                    coerce=int,
-                    choices=[(lexic.id, lexic.name) for lexic in Lexic.query.filter_by(category="Precomplaint").all()]
                 )
 
                 return form_class
@@ -3256,7 +3272,7 @@ def create_admin_views(app, intervals):
                     result, message = check_status_extended(is_created, company_id, lexic_id, subject_id,
                                                             legal_document_id, interval_ord, interval_id, year_id,
                                                             area_id, subarea_id, form.fi1.data, None, None, None, None,
-                                                            None, form.fc1.data, None, None, datetime.today(),
+                                                            None, None, None, None, datetime.today(),
                                                             db.session)
 
                 if result == False:
@@ -3285,6 +3301,7 @@ def create_admin_views(app, intervals):
                 self.session.commit()
 
                 return model
+
         # =================================================================================================================
         # Define custom form for CustomAdminIndexView2
         # =================================================================================================================

@@ -9,6 +9,8 @@ from wtforms import (DecimalField, StringField, BooleanField, FloatField, FileFi
                      RadioField
                      )
 
+from flask_admin.form import rules
+from flask_admin.form.rules import FieldSet
 from wtforms.validators import DataRequired, Length, Email, EqualTo, Optional, NumberRange
 import re
 from datetime import datetime
@@ -20,7 +22,6 @@ from models.user import (Users, Company, Subject, Step, Workflow, StepBaseData, 
                          Area, Subarea, Lexic, Workflow, Interval, Step)
 from flask_admin.model.form import InlineFormAdmin
 from enum import Enum
-from flask_admin.form import rules
 from flask_admin.contrib.sqla.ajax import QueryAjaxModelLoader
 from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as _
 
@@ -31,7 +32,6 @@ class LoginForm(FlaskForm):
     submit = SubmitField('Login')
 
 
-# Inline model form for BaseDataInline
 class BaseDataInlineModelForm(InlineFormAdmin):
     form_columns = ['name', 'type', 'value']
     form_label = 'Vendor Data'
@@ -39,10 +39,11 @@ class BaseDataInlineModelForm(InlineFormAdmin):
         'id': HiddenField('ID')
     }
 
+    form_edit_rules = ('id', FieldSet(('name', 'type', 'value'), 'Vendor Data'))
+
     def postprocess_form(self, form_class):
         form_class.id = HiddenField()
         return form_class
-
 
 class ForgotPasswordForm(FlaskForm):
     email = EmailField(_('Email Address'), validators=[DataRequired(), Email()])
@@ -1122,20 +1123,4 @@ class PostForm(FlaskForm):
     def __init__(self, *args, **kwargs):
         super(PostForm, self).__init__(*args, **kwargs)
         # Fill company_id and user_id choices from related models (if used)
-
-
-class Flussi_Complaint_Form(FlaskForm):
-    lexic_id = SelectField('Lexic ID')
-
-    def __init__(self, *args, **kwargs):
-        super(Flussi_Complaint_Form, self).__init__(*args, **kwargs)
-        # Populate choices for lexic_id from BaseData
-        base_data_choices = [(entry.id, str(entry.id)) for entry in BaseData.query.all()]
-        self.lexic_id.choices = base_data_choices
-
-    fi1 = IntegerField('Total')
-    fi2 = IntegerField('Of which IVI')
-    fi3 = IntegerField('Of which non-IVI')
-    fc1 = StringField('Provider')
-    submit = SubmitField('Submit')
 
