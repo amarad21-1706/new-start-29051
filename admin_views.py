@@ -3679,11 +3679,11 @@ class QuestionnaireForm(ModelView):
     can_delete = True
     can_export = True
     can_view_details = True
-    column_list = ('questionnaire_id', 'questionnaire_type', 'name', 'created_on', 'deadline_date', 'status_id')
-    column_labels = {'questionnaire_id': 'Survey ID', 'questionnaire_type': 'Type', 'name': 'Name', 'description': 'Description',
-                     'created_on': 'Date of creation', 'status_id': 'Status'}
+    column_list = ('questionnaire_id', 'questionnaire_type', 'name', 'interval', 'deadline_date', 'status_id', 'headers')
+    column_labels = {'questionnaire_id': 'Survey ID', 'questionnaire_type': 'Type', 'name': 'Name',
+                     'interval': 'Interval', 'deadline_date': 'Deadline', 'status_id': 'Status', 'headers': 'Header'}
     form_columns = column_list
-    column_exclude_list = ('id')  # Specify the columns you want to exclude
+    column_exclude_list = ('id', 'created_on')  # Specify the columns you want to exclude
 
 
 class QuestionnaireQuestionsForm(ModelView):
@@ -3989,25 +3989,37 @@ class QuestionnaireCompaniesView(QuestionnaireCompaniesForm):
 
 
 class QuestionnaireModelView(ModelView):
-    form_columns = ['questionnaire_id', 'questionnaire_type', 'name', 'interval', 'deadline_date', 'status_id', 'created_on', 'headers']
-
-    def on_model_change(self, form, model, is_created):
-        if is_created:
-            # Ensure questionnaire_id is unique
-            if not model.questionnaire_id:
-                model.questionnaire_id = str(uuid.uuid4())
-            else:
-                existing_questionnaire = Questionnaire.query.filter_by(questionnaire_id=model.questionnaire_id).first()
-                if existing_questionnaire:
-                    raise ValueError(f"Questionnaire with ID {model.questionnaire_id} already exists.")
+    form_columns = ['questionnaire_id', 'questionnaire_type', 'name', 'interval', 'deadline_date', 'status_id', 'headers']
 
     def create_model(self, form):
+        print('Starting create_model method for Questionnaire')  # Debugging print
         try:
-            model = self.model()
-            form.populate_obj(model)
-            self.on_model_change(form, model, True)
+            print('Form data:')
+            print(f'questionnaire_id: {form.questionnaire_id.data}')
+            print(f'questionnaire_type: {form.questionnaire_type.data}')
+            print(f'name: {form.name.data}')
+            print(f'interval: {form.interval.data}')
+            print(f'deadline_date: {form.deadline_date.data}')
+            print(f'status_id: {form.status_id.data}')
+            print(f'headers: {form.headers.data}')
+
+            model = Questionnaire(
+                questionnaire_id=form.questionnaire_id.data,
+                questionnaire_type=form.questionnaire_type.data,
+                name=form.name.data,
+                interval=form.interval.data,
+                deadline_date=form.deadline_date.data,
+                status_id=form.status_id.data,
+                headers=form.headers.data
+            )
+            print(f'Questionnaire model created: {model}')  # Debugging print
+
             self.session.add(model)
+            print('Questionnaire model added to session')  # Debugging print
+
             self.session.commit()
+            print('Questionnaire session committed')  # Debugging print
+
             return model
         except IntegrityError as e:
             if not self.handle_view_exception(e):
@@ -4015,25 +4027,8 @@ class QuestionnaireModelView(ModelView):
             flash('Failed to create record. {}'.format(str(e)), 'error')
             self.session.rollback()
             return False
-        except ValueError as e:
+        except Exception as e:
             flash('Failed to create record. {}'.format(str(e)), 'error')
-            self.session.rollback()
-            return False
-
-    def update_model(self, form, model):
-        try:
-            form.populate_obj(model)
-            self.on_model_change(form, model, False)
-            self.session.commit()
-            return True
-        except IntegrityError as e:
-            if not self.handle_view_exception(e):
-                raise
-            flash('Failed to update record. {}'.format(str(e)), 'error')
-            self.session.rollback()
-            return False
-        except ValueError as e:
-            flash('Failed to update record. {}'.format(str(e)), 'error')
             self.session.rollback()
             return False
 

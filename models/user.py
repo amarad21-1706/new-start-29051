@@ -245,46 +245,48 @@ class PossibleAnswer(db.Model):
 class Questionnaire(db.Model):
     __tablename__ = 'questionnaire'
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    questionnaire_id = db.Column(String(64), unique=True, nullable=False)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    questionnaire_id = db.Column(db.String(64), unique=True, nullable=False)
     questionnaire_type = db.Column(db.String(24), nullable=True, default='Questionnaire')
-    name = db.Column(String(128), unique=True)
-    interval = db.Column(String(12))
-    deadline_date = db.Column(DateTime)
-    status_id = db.Column(Integer, ForeignKey('status.id'))
-    created_on = Column(TIMESTAMP(timezone=True), server_default=func.now())
-    updated_on = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
-    # TODO json?
+    name = db.Column(db.String(128), unique=True, nullable=False)
+    interval = db.Column(db.String(12))  # If this represents a numeric interval, consider using Integer
+    deadline_date = db.Column(db.DateTime)
+    status_id = db.Column(db.Integer, db.ForeignKey('status.id'))
+    created_on = db.Column(db.TIMESTAMP(timezone=True), server_default=func.now())
+    updated_on = db.Column(db.TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
     headers = db.Column(db.JSON)
 
-    steps_questionnaires_relationship = relationship("StepQuestionnaire", back_populates="questionnaire")
+    steps_questionnaires_relationship = db.relationship("StepQuestionnaire", back_populates="questionnaire")
+
+    def __init__(self, questionnaire_id: str, questionnaire_type: str, name: str, interval: str, deadline_date: datetime, status_id: int, headers: dict):
+        self.questionnaire_id = questionnaire_id
+        self.questionnaire_type = questionnaire_type
+        self.name = name
+        self.interval = interval
+        self.deadline_date = deadline_date
+        self.status_id = status_id
+        self.headers = headers
 
     def __repr__(self):
-        return (f"Questionnaire #{self.id}: {self.questionnaire_id} ({self.name})")
-
+        return f'<Questionnaire {self.name}>'
 
     def to_json(self):
         return json.dumps({
             "answer_data": self.headers  # Assuming answer_data is already JSON
         })
 
-    def set_headers(self, data):
+    def set_headers(self, data: dict):
         try:
-            self.headers = json.dumps(data)
+            self.headers = data
         except (TypeError, json.JSONDecodeError) as e:
-            # Handle error: data is not serializable or invalid JSON
             print(f"Error setting headers: {e}")
 
-    def get_headers(self):
+    def get_headers(self) -> dict:
         try:
-            if self.headers:
-                return json.loads(self.headers)
-            else:
-                # Handle the case when answer_data is empty
-                return None
+            return self.headers or {}
         except json.JSONDecodeError as e:
-            # Handle JSON decoding errors
-            return None
+            print(f"Error getting headers: {e}")
+            return {}
 
 
 class Question(db.Model):

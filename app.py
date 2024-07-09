@@ -48,7 +48,7 @@ from models.user import (Users, UserRoles, Role, Container, Questionnaire, Quest
         Workflow, Step, BaseData, Container, WorkflowSteps, WorkflowBaseData,
                          StepBaseData, Config, get_config_values)
 
-from master_password_reset import admin_reset_password, AdminResetPasswordForm
+# from master_password_reset import admin_reset_password, AdminResetPasswordForm
 
 from forms.forms import (LoginForm, ForgotPasswordForm, ResetPasswordForm101, RegistrationForm,
                          QuestionnaireCompanyForm, CustomBaseDataForm,
@@ -61,7 +61,7 @@ from forms.forms import (LoginForm, ForgotPasswordForm, ResetPasswordForm101, Re
 from flask_mail import Mail, Message
 from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as _
 
-from app_factory import create_app
+from app_factory import create_app, roles_required
 
 from config.config import (get_current_intervals,
                            generate_company_questionnaire_report_data, generate_area_subarea_report_data,
@@ -186,9 +186,15 @@ login_manager = LoginManager(app)
 print('login manager active')
 
 # Register the password reset route
-app.add_url_rule('/admin_reset_password', 'admin_reset_password', admin_reset_password, methods=['GET', 'POST'])
-print('url rule set')
+# app.add_url_rule('/admin_reset_password', 'admin_reset_password', admin_reset_password, methods=['GET', 'POST'])
+# print('url rule set')
 
+@login_manager.user_loader
+def load_user(user_id):
+    user = Users.query.get(int(user_id))
+    if user:
+        session['user_roles'] = [role.name for role in user.roles] if user.roles else []
+    return user
 
 def initialize_app(app):
     with app.app_context():
@@ -225,6 +231,7 @@ def get_session():
     value = session.get('key')
     return f'Session value: {value}'
 
+'''
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -239,6 +246,7 @@ def load_user(user_id):
         #print('roles', session['user_roles'])
     return user
 
+'''
 
 def check_internet():
     url = "https://www.google.com"
@@ -337,6 +345,7 @@ def is_user_role(session, user_id, role_name):
     # Check if the specified role name (in lowercase) is in the user's roles
     return role_name in user_roles
 
+'''
 
 def role_required(required_role):
     def decorator(func):
@@ -365,6 +374,7 @@ def roles_required(*required_roles):
                 return redirect(request.referrer or url_for('index'))  # Redirect to the previous page or index if referrer is None
         return wrapper
     return decorator
+'''
 
 def generate_reset_token(email):
     serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
@@ -1337,11 +1347,14 @@ def open_admin_app_4():
     return redirect(url_for('open_admin_4.index'))
 
 
+'''
+
 @login_required
 @roles_required('Admin')
 @app.route('/master_reset_password')
 def master_reset_password():
     return redirect(url_for('admin_reset_password'))
+'''
 
 
 # Route to open F l a s k -Admin

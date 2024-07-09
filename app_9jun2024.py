@@ -46,7 +46,7 @@ from models.user import (Users, UserRoles, Role, Table, Questionnaire, Question,
         Workflow, Step, BaseData, WorkflowSteps, WorkflowBaseData,
                          StepBaseData, Config, get_config_values)
 
-from master_password_reset import admin_reset_password, AdminResetPasswordForm
+from tbd_master_password_reset import admin_reset_password, AdminResetPasswordForm
 
 from forms.forms import (ForgotPasswordForm, ResetPasswordForm101, RegistrationForm,
                          QuestionnaireCompanyForm, CustomBaseDataForm,

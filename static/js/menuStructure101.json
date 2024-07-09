@@ -524,7 +524,7 @@
                             },
                             "Password Reset": {
                                 "label": "Reset User Password",
-                                "url": "/master_reset_password",
+                                "url": "/admin_reset_password",
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"
@@ -670,6 +670,56 @@
             "Guest"
         ],
         "submenus": {
+            "myAccount": {
+                "label": "My Account",
+                "url": "/access/account",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin",
+                    "Employee",
+                    "Manager",
+                    "Authority",
+                    "Guest"
+                ],
+                "submenus": {
+                    "Change Password": {
+                        "label": "Change Password",
+                        "url": "/user_change_password",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin",
+                            "Employee",
+                            "Manager",
+                            "Authority",
+                            "Guest"
+                        ]
+                    },
+                    "Personal Data": {
+                        "label": "Personal Data",
+                        "url": "/user_data",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin",
+                            "Employee",
+                            "Manager",
+                            "Authority",
+                            "Guest"
+                        ]
+                    },
+                    "Subscriptions": {
+                        "label": "Subscriptions",
+                        "url": "/subscriptions",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin",
+                            "Employee",
+                            "Manager",
+                            "Authority",
+                            "Guest"
+                        ]
+                    }
+                }
+            },
             "Login": {
                 "label": "Login",
                 "url": "/access/login",
