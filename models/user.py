@@ -1271,3 +1271,17 @@ class Ticket(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     marked_as_read = db.Column(db.Boolean, default=False)
     lifespan = db.Column(Enum('one-off', 'persistent', name='lifespan_types'), default='')
+
+
+
+class Questionnaire_psf(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+    structure = db.Column(db.JSON, nullable=False)
+
+class Response_psf(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    questionnaire_id = db.Column(db.Integer, db.ForeignKey('questionnaire.id'), nullable=False)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    answers = db.Column(db.JSON, nullable=False)

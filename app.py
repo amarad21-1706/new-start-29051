@@ -46,7 +46,8 @@ from models.user import (Users, UserRoles, Role, Container, Questionnaire, Quest
         Interval, Subject,
         AuditLog, Post, Ticket, StepQuestionnaire,
         Workflow, Step, BaseData, Container, WorkflowSteps, WorkflowBaseData,
-                         StepBaseData, Config, get_config_values)
+                         StepBaseData, Config, Questionnaire_psf, Response_psf,
+                         get_config_values)
 
 # from master_password_reset import admin_reset_password, AdminResetPasswordForm
 
@@ -3907,6 +3908,77 @@ def chart_form():
     return render_template('charts/chart_form.html', areas=areas, subareas=subareas, companies=companies)
 
 
+
+'''
+@app.route('/questionnaire/<int:id>', methods=['GET'])
+def get_questionnaire(id):
+    questionnaire = Questionnaire_psf.query.get(id)
+    if questionnaire:
+        return jsonify(questionnaire.structure)
+    return jsonify({"error": "Questionnaire not found"}), 404
+
+@app.route('/submit_response', methods=['POST'])
+def submit_response():
+    data = request.get_json()
+    if not data:
+        return jsonify({"error": "No input data provided"}), 400
+
+    questionnaire_id = data.get('questionnaire_id')
+    user_id = data.get('user_id')
+    company_id = data.get('company_id')
+    answers = data.get('answers')
+
+    if not all([questionnaire_id, user_id, company_id, answers]):
+        return jsonify({"error": "Missing data"}), 400
+
+    response = Response_psf(
+        questionnaire_id=questionnaire_id,
+        user_id=user_id,
+        company_id=company_id,
+        answers=answers
+    )
+    db.session.add(response)
+    db.session.commit()
+
+    return jsonify({"message": "Response submitted successfully"})
+
+@app.route('/questionnaire_psf')
+def questionnaire_psf():
+    return render_template('dynamic_questionnaire_psf.html')
+
+'''
+
+
+@app.route('/questionnaire/<int:id>', methods=['GET'])
+def get_questionnaire(id):
+    questionnaire = Questionnaire_psf.query.get(id)
+    if questionnaire:
+        return jsonify(questionnaire.structure)
+    return jsonify({"error": "Questionnaire not found"}), 404
+
+@app.route('/submit_response', methods=['POST'])
+def submit_response():
+    data = request.form
+    questionnaire_id = data.get('questionnaire_id')
+    user_id = data.get('user_id')
+    company_id = data.get('company_id')  # Assuming the company_id is also provided in the request
+
+    answers = {key.replace('answer_', ''): value for key, value in data.items() if key.startswith('answer_')}
+    files = {key.replace('file_', ''): request.files[key] for key in request.files if key.startswith('file_')}
+
+    response = Response_psf(questionnaire_id=questionnaire_id, user_id=user_id, company_id=company_id, answers=answers)
+    db.session.add(response)
+    db.session.commit()
+
+    # Save files if necessary
+    for key, file in files.items():
+        file.save(f'/path/to/save/location/{file.filename}')
+
+    return jsonify({"message": "Response submitted successfully"})
+
+@app.route('/questionnaire_psf')
+def questionnaire_psf():
+    return render_template('dynamic_questionnaire_psf.html')
 
 if __name__ == '__main__':
     # Load menu items from JSON file

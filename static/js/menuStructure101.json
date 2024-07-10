@@ -232,7 +232,7 @@
                     },
                     "Area 1c": {
                         "label": "Check list",
-                        "url": "/check_list/1",
+                        "url": "/questionnaire_psf",
                         "protected": true,
                         "allowed_roles": [
                             "Admin",
@@ -670,6 +670,42 @@
             "Guest"
         ],
         "submenus": {
+            "Login": {
+                "label": "Login",
+                "url": "/access/login",
+                "protected": false,
+                "allowed_roles": [
+                    "Admin",
+                    "Employee",
+                    "Manager",
+                    "Authority",
+                    "Guest"
+                ]
+            },
+            "Signup": {
+                "label": "Signup",
+                "url": "/access/signup",
+                "protected": false,
+                "allowed_roles": [
+                    "Admin",
+                    "Employee",
+                    "Manager",
+                    "Authority",
+                    "Guest"
+                ]
+            },
+            "Logout": {
+                "label": "Logout",
+                "url": "/access/logout",
+                "protected": false,
+                "allowed_roles": [
+                    "Admin",
+                    "Employee",
+                    "Manager",
+                    "Authority",
+                    "Guest"
+                ]
+            },
             "myAccount": {
                 "label": "My Account",
                 "url": "/access/account",
@@ -719,42 +755,6 @@
                         ]
                     }
                 }
-            },
-            "Login": {
-                "label": "Login",
-                "url": "/access/login",
-                "protected": false,
-                "allowed_roles": [
-                    "Admin",
-                    "Employee",
-                    "Manager",
-                    "Authority",
-                    "Guest"
-                ]
-            },
-            "Signup": {
-                "label": "Signup",
-                "url": "/access/signup",
-                "protected": false,
-                "allowed_roles": [
-                    "Admin",
-                    "Employee",
-                    "Manager",
-                    "Authority",
-                    "Guest"
-                ]
-            },
-            "Logout": {
-                "label": "Logout",
-                "url": "/access/logout",
-                "protected": false,
-                "allowed_roles": [
-                    "Admin",
-                    "Employee",
-                    "Manager",
-                    "Authority",
-                    "Guest"
-                ]
             }
         }
     }

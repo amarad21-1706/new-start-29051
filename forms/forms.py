@@ -32,18 +32,19 @@ class LoginForm(FlaskForm):
     password = PasswordField('Password', validators=[DataRequired()])
     submit = SubmitField('Login')
 
-
 class BaseDataInlineModelForm(InlineFormAdmin):
-    form_columns = ['name', 'type', 'value']
+    form_columns = ['name', 'type', 'value', 'record_type']
     form_label = 'Vendor Data'
     form_extra_fields = {
-        'id': HiddenField('ID')
+        'id': HiddenField('ID'),
+        'record_type': HiddenField('Record Type')
     }
 
-    form_edit_rules = ('id', rules.FieldSet(('name', 'type', 'value'), 'Vendor Data'))
+    form_edit_rules = ('id', rules.FieldSet(('name', 'type', 'value', 'record_type'), 'Vendor Data'))
 
     def postprocess_form(self, form_class):
         form_class.id = HiddenField()
+        form_class.record_type = HiddenField(default='pre-complaint')  # Set the default value directly here
 
         # Query the Subject table
         subjects = db.session.query(Subject).filter_by(tier_1='Oggetto').order_by(Subject.tier_2, Subject.tier_3).all()

@@ -3085,50 +3085,19 @@ def create_admin_views(app, intervals):
                 return redirect(url_for('show_survey', questionnaire_id=1))
         '''
 
-        class CustomRedirectView(BaseView):
-            @expose('/')
-            @login_required
-            def index(self):
-                return redirect(url_for('redirect_to_survey', questionnaire_id=1))
-
-        class CustomAdminIndexView1(BaseData):
-            default_view = 'flussi_data_view'  # Or any other valid view name
-
-            def index(self):
-                # Customize the index view here for the first custom index view
-                return self.render('open_admin.html')
-                # return 'Hello From first admin :{}.'.format(self)
-
-        # Define custom form for CustomAdminIndexView1
-        class CustomForm1(FlaskForm):  # was BaseForm
-            fi0 = IntegerField('fi0', validators=[InputRequired(), NumberRange(min=2000, max=2199)])  # anno
-            interval_ord = IntegerField('interval_ord',
-                                        validators=[InputRequired(), NumberRange(min=0, max=52)])  # periodo
-
-            fi1 = IntegerField('fi1', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
-
-            fi2 = IntegerField('fi2', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
-            fi3 = IntegerField('fi3', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
-            fi4 = IntegerField('fi4', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
-            fi5 = IntegerField('fi5', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
-            fi6 = IntegerField('fi5', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
-
-            fn1 = IntegerField('fn1', validators=[InputRequired(), NumberRange(min=0.00, max=100.00)])
-            fn2 = IntegerField('fn2', validators=[InputRequired(), NumberRange(min=0.00, max=100.00)])
-            fn3 = IntegerField('fn3', validators=[InputRequired(), NumberRange(min=0.00, max=100.00)])
-
-            fc1 = StringField('fc1')
-            fc2 = StringField('fc2')
-
-            number_of_doc = StringField('number_of_doc')
-            date_of_doc = DateField('date_of_doc')
-
+        # TODO This view includes InLines ('basedata_inline'), filtered on the record_type value
+        # specifically, the record_type for the function below is 'pre-complaint'
 
         class CustomFlussiDataView(ModelView):
             create_template = 'admin/area_1/create_base_data_1.html'
             subarea_id = 1
             area_id = 1
             inline_models = (BaseDataInlineModelForm(BaseDataInline),)
+
+            def __init__(self, *args, **kwargs):
+                self.intervals = kwargs.pop('intervals', None)
+                super().__init__(*args, **kwargs)
+                self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
 
             form_extra_fields = {
                 'file_path': CustomFileUploadField('File', base_path=config.UPLOAD_FOLDER)
@@ -3153,7 +3122,7 @@ def create_admin_views(app, intervals):
 
             column_descriptions = {
                 'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
-                'fi0': 'Inserire anno (es. 2024)',
+                'fi0': 'Inserire anno (es. 2025)',
                 'fi1': 'Inserisci numero totale di casi registrati',
                 'fi2': 'di cui IVI',
                 'fi3': 'altri (IVI+Altri=Totale)',
@@ -3177,13 +3146,6 @@ def create_admin_views(app, intervals):
                 'fc1',
                 FieldSet(('base_data_inlines',), 'Vendor Data')  # Include the inline form
             ]
-
-            # rules.FieldSet(['inline_models'], 'Vendor Data')  # Include the inline model here
-
-            def __init__(self, *args, **kwargs):
-                self.intervals = kwargs.pop('intervals', None)
-                super().__init__(*args, **kwargs)
-                self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
 
             def scaffold_form(self):
                 form_class = super(CustomFlussiDataView, self).scaffold_form()
@@ -3265,7 +3227,6 @@ def create_admin_views(app, intervals):
                     self.session.rollback()
                     return False
 
-
             def on_model_change(self, form, model, is_created):
                 super().on_model_change(form, model, is_created)
                 form.populate_obj(model)
@@ -3320,9 +3281,9 @@ def create_admin_views(app, intervals):
 
                 with current_app.app_context():
                     result, message = check_status_extended(is_created, company_id, lexic_id, subject_id,
-                                                            legal_document_id, interval_ord, interval_id, year_id,
-                                                            area_id, subarea_id, form.fi1.data, None, None, None, None,
-                                                            None, None, None, None, datetime.today(), db.session)
+                                    legal_document_id, interval_ord, interval_id, year_id,
+                                    area_id, subarea_id, form.fi1.data, None, None, None, None,
+                                    None, None, None, None, datetime.today(), db.session)
 
                 if result == False:
                     raise ValidationError(message)
@@ -3356,6 +3317,7 @@ def create_admin_views(app, intervals):
                 self.session.commit()
 
                 return model
+
 
         # =================================================================================================================
         # Define custom form for CustomAdminIndexView2
@@ -3447,7 +3409,7 @@ def create_admin_views(app, intervals):
         # Register the custom redirect view for Contingencies
         # admin_app1.add_view(CustomRedirectView(name='Contingencies', endpoint='show_survey/1'))
 
-        # Register the atypical custom view (questionnaire, not dat view)
+        # Register the atypical custom view (questionnaire, not data view)
         # admin_app1.add_view(CustomContingenciesView(name='Contingencies', endpoint='contingencies_data_view'))
 
         admin_app1.add_view(
