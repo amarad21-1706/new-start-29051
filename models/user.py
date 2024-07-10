@@ -666,6 +666,8 @@ class BaseData(db.Model):
     # Relationship with BaseDataInline
     # base_data_inlines = db.relationship('BaseDataInline', backref='base_data', lazy=True, cascade="all, delete-orphan")
     base_data_inlines = db.relationship('BaseDataInline', backref='parent_base_data', lazy=True, cascade="all, delete-orphan")
+    # Define the relationship
+    # base_data_inlines = db.relationship('BaseDataInline', back_populates='base_data', cascade='all, delete-orphan')
 
     def __repr__(self):
         return f'<BaseData {self.id}>'
@@ -887,7 +889,6 @@ class BaseData(db.Model):
         return results
 
 
-
 class BaseDataInline(db.Model):
    __tablename__ = 'basedata_inline'
    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -895,6 +896,7 @@ class BaseDataInline(db.Model):
    name = db.Column(db.String(100), nullable=False)
    type = db.Column(db.String(100), nullable=False)
    value = db.Column(db.Integer, nullable=False)
+   record_type = db.Column(db.String(64), nullable=False)
 
    # Relationship with BaseData
    #parent_base_data = db.relationship('BaseData', backref=db.backref('base_data_inlines', lazy=True, cascade="all, delete-orphan"))
@@ -947,6 +949,7 @@ class StepBaseData(db.Model):
     workflow = relationship("Workflow", foreign_keys=[workflow_id])
     step = relationship("Step", foreign_keys=[step_id])
     status = relationship("Status", foreign_keys=[status_id])
+
 
     # Define unique constraint
     #__table_args__ = (

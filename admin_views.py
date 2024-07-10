@@ -3230,10 +3230,33 @@ def create_admin_views(app, intervals):
 
             def create_model(self, form):
                 try:
+                    print('Starting create_model')
                     model = self.model()
                     form.populate_obj(model)
+
                     self.session.add(model)
                     self.session.commit()
+                    print('Model committed, setting inline record types')
+
+                    # Ensure the relationship is correctly defined
+                    if not hasattr(model, 'base_data_inlines'):
+                        raise Exception('base_data_inlines relationship is not defined on the model')
+
+                    # Update record_type for each inline model
+                    for inline in model.base_data_inlines:
+                        print(f'Setting record_type for inline {inline.id}')
+                        inline.record_type = 'pre-complaint'
+                        self.session.add(inline)
+
+                    self.session.commit()
+                    print('Inlines updated and committed')
+
+                    # Verify the inline updates
+                    for inline in model.base_data_inlines:
+                        updated_inline = self.session.query(BaseDataInline).get(inline.id)
+                        print(f'Updated record_type for inline {updated_inline.id}: {updated_inline.record_type}')
+                        assert updated_inline.record_type == 'pre-complaint'
+
                     return model
                 except Exception as ex:
                     if not self.handle_view_exception(ex):
@@ -3241,6 +3264,7 @@ def create_admin_views(app, intervals):
                     flash(f'Failed to create record. {str(ex)}', 'error')
                     self.session.rollback()
                     return False
+
 
             def on_model_change(self, form, model, is_created):
                 super().on_model_change(form, model, is_created)
@@ -3298,8 +3322,7 @@ def create_admin_views(app, intervals):
                     result, message = check_status_extended(is_created, company_id, lexic_id, subject_id,
                                                             legal_document_id, interval_ord, interval_id, year_id,
                                                             area_id, subarea_id, form.fi1.data, None, None, None, None,
-                                                            None, None, None, None, datetime.today(),
-                                                            db.session)
+                                                            None, None, None, None, datetime.today(), db.session)
 
                 if result == False:
                     raise ValidationError(message)
@@ -3319,6 +3342,12 @@ def create_admin_views(app, intervals):
                 model.status_id = status_id
                 model.subject_id = subject_id
                 model.legal_document_id = legal_document_id
+
+                # Update record_type for each inline model
+                print('INLINE')
+                for inline in model.base_data_inlines:
+                    print('set precomplaint for', inline)
+                    inline.record_type = 'pre-complaint'
 
                 if is_created:
                     self.session.add(model)
