@@ -986,6 +986,14 @@ def generate_input_html(input_type, field_name, existing_value, base_path, horiz
     elif input_type == 'NUM':
         html += f"<input type='number' name='{field_name}' value='{existing_value}' step='0.01' class='{input_css_class}'>"
 
+    elif input_type == 'INT':
+        # Fetch data from the interval table
+        intervals = db.session.query(Interval).all()  # Assuming Interval is your model for the interval table
+        options = ''.join(
+            f"<option value='{interval.id}' {'selected' if str(interval.id) == existing_value else ''}>{interval.description}</option>"
+            for interval in intervals)
+        html += f"<select name='{field_name}' class='{input_css_class}'>{options}</select>"
+
     else:
         html += f"<input type='text' name='{field_name}' value='{existing_value}' class='{input_css_class}' autocomplete='off'>"
 

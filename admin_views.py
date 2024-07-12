@@ -2042,7 +2042,7 @@ class Tabella25_dataView(ModelView):
         # Set default values for specific fields
 
         form_class.subject_id = SelectField(
-            'Oggetto',
+            'Fascia di domanda',
             validators=[InputRequired()],
             coerce=int,
             choices=[(subject.id, subject.name) for subject in Subject.query.filter_by(tier_1="Utenti").all()]

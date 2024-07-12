@@ -3956,7 +3956,8 @@ def get_questionnaire(id):
         return jsonify(questionnaire.structure)
     return jsonify({"error": "Questionnaire not found"}), 404
 
-@app.route('/submit_response', methods=['POST'])
+
+'''@app.route('/submit_response', methods=['POST'])
 def submit_response():
     data = request.form
     questionnaire_id = data.get('questionnaire_id')
@@ -3975,10 +3976,39 @@ def submit_response():
         file.save(f'/path/to/save/location/{file.filename}')
 
     return jsonify({"message": "Response submitted successfully"})
+'''
+
 
 @app.route('/questionnaire_psf')
 def questionnaire_psf():
     return render_template('dynamic_questionnaire_psf.html')
+
+
+@app.route('/submit_response_psf', methods=['POST'])
+def submit_response_psf():
+    data = request.form
+    questionnaire_id = data.get('questionnaire_id')
+    user_id = data.get('user_id')
+    company_id = 1  # Replace with actual company_id
+    status_id = data.get('status_id')
+    answers = {key: data.get(key) for key in data if key.startswith('answer_')}
+    files = {key: request.files.get(key) for key in request.files if key.startswith('file_')}
+
+    # Store answers and files appropriately
+    response = Response_psf(
+        questionnaire_id=questionnaire_id,
+        user_id=user_id,
+        company_id=company_id,
+        answers=answers,
+        status_id=status_id
+    )
+
+    db.session.add(response)
+    db.session.commit()
+
+    return jsonify({"message": "Response submitted successfully"})
+
+
 
 if __name__ == '__main__':
     # Load menu items from JSON file

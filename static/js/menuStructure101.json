@@ -222,7 +222,7 @@
                         ]
                     },
                     "Area 1b": {
-                        "label": "Contingencies",
+                        "label": "Contingencies - PSF",
                         "url": "/redirect_to_survey/1",
                         "protected": true,
                         "allowed_roles": [
