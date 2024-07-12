@@ -1988,26 +1988,26 @@ class Tabella25_dataView(ModelView):
         self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
 
     column_list = ('subject_id', 'interval_ord', 'fi0',
-                    'fi1', 'fn1', 'fi2', 'fn2', 'fi3', 'fn3', 'fi4', 'fn4', 'fi5', 'fn5', 'fi6', 'fn6', 'fc1')
+                    'fi1', 'fi2', 'fi7', 'fi4', 'fi5', 'fi6', 'fn1', 'fn2', 'fn3', 'fn4', 'fn5', 'fn6', 'fc1')
     form_columns = ('subject_id', 'interval_ord', 'fi0',
-                    'fi1', 'fn1', 'fi2', 'fn2', 'fi3', 'fn3', 'fi4', 'fn4', 'fi5', 'fn5', 'fi6', 'fn6', 'fc1')
+                    'fi1', 'fi2', 'fi4', 'fi5', 'fc1')
 
     column_labels = {
         'subject_id': 'Fascia di domanda',
         'interval_ord': 'Periodo',
         'fi0': 'Anno',
         'fi1': 'Numero POD/PDR vendita IVI (*)',
-        'fn1': '% IVI',
         'fi2': 'Numero POD/PDR vendita Altri (*)',
-        'fn2': '% Altri',
-        'fi3': 'Totale',
-        'fn3': '% Totale',
-
+        'fi7': 'Totale Nr.',
         'fi4': 'Quantità SMR/KWh vendita IVI (*)',
-        'fn4': '% Q IVI',
         'fi5': 'Quantità SMR/KWh vendita Altri (*)',
+        'fi6': 'Totale Q',
+
+        'fn1': '% Nr IVI',
+        'fn2': '% Nr Altri',
+        'fn3': '% Nr Totale',
+        'fn4': '% Q IVI',
         'fn5': '% Q Altri',
-        'fi6': 'Q Totale',
         'fn6': '% Q Totale',
 
         'fc1': 'Note'
@@ -2017,25 +2017,25 @@ class Tabella25_dataView(ModelView):
         'fi0': 'Inserire anno (es. 2024)',
 
         'fi1': 'Numero POD/PDR nel settore di vendita IVI',
-        'fn1': 'quota di mercato # IVI',
         'fi2': 'Numero POD/PDR nel settore di vendita Altri',
-        'fn2': 'quota di mercato # altri',
-        'fi3': 'Totale #',
-        'fn3': 'Totale % #',
-
+        'fi7': 'Totale numero POD/PDR complessivo IVI e Altri',
         'fi4': 'Quantità SMR/KWh vendita IVI',
-        'fn4': 'quota di mercato # IVI',
         'fi5': 'Quantità SMR/KWh vendita Altri',
-        'fn5': 'quota di mercato # altri',
-        'fi6': 'Totale #',
-        'fi6': 'Totale % #',
+        'fi6': 'Totale quantità complessiva IVI e Altri',
 
-        'fc1': 'Inserire commento'
+        'fn1': 'quota di mercato numero POD/PDR IVI sul totale',
+        'fn2': 'quota di mercato numerp POD/PDR Altri sul totale',
+        'fn3': 'Totale quota di mercato numero POD/PDR',
+        'fn4': 'quota di mercato numero POD/PDR IVI',
+        'fn5': 'quota di mercato numero POD/PDR Altri',
+        'fn6': 'Totale quota di mercato numero POD/PDR',
+
+        'fc1': 'Inserire commento al report complessivo del periodo'
     }
 
     column_default_sort = ('fi0', True)
-    column_searchable_list = ('fi0', 'interval_ord', 'subject.name', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fi6', 'fc1')
-    column_filters = ('fi0', 'interval_ord', 'subject.name', 'fi1', 'fi2','fi3', 'fi4', 'fi5', 'fc1')
+    column_searchable_list = ('fi0', 'interval_ord', 'subject.name', 'fi1', 'fi2', 'fi4', 'fi5', 'fc1')
+    column_filters = ('fi0', 'interval_ord', 'subject.name', 'fi1', 'fi2', 'fi4', 'fi5', 'fc1')
 
     form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_by', 'created_on', 'updated_on')
 
@@ -2051,10 +2051,10 @@ class Tabella25_dataView(ModelView):
         'subject_id': _subject_formatter,
         'fn1': lambda view, context, model, name: "%.2f" % model.fn1 if model.fn1 is not None else None,
         'fn2': lambda view, context, model, name: "%.2f" % model.fn2 if model.fn2 is not None else None,
-        'fn3': lambda view, context, model, name: "%.2f" % model.fn2 if model.fn2 is not None else None,
-        'fn4': lambda view, context, model, name: "%.2f" % model.fn2 if model.fn2 is not None else None,
-        'fn5': lambda view, context, model, name: "%.2f" % model.fn2 if model.fn2 is not None else None,
-        'fn6': lambda view, context, model, name: "%.2f" % model.fn2 if model.fn2 is not None else None,}
+        'fn3': lambda view, context, model, name: "%.2f" % model.fn3 if model.fn3 is not None else None,
+        'fn4': lambda view, context, model, name: "%.2f" % model.fn4 if model.fn4 is not None else None,
+        'fn5': lambda view, context, model, name: "%.2f" % model.fn5 if model.fn5 is not None else None,
+        'fn6': lambda view, context, model, name: "%.2f" % model.fn6 if model.fn6 is not None else None,}
 
     def scaffold_form(self):
         form_class = super(Tabella25_dataView, self).scaffold_form()
@@ -2096,33 +2096,82 @@ class Tabella25_dataView(ModelView):
 
     form_create_rules = ('subject_id', 'interval_ord', 'fi0',
                          'fi1', 'fi2', 'fi4', 'fi5',
-                         'fi3', 'fi6',
-                         'fn1', 'fn2', 'fn3', 'fn4', 'fn5', 'fi6',
                          'fc1')
 
     def create_model(self, form):
-        model = super(Tabella25_dataView, self).create_model(form)
-        if current_user.is_authenticated:
-            try:
+        try:
+            model = self.model()
+            form.populate_obj(model)
+
+            if current_user.is_authenticated:
                 model.user_id = current_user.id
-                model.company_id = current_user.company_id
-                model.data_type = self.subarea_name
                 created_by = current_user.username
-                user_id = current_user.id
-                model.user_id = user_id
+
+                # Debug prints for fi1 and fi2 values
+                print(f'fi1: {model.fi1}, fi2: {model.fi2}')
+                print(f'fi4: {model.fi4}, fi5: {model.fi5}')
+
+                # calculate totals
+                # NUMBERS
+                if form.fi1.data and form.fi2.data and form.fi1.data + form.fi2.data != 0:
+                    model.fi7 = form.fi1.data + form.fi2.data
+                    print('set fi7 to', form.fi1.data + form.fi2.data)
+                    model.fn1 = 100 * form.fi1.data / (form.fi1.data + form.fi2.data)
+                    model.fn2 = 100 * form.fi2.data / (form.fi1.data + form.fi2.data)
+                    model.fn3 = 100 * (form.fi1.data / (form.fi1.data + form.fi2.data) + \
+                                       form.fi2.data / (form.fi1.data + form.fi2.data))
+                else:
+                    print('set fi7=0')
+                    model.fi7 = 0
+                    model.fn1 = 0
+                    model.fn2 = 0
+                    model.fn3 = 0
+
+                # QUANT
+                if form.fi4.data and form.fi5.data and form.fi4.data + form.fi5.data != 0:
+                    model.fi6 = form.fi4.data + form.fi5.data
+                    model.fn4 = 100 * form.fi4.data / (form.fi4.data + form.fi5.data)
+                    model.fn5 = 100 * form.fi5.data / (form.fi4.data + form.fi5.data)
+                    model.fn6 = 100 * (form.fi4.data / (form.fi4.data + form.fi5.data) + \
+                                       form.fi5.data / (form.fi4.data + form.fi5.data))
+                else:
+                    model.fi6 = 0
+                    model.fn4 = 0
+                    model.fn5 = 0
+                    model.fn6 = 0
+
                 try:
-                    company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-                except:
-                    company_id = None
-                    pass
-                model.company_id = company_id
+                    company_user = CompanyUsers.query.filter_by(user_id=current_user.id).first()
+                    comp_id = company_user.company_id if company_user else None
+                    model.company_id = comp_id
+                except Exception:
+                    model.company_id = None
+
+                model.record_type = 'control_area'
+                model.data_type = self.subarea_name
                 model.created_by = created_by
                 model.created_on = datetime.now()
-            except AttributeError:
-                pass
-            return model
-        else:
-            raise ValidationError('User not authenticated.')
+
+                model.area_id = self.area_id
+                model.subarea_id = self.subarea_id
+                config_values = get_config_values(config_type='area_interval', company_id=comp_id,
+                                                  area_id=self.area_id,
+                                                  subarea_id=self.subarea_id)
+                model.interval_id = config_values[0]
+
+
+                self.session.add(model)
+                self.session.commit()
+                return model
+            else:
+                raise ValidationError('User not authenticated.')
+        except Exception as ex:
+            if not self.handle_view_exception(ex):
+                raise
+            flash(f'Failed to create record. {str(ex)}', 'error')
+            self.session.rollback()
+            return False
+
 
     def get_query(self):
         query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
@@ -2228,15 +2277,15 @@ class Tabella25_dataView(ModelView):
         model.updated_on = datetime.now()
         model.company_id = company_id
 
-        model.fi3 = form.fi1.data + form.fi2.data
-        model.fi6 = form.fi4.data + form.fi5.data
-
         # calculate totals
         # NUMBERS
-        if (form.fi1.data + form.fi2.data) != 0:
+        if form.fi1.data and form.fi2.data and form.fi1.data + form.fi2.data != 0:
+            model.fi7 = form.fi1.data + form.fi2.data
             model.fn1 = 100 * form.fi1.data / (form.fi1.data + form.fi2.data)
         else:
+            model.fi7 = 0
             model.fn1 = 0
+
         if (form.fi1.data + form.fi2.data) != 0:
             model.fn2 = 100 * form.fi2.data / (form.fi1.data + form.fi2.data)
         else:
@@ -2247,9 +2296,11 @@ class Tabella25_dataView(ModelView):
                         form.fi2.data / (form.fi1.data + form.fi2.data))
 
         # QUANT
-        if (form.fi4.data + form.fi5.data) != 0:
+        if form.fi4.data and form.fi5.data and form.fi4.data + form.fi5.data != 0:
+            model.fi6 = form.fi4.data + form.fi5.data
             model.fn4 = 100 * form.fi4.data / (form.fi4.data + form.fi5.data)
         else:
+            model.fi6 = -1
             model.fn4 = 0
         if (form.fi4.data + form.fi5.data) != 0:
             model.fn5 = 100 * form.fi5.data / (form.fi4.data + form.fi5.data)
@@ -3347,54 +3398,110 @@ def create_admin_views(app, intervals):
         # Define custom form for CustomAdminIndexView2
         # =================================================================================================================
         # class CustomForm2(BaseData):
-        class CustomForm2(FlaskForm):
-            fi0 = IntegerField('fi0', validators=[InputRequired(), NumberRange(min=2000, max=2199)])
+        class CustomForm21(FlaskForm):
+            fi0 = IntegerField('fi0', validators=[InputRequired(), NumberRange(min=2000, max=2099)])
             interval_ord = IntegerField('interval_ord', validators=[InputRequired(), NumberRange(min=0, max=52)])
-            fi3 = IntegerField('fi3', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
+            fi1 = IntegerField('fi1', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
+            fi2 = IntegerField('fi2', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
             fi4 = IntegerField('fi4', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
             fi5 = IntegerField('fi5', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
 
-            fn1 = IntegerField('fn1', validators=[InputRequired(), NumberRange(min=0.00, max=100.00)])
-            fn2 = IntegerField('fn2', validators=[InputRequired(), NumberRange(min=0.00, max=100.00)])
-            fn3 = IntegerField('fn3', validators=[InputRequired(), NumberRange(min=0.00, max=100.00)])
+            fc1 = StringField('fc1')
+
+        class CustomForm22(FlaskForm):
+            fi0 = IntegerField('fi0', validators=[InputRequired(), NumberRange(min=2000, max=2099)])
+            interval_ord = IntegerField('interval_ord', validators=[InputRequired(), NumberRange(min=0, max=52)])
+            fi1 = IntegerField('fi1', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
+            fi2 = IntegerField('fi2', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
+            fi4 = IntegerField('fi4', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
+            fi5 = IntegerField('fi5', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
 
             fc1 = StringField('fc1')
-            fc2 = StringField('fc2', validators=[InputRequired()])
+
+        class CustomForm23(FlaskForm):
+            fi0 = IntegerField('fi0', validators=[InputRequired(), NumberRange(min=2000, max=2099)])
+            interval_ord = IntegerField('interval_ord', validators=[InputRequired(), NumberRange(min=0, max=52)])
+            fi1 = IntegerField('fi1', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
+            fi2 = IntegerField('fi2', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
+            fi4 = IntegerField('fi4', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
+            fi5 = IntegerField('fi5', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
+
+            fc1 = StringField('fc1')
+
+        class CustomForm24(FlaskForm):
+            fi0 = IntegerField('fi0', validators=[InputRequired(), NumberRange(min=2000, max=2099)])
+            interval_ord = IntegerField('interval_ord', validators=[InputRequired(), NumberRange(min=0, max=52)])
+            fi1 = IntegerField('fi1', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
+            fi2 = IntegerField('fi2', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
+            fi4 = IntegerField('fi4', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
+            fi5 = IntegerField('fi5', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
+
+            fc1 = StringField('fc1')
+
+        class CustomForm25(FlaskForm):
+            fi0 = IntegerField('fi0', validators=[InputRequired(), NumberRange(min=2000, max=2099)])
+            interval_ord = IntegerField('interval_ord', validators=[InputRequired(), NumberRange(min=0, max=52)])
+            fi1 = IntegerField('fi1', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
+            fi2 = IntegerField('fi2', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
+            fi4 = IntegerField('fi4', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
+            fi5 = IntegerField('fi5', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
+
+            fc1 = StringField('fc1')
+
+        class CustomForm26(FlaskForm):
+            fi0 = IntegerField('fi0', validators=[InputRequired(), NumberRange(min=2000, max=2099)])
+            interval_ord = IntegerField('interval_ord', validators=[InputRequired(), NumberRange(min=0, max=52)])
+            fi1 = IntegerField('fi1', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
+            fi2 = IntegerField('fi2', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
+            fi4 = IntegerField('fi4', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
+            fi5 = IntegerField('fi5', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
+
+            fc1 = StringField('fc1')
+
+        class CustomForm27(FlaskForm):
+            fi0 = IntegerField('fi0', validators=[InputRequired(), NumberRange(min=2000, max=2099)])
+            interval_ord = IntegerField('interval_ord', validators=[InputRequired(), NumberRange(min=0, max=52)])
+            fi1 = IntegerField('fi1', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
+            fi2 = IntegerField('fi2', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
+            fi4 = IntegerField('fi4', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
+            fi5 = IntegerField('fi5', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
+
+            fc1 = StringField('fc1')
 
         class CustomTabella21DataView(Tabella21_dataView):
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
-                self.form = CustomForm2
+                self.form = CustomForm21
 
         class CustomTabella22DataView(Tabella22_dataView):
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
-                self.form = CustomForm2
+                self.form = CustomForm22
 
         class CustomTabella23DataView(Tabella23_dataView):
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
-                self.form = CustomForm2
+                self.form = CustomForm23
 
         class CustomTabella24DataView(Tabella24_dataView):
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
-                self.form = CustomForm2
+                self.form = CustomForm24
 
         class CustomTabella25DataView(Tabella25_dataView):
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
-                self.form = CustomForm2
+                self.form = CustomForm25
 
         class CustomTabella26DataView(Tabella26_dataView):
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
-                self.form = CustomForm2
+                self.form = CustomForm26
 
         class CustomTabella27DataView(Tabella27_dataView):
             def __init__(self, *args, **kwargs):
                 super().__init__(*args, **kwargs)
-                self.form = CustomForm2
+                self.form = CustomForm27
 
 
         admins_off_set = 0
