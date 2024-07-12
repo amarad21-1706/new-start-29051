@@ -1977,69 +1977,87 @@ class Tabella25_dataView(ModelView):
     column_editable_list = ['fc1']
     # Customize the widget for inline editing
     form_widget_args = {
-        # 'fi0': {'widget': XEditableWidget()},
-        # 'interval_ord': {'widget': XEditableWidget()},
-        # 'fi1': {'widget': XEditableWidget()},
-        # 'fi2': {'widget': XEditableWidget()},
         'fc1': {'widget': XEditableWidget()},
     }
 
     def __init__(self, *args, **kwargs):
-
-        self.intervals=kwargs.pop('intervals', None)
+        self.intervals = kwargs.pop('intervals', None)
         super().__init__(*args, **kwargs)
-        # self.class_name = self.__class__.__name__  # Store the class name
         self.subarea_id = Tabella25_dataView.subarea_id  # Initialize subarea_id in __init__
         self.area_id = Tabella25_dataView.area_id  # Initialize area_id in __init__
         self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
 
-    column_list = ('interval_ord', 'fi0', 'fi1', 'fn1', 'fi2', 'fn2', 'fi3', 'fc1')
-    form_columns = (
-    'interval_ord', 'fi0', 'fi1', 'fn1', 'fi2', 'fn2', 'fi3', 'fc1')  # Specify form columns with dropdowns
+    column_list = ('subject_id', 'interval_ord', 'fi0',
+                    'fi1', 'fn1', 'fi2', 'fn2', 'fi3', 'fn3', 'fi4', 'fn4', 'fi5', 'fn5', 'fi6', 'fn6', 'fc1')
+    form_columns = ('subject_id', 'interval_ord', 'fi0',
+                    'fi1', 'fn1', 'fi2', 'fn2', 'fi3', 'fn3', 'fi4', 'fn4', 'fi5', 'fn5', 'fi6', 'fn6', 'fc1')
 
-    column_labels = {'interval_ord': 'Periodo', 'fi0': 'Anno',
-                     'fi1': 'Numero', 'fn1': '%',
-                     'fi2': 'Altri', 'fn2': '%',
-                     'fi3': 'Totale',
-                     'fc1': 'Note'}
-    column_descriptions = {'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
-                           'fi0': 'Inserire anno (es. 2024)',
-                           'fi1': 'Numero IVI nel settore di vendita del SMR',
-                           'fn1': 'quota di mercato IVI',
-                           'fi2': 'Numero altri nel settore di vendita del SMR',
-                           'fn2': 'quota di altri',
-                           'fi3': '(numero)',
-                           'fc1': 'Inserire commento'}
+    column_labels = {
+        'subject_id': 'Fascia di domanda',
+        'interval_ord': 'Periodo',
+        'fi0': 'Anno',
+        'fi1': 'Numero POD/PDR vendita IVI (*)',
+        'fn1': '% IVI',
+        'fi2': 'Numero POD/PDR vendita Altri (*)',
+        'fn2': '% Altri',
+        'fi3': 'Totale',
+        'fn3': '% Totale',
 
-    # Customize inlist for the View class
+        'fi4': 'Quantità SMR/KWh vendita IVI (*)',
+        'fn4': '% Q IVI',
+        'fi5': 'Quantità SMR/KWh vendita Altri (*)',
+        'fn5': '% Q Altri',
+        'fi6': 'Q Totale',
+        'fn6': '% Q Totale',
+
+        'fc1': 'Note'
+    }
+    column_descriptions = {
+        'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
+        'fi0': 'Inserire anno (es. 2024)',
+
+        'fi1': 'Numero POD/PDR nel settore di vendita IVI',
+        'fn1': 'quota di mercato # IVI',
+        'fi2': 'Numero POD/PDR nel settore di vendita Altri',
+        'fn2': 'quota di mercato # altri',
+        'fi3': 'Totale #',
+        'fn3': 'Totale % #',
+
+        'fi4': 'Quantità SMR/KWh vendita IVI',
+        'fn4': 'quota di mercato # IVI',
+        'fi5': 'Quantità SMR/KWh vendita Altri',
+        'fn5': 'quota di mercato # altri',
+        'fi6': 'Totale #',
+        'fi6': 'Totale % #',
+
+        'fc1': 'Inserire commento'
+    }
+
     column_default_sort = ('fi0', True)
-    column_searchable_list = ('fi0', 'interval_ord', 'subject.name', 'fi3', 'fn1', 'fi4', 'fn2', 'fi5', 'fc1', 'fc2')
-    # Adjust based on your model structure
-    column_filters = ('fi0', 'interval_ord', 'subject.name', 'fi3', 'fi4', 'fi5', 'fc1')
-    # Adjust based on your model structure
+    column_searchable_list = ('fi0', 'interval_ord', 'subject.name', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fi6', 'fc1')
+    column_filters = ('fi0', 'interval_ord', 'subject.name', 'fi1', 'fi2','fi3', 'fi4', 'fi5', 'fc1')
 
-    # Specify fields to be excluded from the form
     form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_by', 'created_on', 'updated_on')
 
     def _subject_formatter(view, context, model, name):
-        # This function will be used to format the 'subject' column
-        if model.subject:
-            if isinstance(model.subject, Subject):  # Check if the subject is an instance of Subject
+        if model.subject_id:
+            if isinstance(model.subject, Subject):
                 return model.subject.name
             else:
-                return Subject.query.get(model.subject).name  # If not, query the subject object
+                return Subject.query.get(model.subject_id).name
         return ''
 
     column_formatters = {
-        'subject': _subject_formatter,
+        'subject_id': _subject_formatter,
         'fn1': lambda view, context, model, name: "%.2f" % model.fn1 if model.fn1 is not None else None,
         'fn2': lambda view, context, model, name: "%.2f" % model.fn2 if model.fn2 is not None else None,
-
-    }
+        'fn3': lambda view, context, model, name: "%.2f" % model.fn2 if model.fn2 is not None else None,
+        'fn4': lambda view, context, model, name: "%.2f" % model.fn2 if model.fn2 is not None else None,
+        'fn5': lambda view, context, model, name: "%.2f" % model.fn2 if model.fn2 is not None else None,
+        'fn6': lambda view, context, model, name: "%.2f" % model.fn2 if model.fn2 is not None else None,}
 
     def scaffold_form(self):
         form_class = super(Tabella25_dataView, self).scaffold_form()
-        # Set default values for specific fields
 
         form_class.subject_id = SelectField(
             'Fascia di domanda',
@@ -2048,13 +2066,10 @@ class Tabella25_dataView(ModelView):
             choices=[(subject.id, subject.name) for subject in Subject.query.filter_by(tier_1="Utenti").all()]
         )
 
-        # Get the current year
         current_year = datetime.now().year
-        # Generate choices for the year field from current_year - 5 to current_year + 1
         year_choices = [(str(year), str(year)) for year in range(current_year - 5, current_year + 2)]
-        # Set the default value to the current year
         default_year = str(current_year)
-        # Dynamically determine interval_ord options based on subject_id
+
         form_class.fi0 = SelectField(
             'Anno',
             coerce=int,
@@ -2062,35 +2077,37 @@ class Tabella25_dataView(ModelView):
             default=default_year
         )
 
-        # NEW
         config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
                                           subarea_id=None)
         nr_intervals = config_values[0]
 
-        # OLD
-        # nr_intervals = get_subarea_interval_type(self.area_id, self.subarea_id)
-
-        current_interval = [t[2] for t in self.intervals if
-                            t[0] == nr_intervals]  # int(get_current_interval(3))  # quadriester
+        current_interval = [t[2] for t in self.intervals if t[0] == nr_intervals]
         first_element = current_interval[0] if current_interval else None
         interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
 
         form_class.interval_ord = SelectField(
             'Periodo di rif.',
             coerce=int,
-            choices=interval_choices,  # Example choices, replace with your logic
+            choices=interval_choices,
             default=first_element
         )
+
         return form_class
+
+    form_create_rules = ('subject_id', 'interval_ord', 'fi0',
+                         'fi1', 'fi2', 'fi4', 'fi5',
+                         'fi3', 'fi6',
+                         'fn1', 'fn2', 'fn3', 'fn4', 'fn5', 'fi6',
+                         'fc1')
 
     def create_model(self, form):
         model = super(Tabella25_dataView, self).create_model(form)
         if current_user.is_authenticated:
             try:
-                model.user_id = current_user.id  # Set the user_id
-                model.company_id = current_user.company_id  # Set the company_id
+                model.user_id = current_user.id
+                model.company_id = current_user.company_id
                 model.data_type = self.subarea_name
-                created_by = current_user.username  # Set the created_by
+                created_by = current_user.username
                 user_id = current_user.id
                 model.user_id = user_id
                 try:
@@ -2098,55 +2115,44 @@ class Tabella25_dataView(ModelView):
                 except:
                     company_id = None
                     pass
-                model.company_id = company_id  # Set the company_id
-                model.created_by = created_by  # Set the cr by
-                model.created_on = datetime.now()  # Set the created_on
+                model.company_id = company_id
+                model.created_by = created_by
+                model.created_on = datetime.now()
             except AttributeError:
                 pass
             return model
         else:
-            # Handle the case where the user is not authenticated
             raise ValidationError('User not authenticated.')
 
     def get_query(self):
-        # query = super(Tabella25_dataView, self).get_query().filter_by(data_type=self.subarea_name)
         query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
 
         if current_user.is_authenticated:
             if current_user.has_role('Admin') or current_user.has_role('Authority'):
                 return query
             elif current_user.has_role('Manager'):
-                # Manager can only see records related to their company_users
-                # Assuming you have a relationship named 'user_companies' between User and CompanyUsers models
                 subquery = db.session.query(CompanyUsers.company_id).filter(
                     CompanyUsers.user_id == current_user.id
                 ).subquery()
-
                 query = query.filter(self.model.company_id.in_(subquery))
             elif current_user.has_role('Employee'):
-                # Employee can only see their own records
                 query = query.filter(self.model.user_id == current_user.id)
                 return query
 
-        # For other roles or anonymous users, return an empty query
         return query.filter(self.model.id < 0)
 
     def is_accessible(self):
         if current_user.is_authenticated:
             if (current_user.has_role('Admin') or current_user.has_role('Authority')
                     or current_user.has_role('Manager') or current_user.has_role('Employee')):
-                # Allow access for Admin, Manager, and Employee
                 return True
 
         return False
 
     def on_model_change(self, form, model, is_created):
-
         super().on_model_change(form, model, is_created)
-        # Reset form data
-        form.populate_obj(model)  # This resets the form data to its default values
+        form.populate_obj(model)
 
-        # print('method is', form.get('_method'), form.get('_method') in ['PUT', 'PATCH'])
         fi0_value = model.fi0
 
         now = datetime.now()
@@ -2156,20 +2162,12 @@ class Tabella25_dataView(ModelView):
                 f"Year in fi0 field cannot be in the future. Please enter a year less than or equal to {current_year}.")
 
         if is_created:
-            # Handle new model creation:
-            # - Set default values
-            # - Send notification
-            # Apply your custom logic to set data_type
-            model.created_on = datetime.now()  # Set the created_on
+            model.created_on = datetime.now()
             pass
         else:
-            # Handle existing model edit:
-            # - Compare previous and updated values
-            # - Trigger specific actions based on changes
             pass
 
-        # Perform actions relevant to both creation and edit:
-        user_id = current_user.id  # Get the current user's ID or any other criteria
+        user_id = current_user.id
         try:
             company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
         except:
@@ -2194,10 +2192,9 @@ class Tabella25_dataView(ModelView):
                                            None, form.fi0.data, form.interval_ord.data,
                                            interval_id, area_id, subarea_id, datetime.today(), db.session)
 
-        # - Validate data
-        # - Save the model
         fields_to_check = ['fi0',
-                           'fi1', 'fi2', 'fi3', 'fn1', 'fn2', 'interval_ord']
+                           'fi1', 'fi2', 'fi4', 'fi5',
+                           'interval_ord']
 
         for field_name in fields_to_check:
             if form[field_name].data is None:
@@ -2206,19 +2203,15 @@ class Tabella25_dataView(ModelView):
             raise ValidationError(
                 "Period must be less than or equal to the number of fractions (e.g. 4 for quarters, 12 for months)")
             pass
-        if form.fi0.data < 2000 or form.fi0.data > 2199:
-            raise ValidationError(
-                "Please check the year")
+        if form.fi0.data < 2000 or form.fi0.data > 2099:
+            raise ValidationError("Please check the year")
             pass
 
-        if (form.fi1.data is None or form.fi2.data is None or form.fi3.data is None):
+        if (form.fi1.data is None or form.fi2.data is None or form.fi4.data is None or form.fi5.data is None):
             raise ValidationError("Please enter all required data.")
 
-        if form.fi1.data + form.fi2.data + form.fi3.data == 0:
+        if form.fi1.data + form.fi2.data + form.fi4.data + form.fi5.data == 0:
             raise ValidationError("Please enter non-zero values for the fields.")
-        else:
-            if form.fi3.data != form.fi1.data + form.fi2.data:
-                raise ValidationError("Please check the total.")
 
         model.user_id = user_id
         model.data_type = data_type
@@ -2228,13 +2221,44 @@ class Tabella25_dataView(ModelView):
         model.data_type = self.subarea_name
         model.interval_id = interval_id
         model.status_id = status_id
-
         model.legal_document_id = legal_document_id
         model.subject_id = subject_id
         model.interval_ord = form.interval_ord.data
         model.fi0 = form.fi0.data
-        model.updated_on = datetime.now()  # Set the created_on
+        model.updated_on = datetime.now()
         model.company_id = company_id
+
+        model.fi3 = form.fi1.data + form.fi2.data
+        model.fi6 = form.fi4.data + form.fi5.data
+
+        # calculate totals
+        # NUMBERS
+        if (form.fi1.data + form.fi2.data) != 0:
+            model.fn1 = 100 * form.fi1.data / (form.fi1.data + form.fi2.data)
+        else:
+            model.fn1 = 0
+        if (form.fi1.data + form.fi2.data) != 0:
+            model.fn2 = 100 * form.fi2.data / (form.fi1.data + form.fi2.data)
+        else:
+            model.fn2 = 0
+
+        if (form.fi1.data + form.fi2.data) != 0:
+            model.fn3 = 100 * (form.fi1.data / (form.fi1.data + form.fi2.data) + \
+                        form.fi2.data / (form.fi1.data + form.fi2.data))
+
+        # QUANT
+        if (form.fi4.data + form.fi5.data) != 0:
+            model.fn4 = 100 * form.fi4.data / (form.fi4.data + form.fi5.data)
+        else:
+            model.fn4 = 0
+        if (form.fi4.data + form.fi5.data) != 0:
+            model.fn5 = 100 * form.fi5.data / (form.fi4.data + form.fi5.data)
+        else:
+            model.fn5 = 0
+
+        if (form.fi4.data + form.fi5.data) != 0:
+            model.fn6 = 100 * (form.fi4.data / (form.fi4.data + form.fi5.data) + \
+                        form.fi5.data / (form.fi4.data + form.fi5.data))
 
         if result == False:
             raise ValidationError(message)

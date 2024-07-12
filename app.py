@@ -3861,16 +3861,30 @@ def auditlog():
 
 @app.errorhandler(Exception)
 def handle_exception(e):
+
+    # TODO restore the snippet below after debug
+    '''
+    :param e:
+    :return:
     # Pass through HTTP errors
     if isinstance(e, HTTPException):
         return e
     # Now you're handling non-HTTP exceptions only
     return render_template("error.html", error=str(e)), 500
+    '''
+    # Temporarily disable login redirection during debugging
+    if not app.debug:
+        app.logger.error(f"An error occurred: {e}", exc_info=True)
+        return render_template('error.html', error=e), 500
+    else:
+        raise e  # Raise the exception in debug mode for detailed traceback
 
 
+'''
 @app.errorhandler(500)
 def internal_error(error):
     return render_template('error.html', message=str(error)), 500
+'''
 
 
 @app.route('/chart_form', methods=['GET', 'POST'])
@@ -4042,4 +4056,4 @@ if __name__ == '__main__':
     #logging.basicConfig(level=logging.DEBUG)
     # logging.debug(f"Starting app on port {port}")
     # TODO DEBUG
-    app.run(debug=False, host='0.0.0.0', port=port, extra_files=['./static/js/menuStructure101.json'])
+    app.run(debug=True, host='0.0.0.0', port=port, extra_files=['./static/js/menuStructure101.json'])
