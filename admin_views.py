@@ -1999,8 +1999,8 @@ class Tabella25_dataView(ModelView):
         'fi1': 'Numero POD/PDR vendita IVI (*)',
         'fi2': 'Numero POD/PDR vendita Altri (*)',
         'fi7': 'Totale Nr.',
-        'fi4': 'Quantità SMR/KWh vendita IVI (*)',
-        'fi5': 'Quantità SMR/KWh vendita Altri (*)',
+        'fi4': 'Quantità Smc/KWh vendita IVI (*)',
+        'fi5': 'Quantità Smc/KWh vendita Altri (*)',
         'fi6': 'Totale Q',
 
         'fn1': '% Nr IVI',
@@ -2019,8 +2019,8 @@ class Tabella25_dataView(ModelView):
         'fi1': 'Numero POD/PDR nel settore di vendita IVI',
         'fi2': 'Numero POD/PDR nel settore di vendita Altri',
         'fi7': 'Totale numero POD/PDR complessivo IVI e Altri',
-        'fi4': 'Quantità SMR/KWh vendita IVI',
-        'fi5': 'Quantità SMR/KWh vendita Altri',
+        'fi4': 'Quantità Smc/KWh vendita IVI',
+        'fi5': 'Quantità Smc/KWh vendita Altri',
         'fi6': 'Totale quantità complessiva IVI e Altri',
 
         'fn1': 'quota di mercato numero POD/PDR IVI sul totale',
