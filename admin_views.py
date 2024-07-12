@@ -16,7 +16,7 @@ from flask_admin.model.widgets import XEditableWidget
 from wtforms.fields import DateField
 from flask_admin import BaseView
 from flask_admin.base import expose
-from wtforms import IntegerField, FileField
+from wtforms import IntegerField, FileField, HiddenField
 from datetime import datetime
 
 from sqlalchemy import and_
@@ -3694,10 +3694,31 @@ class ContainerAdmin(ModelView):
     form_overrides = {
         'content': JSONField
     }
+
     form_create_rules = [
-        rules.FieldSet(('page', 'position', 'content_type', 'content'), 'Container Details')
+        rules.FieldSet(('page', 'position', 'content_type', 'content', 'image', 'description', 'action_type', 'action_url', 'container_order'), 'Container Details'),
+        'created_at', 'updated_at'
     ]
-    form_columns = ['created_at', 'updated_at', 'image', 'description', 'action_type', 'action_url', 'container_order']
+
+    form_columns = ['page', 'position', 'content_type', 'content', 'created_at', 'updated_at', 'image', 'description', 'action_type', 'action_url', 'container_order']
+
+    column_list = ['page', 'position', 'content_type', 'content', 'created_at', 'updated_at', 'image', 'description', 'action_type', 'action_url', 'container_order']
+
+    def scaffold_form(self):
+        form_class = super(ContainerAdmin, self).scaffold_form()
+
+        form_class.created_at = HiddenField()
+        form_class.updated_at = HiddenField()
+
+        # Add any custom field settings if needed
+        return form_class
+
+    def on_model_change(self, form, model, is_created):
+        if is_created:
+            model.created_at = datetime.now()
+        model.updated_at = datetime.now()
+        return super(ContainerAdmin, self).on_model_change(form, model, is_created)
+
 
 
 # Custom view for surveys open for editing
