@@ -4,6 +4,7 @@
 # app.py (or run.py)
 import re
 import requests
+import stripe
 
 # import logging
 # from logging import FileHandler, Formatter
@@ -62,7 +63,7 @@ from forms.forms import (LoginForm, ForgotPasswordForm, ResetPasswordForm101, Re
 from flask_mail import Mail, Message
 from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as _
 
-from app_factory import create_app, roles_required
+from app_factory import create_app, roles_required, subscription_required
 
 from config.config import (get_current_intervals,
                            generate_company_questionnaire_report_data, generate_area_subarea_report_data,
@@ -186,6 +187,8 @@ print('CORS active')
 login_manager = LoginManager(app)
 print('login manager active')
 
+stripe.api_key = app.config['STRIPE_API_KEY']
+
 # Register the password reset route
 # app.add_url_rule('/admin_reset_password', 'admin_reset_password', admin_reset_password, methods=['GET', 'POST'])
 # print('url rule set')
@@ -233,7 +236,6 @@ def get_session():
     return f'Session value: {value}'
 
 '''
-
 @login_manager.user_loader
 def load_user(user_id):
     user = user_manager.load_user(user_id)
@@ -246,7 +248,6 @@ def load_user(user_id):
         session['user_roles'] = [role.name for role in user.roles] if user.roles else []
         #print('roles', session['user_roles'])
     return user
-
 '''
 
 def check_internet():
@@ -1359,9 +1360,29 @@ def master_reset_password():
 
 
 # Route to open F l a s k -Admin
+@app.route('/subscriptions')
+def subscriptions():
+    user = Users.query.filter_by(email=session.get('email')).first()
+    if user:
+        subscription_info = {
+            'plan': user.subscription_plan,
+            'status': user.subscription_status,
+            'start_date': user.subscription_start_date,
+            'end_date': user.subscription_end_date
+        }
+    else:
+        subscription_info = {
+            'plan': 'N/A',
+            'status': 'N/A',
+            'start_date': 'N/A',
+            'end_date': 'N/A'
+        }
+    return render_template('subscriptions.html', subscription_info=subscription_info)
 
-@login_required
+
 @app.route('/open_admin_app_1')
+@login_required
+@subscription_required
 def open_admin_app_1():
     user_id = current_user.id
 
@@ -1371,6 +1392,11 @@ def open_admin_app_1():
         .first()
 
     company_name = company_row[0] if company_row else None  # Extracting the name attribute
+
+    user_subscription_plan = current_user.subscription_plan
+    user_subscription_status = current_user.subscription_status
+
+    print('subscription plan, status', user_subscription_plan, user_subscription_status)
 
     template = "Area di controllo 1 - Atti, iniziative, documenti"
     placeholder_value = company_name if company_name else None
@@ -1383,9 +1409,11 @@ def open_admin_app_1():
 
 
 
-@login_required
 @app.route('/open_admin_app_2')
+@login_required
+@subscription_required
 def open_admin_app_2():
+    print('subscription required route')
     user_id = current_user.id
     company_row = db.session.query(Company.name) \
         .join(CompanyUsers, CompanyUsers.company_id == Company.id) \
@@ -3922,6 +3950,120 @@ def chart_form():
     return render_template('charts/chart_form.html', areas=areas, subareas=subareas, companies=companies)
 
 
+# STRIPE
+# ======
+@app.route('/create-checkout-session', methods=['POST'])
+def create_checkout_session():
+    session = stripe.checkout.Session.create(
+        payment_method_types=['card'],
+        line_items=[{
+            'price_data': {
+                'currency': 'usd',
+                'product_data': {
+                    'name': 'Subscription Plan',
+                },
+                'unit_amount': 1000,  # price in cents
+            },
+            'quantity': 1,
+        }],
+        mode='subscription',
+        success_url=url_for('success', _external=True),
+        cancel_url=url_for('cancel', _external=True),
+    )
+    return jsonify(id=session.id)
+
+@app.route('/success')
+def success():
+    return 'Payment succeeded'
+
+@app.route('/cancel')
+def cancel():
+    return 'Payment canceled'
+
+
+# **Handle Webhooks**:
+# Set up a webhook endpoint to handle events from Stripe, such as payment success.
+
+@app.route('/webhook', methods=['POST'])
+def stripe_webhook():
+    payload = request.get_data(as_text=True)
+    sig_header = request.headers.get('Stripe-Signature')
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, app.config['STRIPE_ENDPOINT_SECRET']
+        )
+    except ValueError as e:
+        return 'Invalid payload', 400
+    except stripe.error.SignatureVerificationError as e:
+        return 'Invalid signature', 400
+
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        handle_checkout_session(session)
+
+    return '', 200
+
+
+def handle_checkout_session(session):
+    try:
+        # Check if 'email' exists in session
+        if 'email' not in session:
+            flash('Email not found in session', 'error')
+            return
+
+        # Find the user by email
+        user = Users.query.filter_by(email=session['email']).first()
+
+        # If user not found, handle it appropriately
+        if not user:
+            flash('User not found', 'error')
+            return
+
+        # Update subscription details
+        user.subscription_status = 'active'
+        user.subscription_plan = 'basic'  # or other plan based on session details
+        user.subscription_start_date = datetime.utcnow()
+        user.subscription_end_date = datetime.utcnow() + timedelta(days=30)
+
+        # Commit changes to the database
+        db.session.commit()
+        flash('Subscription updated successfully', 'success')
+
+    except Exception as e:
+        # Rollback the session in case of error
+        db.session.rollback()
+        flash(f'An error occurred: {str(e)}', 'error')
+
+
+@app.route('/subscribe', methods=['POST'])
+def subscribe():
+    data = request.get_json()
+    plan = data.get('plan')
+    email = session.get('email')
+
+    if not email:
+        return jsonify({"success": False, "message": "User not logged in."}), 400
+
+    user = Users.query.filter_by(email=email).first()
+
+    if not user:
+        return jsonify({"success": False, "message": "User not found."}), 404
+
+    if plan not in ['free', 'basic', 'premium']:
+        return jsonify({"success": False, "message": "Invalid subscription plan."}), 400
+
+    # Update user subscription details
+    user.subscription_plan = plan
+    user.subscription_status = 'active'
+    user.subscription_start_date = datetime.utcnow()
+    user.subscription_end_date = datetime.utcnow() + timedelta(days=30)  # For simplicity, assuming 30 days for all plans
+
+    db.session.commit()
+
+    return jsonify({"success": True, "message": "Subscription updated successfully."})
+
+# END STRIPE
 
 '''
 @app.route('/questionnaire/<int:id>', methods=['GET'])
@@ -4021,7 +4163,6 @@ def submit_response_psf():
     db.session.commit()
 
     return jsonify({"message": "Response submitted successfully"})
-
 
 
 if __name__ == '__main__':

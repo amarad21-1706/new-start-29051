@@ -18,17 +18,49 @@ from password_reset import password_reset_bp  # Import the blueprint
 def my_locale_selector():
     return 'en_EN'  # Example for French
 
+
 def roles_required(*required_roles):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
-            if 'user_roles' in session and any(role.lower() in [r.lower() for role in session['user_roles']] for role in required_roles):
+            if 'user_roles' in session and any(r.lower() in [role.lower() for role in required_roles] for r in session['user_roles']):
                 return func(*args, **kwargs)
             else:
                 flash("You do not have the necessary permissions to access this page.", "danger")
                 return redirect(request.referrer or url_for('index'))
         return wrapper
     return decorator
+
+
+
+def subscription_required(f):
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        #current_app.logger.debug('Checking subscription requirement...')
+        user_roles = session.get('user_roles', [])
+        #current_app.logger.debug(f'user_roles: {user_roles}')
+
+        print('decorator: status is 2. user roles', user_roles)
+
+        if 'Admin' in user_roles or 'Authority' in user_roles:
+            # current_app.logger.debug('User has Admin or Authority role, granting access...')
+            return f(*args, **kwargs)  # Allow access if user has Admin or Authority role
+
+        email = session.get('email')
+        #current_app.logger.debug(f'user email: {email}')
+        user = Users.query.filter_by(email=email).first()
+
+        if not user or user.subscription_status != 'active':
+            flash('You need an active subscription to access this page.')
+            #current_app.logger.debug('No active subscription, redirecting to subscriptions page...')
+            return redirect(url_for('subscriptions'))
+
+        # current_app.logger.debug('User has an active subscription, granting access...')
+        return f(*args, **kwargs)
+
+    return decorated_function
+
+
 
 def create_app(conf=None):
     if conf is None:

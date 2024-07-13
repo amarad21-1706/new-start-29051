@@ -110,10 +110,17 @@ class Users(db.Model, UserMixin):
         Regexp(r'^\+?1?\d{9,15}$', message="Phone number must be entered in the format: '+999999999'. Up to 15 digits allowed.")
     ], nullable=True)
 
+    # New subscription fields
+    subscription_plan = db.Column(db.String(20), default='free')
+    subscription_status = db.Column(db.String(20), default='inactive')
+    subscription_start_date = db.Column(db.DateTime, nullable=True)
+    subscription_end_date = db.Column(db.DateTime, nullable=True)
+
     #password_hash = db.Column(db.String(128))
     created_on = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_on = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
     end_of_registration = db.Column(DATE)
+
 
     roles = db.relationship('Role', secondary='user_roles', backref=db.backref('user', lazy='dynamic'),
                             primaryjoin='UserRoles.user_id == Users.id',
@@ -132,6 +139,13 @@ class Users(db.Model, UserMixin):
     def __init__(self, **kwargs):
         super(Users, self).__init__(**kwargs)
         self.id = kwargs.get('id')
+        self.username = kwargs.get('username')
+        self.email = kwargs.get('email')
+        self.password = kwargs.get('password')
+        self.subscription_plan = kwargs.get('subscription_plan', 'free')
+        self.subscription_status = kwargs.get('subscription_status', 'inactive')
+        self.subscription_start_date = kwargs.get('subscription_start_date')
+        self.subscription_end_date = kwargs.get('subscription_end_date')
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password).decode('utf8')
