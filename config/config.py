@@ -25,6 +25,7 @@ import pytz
 import os
 from dotenv import load_dotenv
 import redis
+from redis import Redis
 
 load_dotenv()  # Load environment variables from .env file if present
 
@@ -97,8 +98,15 @@ class Config:
         self.SEND_FILE_MAX_AGE_DEFAULT = 0  # Disable caching for development
 
         # self.SESSION_TYPE = 'filesystem'
+
+        # Set up the Redis URL
+        redis_url = os.getenv('REDIS_URL', 'redis://localhost:6379')
+
+        # Configure session to use Redis
         self.SESSION_TYPE = 'redis'
-        self.SESSION_REDIS = redis.StrictRedis(host='localhost', port=6379)
+        self.SESSION_PERMANENT = False
+        self.SESSION_USE_SIGNER = True
+        self.SESSION_REDIS = Redis.from_url(redis_url)
 
         self.SEND_FILE_MAX_AGE_DEFAULT = 0  # Disable caching for development
 
