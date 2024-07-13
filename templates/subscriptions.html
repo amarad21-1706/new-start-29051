@@ -1,3 +1,6 @@
+{% extends "base.html" %}
+
+{% block content %}
 <!doctype html>
 <html lang="en">
 <head>
@@ -6,45 +9,37 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
 </head>
 <body>
-    {% extends 'base.html' %}
-
-    {% block content %}
-    <div class="container">
-        <h1>Choose Your Subscription Plan</h1>
-
-        <div class="navigation-buttons">
-            <a class="btn btn-primary" href="{{ url_for('index') }}">Home</a>
-            <button class="btn btn-secondary" onclick="window.history.back()">Back</button>
+    <h1>Choose Your Subscription Plan</h1>
+    <div class="subscription-info">
+        <h3>Current Subscription</h3>
+        <p>Status: {{ current_user.subscription_status }}</p>
+        <p>Plan: {{ current_user.subscription_plan }}</p>
+        <p>Start Date: {{ current_user.subscription_start_date }}</p>
+        <p>End Date: {{ current_user.subscription_end_date }}</p>
+    </div>
+    <div class="subscription-plans">
+        <div class="plan">
+            <h2>Free Plan</h2>
+            <p>$0 / month</p>
+            <p>Basic features included</p>
+            <button onclick="subscribe('free')">Choose Free</button>
         </div>
-
-        <div class="current-subscription">
-            <h2>Current Subscription</h2>
-            <p><strong>Plan:</strong> {{ subscription_info.plan }}</p>
-            <p><strong>Status:</strong> {{ subscription_info.status }}</p>
-            <p><strong>Start Date:</strong> {{ subscription_info.start_date }}</p>
-            <p><strong>End Date:</strong> {{ subscription_info.end_date }}</p>
+        <div class="plan">
+            <h2>Basic Plan</h2>
+            <p>$10 / month</p>
+            <p>Includes additional features</p>
+            <button onclick="subscribe('basic')">Choose Basic</button>
         </div>
-
-        <div class="subscription-plans">
-            <div class="plan">
-                <h2>Free Plan</h2>
-                <p>$0 / month</p>
-                <p>Basic features included</p>
-                <button class="btn btn-success" onclick="subscribe('free')">Choose Free</button>
-            </div>
-            <div class="plan">
-                <h2>Basic Plan</h2>
-                <p>$10 / month</p>
-                <p>Includes additional features</p>
-                <button class="btn btn-success" onclick="subscribe('basic')">Choose Basic</button>
-            </div>
-            <div class="plan">
-                <h2>Premium Plan</h2>
-                <p>$20 / month</p>
-                <p>All features included</p>
-                <button class="btn btn-success" onclick="subscribe('premium')">Choose Premium</button>
-            </div>
+        <div class="plan">
+            <h2>Premium Plan</h2>
+            <p>$20 / month</p>
+            <p>All features included</p>
+            <button onclick="subscribe('premium')">Choose Premium</button>
         </div>
+    </div>
+    <div class="navigation-buttons">
+        <a class="btn" href="{{ url_for('index') }}">Home</a>
+        <a class="btn" href="{{ request.referrer }}">Back</a>
     </div>
 
     <script>
@@ -67,6 +62,6 @@
             });
         }
     </script>
-    {% endblock %}
 </body>
 </html>
+{% endblock %}

@@ -4036,32 +4036,30 @@ def handle_checkout_session(session):
         flash(f'An error occurred: {str(e)}', 'error')
 
 
+
 @app.route('/subscribe', methods=['POST'])
+@login_required
 def subscribe():
     data = request.get_json()
     plan = data.get('plan')
-    email = session.get('email')
-
-    if not email:
-        return jsonify({"success": False, "message": "User not logged in."}), 400
-
-    user = Users.query.filter_by(email=email).first()
-
-    if not user:
-        return jsonify({"success": False, "message": "User not found."}), 404
 
     if plan not in ['free', 'basic', 'premium']:
-        return jsonify({"success": False, "message": "Invalid subscription plan."}), 400
+        return jsonify(success=False, message="Invalid plan selected."), 400
 
-    # Update user subscription details
-    user.subscription_plan = plan
-    user.subscription_status = 'active'
-    user.subscription_start_date = datetime.utcnow()
-    user.subscription_end_date = datetime.utcnow() + timedelta(days=30)  # For simplicity, assuming 30 days for all plans
+    try:
+        # Update subscription details
+        current_user.subscription_plan = plan
+        current_user.subscription_status = 'active'
+        current_user.subscription_start_date = datetime.utcnow()
+        current_user.subscription_end_date = datetime.utcnow() + timedelta(days=30)
 
-    db.session.commit()
+        db.session.commit()
+        return jsonify(success=True)
+    except Exception as e:
+        db.session.rollback()
+        return jsonify(success=False, message=str(e)), 500
 
-    return jsonify({"success": True, "message": "Subscription updated successfully."})
+
 
 # END STRIPE
 

@@ -24,6 +24,7 @@ import pytz
 
 import os
 from dotenv import load_dotenv
+import redis
 
 load_dotenv()  # Load environment variables from .env file if present
 
@@ -95,7 +96,9 @@ class Config:
         self.PERMANENT_SESSION_LIFETIME = timedelta(minutes=60)  # Set session to expire in 5 minutes
         self.SEND_FILE_MAX_AGE_DEFAULT = 0  # Disable caching for development
 
-        self.SESSION_TYPE = 'filesystem'
+        # self.SESSION_TYPE = 'filesystem'
+        self.SESSION_TYPE = 'redis'
+        self.SESSION_REDIS = redis.StrictRedis(host='localhost', port=6379)
 
         self.SEND_FILE_MAX_AGE_DEFAULT = 0  # Disable caching for development
 
