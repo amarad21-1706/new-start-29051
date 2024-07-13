@@ -3271,6 +3271,19 @@ def create_admin_views(app, intervals):
                     model = self.model()
                     form.populate_obj(model)
 
+                    # Ensure required fields are not null
+                    # Ensure required fields are not null
+                    if model.fi1 is None or model.fi2 is None or model.fi3 is None:
+                        raise ValidationError("Fields 'Total', 'IVI', and 'A' cannot be null.")
+
+                    # Check if at least one inline record exists
+                    if model.fi3 != 0 and not model.base_data_inlines:
+                        raise ValidationError("At least one Vendor record is required.")
+
+                    # Ensure that the sum of fi2 and fi3 equals fi1
+                    if model.fi1 != model.fi2 + model.fi3:
+                        raise ValidationError("The sum of 'IVI' and 'A' must equal 'Total'.")
+
                     self.session.add(model)
                     self.session.commit()
                     print('Model committed, setting inline record types')
@@ -3342,6 +3355,10 @@ def create_admin_views(app, intervals):
                         form.fi1.data != form.fi2.data + form.fi3.data):
                     raise ValidationError("Please check the values you entered.")
 
+                # Check if at least one inline record exists
+                if model.fi3.data != 0 and not model.base_data_inlines:
+                    raise ValidationError("At least one Vendor record is required.")
+
                 if form.fi0.data == None or form.interval_ord.data == None:
                     raise ValidationError(f"Time interval reference fields cannot be null")
 
@@ -3356,9 +3373,9 @@ def create_admin_views(app, intervals):
 
                 with current_app.app_context():
                     result, message = check_status_extended(is_created, company_id, lexic_id, subject_id,
-                                    legal_document_id, interval_ord, interval_id, year_id,
-                                    area_id, subarea_id, form.fi1.data, None, None, None, None,
-                                    None, None, None, None, datetime.today(), db.session)
+                                                            legal_document_id, interval_ord, interval_id, year_id,
+                                                            area_id, subarea_id, form.fi1.data, None, None, None, None,
+                                                            None, None, None, None, datetime.today(), db.session)
 
                 if result == False:
                     raise ValidationError(message)
@@ -3392,7 +3409,6 @@ def create_admin_views(app, intervals):
                 self.session.commit()
 
                 return model
-
 
         # =================================================================================================================
         # Define custom form for CustomAdminIndexView2
