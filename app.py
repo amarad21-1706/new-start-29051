@@ -4,7 +4,7 @@
 # app.py (or run.py)
 import re
 import requests
-import stripe
+# import stripe
 
 # import logging
 # from logging import FileHandler, Formatter
