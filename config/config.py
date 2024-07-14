@@ -151,8 +151,8 @@ class Config:
         self.MAIL_USE_TLS = True
         self.MAIL_USE_SSL = False
 
-        self.STRIPE_API_KEY = 'your_stripe_api_key'
-        self.STRIPE_PUBLISHABLE_KEY = 'your_stripe_publishable_key'
+        # self.STRIPE_API_KEY = 'your_stripe_api_key'
+        # self.STRIPE_PUBLISHABLE_KEY = 'your_stripe_publishable_key'
 
 
 # Define a custom JSON encoder class to handle datetime serialization

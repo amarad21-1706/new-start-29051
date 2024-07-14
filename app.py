@@ -187,7 +187,7 @@ print('CORS active')
 login_manager = LoginManager(app)
 print('login manager active')
 
-stripe.api_key = app.config['STRIPE_API_KEY']
+# stripe.api_key = app.config['STRIPE_API_KEY']
 
 # Register the password reset route
 # app.add_url_rule('/admin_reset_password', 'admin_reset_password', admin_reset_password, methods=['GET', 'POST'])
@@ -1358,26 +1358,6 @@ def master_reset_password():
     return redirect(url_for('admin_reset_password'))
 '''
 
-
-# Route to open F l a s k -Admin
-@app.route('/subscriptions')
-def subscriptions():
-    user = Users.query.filter_by(email=session.get('email')).first()
-    if user:
-        subscription_info = {
-            'plan': user.subscription_plan,
-            'status': user.subscription_status,
-            'start_date': user.subscription_start_date,
-            'end_date': user.subscription_end_date
-        }
-    else:
-        subscription_info = {
-            'plan': 'N/A',
-            'status': 'N/A',
-            'start_date': 'N/A',
-            'end_date': 'N/A'
-        }
-    return render_template('subscriptions.html', subscription_info=subscription_info)
 
 
 @app.route('/open_admin_app_1')
@@ -3950,8 +3930,41 @@ def chart_form():
     return render_template('charts/chart_form.html', areas=areas, subareas=subareas, companies=companies)
 
 
+
+@app.route('/questionnaire/<int:id>', methods=['GET'])
+def get_questionnaire(id):
+    questionnaire = Questionnaire_psf.query.get(id)
+    if questionnaire:
+        return jsonify(questionnaire.structure)
+    return jsonify({"error": "Questionnaire not found"}), 404
+
+
 # STRIPE
 # ======
+'''
+
+
+# Route to open F l a s k -Admin
+@app.route('/subscriptions')
+def subscriptions():
+    user = Users.query.filter_by(email=session.get('email')).first()
+    if user:
+        subscription_info = {
+            'plan': user.subscription_plan,
+            'status': user.subscription_status,
+            'start_date': user.subscription_start_date,
+            'end_date': user.subscription_end_date
+        }
+    else:
+        subscription_info = {
+            'plan': 'N/A',
+            'status': 'N/A',
+            'start_date': 'N/A',
+            'end_date': 'N/A'
+        }
+    return render_template('subscriptions.html', subscription_info=subscription_info)
+
+
 @app.route('/create-checkout-session', methods=['POST'])
 def create_checkout_session():
     session = stripe.checkout.Session.create(
@@ -3971,6 +3984,8 @@ def create_checkout_session():
         cancel_url=url_for('cancel', _external=True),
     )
     return jsonify(id=session.id)
+
+
 
 @app.route('/success')
 def success():
@@ -4065,55 +4080,18 @@ def subscribe():
 
 # END STRIPE
 
-'''
+
+
+
 @app.route('/questionnaire/<int:id>', methods=['GET'])
 def get_questionnaire(id):
     questionnaire = Questionnaire_psf.query.get(id)
     if questionnaire:
         return jsonify(questionnaire.structure)
     return jsonify({"error": "Questionnaire not found"}), 404
+
 
 @app.route('/submit_response', methods=['POST'])
-def submit_response():
-    data = request.get_json()
-    if not data:
-        return jsonify({"error": "No input data provided"}), 400
-
-    questionnaire_id = data.get('questionnaire_id')
-    user_id = data.get('user_id')
-    company_id = data.get('company_id')
-    answers = data.get('answers')
-
-    if not all([questionnaire_id, user_id, company_id, answers]):
-        return jsonify({"error": "Missing data"}), 400
-
-    response = Response_psf(
-        questionnaire_id=questionnaire_id,
-        user_id=user_id,
-        company_id=company_id,
-        answers=answers
-    )
-    db.session.add(response)
-    db.session.commit()
-
-    return jsonify({"message": "Response submitted successfully"})
-
-@app.route('/questionnaire_psf')
-def questionnaire_psf():
-    return render_template('dynamic_questionnaire_psf.html')
-
-'''
-
-
-@app.route('/questionnaire/<int:id>', methods=['GET'])
-def get_questionnaire(id):
-    questionnaire = Questionnaire_psf.query.get(id)
-    if questionnaire:
-        return jsonify(questionnaire.structure)
-    return jsonify({"error": "Questionnaire not found"}), 404
-
-
-'''@app.route('/submit_response', methods=['POST'])
 def submit_response():
     data = request.form
     questionnaire_id = data.get('questionnaire_id')
@@ -4187,7 +4165,8 @@ if __name__ == '__main__':
     # app.run(debug=False, port=5000, host='localhost', extra_files=['./static/js/menuStructure101.json'])
     # Change the port number
 
-    ''' 25May2024
+    '''
+    25May2024
     port = int(os.environ.get('PORT', 5000)) # 5000
     app.run(debug=True, host='0.0.0.0', port=port, extra_files=['./static/js/menuStructure101.json'])
     '''
