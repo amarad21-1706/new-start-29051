@@ -309,7 +309,6 @@ sqlparse==0.4.4
 squarify==0.4.3
 srsly==2.4.8
 stack-data==0.6.2
-stripe==10.3.0
 tenacity==8.2.3
 terminado==0.18.0
 thinc==8.1.12
