@@ -257,6 +257,10 @@
                     </li>
                 {% endmacro %}
 
+                {% for main_menu_item in left_menu_items %}
+                    {{ render_menu_item(main_menu_item) }}
+                {% endfor %}
+
                 {% if left_menu_items and left_menu_items|length > 0 %}
                     {% if (left_menu_items | string).find('dict') > -1 %}
                         {% for main_label, main_menu_item in left_menu_items.items() %}

@@ -4,7 +4,7 @@
 # app.py (or run.py)
 import re
 import requests
-# import stripe
+import stripe
 
 # import logging
 # from logging import FileHandler, Formatter
@@ -187,7 +187,8 @@ print('CORS active')
 login_manager = LoginManager(app)
 print('login manager active')
 
-# stripe.api_key = app.config['STRIPE_API_KEY']
+stripe.api_key = app.config['STRIPE_API_KEY']
+stripe.publishable_key = app.config['STRIPE_PUBLISHABLE_KEY']
 
 # Register the password reset route
 # app.add_url_rule('/admin_reset_password', 'admin_reset_password', admin_reset_password, methods=['GET', 'POST'])
@@ -2366,6 +2367,9 @@ def control_area_1():
     current_route = request.url_rule
     user_roles = session.get('user_roles', [])
 
+    if 'current_app' not in globals():
+        return render_template('404.html'), 404  # Ensure you have a 404.html template
+
     # Your view logic goes here
     current_route_url = current_app.url_for('control_area_1')
 
@@ -2373,7 +2377,7 @@ def control_area_1():
         left_menu_items = get_left_menu_items_limited(user_roles, 'area_1')
         # Render the template using the current route information and left menu items
         return render_template('control_area_1.html',
-                               current_route=current_route, left_menu_items=left_menu_items)
+                               current_route=current_route, left_menu_items=left_menu_items, current_app=current_app)
 
     # If the condition is not met, you should still return a response
     return render_template('control_area_1.html',
@@ -2384,6 +2388,9 @@ def control_area_2():
     # Get the current route from the request object
     current_route = request.url_rule
     user_roles = session.get('user_roles', [])
+
+    if 'current_app' not in globals():
+        return render_template('404.html'), 404  # Ensure you have a 404.html template
 
     # Your view logic goes here
     current_route_url = current_app.url_for('control_area_2')
@@ -2397,7 +2404,7 @@ def control_area_2():
 
     # If the condition is not met, you should still return a response
     return render_template('control_area_2.html',
-                           current_route=current_route)
+                           current_route=current_route, current_app=current_app)
 
 @login_required
 @app.route('/control_area_3')
@@ -2405,6 +2412,9 @@ def control_area_3():
     # Get the current route from the request object
     current_route = request.url_rule
     user_roles = session.get('user_roles', [])
+
+    if 'current_app' not in globals():
+        return render_template('404.html'), 404  # Ensure you have a 404.html template
 
     # Your view logic goes here
     current_route_url = current_app.url_for('control_area_3')
@@ -2418,7 +2428,7 @@ def control_area_3():
 
     # If the condition is not met, you should still return a response
     return render_template('control_area_3.html',
-                           current_route=current_route_url)
+                           current_route=current_route_url, current_app=current_app)
 
 
 @login_required
@@ -3941,8 +3951,6 @@ def get_questionnaire(id):
 
 # STRIPE
 # ======
-'''
-
 
 # Route to open F l a s k -Admin
 @app.route('/subscriptions')
@@ -4082,7 +4090,7 @@ def subscribe():
 
 
 
-
+'''
 @app.route('/questionnaire/<int:id>', methods=['GET'])
 def get_questionnaire(id):
     questionnaire = Questionnaire_psf.query.get(id)
