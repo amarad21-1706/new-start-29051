@@ -4208,17 +4208,49 @@ def admin_news():
 @login_required
 @roles_required('Admin')
 def edit_news(id):
+    print(f'Entering edit_news route {id}')
     news_item = Container.query.get_or_404(id)
     if request.method == 'POST':
-        news_item.content['headline'] = request.form['headline']
-        news_item.content['short_text'] = request.form['short_text']
-        news_item.content['image_url'] = request.form['image_url']
-        news_item.content['more_link'] = request.form['more_link']
-        db.session.commit()
-        flash('News item updated successfully!')
+        print('Form data received')
+        headline = request.form['headline']
+        short_text = request.form['short_text']
+        image_url = request.form['image_url']
+        link_type = request.form['link_type']
+        more_link = request.form['more_link']
+        body = request.form['body']
+
+        print('headline:', headline)
+        print('short_text:', short_text)
+        print('image_url:', image_url)
+        print('link_type:', link_type)
+        print('more_link:', more_link)
+        print('body:', body)
+
+        # Update the JSONB content field explicitly
+        news_item.content = {
+            'headline': headline,
+            'short_text': short_text,
+            'image_url': image_url,
+            'link_type': link_type,
+            'more_link': more_link,
+            'body': body
+        }
+
+        try:
+            db.session.flush()  # Add this line
+            db.session.commit()
+            print('News item updated successfully in the database')
+            print('Updated news item:', news_item.content)
+            flash('News item updated successfully!')
+        except Exception as e:
+            db.session.rollback()
+            print(f'Error updating news item: {e}')
+            flash('An error occurred while updating the news item. Please try again.', 'danger')
+
         return redirect(url_for('admin_news'))
 
-    return render_template('news_form.html', news_item=news_item)
+    return render_template('edit_news.html', news_item=news_item)
+
 
 @app.route('/delete_news/<int:id>')
 @login_required
@@ -4285,4 +4317,4 @@ if __name__ == '__main__':
     #logging.basicConfig(level=logging.DEBUG)
     # logging.debug(f"Starting app on port {port}")
     # TODO DEBUG
-    app.run(debug=True, host='0.0.0.0', port=port, extra_files=['./static/js/menuStructure101.json'])
+    app.run(debug=False, host='0.0.0.0', port=port, extra_files=['./static/js/menuStructure101.json'])

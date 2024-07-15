@@ -504,6 +504,20 @@
                                 <a class="content-block" href="{{ container.content['url'] }}" target="_blank">{{ container.content['title'] }}</a>
                             {% endif %}
 
+
+                            {% if container.content_type == 'news' %}
+                                <li>
+                                    <strong>{{ container.content.headline }}</strong>
+                                    <p>{{ container.content.short_text }}</p>
+                                    <img src="{{ container.content.image_url }}" alt="{{ container.content.headline }}" style="width: 100px; height: auto;">
+                                    {% if container.content.link_type == 'internal' %}
+                                        <a href="{{ url_for('detailed_news', id=container.id) }}">More</a>
+                                    {% else %}
+                                        <a href="{{ container.content.more_link }}" target="_blank">More</a>
+                                    {% endif %}
+                                </li>
+                            {% endif %}
+
                         {% endfor %}
                     {% else %}
                         <p>No containers found to display.</p>

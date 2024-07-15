@@ -12,6 +12,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm.session import Session
 
+from sqlalchemy.ext.mutable import MutableDict
 from wtforms.fields import StringField, TextAreaField, DateTimeField, SelectField, BooleanField, SubmitField
 from datetime import datetime
 
@@ -46,7 +47,7 @@ class Container(db.Model):
     page = db.Column(db.String(255), nullable=False)
     position = db.Column(db.String(255))
     content_type = db.Column(db.String(50), nullable=False)
-    content = db.Column(JSONB, nullable=False)
+    content = db.Column(MutableDict.as_mutable(JSONB))
 
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'), nullable=False)
