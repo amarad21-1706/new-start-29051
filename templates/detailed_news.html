@@ -1,0 +1,10 @@
+{% extends 'base_news.html' %}
+
+{% block content %}
+<h2>{{ news_item.content.headline }}</h2>
+<img src="{{ news_item.content.image_url }}" alt="{{ news_item.content.headline }}" style="width: 100%; height: auto;">
+<p>{{ news_item.content.short_text }}</p>
+<div>
+    {{ news_item.content.body|safe }}
+</div>
+{% endblock %}

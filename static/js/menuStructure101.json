@@ -522,6 +522,14 @@
                                     "Admin"
                                 ]
                             },
+                            "Manage News": {
+                                "label": "News",
+                                "url": "/admin_news",
+                                "protected": true,
+                                "allowed_roles": [
+                                    "Admin"
+                                ]
+                            },
                             "Password Reset": {
                                 "label": "Reset User Password",
                                 "url": "/admin_reset_password",
@@ -598,15 +606,43 @@
             }
         }
     },
-    "Blog": {
-        "label": "Blog",
-        "url": "/blog/blog",
+    "News and Blog": {
+        "label": "News and Blog",
+        "url": "/public_news",
         "protected": true,
         "allowed_roles": [
             "Admin",
             "Employee",
-            "Manager"
-        ]
+            "Manager",
+            "Authority",
+            "Provider"
+        ],
+        "submenus": {
+            "Blog": {
+                "label": "Blog",
+                "url": "/blog/blog",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin",
+                    "Employee",
+                    "Manager",
+                    "Authority",
+                    "Provider"
+                ]
+            },
+            "News": {
+                "label": "News",
+                "url": "/public_news",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin",
+                    "Employee",
+                    "Manager",
+                    "Authority",
+                    "Provider"
+                ]
+            }
+        }
     },
     "Contacts": {
         "label": "Contact",

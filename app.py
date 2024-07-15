@@ -913,7 +913,10 @@ def login():
 
 
 @app.route('/left_menu', methods=['GET', 'POST'])
-@generate_route_and_menu('/home', allowed_roles=["Employee"], template='home/left_menu.html')
+# TODO left_menu.html of home.html?
+#@generate_route_and_menu('/home', allowed_roles=["Employee"], template='home/left_menu.html')
+@generate_route_and_menu('/home', allowed_roles=["Employee"], template='home/home.html')
+
 def left_menu():
     #app.logger.debug("Home route accessed")
 
@@ -4149,6 +4152,104 @@ def submit_response_psf():
     db.session.commit()
 
     return jsonify({"message": "Response submitted successfully"})
+
+
+# Route to list images
+@app.route('/list_images')
+def list_images():
+    images_dir = os.path.join(app.static_folder, 'images')
+    images = os.listdir(images_dir)
+    images = [f'/static/images/{img}' for img in images if img.endswith(('png', 'jpg', 'jpeg', 'gif'))]
+    return jsonify(images)
+
+@app.route('/admin_news', methods=['GET', 'POST'])
+@login_required
+@roles_required('Admin')
+def admin_news():
+    if request.method == 'POST':
+        headline = request.form['headline']
+        short_text = request.form['short_text']
+        image_url = request.form['image_url']
+        link_type = request.form['link_type']
+        more_link = request.form['more_link']
+        body = request.form['body'] if link_type == 'internal' else None
+        page = 'home'
+        company_id = 0
+        user_id = current_user.id
+        role_id = 1  # Admin
+        area_id = None
+        content_type = 'news'
+        content = {
+            'headline': headline,
+            'short_text': short_text,
+            'image_url': image_url,
+            'link_type': link_type,
+            'more_link': more_link,
+            'body': body
+        }
+        new_entry = Container(
+            content=content,
+            content_type=content_type,
+            page=page,
+            company_id=company_id,
+            role_id=role_id,
+            area_id=area_id
+        )
+        db.session.add(new_entry)
+        db.session.commit()
+        flash('News item created successfully!')
+        return redirect(url_for('admin_news'))
+
+    news_items = Container.query.filter_by(content_type='news').all()
+    return render_template('admin_news.html', news_items=news_items)
+
+
+@app.route('/edit_news/<int:id>', methods=['GET', 'POST'])
+@login_required
+@roles_required('Admin')
+def edit_news(id):
+    news_item = Container.query.get_or_404(id)
+    if request.method == 'POST':
+        news_item.content['headline'] = request.form['headline']
+        news_item.content['short_text'] = request.form['short_text']
+        news_item.content['image_url'] = request.form['image_url']
+        news_item.content['more_link'] = request.form['more_link']
+        db.session.commit()
+        flash('News item updated successfully!')
+        return redirect(url_for('admin_news'))
+
+    return render_template('news_form.html', news_item=news_item)
+
+@app.route('/delete_news/<int:id>')
+@login_required
+@roles_required('Admin')
+def delete_news(id):
+    news_item = Container.query.get_or_404(id)
+    db.session.delete(news_item)
+    db.session.commit()
+    flash('News item deleted successfully!')
+    return redirect(url_for('admin_news'))
+
+
+@app.route('/public_news')
+@login_required
+@roles_required('Admin', 'Authority', 'Manager', 'Employee', 'Provider')
+def public_news():
+    news_items = Container.query.filter_by(content_type='news').all()
+    return render_template('public_news.html', news_items=news_items)
+
+
+@app.route('/news/<int:id>')
+@login_required
+@roles_required('Admin', 'Authority', 'Manager', 'Employee', 'Provider')
+def detailed_news(id):
+    news_item = Container.query.get_or_404(id)
+    return render_template('detailed_news.html', news_item=news_item)
+
+
+
+if __name__ == '__main__':
+    app.run(debug=True)
 
 
 if __name__ == '__main__':
