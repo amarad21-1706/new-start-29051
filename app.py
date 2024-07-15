@@ -570,6 +570,17 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
             if is_authenticated:
                 unread_notices_count = Post.query.filter_by(user_id=current_user.id, marked_as_read=False).count()
 
+            # Check for unread open tickets
+            if is_authenticated:
+                if 'Admin' in [role.name for role in
+                               current_user.roles]:  # Assuming you have a 'roles' relationship in your user model
+                    admin_tickets_count = Ticket.query.filter_by(status_id=2, marked_as_read=False).count()
+                    open_tickets_count = 0
+                else:
+                    admin_tickets_count = 0
+                    open_tickets_count = Ticket.query.filter_by(user_id=current_user.id, status_id=2,
+                                                                marked_as_read=False).count()
+
             else:
                 unread_notices_count = 0
 
@@ -621,6 +632,8 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
                 "admin_4_url": admin_4_url,
                 "admin_10_url": admin_10_url,
                 "unread_notices_count": unread_notices_count,
+                "admin_tickets_count": admin_tickets_count,
+                "open_tickets_count": open_tickets_count,
                 "containers": containers,
                 "cards": card_data,
             }
