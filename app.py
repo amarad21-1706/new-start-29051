@@ -569,6 +569,8 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
             # Check for unread notices
             if is_authenticated:
                 unread_notices_count = Post.query.filter_by(user_id=current_user.id, marked_as_read=False).count()
+            else:
+                unread_notices_count = 0
 
             # Check for unread open tickets
             if is_authenticated:
@@ -580,9 +582,9 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
                     admin_tickets_count = 0
                     open_tickets_count = Ticket.query.filter_by(user_id=current_user.id, status_id=2,
                                                                 marked_as_read=False).count()
-
             else:
-                unread_notices_count = 0
+                admin_tickets_count = 0
+                open_tickets_count = 0
 
             # TODO select containers by role, company etc!
 
