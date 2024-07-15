@@ -2,17 +2,42 @@
 
 {% block content %}
 <h2>News Editor</h2>
-<form method="POST">
-    <input type="text" name="headline" value="{{ news_item.content.headline }}" required>
-    <input type="text" name="short_text" value="{{ news_item.content.short_text }}" required>
-    <input type="text" id="image_url" name="image_url" value="{{ news_item.content.image_url }}" required>
-    <button type="button" onclick="openImageModal()">Browse Images</button>
-    <input type="radio" name="link_type" value="internal" {% if news_item.content.link_type == 'internal' %}checked{% endif %}> Internal
-    <input type="radio" name="link_type" value="external" {% if news_item.content.link_type == 'external' %}checked{% endif %}> External
-    <input type="text" name="more_link" value="{{ news_item.content.more_link }}" required>
-    <textarea name="body" placeholder="Detailed content for internal link" rows="5">{{ news_item.content.body }}</textarea>
+
+<!-- Form to edit news item -->
+<form method="POST" style="margin-bottom: 30px;">
+    <div>
+        <label for="headline">Headline</label>
+        <input type="text" id="headline" name="headline" value="{{ news_item.content.headline }}" required>
+    </div>
+    <div>
+        <label for="short_text">Short Text</label>
+        <input type="text" id="short_text" name="short_text" value="{{ news_item.content.short_text }}" required>
+    </div>
+    <div>
+        <label for="image_url">Image URL</label>
+        <input type="text" id="image_url" name="image_url" value="{{ news_item.content.image_url }}" required>
+        <button type="button" onclick="openImageModal()">Browse Images</button>
+    </div>
+    <div>
+        <label for="link_type">Link Type</label>
+        <input type="radio" id="internal" name="link_type" value="internal" {% if news_item.content.link_type == 'internal' %}checked{% endif %}>
+        <label for="internal">Internal</label>
+        <input type="radio" id="external" name="link_type" value="external" {% if news_item.content.link_type == 'external' %}checked{% endif %}>
+        <label for="external">External</label>
+    </div>
+    <div>
+        <label for="more_link">More Link</label>
+        <input type="text" id="more_link" name="more_link" value="{{ news_item.content.more_link }}" required>
+    </div>
+    <div style="width: 100%;">
+        <label for="body">Detailed content for internal link</label>
+        <textarea id="body" name="body" placeholder="Detailed content for internal link" rows="5" style="width: 100%;">{{ news_item.content.body }}</textarea>
+    </div>
     <button type="submit">Update News Item</button>
 </form>
+
+<!-- Separator -->
+<hr style="border-top: 1px solid #bbb; margin-bottom: 30px;">
 
 <!-- Modal to display images -->
 <div id="imageModal" style="display:none;">
