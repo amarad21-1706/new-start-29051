@@ -216,7 +216,6 @@
             object-fit: cover; /* Ensure the image covers the area while maintaining aspect ratio */
             object-position: center; /* Center the image */
         }
-
         .navbar-logo {
             height: 50px;
             position: absolute;
@@ -258,7 +257,6 @@
             box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
             color: darkblue;
         }
-
 
         .card-header {
             font-size: 1.1em;
@@ -313,47 +311,6 @@
             height: 360px; /* Set fixed height */
             max-width: 100%; /* Ensure responsiveness */
         }
-
-        .footer-section {
-            background-color: #333;
-            color: white;
-            padding: 20px 0;
-        }
-
-        .footer-section .footer-links {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-        }
-
-        .footer-section .footer-links a {
-            color: white;
-            text-decoration: none;
-            display: block;
-            margin-bottom: 10px;
-        }
-
-        .footer-section .footer-links a:hover {
-            text-decoration: underline;
-        }
-
-
-        .app-box {
-            border-radius: 8px;
-            overflow: hidden;
-            cursor: pointer;
-            text-align: center;
-            font-size: 1em;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.3s, box-shadow 0.3s;
-        }
-        .app-box:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
-        }
-
     </style>
 </head>
 
@@ -472,57 +429,6 @@
                     <p>(Employee)</p>
                 {% endif %}
 
-                <!-- Your Apps Section -->
-                <h2>Your Apps</h2>
-                <div class="container mt-4">
-                    <div class="row">
-                        {% if containers %}
-                            {% for container in containers %}
-                                {% if container.content_type == 'card' %}
-                                    <div class="col-md-3 mb-4">
-                                        <a href="{{ container.content.url }}" style="text-decoration: none;">
-                                            <div class="app-box" style="position: relative; padding-bottom: 75%; background-color: {% if container.content.image_url %}transparent{% else %}{{ ["#5a6268", "#6c757d", "#adb5bd", "#ced4da"]|random }}{% endif %}; color: white;">
-                                                {% if container.content.image_url %}
-                                                    <img src="{{ container.content.image_url }}" alt="{{ container.content.header }}" style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0;">
-                                                {% else %}
-                                                    <div class="d-flex align-items-center justify-content-center" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
-                                                        <span>{{ container.content.header or 'App' }}</span>
-                                                    </div>
-                                                {% endif %}
-                                            </div>
-                                        </a>
-                                    </div>
-                                {% endif %}
-                            {% endfor %}
-                        {% else %}
-                            <p>No apps found.</p>
-                        {% endif %}
-                    </div>
-                </div>
-
-                <!-- News Section -->
-                <h2>News</h2>
-                <div class="container mt-4">
-                    {% if containers %}
-                        {% for container in containers %}
-                            {% if container.content_type == 'news' %}
-                                <li>
-                                    <strong>{{ container.content.headline }}</strong>
-                                    <p>{{ container.content.short_text }}</p>
-                                    <img src="{{ container.content.image_url }}" alt="{{ container.content.headline }}" style="width: 100px; height: auto;">
-                                    {% if container.content.link_type == 'internal' %}
-                                        <a href="{{ url_for('detailed_news', id=container.id) }}">More</a>
-                                    {% else %}
-                                        <a href="{{ container.content.more_link }}" target="_blank">More</a>
-                                    {% endif %}
-                                </li>
-                            {% endif %}
-                        {% endfor %}
-                    {% else %}
-                        <p>No news items found.</p>
-                    {% endif %}
-                </div>
-
 
                 <!-- Insert the card carousel here -->
                 <div id="myCarousel" class="carousel slide mt-5" data-bs-ride="carousel">
@@ -597,33 +503,26 @@
                             {% if container.content_type == 'link' %}
                                 <a class="content-block" href="{{ container.content['url'] }}" target="_blank">{{ container.content['title'] }}</a>
                             {% endif %}
+
+                            {% if container.content_type == 'news' %}
+                                <li>
+                                    <strong>{{ container.content.headline }}</strong>
+                                    <p>{{ container.content.short_text }}</p>
+                                    <img src="{{ container.content.image_url }}" alt="{{ container.content.headline }}" style="width: 100px; height: auto;">
+                                    {% if container.content.link_type == 'internal' %}
+                                        <a href="{{ url_for('detailed_news', id=container.id) }}">More</a>
+                                    {% else %}
+                                        <a href="{{ container.content.more_link }}" target="_blank">More</a>
+                                    {% endif %}
+                                </li>
+                            {% endif %}
+
                         {% endfor %}
                     {% else %}
                         <p>No containers found to display.</p>
                     {% endif %}
                 </div>
 
-            </div>
-        </div>
-    </div>
-
-    <!-- Footer Section -->
-    <div class="footer-section">
-        <div class="container">
-            <div class="row footer-links">
-                <div class="col">
-                    <a href="#">About us</a>
-                    <a href="#">Report a page</a>
-                </div>
-                <div class="col">
-                    <a href="#">Cookies</a>
-                    <a href="#">Accessibility Statement</a>
-                </div>
-                <div class="col">
-                    <a href="#">Terms of use</a>
-                    <a href="#">Privacy policy</a>
-                    <a href="#">Contact us</a>
-                </div>
             </div>
         </div>
     </div>

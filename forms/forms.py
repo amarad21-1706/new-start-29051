@@ -27,6 +27,17 @@ from flask_admin.contrib.sqla.ajax import QueryAjaxModelLoader
 from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as _
 
 
+class TicketForm(FlaskForm):
+    subject = SelectField('Subject', coerce=int, validators=[DataRequired()])
+    description = TextAreaField('Description', validators=[DataRequired()])
+    submit = SubmitField('Submit')
+
+class ResponseForm(FlaskForm):
+    response = TextAreaField('Response', validators=[DataRequired()])
+    status = SelectField('Status', coerce=int, validators=[DataRequired()])
+    submit = SubmitField('Submit')
+
+
 class LoginForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
     password = PasswordField('Password', validators=[DataRequired()])

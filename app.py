@@ -52,7 +52,7 @@ from models.user import (Users, UserRoles, Role, Container, Questionnaire, Quest
 
 # from master_password_reset import admin_reset_password, AdminResetPasswordForm
 
-from forms.forms import (LoginForm, ForgotPasswordForm, ResetPasswordForm101, RegistrationForm,
+from forms.forms import (TicketForm, ResponseForm, LoginForm, ForgotPasswordForm, ResetPasswordForm101, RegistrationForm,
                          QuestionnaireCompanyForm, CustomBaseDataForm,
         QuestionnaireQuestionForm, WorkflowStepForm, WorkflowBaseDataForm,
                          BaseDataWorkflowStepForm,
@@ -4278,6 +4278,75 @@ def detailed_news(id):
     news_item = Container.query.get_or_404(id)
     return render_template('detailed_news.html', news_item=news_item)
 
+
+@app.route('/create_ticket', methods=['GET', 'POST'])
+@login_required
+def create_ticket():
+    form = TicketForm()
+    form.subject.choices = [(s.id, s.name) for s in Subject.query.filter_by(tier_1='Tickets').all()]
+    if form.validate_on_submit():
+        new_ticket = Ticket(
+            user_id=current_user.id,
+            subject_id=form.subject.data,
+            description=form.description.data,
+            status_id=2  # Default status "Open"
+        )
+        db.session.add(new_ticket)
+        db.session.commit()
+        flash('Ticket created successfully!')
+        return redirect(url_for('view_tickets'))
+    return render_template('create_ticket.html', form=form)
+
+@app.route('/edit_ticket/<int:ticket_id>', methods=['GET', 'POST'])
+@login_required
+def edit_ticket(ticket_id):
+    ticket = Ticket.query.get_or_404(ticket_id)
+    if ticket.user_id != current_user.id:
+        flash('You do not have permission to edit this ticket.')
+        return redirect(url_for('view_tickets'))
+    form = TicketForm(obj=ticket)
+    form.subject.choices = [(s.id, s.name) for s in Subject.query.all()]
+    if form.validate_on_submit():
+        ticket.subject_id = form.subject.data
+        ticket.description = form.description.data
+        db.session.commit()
+        flash('Ticket updated successfully!')
+        return redirect(url_for('view_tickets'))
+    return render_template('edit_ticket.html', form=form, ticket=ticket)
+
+@app.route('/view_tickets')
+@login_required
+def view_tickets():
+    tickets = Ticket.query.filter_by(user_id=current_user.id).all()
+    return render_template('view_tickets.html', tickets=tickets)
+
+@app.route('/admin_tickets')
+@login_required
+@roles_required('Admin')
+def admin_tickets():
+    if 'Admin' not in [role.name for role in current_user.roles]:
+        flash('You do not have permission to view this page.')
+        return redirect(url_for('index'))
+    tickets = Ticket.query.all()
+    return render_template('admin_tickets.html', tickets=tickets)
+
+@app.route('/respond_ticket/<int:ticket_id>', methods=['GET', 'POST'])
+@login_required
+@roles_required('Admin')
+def respond_ticket(ticket_id):
+    if 'Admin' not in [role.name for role in current_user.roles]:
+        flash('You do not have permission to respond to tickets.')
+        return redirect(url_for('index'))
+    ticket = Ticket.query.get_or_404(ticket_id)
+    form = ResponseForm()
+    form.status.choices = [(s.id, s.name) for s in Status.query.all()]
+    if form.validate_on_submit():
+        ticket.response = form.response.data
+        ticket.status_id = form.status.data
+        db.session.commit()
+        flash('Response sent successfully!')
+        return redirect(url_for('admin_tickets'))
+    return render_template('respond_ticket.html', form=form, ticket=ticket)
 
 
 if __name__ == '__main__':

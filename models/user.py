@@ -1280,13 +1280,16 @@ class Ticket(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     subject_id = db.Column(db.Integer, db.ForeignKey('subject.id'), nullable=False)
-    subject = db.Column(db.String(128), nullable=False)
     description = db.Column(db.Text, nullable=False)
-    status_id = db.Column(db.Integer, db.ForeignKey('subject.id'), nullable=False)
+    status_id = db.Column(db.Integer, db.ForeignKey('status.id'), nullable=False, default=2)  # Default status "Open"
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     marked_as_read = db.Column(db.Boolean, default=False)
-    lifespan = db.Column(Enum('one-off', 'persistent', name='lifespan_types'), default='')
+    lifespan = db.Column(Enum('one-off', 'persistent', name='lifespan_types'), default='one-off')
 
+    # users = db.relationship('Users', backref='tickets')
+    user = db.relationship('Users', foreign_keys=[user_id], backref='tickets')
+    subject = db.relationship('Subject', foreign_keys=[subject_id], backref='tickets')
+    status = db.relationship('Status', foreign_keys=[status_id], backref='tickets')
 
 
 class Questionnaire_psf(db.Model):

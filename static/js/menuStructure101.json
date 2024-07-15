@@ -537,6 +537,14 @@
                                 "allowed_roles": [
                                     "Admin"
                                 ]
+                            },
+                            "Admin Tickets": {
+                                "label": "Manage Tickets",
+                                "url": "/admin_tickets",
+                                "protected": true,
+                                "allowed_roles": [
+                                    "Admin"
+                                ]
                             }
                         }
                     },
@@ -653,6 +661,7 @@
             "Employee",
             "Manager",
             "Authority",
+            "Provider",
             "Guest"
         ],
         "submenus": {
@@ -665,6 +674,7 @@
                     "Employee",
                     "Manager",
                     "Authority",
+                    "Provider",
                     "Guest"
                 ]
             },
@@ -677,6 +687,7 @@
                     "Employee",
                     "Manager",
                     "Authority",
+                    "Provider",
                     "Guest"
                 ]
             },
@@ -689,6 +700,7 @@
                     "Employee",
                     "Manager",
                     "Authority",
+                    "Provider",
                     "Guest"
                 ]
             }
@@ -703,6 +715,7 @@
             "Employee",
             "Manager",
             "Authority",
+            "Provider",
             "Guest"
         ],
         "submenus": {
@@ -715,6 +728,7 @@
                     "Employee",
                     "Manager",
                     "Authority",
+                    "Provider",
                     "Guest"
                 ]
             },
@@ -727,6 +741,7 @@
                     "Employee",
                     "Manager",
                     "Authority",
+                    "Provider",
                     "Guest"
                 ]
             },
@@ -739,6 +754,7 @@
                     "Employee",
                     "Manager",
                     "Authority",
+                    "Provider",
                     "Guest"
                 ]
             },
@@ -751,6 +767,7 @@
                     "Employee",
                     "Manager",
                     "Authority",
+                    "Provider",
                     "Guest"
                 ],
                 "submenus": {
@@ -763,6 +780,7 @@
                             "Employee",
                             "Manager",
                             "Authority",
+                            "Provider",
                             "Guest"
                         ]
                     },
@@ -774,6 +792,7 @@
                             "Admin",
                             "Employee",
                             "Manager",
+                            "Provider",
                             "Authority",
                             "Guest"
                         ]
@@ -789,6 +808,44 @@
                             "Authority",
                             "Guest"
                         ]
+                    },
+                    "User Tickets": {
+                        "label": "Tickets",
+                        "url": "/create_ticket",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Employee",
+                            "Manager",
+                            "Authority",
+                            "Provider",
+                            "Guest"
+                        ],
+                        "submenus": {
+                            "Create ticket": {
+                                "label": "Create",
+                                "url": "/create_ticket",
+                                "protected": true,
+                                "allowed_roles": [
+                                    "Employee",
+                                    "Manager",
+                                    "Authority",
+                                    "Provider",
+                                    "Guest"
+                                ]
+                            },
+                            "View tickets": {
+                                "label": "View",
+                                "url": "/view_tickets",
+                                "protected": true,
+                                "allowed_roles": [
+                                    "Employee",
+                                    "Manager",
+                                    "Authority",
+                                    "Provider",
+                                    "Guest"
+                                ]
+                            }
+                        }
                     }
                 }
             }
