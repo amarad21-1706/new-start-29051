@@ -1,4 +1,5 @@
-from flask import Blueprint, render_template, request, redirect, url_for
+import os
+from flask import Blueprint, render_template, request, redirect, url_for, current_app, jsonify
 from db import db  # Adjust this import based on your actual project structure
 from models.user import Application, PlanApplications, Plan, Users, UserPlans  # Adjust based on actual imports
 from forms.forms import AssociateAppsForm, ManageAppForm  # Adjust based on your project structure
@@ -70,3 +71,15 @@ def admin_associate_apps():
         return redirect(url_for('admin.admin_associate_apps'))
 
     return render_template('admin/admin_associate_apps.html', form=form)
+
+
+
+@admin_bp.route('/list-icons', methods=['GET'])
+def list_icons():
+    icons_dir = os.path.join(current_app.root_path, 'static', 'icons')
+    icons = []
+    for filename in os.listdir(icons_dir):
+        if filename.endswith('.png') or filename.endswith('.jpg') or filename.endswith('.svg'):
+            icons.append(filename)
+    return jsonify(icons)
+

@@ -69,25 +69,19 @@
     function loadIcons() {
         const iconContainer = document.getElementById('iconContainer');
         iconContainer.innerHTML = '';  // Clear previous icons
-        fetch('{{ url_for("static", filename="icons") }}')  // Adjust this to point to your icons folder
-            .then(response => response.text())
+        fetch('{{ url_for("admin.list_icons") }}')
+            .then(response => response.json())
             .then(data => {
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(data, 'text/html');
-                const links = doc.querySelectorAll('a');
-                links.forEach(link => {
-                    const iconPath = link.getAttribute('href');
-                    if (iconPath.endsWith('.png') || iconPath.endsWith('.jpg') || iconPath.endsWith('.svg')) {
-                        const img = document.createElement('img');
-                        img.src = '{{ url_for("static", filename="icons") }}/' + iconPath;
-                        img.style.width = '24px';
-                        img.style.height = '24px';
-                        img.onclick = function() {
-                            document.getElementById('icon').value = img.src;
-                            closeIconModal();
-                        };
-                        iconContainer.appendChild(img);
-                    }
+                data.forEach(iconPath => {
+                    const img = document.createElement('img');
+                    img.src = '{{ url_for("static", filename="icons") }}/' + iconPath;
+                    img.style.width = '24px';
+                    img.style.height = '24px';
+                    img.onclick = function() {
+                        document.getElementById('icon').value = img.src;
+                        closeIconModal();
+                    };
+                    iconContainer.appendChild(img);
                 });
             });
     }

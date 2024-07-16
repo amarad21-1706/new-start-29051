@@ -1319,6 +1319,8 @@ class Plan(db.Model):
     __tablename__ = 'plan'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True, nullable=False)
+    stripe_product_id = db.Column(db.String(128), nullable=False)
+    stripe_price_id = db.Column(db.String(128), nullable=False)
     user_plans = db.relationship('UserPlans', back_populates='plan')
     plan_applications = db.relationship('PlanApplications', back_populates='plan')
 
@@ -1338,6 +1340,7 @@ class UserPlans(db.Model):
     activation_date = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     expiry_date = db.Column(db.DateTime, nullable=False)
     status = db.Column(db.String(20), nullable=False, default='active')
+    stripe_subscription_id = db.Column(db.String(128), nullable=True)
 
     user = db.relationship('Users', back_populates='user_plans')
     plan = db.relationship('Plan', back_populates='user_plans')

@@ -3974,6 +3974,7 @@ def get_questionnaire(id):
     return jsonify({"error": "Questionnaire not found"}), 404
 
 
+
 # STRIPE
 # ======
 
@@ -4112,7 +4113,6 @@ def subscribe():
     return jsonify({"success": True, "message": "Subscription updated successfully."})
 
 # END STRIPE
-
 
 
 '''
