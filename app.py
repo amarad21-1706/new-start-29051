@@ -52,7 +52,7 @@ from models.user import (Users, UserRoles, Role, Container, Questionnaire, Quest
 
 # from master_password_reset import admin_reset_password, AdminResetPasswordForm
 
-from forms.forms import (TicketForm, ResponseForm, LoginForm, ForgotPasswordForm, ResetPasswordForm101, RegistrationForm,
+from forms.forms import (UpdateAccountForm, TicketForm, ResponseForm, LoginForm, ForgotPasswordForm, ResetPasswordForm101, RegistrationForm,
                          QuestionnaireCompanyForm, CustomBaseDataForm,
         QuestionnaireQuestionForm, WorkflowStepForm, WorkflowBaseDataForm,
                          BaseDataWorkflowStepForm,
@@ -4362,6 +4362,50 @@ def respond_ticket(ticket_id):
         flash('Response sent successfully!')
         return redirect(url_for('admin_tickets'))
     return render_template('respond_ticket.html', form=form, ticket=ticket)
+
+
+@app.route('/update_account', methods=['GET', 'POST'])
+@login_required
+def update_account():
+    form = UpdateAccountForm()
+    if form.validate_on_submit():
+        current_user.username = form.username.data
+        current_user.email = form.email.data
+        current_user.first_name = form.first_name.data
+        current_user.mid_name = form.mid_name.data
+        current_user.last_name = form.last_name.data
+        current_user.title = form.title.data
+        current_user.address = form.address.data
+        current_user.address1 = form.address1.data
+        current_user.city = form.city.data
+        current_user.province = form.province.data
+        current_user.region = form.region.data
+        current_user.zip_code = form.zip_code.data
+        current_user.country = form.country.data
+        current_user.tax_code = form.tax_code.data
+        current_user.mobile_phone = form.mobile_phone.data
+        current_user.work_phone = form.work_phone.data
+        db.session.commit()
+        flash('Your account has been updated!', 'success')
+        return redirect(url_for('home'))  # Redirect to home page or another page
+    elif request.method == 'GET':
+        form.username.data = current_user.username
+        form.email.data = current_user.email
+        form.first_name.data = current_user.first_name
+        form.mid_name.data = current_user.mid_name
+        form.last_name.data = current_user.last_name
+        form.title.data = current_user.title
+        form.address.data = current_user.address
+        form.address1.data = current_user.address1
+        form.city.data = current_user.city
+        form.province.data = current_user.province
+        form.region.data = current_user.region
+        form.zip_code.data = current_user.zip_code
+        form.country.data = current_user.country
+        form.tax_code.data = current_user.tax_code
+        form.mobile_phone.data = current_user.mobile_phone
+        form.work_phone.data = current_user.work_phone
+    return render_template('account.html', title='Account', form=form)
 
 
 if __name__ == '__main__':

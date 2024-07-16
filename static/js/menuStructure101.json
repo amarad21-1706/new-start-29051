@@ -785,8 +785,8 @@
                         ]
                     },
                     "Personal Data": {
-                        "label": "Personal Data",
-                        "url": "/user_data",
+                        "label": "My Account",
+                        "url": "/update_account",
                         "protected": true,
                         "allowed_roles": [
                             "Admin",

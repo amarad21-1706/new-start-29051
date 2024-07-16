@@ -12,7 +12,7 @@ from wtforms import (DecimalField, StringField, BooleanField, FloatField, FileFi
 
 from flask_admin.form import rules
 from flask_admin.form.rules import FieldSet
-from wtforms.validators import DataRequired, Length, Email, EqualTo, Optional, NumberRange
+from wtforms.validators import DataRequired, Length, Email, EqualTo, Optional, NumberRange, Regexp
 import re
 from datetime import datetime
 from wtforms import IntegerField, DateField, validators
@@ -25,6 +25,32 @@ from flask_admin.model.form import InlineFormAdmin
 from enum import Enum
 from flask_admin.contrib.sqla.ajax import QueryAjaxModelLoader
 from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as _
+
+class UpdateAccountForm(FlaskForm):
+    username = StringField('Username', validators=[DataRequired(), Length(min=2, max=80)])
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    first_name = StringField('First Name', validators=[DataRequired(), Length(min=1, max=128)])
+    mid_name = StringField('Middle Name', validators=[Optional(), Length(max=128)])
+    last_name = StringField('Last Name', validators=[DataRequired(), Length(min=1, max=128)])
+    title = StringField('Title', validators=[DataRequired(), Length(max=12)])
+    address = StringField('Address', validators=[DataRequired(), Length(max=128)])
+    address1 = StringField('Address 1', validators=[Optional(), Length(max=128)])
+    city = StringField('City', validators=[DataRequired(), Length(max=128)])
+    province = StringField('Province', validators=[DataRequired(), Length(max=64)])
+    region = StringField('Region', validators=[DataRequired(), Length(max=64)])
+    zip_code = StringField('Zip Code', validators=[Optional(), Length(max=24)])
+    country = StringField('Country', validators=[DataRequired(), Length(max=64)])
+    tax_code = StringField('Tax Code', validators=[Optional(), Length(max=128)])
+    mobile_phone = StringField('Mobile Phone', validators=[
+        DataRequired(),
+        Regexp(r'^\+?1?\d{9,15}$', message="Phone number must be entered in the format: '+999999999'. Up to 15 digits allowed.")
+    ])
+    work_phone = StringField('Work Phone', validators=[
+        Optional(),
+        Regexp(r'^\+?1?\d{9,15}$', message="Phone number must be entered in the format: '+999999999'. Up to 15 digits allowed.")
+    ])
+    submit = SubmitField('Update')
+
 
 
 class TicketForm(FlaskForm):

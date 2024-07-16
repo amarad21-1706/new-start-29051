@@ -102,14 +102,8 @@ class Users(db.Model, UserMixin):
     zip_code = db.Column(String(24), nullable=True)
     country = db.Column(String(64), nullable=False)
     tax_code = db.Column(String(128), nullable=True)
-    mobile_phone = StringField('Phone Number', validators=[
-        DataRequired(),
-        Regexp(r'^\+?1?\d{9,15}$', message="Phone number must be entered in the format: '+999999999'. Up to 15 digits allowed.")
-    ], nullable=False)
-    work_phone = StringField('Phone Number', validators=[
-        DataRequired(),
-        Regexp(r'^\+?1?\d{9,15}$', message="Phone number must be entered in the format: '+999999999'. Up to 15 digits allowed.")
-    ], nullable=True)
+    mobile_phone = db.Column(db.String(15), nullable=False)
+    work_phone = db.Column(db.String(15), nullable=True)
 
     # New subscription fields
     subscription_plan = db.Column(db.String(20), default='free')
