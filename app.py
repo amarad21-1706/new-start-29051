@@ -47,8 +47,9 @@ from models.user import (Users, UserRoles, Role, Container, Questionnaire, Quest
         Interval, Subject,
         AuditLog, Post, Ticket, StepQuestionnaire,
         Workflow, Step, BaseData, Container, WorkflowSteps, WorkflowBaseData,
-                         StepBaseData, Config, Questionnaire_psf, Response_psf,
-                         get_config_values)
+         StepBaseData, Config,
+         Application, PlanApplications, Plan, Users, UserPlans,  # Adjust based on actual imports
+         Questionnaire_psf, Response_psf, get_config_values)
 
 # from master_password_reset import admin_reset_password, AdminResetPasswordForm
 
@@ -83,6 +84,9 @@ from flask_login import login_required, LoginManager
 from flask_login import login_user, current_user
 from flask_cors import CORS
 from modules.chart_service import ChartService
+
+from modules.admin_routes import admin_bp
+
 
 '''
 from admin_views import (ContainerAdmin, CompanyView, QuestionnaireView, QuestionView,
@@ -304,6 +308,9 @@ serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 # pyobjc
 with app.app_context():
     # db.create_all()
+
+    app.register_blueprint(admin_bp)
+    print('admin blueprint registered')
 
     user_roles_blueprint = create_crud_blueprint(UserRoles, 'user_roles')
     app.register_blueprint(user_roles_blueprint, url_prefix='/model_user_roles')

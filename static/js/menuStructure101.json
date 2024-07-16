@@ -545,6 +545,14 @@
                                 "allowed_roles": [
                                     "Admin"
                                 ]
+                            },
+                            "Manage Apps": {
+                                "label": "Manage Apps",
+                                "url": "/admin/manage_apps",
+                                "protected": true,
+                                "allowed_roles": [
+                                    "Admin"
+                                ]
                             }
                         }
                     },
@@ -603,6 +611,14 @@
                             "Assign Documents to Steps": {
                                 "label": "Documents-workflow-steps management",
                                 "url": "/manage_base_data_workflow_step",
+                                "protected": true,
+                                "allowed_roles": [
+                                    "Admin"
+                                ]
+                            },
+                            "Assign Apps to Plans": {
+                                "label": "Associate Apps to Plans",
+                                "url": "/admin/associate_apps",
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"

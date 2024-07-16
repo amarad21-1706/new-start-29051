@@ -12,10 +12,12 @@ from wtforms import (DecimalField, StringField, BooleanField, FloatField, FileFi
 
 from flask_admin.form import rules
 from flask_admin.form.rules import FieldSet
-from wtforms.validators import DataRequired, Length, Email, EqualTo, Optional, NumberRange, Regexp
+from wtforms.validators import DataRequired, Length, Email, EqualTo, Optional, NumberRange, Regexp, URL
 import re
 from datetime import datetime
 from wtforms import IntegerField, DateField, validators
+from wtforms import SelectField, SelectMultipleField, SubmitField, HiddenField
+
 from flask_wtf import FlaskForm
 from wtforms_sqlalchemy.fields import QuerySelectField
 from models.user import (Users, Company, Subject, Step, Workflow, StepBaseData, WorkflowSteps, BaseData, BaseDataInline,
@@ -25,6 +27,19 @@ from flask_admin.model.form import InlineFormAdmin
 from enum import Enum
 from flask_admin.contrib.sqla.ajax import QueryAjaxModelLoader
 from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as _
+
+class ManageAppForm(FlaskForm):
+    app_id = HiddenField()
+    name = StringField('Application Name', validators=[DataRequired()])
+    path = StringField('Application Path', validators=[DataRequired()])
+    icon = StringField('Application Icon (URL or internal path)', validators=[URL(require_tld=False)])
+    submit = SubmitField('Save Application')
+
+class AssociateAppsForm(FlaskForm):
+    plan_id = SelectField('Select Plan', coerce=int)
+    application_ids = SelectMultipleField('Select Applications', coerce=int)
+    hidden_tag = HiddenField()
+    submit = SubmitField('Associate')
 
 class UpdateAccountForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(min=2, max=80)])

@@ -121,6 +121,8 @@ class Users(db.Model, UserMixin):
                             primaryjoin='UserRoles.user_id == Users.id',
                             secondaryjoin='UserRoles.role_id == Role.id')
 
+    user_plans = db.relationship('UserPlans', back_populates='user', uselist=False)
+
     #def get_reset_token(self, expires_sec=1800):
     #    s = Serializer(current_app.config['SECRET_KEY'], expires_sec)
     #    return s.dumps({'user_id': self.id}).decode('utf-8')
@@ -1310,3 +1312,41 @@ class Response_psf(db.Model):
     number_of_doc = db.Column(db.String(64))
     date_of_doc = db.Column(DATE)
     file_path = db.Column(db.String(255))
+
+
+
+class Plan(db.Model):
+    __tablename__ = 'plan'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), unique=True, nullable=False)
+    user_plans = db.relationship('UserPlans', back_populates='plan')
+    plan_applications = db.relationship('PlanApplications', back_populates='plan')
+
+class Application(db.Model):
+    __tablename__ = 'application'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), unique=True, nullable=False)
+    path = db.Column(db.String(256), nullable=False)  # Path to the menu item or route
+    icon = db.Column(db.String(256), nullable=True)  # URL or path to the app icon
+    plan_applications = db.relationship('PlanApplications', back_populates='application')
+
+class UserPlans(db.Model):
+    __tablename__ = 'user_plans'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    plan_id = db.Column(db.Integer, db.ForeignKey('plan.id'), nullable=False)
+    activation_date = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    expiry_date = db.Column(db.DateTime, nullable=False)
+    status = db.Column(db.String(20), nullable=False, default='active')
+
+    user = db.relationship('Users', back_populates='user_plans')
+    plan = db.relationship('Plan', back_populates='user_plans')
+
+class PlanApplications(db.Model):
+    __tablename__ = 'plan_applications'
+    id = db.Column(db.Integer, primary_key=True)
+    plan_id = db.Column(db.Integer, db.ForeignKey('plan.id'), nullable=False)
+    application_id = db.Column(db.Integer, db.ForeignKey('application.id'), nullable=False)
+
+    plan = db.relationship('Plan', back_populates='plan_applications')
+    application = db.relationship('Application', back_populates='plan_applications')
