@@ -116,6 +116,8 @@ class Users(db.Model, UserMixin):
     updated_on = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
     end_of_registration = db.Column(DATE)
     cookies_accepted = db.Column(db.Boolean, default=False)
+    analytics = db.Column(db.Boolean, default=False)
+    marketing = db.Column(db.Boolean, default=False)
 
     roles = db.relationship('Role', secondary='user_roles', backref=db.backref('user', lazy='dynamic'),
                             primaryjoin='UserRoles.user_id == Users.id',

@@ -314,30 +314,6 @@
             max-width: 100%; /* Ensure responsiveness */
         }
 
-        .footer-section {
-            background-color: #333;
-            color: white;
-            padding: 20px 0;
-        }
-
-        .footer-section .footer-links {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 20px;
-        }
-
-        .footer-section .footer-links a {
-            color: white;
-            text-decoration: none;
-            display: block;
-            margin-bottom: 10px;
-        }
-
-        .footer-section .footer-links a:hover {
-            text-decoration: underline;
-        }
-
-
         .app-box {
             border-radius: 8px;
             overflow: hidden;
@@ -358,7 +334,7 @@
             position: fixed;
             bottom: 0;
             width: 100%;
-            background-color: #333; /* Dark background */
+            background-color: #007BFF; /* Dark background */
             padding: 5px; /* Reduce padding */
             text-align: center;
             border-top: 1px solid #ccc;
@@ -382,6 +358,42 @@
             font-size: 12px; /* Smaller font size */
         }
 
+
+        .footer-section {
+            background-color: #f8f9fa;
+            padding: 20px 0;
+        }
+
+        .footer-section .footer-links {
+            margin-bottom: 10px;
+        }
+
+        .footer-section .footer-links .top-row {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .footer-section .footer-links a {
+            color: #333;
+            text-decoration: none;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .footer-section .footer-links a:hover {
+            text-decoration: underline;
+        }
+
+        .footer-section .footer-links .column-title {
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+
+        .footer-section .footer-links .column-content a {
+            font-size: 0.9em;
+            font-weight: normal;
+        }
     </style>
 </head>
 
@@ -656,26 +668,48 @@
         </div>
     </div>
 
-    <!-- Footer Section -->
-    <div class="footer-section">
+    <footer class="footer-section">
         <div class="container">
             <div class="row footer-links">
                 <div class="col">
-                    <a href="#">About us</a>
-                    <a href="#">Report a page</a>
+                    <div class="column-title">About</div>
+                    <div class="column-content">
+                        <a href="{{ url_for('aboutus_1') }}">Who we are</a>
+                        <a href="{{ url_for('history') }}">Our history</a>
+                        <a href="{{ url_for('public_news') }}">News and insights</a>
+                        <a href="#">Events</a>
+                        <a href="{{ url_for('site_map') }}">Sitemap</a>
+                    </div>
                 </div>
                 <div class="col">
-                    <a href="#">Cookies</a>
-                    <a href="#">Accessibility Statement</a>
+                    <div class="column-title">Legal</div>
+                    <div class="column-content">
+                        <a href="#">Disclaimer</a>
+                        <a href="{{ url_for('privacy_policy') }}">Privacy Statement</a>
+                        <a href="{{ url_for('cookie_settings') }}">Cookie Settings</a>
+                        <a href="#">Cookie Statement</a>
+                        <a href="#">Accessibility</a>
+                    </div>
                 </div>
                 <div class="col">
-                    <a href="#">Terms of use</a>
-                    <a href="#">Privacy policy</a>
-                    <a href="#">Contact us</a>
+                    <div class="column-title">Contact</div>
+                    <div class="column-content">
+                        <a href="{{ url_for('contact_email') }}">Contact Us</a>
+                        <a href="{{ url_for('create_ticket') }}">Report an issue</a>
+                        <a href="#">Report a page</a>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="column-title">Explore</div>
+                    <div class="column-content">
+                        <a href="#">Site 1</a>
+                        <a href="#">Site 2</a>
+                        <a href="#">Site 3</a>
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
+    </footer>
 
 
     <!-- Cookie Consent Banner -->

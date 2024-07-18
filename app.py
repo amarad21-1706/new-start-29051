@@ -1840,6 +1840,12 @@ def signup():
     return render_template('access/signup.html', title='Sign Up', form=form)
 
 
+@app.route('/terms-of-use')
+@login_required
+def terms_of_use():
+    return render_template('home/terms_of_use.html')
+
+
 @login_required
 # TODO this is a test route. TB cancelled
 @roles_required('Admin')
@@ -4444,6 +4450,34 @@ def set_cookies():
     current_app.logger.debug("Set cookies accepted to true in both cookie and database")
 
     return response
+
+
+@app.route('/cookie-settings')
+@login_required
+def cookie_settings():
+    return render_template('cookie_settings.html')
+
+
+@app.route('/update_cookies', methods=['POST'])
+@login_required
+def update_cookies():
+    response = make_response(redirect(url_for('cookie_settings')))
+    analytics = 'true' if request.form.get('analytics') == 'true' else 'false'
+    marketing = 'true' if request.form.get('marketing') == 'true' else 'false'
+
+    response.set_cookie('analytics', analytics, max_age=60 * 60 * 24 * 30)  # 30 days
+    response.set_cookie('marketing', marketing, max_age=60 * 60 * 24 * 30)
+
+    # Update the user's cookie preferences in the database if necessary
+    user = Users.query.get(current_user.id)
+    user.analytics = analytics == 'true'
+    user.marketing = marketing == 'true'
+    db.session.commit()
+
+    current_app.logger.debug("Updated cookie preferences: Analytics - {}, Marketing - {}".format(analytics, marketing))
+
+    return response
+
 
 
 if __name__ == '__main__':
