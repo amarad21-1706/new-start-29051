@@ -17,7 +17,7 @@ from sqlalchemy.exc import OperationalError
 
 from werkzeug.exceptions import HTTPException
 from db import db
-from flask import g
+from flask import g, make_response
 from flask import flash
 import datetime
 
@@ -515,7 +515,6 @@ def menu_item_allowed(menu_item, user_roles):
     # WHEN the phrase on the right was present, the landing page was empty A.R. 15Feb2024
     return True #menu_item['allowed_roles'] and any(role in user_roles for role in menu_item['allowed_roles'])
 
-
 def generate_route_and_menu(route, allowed_roles, template, include_protected=False, limited_menu=False):
     def decorator(func):
         @app.route(route)
@@ -528,35 +527,21 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
                 is_authenticated = current_user.is_authenticated
 
             username = current_user.username if current_user.is_authenticated else "Guest"
+            user_roles = session.get('user_roles', ['Guest'])
 
-            user_roles = session.get('user_roles', [])
-
-            # Check if the lists intersect
-            intersection = set(user_roles) & set(["Employee", "Manager", "Authority", "Admin"])
-            allowed_roles = []
-            left_menu_items = {}
-            if intersection:
-                left_menu_items = get_left_menu_items(list(intersection))
-                allowed_roles = list(intersection)
-                # prova left menu
-                #left_menu_items = ["Area 1", "Area 2", "Area 3", "Item 4", "Item 5", "Item 6"]
-            else:
-                allowed_roles= ["Guest"]
+            intersection = set(user_roles) & set(["Employee", "Manager", "Authority", "Admin", "Provider"])
+            allowed_roles = list(intersection) if intersection else ["Guest"]
 
             menu_builder_instance = MenuBuilder(main_menu_items, allowed_roles=allowed_roles)
 
             if limited_menu:
                 menu_data = menu_builder_instance.parse_menu_data(user_roles=user_roles,
-                                        is_authenticated=False, include_protected=False)
+                                                                  is_authenticated=False, include_protected=False)
             else:
                 menu_data = menu_builder_instance.parse_menu_data(user_roles=user_roles,
-                                        is_authenticated=is_authenticated, include_protected=include_protected)
+                                                                  is_authenticated=is_authenticated, include_protected=include_protected)
 
             buttons = []
-            '''for company, records in companyRecords.items():
-                buttons.append(CompanyButton(companyName=company, companyRecords=records))'''
-
-            # Example: Generate dynamic URL for 'admin_2.admin_blueprint.index'
             admin_url = url_for('open_admin.index')
             admin_2_url = url_for('open_admin_2.index')
             admin_3_url = url_for('open_admin_3.index')
@@ -573,27 +558,21 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
             else:
                 pass
 
-            # Check for unread notices
             if is_authenticated:
                 unread_notices_count = Post.query.filter_by(user_id=current_user.id, marked_as_read=False).count()
             else:
                 unread_notices_count = 0
 
-            # Check for unread open tickets
             if is_authenticated:
-                if 'Admin' in [role.name for role in
-                               current_user.roles]:  # Assuming you have a 'roles' relationship in your user model
+                if 'Admin' in [role.name for role in current_user.roles]:
                     admin_tickets_count = Ticket.query.filter_by(status_id=2, marked_as_read=False).count()
                     open_tickets_count = 0
                 else:
                     admin_tickets_count = 0
-                    open_tickets_count = Ticket.query.filter_by(user_id=current_user.id, status_id=2,
-                                                                marked_as_read=False).count()
+                    open_tickets_count = Ticket.query.filter_by(user_id=current_user.id, status_id=2, marked_as_read=False).count()
             else:
                 admin_tickets_count = 0
                 open_tickets_count = 0
-
-            # TODO select containers by role, company etc!
 
             role_ids = []
             for role_name in user_roles:
@@ -601,24 +580,23 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
                 if role:
                     role_ids.append(role.id)
 
-            print('role_ids', role_ids)
-
-            # TODO select containers by role, company etc!
-            # containers = Container.query.filter_by(page='link').all()
             try:
                 containers = Container.query.filter(
                     Container.role_id.in_(role_ids)
                 ).order_by(Container.container_order).all()
-
-                # Iterate over the containers and print the 'container' field
-                # for container in containers:
-                #     print('container 2:', container.page, container.content_type, container.content)
             except:
-                print('No container data found 2')
                 containers = None
 
             company_id = session.get('company_id')
             card_data = get_cards(company_id)
+
+            # Check cookies_accepted in the database
+            cookies_accepted = 'true' if current_user.is_authenticated and current_user.cookies_accepted else 'false'
+            show_cookie_banner = 'Admin' not in user_roles and cookies_accepted == 'false'
+
+            current_app.logger.debug(f"User Roles: {user_roles}")
+            current_app.logger.debug(f"Show Cookie Banner: {show_cookie_banner}")
+            current_app.logger.debug(f"Cookies Accepted: {cookies_accepted}")
 
             additional_data = {
                 "username": username,
@@ -632,23 +610,22 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
                 "guest_menu_data": None,
                 "user_roles": user_roles,
                 "allowed_roles": allowed_roles,
-                "limited_menu": limited_menu,  # Added this line
-                "left_menu_items": left_menu_items,
+                "limited_menu": limited_menu,
                 "buttons": buttons,
                 "admin_url": admin_url,
                 "admin_2_url": admin_2_url,
                 "admin_3_url": admin_3_url,
                 "admin_4_url": admin_4_url,
                 "admin_10_url": admin_10_url,
+                "left_menu_items": menu_data,
                 "unread_notices_count": unread_notices_count,
                 "admin_tickets_count": admin_tickets_count,
                 "open_tickets_count": open_tickets_count,
                 "containers": containers,
                 "cards": card_data,
+                "show_cookie_banner": show_cookie_banner,
             }
 
-            print('wrapper rendering - unread messages:', unread_notices_count)
-            #print('card data', card_data)
             return render_template(template, **additional_data)
 
         return wrapper
@@ -1010,6 +987,28 @@ def left_menu():
     return render_template('home/home.html', **additional_data)
 
 
+
+@app.route('/')
+@generate_route_and_menu('/', allowed_roles=["Guest"], template='home/home.html', include_protected=False, limited_menu=True)
+def index():
+    user_id = session.get('user_id')
+    user_roles = session.get('user_roles', [])
+    analytics = request.cookies.get('analytics', 'false')
+    marketing = request.cookies.get('marketing', 'false')
+    cookies_accepted = request.cookies.get('cookies_accepted', 'false')
+
+    # Determine if the cookie banner should be shown
+    show_cookie_banner = 'Admin' not in user_roles and cookies_accepted == 'false'
+
+    print('show_cookie_banner1', show_cookie_banner)
+    # Create MenuBuilder with user roles
+    menu_builder = MenuBuilder(main_menu_items, allowed_roles=user_roles)
+    # Generate menu for the current user
+    generated_menu = menu_builder.generate_menu(user_roles=user_roles, is_authenticated=True, include_protected=False)
+
+    return render_template('home/home.html', analytics=analytics, marketing=marketing, generated_menu=generated_menu, show_cookie_banner=show_cookie_banner)
+
+'''
 @app.route('/')
 @generate_route_and_menu('/', allowed_roles=["Guest"], template='home/home.html', include_protected=False,
                          limited_menu=True)
@@ -1027,7 +1026,7 @@ def index():
                                                 include_protected=False)
     pass
     # return render_template('home/home.html', **additional_data)
-
+'''
 
 @login_required
 @app.route('/access/logout', methods=['GET'])
@@ -1554,7 +1553,7 @@ def attach_documents_to_workflow_step():
                 end_recall=0,
                 recall_unit='...',
                 open_action='new',
-                auto_move=0 # Include start_recall in the initialization
+                auto_move=False # Include start_recall in the initialization
             )
 
             db.session.add(new_record)
@@ -4413,6 +4412,38 @@ def update_account():
         form.mobile_phone.data = current_user.mobile_phone
         form.work_phone.data = current_user.work_phone
     return render_template('account.html', title='Account', form=form)
+
+
+@app.route('/set_cookies', methods=['POST'])
+@login_required  # Ensure the user is logged in
+def set_cookies():
+    response = make_response(redirect(url_for('index')))
+    consent = request.form.get('consent')
+
+    if consent == 'allow_all':
+        response.set_cookie('analytics', 'true', max_age=60 * 60 * 24 * 30)  # 30 days
+        response.set_cookie('marketing', 'true', max_age=60 * 60 * 24 * 30)
+    elif consent == 'reject_all':
+        response.set_cookie('analytics', 'false', max_age=60 * 60 * 24 * 30)
+        response.set_cookie('marketing', 'false', max_age=60 * 60 * 24 * 30)
+    elif consent == 'customize':
+        analytics = request.form.get('analytics', 'false')
+        marketing = request.form.get('marketing', 'false')
+        response.set_cookie('analytics', analytics, max_age=60 * 60 * 24 * 30)
+        response.set_cookie('marketing', marketing, max_age=60 * 60 * 24 * 30)
+
+    # Set a cookie to indicate that the user has made a choice regarding cookies
+    response.set_cookie('cookies_accepted', 'true', max_age=60 * 60 * 24 * 30)
+
+    # Update the user's cookies_accepted field in the database
+    if current_user.is_authenticated:
+        user = Users.query.get(current_user.id)
+        user.cookies_accepted = True
+        db.session.commit()
+
+    current_app.logger.debug("Set cookies accepted to true in both cookie and database")
+
+    return response
 
 
 if __name__ == '__main__':

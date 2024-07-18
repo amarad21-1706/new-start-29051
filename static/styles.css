@@ -103,3 +103,31 @@ footer {
 #imageModal button {
     margin-top: 20px;
 }
+
+.cookie-banner {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    background-color: #333; /* Dark background */
+    padding: 5px; /* Reduce padding */
+    text-align: center;
+    border-top: 1px solid #ccc;
+    color: #fff; /* Light text */
+    font-size: 12px; /* Smaller font size */
+}
+
+.cookie-banner p {
+    margin: 0;
+    padding: 0;
+}
+
+.cookie-banner form {
+    display: inline-block;
+    margin: 5px; /* Reduce margin */
+}
+
+.cookie-banner button {
+    margin: 3px; /* Reduce margin */
+    padding: 5px 10px; /* Reduce padding */
+    font-size: 12px; /* Smaller font size */
+}

@@ -354,6 +354,34 @@
             box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
         }
 
+        .cookie-banner {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background-color: #333; /* Dark background */
+            padding: 5px; /* Reduce padding */
+            text-align: center;
+            border-top: 1px solid #ccc;
+            color: #fff; /* Light text */
+            font-size: 12px; /* Smaller font size */
+        }
+
+        .cookie-banner p {
+            margin: 0;
+            padding: 0;
+        }
+
+        .cookie-banner form {
+            display: inline-block;
+            margin: 5px; /* Reduce margin */
+        }
+
+        .cookie-banner button {
+            margin: 3px; /* Reduce margin */
+            padding: 5px 10px; /* Reduce padding */
+            font-size: 12px; /* Smaller font size */
+        }
+
     </style>
 </head>
 
@@ -648,6 +676,55 @@
             </div>
         </div>
     </div>
+
+
+    <!-- Cookie Consent Banner -->
+    {% if show_cookie_banner %}
+        <div id="cookie-consent-banner" class="cookie-banner">
+            <p>We use cookies to enhance your experience. By continuing to visit this site you agree to our use of cookies.</p>
+            <form method="POST" action="{{ url_for('set_cookies') }}">
+                <button type="submit" name="consent" value="allow_all">Allow All</button>
+                <button type="submit" name="consent" value="reject_all">Reject All</button>
+                <button type="button" onclick="showCustomizeOptions()">Customize</button>
+            </form>
+            <div id="customize-options" style="display:none;">
+                <form method="POST" action="{{ url_for('set_cookies') }}">
+                    <input type="hidden" name="consent" value="customize">
+                    <label>
+                        <input type="checkbox" name="analytics" value="true" checked> Analytics
+                    </label>
+                    <label>
+                        <input type="checkbox" name="marketing" value="true" checked> Marketing
+                    </label>
+                    <button type="submit">Save Preferences</button>
+                </form>
+            </div>
+        </div>
+    {% endif %}
+
+    <script>
+        function showCustomizeOptions() {
+            document.getElementById('customize-options').style.display = 'block';
+        }
+
+        // Use the analytics and marketing variables
+        var analytics = "{{ analytics }}";
+        var marketing = "{{ marketing }}";
+
+        console.log("Analytics consent: " + analytics);
+        console.log("Marketing consent: " + marketing);
+
+        // Conditional logic based on cookie values
+        if (analytics === 'true') {
+            // Include analytics scripts
+            console.log("Including analytics scripts");
+        }
+
+        if (marketing === 'true') {
+            // Include marketing scripts
+            console.log("Including marketing scripts");
+        }
+    </script>
 
     <!-- Bootstrap JS and jQuery -->
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>

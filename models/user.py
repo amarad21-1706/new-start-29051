@@ -7,7 +7,7 @@ from sqlalchemy import (Column, Integer, String, DateTime, ForeignKey,
 
 from sqlalchemy import or_, and_, Enum, event
 
-from sqlalchemy.orm import object_session
+from sqlalchemy.orm import object_session, validates
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm.session import Session
@@ -78,7 +78,7 @@ class Container(db.Model):
         self.container_order = container_order
 
     def __repr__(self):
-        return f"Container {self.id}: {self.page} ({self.position}, {self.content_type}, {self.description}, {self.action_type}, {self.action_url})"
+        return f"Container: {self.page} ({self.position}, {self.content_type}, {self.description}, {self.action_type}, {self.action_url})"
 
 
 class Users(db.Model, UserMixin):
@@ -115,7 +115,7 @@ class Users(db.Model, UserMixin):
     created_on = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_on = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
     end_of_registration = db.Column(DATE)
-
+    cookies_accepted = db.Column(db.Boolean, default=False)
 
     roles = db.relationship('Role', secondary='user_roles', backref=db.backref('user', lazy='dynamic'),
                             primaryjoin='UserRoles.user_id == Users.id',
@@ -173,7 +173,7 @@ class Users(db.Model, UserMixin):
         return 'admin' in [role.name for role in self.roles]
 
     def __repr__(self):
-        return f"<User {self.username} {self.last_name}>"
+        return f"{self.username} {self.last_name}"
 
 
 class Role(db.Model, RoleMixin):
@@ -184,7 +184,7 @@ class Role(db.Model, RoleMixin):
     description = db.Column(String(255))
 
     def __repr__(self):
-        return (f"Role #{self.id}: {self.name} ({self.description})")
+        return (f"{self.name} ({self.description})")
 
 class UserRoles(db.Model):
     __tablename__ = 'user_roles'
@@ -233,7 +233,7 @@ class Company(db.Model):
     end_of_registration = db.Column(db.DateTime, nullable=True)
 
     def __repr__(self):
-        return (f"Company ID {self.id}: {self.name}")
+        return (f"{self.name}")
 
 
 
@@ -279,7 +279,7 @@ class Questionnaire(db.Model):
         self.headers = headers
 
     def __repr__(self):
-        return f'<Questionnaire {self.name}>'
+        return (f"{self.name}")
 
     def to_json(self):
         return json.dumps({
@@ -315,7 +315,7 @@ class Question(db.Model):
     #inline_fields: Mapped[list[InlineField]] = db.relationship('InlineField', backref='question')
 
     def __repr__(self):
-        return (f"Question #{self.id}: {self.question_id} (answer type={self.answer_type})")
+        return (f"Question: {self.question_id} (answer type={self.answer_type})")
 
     def to_json(self):
         return json.dumps({
@@ -419,9 +419,8 @@ class Answer(db.Model):
     answer_data = db.Column(db.JSON)  # Serialized JSON
 
     def __repr__(self):
-        return (f"<Answer(id={self.id}, company_id={self.company_id}, user_id={self.user_id}, "
-                f"questionnaire_id={self.questionnaire_id}, "
-                f"timestamp={self.timestamp}, submitted={self.submitted}, answer_data={self.answer_data})>")
+        return (f"<Answer: company {self.company_id}, user {self.user_id}, "
+                f"questionnaire {self.questionnaire_id}, answer={self.answer_data})>")
 
     def to_json(self):
         return json.dumps({
@@ -463,7 +462,7 @@ class Status(db.Model):
 
 
     def __repr__(self):
-        return (f"Status #{self.id}: {self.name} ({self.description})")
+        return (f"{self.name} ({self.description})")
 
 class Interval(db.Model):
     __tablename__ = 'interval'
@@ -474,8 +473,7 @@ class Interval(db.Model):
     interval_id = db.Column(db.Integer)
 
     def __repr__(self):
-        return (f"Interval # {self.id}: {self.name} ({self.description}, "
-                f"{self.interval_id})")
+        return (f"{self.name} ({self.description})")
 
 
 class Deadline(db.Model):
@@ -509,7 +507,7 @@ class Lexic(db.Model):
         self.name = name
 
     def __repr__(self):
-        return f"<Lexic {self.id}: {self.name} ({self.category})>"
+        return f"{self.name}"
 
 
 class Area(db.Model):
@@ -524,7 +522,7 @@ class Area(db.Model):
         self.description = description
 
     def __repr__(self):
-        return f"Area {self.id}: {self.name} ({self.description})"
+        return f"{self.name} ({self.description})"
 
 
 class Subarea(db.Model):
@@ -541,7 +539,7 @@ class Subarea(db.Model):
         self.data_type = data_type
 
     def __repr__(self):
-        return f"Subarea {self.id}: {self.name} ({self.description}, {self.data_type})"
+        return f"{self.name} ({self.description})"
 
 
 
@@ -555,8 +553,8 @@ class AreaSubareas(db.Model):
     caption = db.Column(db.Text(255))
 
     def __repr__(self):
-        return (f"<AreaSubareas(id={self.id}, area_id={self.area_id}, subarea_id={self.subarea_id}, "
-                f"status_id={self.status_id}, interval_id={self.interval_id}, caption='{self.caption}')>")
+        return (f"Area={self.area_id}, subarea={self.subarea_id}, "
+                f"status={self.status_id}, interval={self.interval_id}")
 
 class Subject(db.Model):
     __tablename__ = 'subject'
@@ -574,8 +572,7 @@ class Subject(db.Model):
         self.tier_3 = tier_3
 
     def __repr__(self):
-        return (f"Items dictionary # {self.id}: {self.name} ({self.tier_1}, "
-                f"{self.tier_2}, {self.tier_3})")
+        return (f"{self.name} ({self.tier_1})")
 
 
 class LegalDocument(db.Model):
@@ -595,8 +592,7 @@ class LegalDocument(db.Model):
         self.tier_3 = tier_3
 
     def __repr__(self):
-        return (f"Documents dictionary {self.id}: {self.name} ({self.tier_1}, "
-                f"{self.tier_2}, {self.tier_3})")
+        return (f"{self.name} ({self.tier_1})")
 
 
 class BaseData(db.Model):
@@ -681,7 +677,7 @@ class BaseData(db.Model):
     # base_data_inlines = db.relationship('BaseDataInline', back_populates='base_data', cascade='all, delete-orphan')
 
     def __repr__(self):
-        return f'<BaseData {self.id}>'
+        return f'<Data ID: {self.id}>'
 
     @classmethod
     def get_documents(cls):
@@ -945,7 +941,7 @@ class StepBaseData(db.Model):
     status_id = db.Column(db.Integer, db.ForeignKey('status.id'))
     start_date = db.Column(db.DateTime, default=func.current_timestamp())
     deadline_date = db.Column(db.DateTime)
-    auto_move = db.Column(db.Boolean, default=False)
+    auto_move = db.Column(db.Integer, default=0)
     end_date = db.Column(db.DateTime)
     hidden_data = db.Column(db.String(255))
     start_recall = db.Column(db.Integer, default=0)
@@ -962,13 +958,18 @@ class StepBaseData(db.Model):
     status = relationship("Status", foreign_keys=[status_id])
 
 
+    @validates('auto_move')
+    def validate_auto_move(self, key, value):
+        return int(value)
+
+
     # Define unique constraint
     #__table_args__ = (
     #    UniqueConstraint('base_data_id', 'workflow_id', 'step_id', 'status_id', name='unique_step_base_data'),
     #)
 
     def __repr__(self):
-        return f"Doc WF {self.id}: doc {self.base_data_id} in wf {self.workflow_id}, step {self.step_id}, status {self.status_id}"
+        return f"Workflow ID {self.id}: doc {self.base_data_id} in wf {self.workflow_id}, step {self.step_id}, status {self.status_id}"
 
     @classmethod
     def create(cls, **kwargs):
@@ -1020,7 +1021,7 @@ class StepQuestionnaire(db.Model):
     #)
 
     def __repr__(self):
-        return f"Quest WF {self.id}: quest {self.questionnaire_id} in wf {self.workflow_id}, step {self.step_id}, status {self.status_id}"
+        return f"Quesionnaire ID {self.id}: quest {self.questionnaire_id} in wf {self.workflow_id}, step {self.step_id}, status {self.status_id}"
 
     @classmethod
     def create(cls, **kwargs):
@@ -1053,7 +1054,7 @@ class Workflow(db.Model):
         return {'id': self.id, 'name': self.name}
 
     def __repr__(self):
-        return f"Workflow {self.id}, {self.name} ({self.description})"
+        return f"{self.name} ({self.description})"
 
 
 class Step(db.Model):
@@ -1129,7 +1130,7 @@ class Step(db.Model):
 
 
     def __repr__(self):
-        return f"Step {self.id}: {self.name} ({self.description})"
+        return f"{self.name} ({self.description})"
 
 
 class WorkflowSteps(db.Model):
@@ -1143,7 +1144,7 @@ class WorkflowSteps(db.Model):
     step = db.relationship("Step", backref="workflow_steps")
 
     def __repr__(self):
-        return f"WF {self.id} {self.workflow_id}, step {self.step_id}"
+        return f"{self.workflow_id}, step {self.step_id}"
 
 
 class WorkflowBaseData(db.Model):
@@ -1168,7 +1169,7 @@ class WorkflowBaseData(db.Model):
     #workflow_data = relationship('BaseData_Workflow', foreign_keys=[workflow_data_id], backref='workflow_base_data')
 
     def __repr__(self):
-        return f"Docs WF {self.id}: doc {self.base_data_id}, wf {self.workflow_id}"
+        return f"Docs workflow: doc {self.base_data_id}, wf {self.workflow_id}"
 
 
 
@@ -1184,8 +1185,8 @@ class Config(db.Model):
     config_date = db.Column(db.String)
 
     def __repr__(self):
-        return (f"Config id={self.id}, type={self.config_type}, company_id={self.company_id}, "
-                f"area_id={self.area_id}, subarea_id={self.subarea_id}")
+        return (f"Config: type={self.config_type}, company={self.company_id}, "
+                f"area={self.area_id}, subarea={self.subarea_id}")
 
 
 
@@ -1244,7 +1245,7 @@ class AuditLog(db.Model):
 
         '''
         # Return the string representation
-        return (f"Audit log id={self.id}, user {self.user_id}, company {self.company_id}, "
+        return (f"Audit log: {self.id}, user {self.user_id}, company {self.company_id}, "
                 f"doc {self.base_data_id}, workflow {self.workflow_id}, step {self.step_id}, "
                 f"action {self.action}, details ...")
 
@@ -1268,7 +1269,7 @@ class Post(db.Model):
     user = relationship("Users")  # If using user_id
 
     def __repr__(self):
-        return f"Message id={self.id}, type={self.message_type}, subject={self.subject}"
+        return f"{self.message_type}, {self.subject}"
 
 
 
