@@ -7,32 +7,48 @@ from sqlalchemy.orm import joinedload
 from flask_login import current_user
 
 from flask_sqlalchemy import SQLAlchemy
+from flask_babel import Domain
 
 
 class UserManager:
     def __init__(self, db: SQLAlchemy):
         self.db = db
 
+
     def authenticate_user(self, username, password):
         try:
+            print('auth', username, password)
             user = Users.query.filter_by(username=username).options(joinedload(Users.roles)).first()
+            print('user', user)
             if user and check_password_hash(user.password_hash, password):
+                print('checked ok', user)
                 session['user_id'] = user.id
                 session['username'] = user.username
-                print('just logged in', user.id, user.username, user)
+                session['roles'] = [role.name for role in user.roles]
 
+                session['email'] = user.email
+
+                print('roles', session['roles'])
                 return user
             else:
+                print('Not logged in!')
+                session['user_id'] = None
+                session['email'] = None
+                session['username'] = 'Guest'
+                session['roles'] = ['Guest']
                 return None
         except Exception as e:
             print(f'Db error (4): {e}')
+            session['user_id'] = None
+            session['email'] = None
+            session['username'] = 'Guest'
+            session['roles'] = ['Guest']
             return None
-
 
 
     def load_user(self, user_id):
         # Check if user_id is not None and is a string representation of an integer
-        if user_id is not None and user_id.isdigit():
+        if user_id is not None:
             # Load user from the database using user_id
             user_data = Users.query.get(int(user_id))
             # print('user id', user_data.id, ', roles', user_data.roles)
@@ -43,7 +59,7 @@ class UserManager:
     def load_user_by_username(self, username):
         try:
             from db import db
-            current_app.logger.info(f'***Loading user by username***: {username}')
+            #current_app.logger.info(f'***Loading user by username***: {username}')
             user_instance = db.Users.query.filter_by(username=username).first()
             # Commit the session if necessary
             db.session.commit()

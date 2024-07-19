@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Respond to Ticket</h2>
+<form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="form-group">
+        {{ form.response.label(class="form-label") }}
+        {{ form.response(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.status.label(class="form-label") }}
+        {{ form.status(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.submit(class="btn btn-primary") }}
+    </div>
+</form>
+{% endblock %}

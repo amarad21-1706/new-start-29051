@@ -2,15 +2,17 @@
 import secrets
 import os
 from db import db
+
 from models.user import (Company, CompanyUsers, Users, Role, UserRoles,
                          Area, Subarea, AreaSubareas, Deadline, Interval,
                          QuestionnaireCompanies, Questionnaire, Question, QuestionnaireQuestions,
                          get_config_values, Workflow, Step, BaseData, WorkflowSteps,
                          WorkflowBaseData, StepBaseData, Post, AuditLog)
-#from sqlalchemy import or_, and_, desc, func, null
-#import pandas as pd
-#from sqlalchemy.orm import subqueryload
-#from flask import Flask, session, redirect, url_for
+
+# from sqlalchemy import or_, and_, desc, func, null
+# import pandas as pd
+# from sqlalchemy.orm import subqueryload
+# from flask import Flask, session, redirect, url_for
 
 from dateutil.relativedelta import relativedelta
 
@@ -19,13 +21,11 @@ import pandas as pd
 from flask_login import current_user
 import json
 import pytz
-import secrets
 
 import os
 from dotenv import load_dotenv
 
 load_dotenv()  # Load environment variables from .env file if present
-
 
 def user_has_edit_workflow_permission(current_user):
     # Replace this with your logic to check user roles or permissions
@@ -63,15 +63,23 @@ class Config:
             "db1": f"sqlite:///{self.current_directory}/database/sysconfig.db",
         }
         '''
+
+        self.SECRET_KEY = os.environ.get('SECRET_KEY_2')
+        self.SECURITY_PASSWORD_SALT = os.environ.get('SECURITY_PASSWORD_SALT_')
+
         # PostgreSQL
         self.SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
         self.SQLALCHEMY_BINDS = {
             'db1': os.environ.get('DATABASE_URL_DB1')
         }
-        SQLALCHEMY_TRACK_MODIFICATIONS = False
+        # TODO DEBUG deactivate in prod or after first debug row
+        # self.DEBUG = True
+        self.SQLALCHEMY_ECHO = False  # This will log all or none of the SQL queries
+        self.SQLALCHEMY_TRACK_MODIFICATIONS = True
+        # self.DEBUG_TB_INTERCEPT_REDIRECTS = False
+
         self.BOOTSTRAP_USE_MINIFIED = False
         self.BOOTSTRAP_SERVE_LOCAL = True
-        self.SQLALCHEMY_ECHO = False
         self.EXCEPT_FIELDS = ["id", "email", "user_id", "role_id", "created_on", "updated_on",
                               "end_of_registration", "password", "company_id", "company"]
         self.CURRENT_DIRECTORY = self.current_directory
@@ -79,13 +87,52 @@ class Config:
         self.COMPANY_FILES_DIR =f"/{self.current_directory}/static/docs/company_files/"
         self.CRUD_ADD_TEMPLATE = f"/{self.current_directory}/templates/crud_add_template.html"
 
-        self.SECURITY_PASSWORD_SALT = some_keys['security_password_salt'] #'329d29b7bedc86e66ea3456b3a49ff9328b082649a1bc3b02ecb6f5881d2a380'
         self.STATIC_FOLDER = 'static'
         self.ASSETS_FOLDER = 'assets'
-        self.MAX_RECURSION_DEPTH = 12
+        self.MAX_RECURSION_DEPTH = 1000
+        self.TEMPLATES_AUTO_RELOAD = True
+        self.SQLALCHEMY_COMMIT_ON_TEARDOWN = True
+        self.PERMANENT_SESSION_LIFETIME = timedelta(minutes=60)  # Set session to expire in 5 minutes
+        self.SEND_FILE_MAX_AGE_DEFAULT = 0  # Disable caching for development
+
+        self.SESSION_TYPE = 'filesystem'
+
+        self.SEND_FILE_MAX_AGE_DEFAULT = 0  # Disable caching for development
+
+        self.RECAPTCHA_PUBLIC_KEY = os.environ.get('RECAPTCHA_PUBLIC_KEY')
+        self.RECAPTCHA_PRIVATE_KEY = os.environ.get('RECAPTCHA_PRIVATE_KEY')
+
+        # CAPTCHA
+        # selfRECAPTCHA_PUBLIC_KEY = some_keys['recaptcha_public_key']
+        # selfRECAPTCHA_PRIVATE_KEY = some_keys['recaptcha_private_key']
+        self.WTF_CSRF_ENABLED = False  # Disable CSRF protection for local development
+
+        '''
+        self.SQLALCHEMY_ENGINE_OPTIONS = {
+            'connect_args': {
+                'options': '-c statement_timeout=60000',  # Set timeout to 60 seconds
+                'connect_timeout': 30  # Set connection timeout to 30 seconds
+            }
+        }
+        '''
+
+        self.SQLALCHEMY_ENGINE_OPTIONS = {
+            'pool_size': 10,
+            'pool_timeout': 30,
+            'pool_recycle': 1800,  # Recycle connections after 30 minutes
+            'pool_pre_ping': True,  # Check connections before using them
+            'connect_args': {
+                'options': '-c statement_timeout=60000',  # Set timeout to 60 seconds
+                'connect_timeout': 30  # Set connection timeout to 30 seconds
+            }
+        }
+
+        self.TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
+        self.TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
+        self.TWILIO_AUTHY_API_KEY = os.environ.get('TWILIO_AUTHY_API_KEY')
+
         #self.SESSION_COOKIE_HTTPONLY = True
         #self.SESSION_COOKIE_SECURE = True  # Only set to True if using HTTPS
-
 
         # Emailing
         '''
@@ -104,6 +151,9 @@ class Config:
         self.MAIL_USE_TLS = True
         self.MAIL_USE_SSL = False
 
+        self.STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY')
+        self.STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY')
+
 
 # Define a custom JSON encoder class to handle datetime serialization
 class DateTimeEncoder(json.JSONEncoder):
@@ -113,12 +163,13 @@ class DateTimeEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 some_keys = {
-    "security_password_salt": '329d29b7bedc86e66ea3456b3a49ff9328b082649a1bc3b02ecb6f5881d2a380',
-    "recaptcha_public_key": '6LdcYnkpAAAAADpQdytwQVK7UtxeJJ0C_nHsPc8R',
-    "recaptcha_private_key": '6LdcYnkpAAAAAKOWGB7_cEBlY-3UlBGZY9KS6zH9',
-    "secret_key_1": 'Doru-ghitica-mielus-dudu-s...etaru-.961',
+
     "secret_key_2": secrets.token_hex(16),
 }
+# "recaptcha_public_key": '6LdcYnkpAAAAADpQdytwQVK7UtxeJJ0C_nHsPc8R',
+# "recaptcha_private_key": '6LdcYnkpAAAAAKOWGB7_cEBlY-3UlBGZY9KS6zH9',
+# "security_password_salt": '329d29b7bedc86e66ea3456b3a49ff9328b082649a1bc3b02ecb6f5881d2a380',
+#    "secret_key_1": 'see .env',
 
 sample_answer = {
     "questionnaire_id": None,  # Initialize with appropriate values
@@ -131,7 +182,6 @@ sample_answer = {
     "comment": "",  # Initialize with appropriate values
     "date": None  # Initialize with appropriate values
 }
-
 
 encoding_scheme = {
   'TST': {'type': 'Text', 'characteristic': 'Short Text'},
@@ -149,31 +199,25 @@ encoding_scheme = {
 
 
 def decode_question_type(code, encoding_scheme):
-    print(f"Processing code: {code}")
 
     if '(' in code and ')' in code:
         base_code, extra_info = code.split('(')
-        print(f"Base code: {base_code}, Extra info: {extra_info}")
 
         if extra_info.endswith(')'):
             extra_info = extra_info[:-1]  # Remove the closing parenthesis
-            print(f"Processed extra info: {extra_info}")
 
             if '-' in extra_info:
                 min_value, max_value = extra_info.split('-')
-                print(f"Min value: {min_value}, Max value: {max_value}")
 
                 if min_value.isdigit() and max_value.isdigit():
                     min_value = int(min_value)
                     max_value = int(max_value)
                     base_code_with_parentheses = f"{base_code}({extra_info})"
-                    print(f"Base code with parentheses: {base_code_with_parentheses}")
 
                     if base_code_with_parentheses in encoding_scheme:
                         decoded = encoding_scheme[base_code_with_parentheses]
                         decoded['min'] = min_value
                         decoded['max'] = max_value
-                        print(f"Decoded type: {decoded['type']}, Decoded characteristic: {decoded['characteristic']}")
 
                         if decoded['type'] == 'Number' and decoded[
                             'characteristic'] == 'Integer' and min_value == 0 and max_value == 10:
@@ -190,11 +234,9 @@ def decode_question_type(code, encoding_scheme):
             return "Invalid code (Unmatched parentheses)"
     else:
         adjusted_code = code.upper() if 'FILE' in encoding_scheme.keys() else code
-        print(f"Adjusted code: {adjusted_code}")
 
         if adjusted_code in encoding_scheme:
             decoded = encoding_scheme[adjusted_code]
-            print(f"Decoded type: {decoded['type']}, Decoded characteristic: {decoded['characteristic']}")
 
             if 'min' in decoded and 'max' in decoded:
                 return f"Type: {decoded['type']}, Characteristic: {decoded['characteristic']}, Min: {decoded['min']}, Max: {decoded['max']}"
@@ -878,7 +920,6 @@ def get_time_qualifier(interval_id, interval_ord, year):
         else:  # Same interval order as current interval order
             result = "current"
 
-    print(f'get_time_qualifier({interval_id}, {interval_ord}, {year}) -> {result}')
     return result
 
 
@@ -944,7 +985,6 @@ def get_session_workflows(session, current_user):
 
 def get_pd_report_from_base_data(session):
     # Get the records without the time qualifier
-    print('db7')
     query = session.query(
         BaseData.company_id,
         Company.name.label('company_name'),  # Add the company name to the query
@@ -974,7 +1014,6 @@ def get_pd_report_from_base_data(session):
     # Apply the same logic as the loop for assigning time qualifier to each record
     df['time_qualifier'] = df.apply(lambda row: get_time_qualifier(row['interval_id'], row['interval_ord'], row['fi0']), axis=1)
     # Print the updated DataFrame
-    print(df.head())
 
     # (debugging an error): Assuming df is your DataFrame
     #df['time_qualifier'] = df.apply(lambda row: get_time_qualifier(row['interval_id'], row['interval_ord'], row['fi0']),
@@ -991,13 +1030,13 @@ def get_pd_report_from_base_data(session):
     return sorted_records
 
 
-import pandas as pd
 from sqlalchemy import func
-
-def get_pd_report_from_base_data_wtq(session):
+def get_pd_report_from_base_data_wtq(engine):
     try:
-        # Get the records without the time qualifier
-        query = session.query(
+        # Assuming BaseData and Company are your SQLAlchemy models
+        connection = engine.connect()
+
+        query = db.session.query(
             BaseData.company_id,
             Company.name.label('company_name'),  # Add the company name to the query
             BaseData.area_id,
@@ -1017,18 +1056,15 @@ def get_pd_report_from_base_data_wtq(session):
             BaseData.interval_ord,
             BaseData.fi0
         )
-        # Compile the query and print it for debugging
-        compiled_query = query.statement.compile(session.bind)
 
         # Fetch query results into DataFrame
-        df = pd.read_sql(str(compiled_query), session.bind)
+        df = pd.read_sql(query.statement, connection)  # Use query.statement
 
         # Debugging: Print the DataFrame structure
-        print("DataFrame structure:\n", df.head())
 
         # Check if the DataFrame is empty
         if df.empty:
-            print("No data returned by the query.")
+            print("No data returned.")
             return []
 
         # Apply the logic for assigning time qualifier to each record
@@ -1048,8 +1084,11 @@ def get_pd_report_from_base_data_wtq(session):
         return sorted_records
 
     except Exception as e:
-        print(f'Error in get_pd_report_from_base_data_wtq: {e}')
+        print(f"Error in get_pd_report_from_base_data_wtq: {e}")
         raise
+
+    finally:
+        connection.close()
 
 
 def generate_html_cards(sorted_values, all_companies):
@@ -1127,7 +1166,6 @@ def generate_html_cards_progression_with_progress_bars111(sorted_values, current
     html_code = ""
 
     areas_with_subareas = get_areas_with_subareas(session)
-    print('areas, subareas', areas_with_subareas)
 
     # If current_time_qualifier is None, set it to an empty dictionary
     current_time_qualifier = current_time_qualifier or {}
@@ -1176,6 +1214,8 @@ def generate_html_cards_progression_with_progress_bars111(sorted_values, current
             # Start card body using the stored last values
             html_code += f"<div class='col-md-4'>"  # Bootstrap column to contain the card
             html_code += f"<div class='card' style='width: 22rem;'>"
+            # print('area id hyperlink and other values 1)', area.id, '2)', company_name, '3)', area.name, '4)', last_fi0, '5)', last_interval_ord)
+            # print(f'Route is open_admin_app_{area.id}')
             html_code += f"<div class='card-header'><h5 class='card-title' style='font-size: 1rem;'><a href='/open_admin_app_{area.id}'>\
             {company_name} - {area.name}</a> - {last_fi0} / {last_interval_ord}</h5></div>"
 
@@ -2016,10 +2056,9 @@ def form_has_changes(rendered_form, initial_data):
     # Check if lists are different
 
     if any(not custom_compare(elem1, elem2) for elem1, elem2 in zip(initials, currents)):
-        print(initials, currents, 'are not equal?')
         return True
     else:
-        print(initials, currents, 'are equal?')
+        pass
 
     return False
 
@@ -2101,8 +2140,6 @@ def remove_duplicates(session, model_class, keys):
 
         # Commit the changes
         session.commit()
-        print('duplicates removed')
-
 
 
 def create_notification(session, **kwargs):
@@ -2112,8 +2149,6 @@ def create_notification(session, **kwargs):
     )
     session.add(notification)
     session.commit()
-
-    print('notification created')
 
     '''
     use example

@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div id="questionnaire"></div>
+<div id="navigation-buttons">
+    <button id="home">Home</button>
+    <button id="save" style="display:none;">Save</button>
+    <button id="submit" style="display:none;">Submit</button>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    let currentQuestionIndex = 0;
+    let answers = {};
+    let questionHistory = [];
+    let questions = [
+        {
+            "id": 1,
+            "text": "Nelle verbalizzazioni del gestore del servizio di trasporto, sono stati segnalati malfunzionamenti o guasti che hanno comportato la necessità di stimare i quantitativi immessi?",
+            "type": "boolean",
+            "options": [
+                {"value": "yes", "text": "Yes"},
+                {"value": "no", "text": "No"}
+            ],
+            "next": {
+                "yes": 2,
+                "no": 6
+            }
+        },
+        {
+            "id": 2,
+            "text": "La durata dei guasti o malfunzionamenti riportati è superiore a 30 giorni?",
+            "type": "boolean",
+            "options": [
+                {"value": "yes", "text": "Yes"},
+                {"value": "no", "text": "No"}
+            ],
+            "next": {
+                "yes": 3,
+                "no": 6
+            }
+        },
+        {
+            "id": 3,
+            "text": "Indicare il criterio o il metodo utilizzato per la stima dei quantitativi immessi ne ciclo di settlement",
+            "type": "text",
+            "next": {
+                "any": 4
+            }
+        },
+        {
+            "id": 4,
+            "text": "Indicare se il criterio o il metodo utilizzato per la stima sia stato concordato con la Vostra Società",
+            "type": "boolean",
+            "options": [
+                {"value": "yes", "text": "Yes"},
+                {"value": "no", "text": "No"}
+            ],
+            "next": {
+                "yes": 5,
+                "no": 6
+            }
+        },
+        {
+            "id": 5,
+            "text": "Indicare se si siano verificati scostamenti tra i volumi del gas immesso nella singola RE.MI. e quelli complessivamente distribuiti nell’impianto in consegna ai clienti finali",
+            "type": "boolean",
+            "options": [
+                {"value": "yes", "text": "Yes"},
+                {"value": "no", "text": "No"}
+            ],
+            "next": {
+                "yes": 6,
+                "no": 8
+            }
+        },
+        {
+            "id": 6,
+            "text": "Indicare se siano state registrate lamentele in merito a problemi di incoerenza tra gas fatturato e gas allocato ai clienti, con richiesta alla Vostra società di effettuare verifiche sulla correttezza dei processi di settlement fisico.",
+            "type": "boolean",
+            "options": [
+                {"value": "yes", "text": "Yes"},
+                {"value": "no", "text": "No"}
+            ],
+            "next": {
+                "yes": 7,
+                "no": 8
+            }
+        },
+        {
+            "id": 7,
+            "text": "Fornire riscontri sulle verifiche effettuate",
+            "type": "text",
+            "next": {
+                "any": 8
+            }
+        },
+        {
+            "id": 8,
+            "text": "Allegare documenti a supporto delle verifiche effettuate",
+            "type": "file",
+            "next": {
+                "any": 9
+            }
+        },
+        {
+            "id": 9,
+            "text": "Questionario completato!",
+            "type": "text",
+            "final": true
+        }
+    ];
+
+    $(document).ready(function () {
+        showQuestion(questions[currentQuestionIndex]);
+
+        $('#save').click(function () {
+            submitResponse(2); // Status ID for saved
+        });
+
+        $('#submit').click(function () {
+            submitResponse(10); // Status ID for submitted
+        });
+
+
+        $('#home').click(function () {
+            window.location.href = '/';
+        });
+    });
+
+    function showQuestion(question, isBack = false) {
+        if (!isBack) {
+            questionHistory.push(currentQuestionIndex);
+        }
+
+        const questionDiv = $('<div>').attr('id', `question-${question.id}`);
+        questionDiv.append($('<p>').text(question.text));
+
+        if (question.type === 'boolean') {
+            question.options.forEach(option => {
+                const button = $('<button>')
+                    .text(option.text)
+                    .click(() => handleAnswer(question.id, option.value));
+                questionDiv.append(button);
+            });
+        } else if (question.type === 'text') {
+            const input = $('<input>')
+                .attr('type', 'text')
+                .change(function () {
+                    handleAnswer(question.id, $(this).val());
+                });
+            questionDiv.append(input);
+        } else if (question.type === 'file') {
+            const input = $('<input>')
+                .attr('type', 'file')
+                .change(function () {
+                    handleAnswer(question.id, $(this).prop('files')[0]);
+                });
+            const skipButton = $('<button>')
+                .text('Skip')
+                .click(() => handleAnswer(question.id, ''));
+            questionDiv.append(input, skipButton);
+        }
+
+        $('#questionnaire').append(questionDiv);
+        if (currentQuestionIndex > 0) {
+            $('#back').show();
+        } else {
+            $('#back').hide();
+        }
+    }
+
+    function handleAnswer(questionId, answer) {
+        answers[questionId] = answer;
+
+        const currentQuestion = questions.find(q => q.id === questionId);
+        const nextQuestionId = currentQuestion.next[answer] || currentQuestion.next['any'];
+        const nextQuestion = questions.find(q => q.id === nextQuestionId);
+
+        if (nextQuestion) {
+            currentQuestionIndex = questions.indexOf(nextQuestion);
+            showQuestion(nextQuestion);
+        } else {
+            $('#save').show();
+            $('#submit').show();
+        }
+    }
+
+    function submitResponse(statusId) {
+        let formData = new FormData();
+        formData.append('questionnaire_id', 1);
+        formData.append('user_id', 123);
+        formData.append('status_id', statusId);
+
+        for (let key in answers) {
+            if (answers[key] instanceof File) {
+                formData.append(`file_${key}`, answers[key]);
+            } else {
+                formData.append(`answer_${key}`, answers[key]);
+            }
+        }
+
+        $.ajax({
+            url: '/submit_response_psf',
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            success: function(response) {
+                alert(response.message);
+                if (statusId === 10) {
+                    window.location.href = '/';
+                }
+            }
+        });
+    }
+</script>
+{% endblock %}

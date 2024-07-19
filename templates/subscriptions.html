@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Subscription Plans</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    {% extends 'base.html' %}
+
+    {% block content %}
+    <div class="container">
+        <h1>Choose Your Subscription Plan</h1>
+
+        <div class="navigation-buttons">
+            <a class="btn btn-primary" href="{{ url_for('index') }}">Home</a>
+            <button class="btn btn-secondary" onclick="window.history.back()">Back</button>
+        </div>
+
+        <div class="current-subscription">
+            <h2>Current Subscription</h2>
+            <p><strong>Plan:</strong> {{ subscription_info.plan }}</p>
+            <p><strong>Status:</strong> {{ subscription_info.status }}</p>
+            <p><strong>Start Date:</strong> {{ subscription_info.start_date }}</p>
+            <p><strong>End Date:</strong> {{ subscription_info.end_date }}</p>
+        </div>
+
+        <div class="subscription-plans">
+            <div class="plan">
+                <h2>Free Plan</h2>
+                <p>$0 / month</p>
+                <p>Basic features included</p>
+                <button class="btn btn-success" onclick="subscribe('free')">Choose Free</button>
+            </div>
+            <div class="plan">
+                <h2>Basic Plan</h2>
+                <p>$10 / month</p>
+                <p>Includes additional features</p>
+                <button class="btn btn-success" onclick="subscribe('basic')">Choose Basic</button>
+            </div>
+            <div class="plan">
+                <h2>Premium Plan</h2>
+                <p>$20 / month</p>
+                <p>All features included</p>
+                <button class="btn btn-success" onclick="subscribe('premium')">Choose Premium</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function subscribe(plan) {
+            fetch('/subscribe', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ plan: plan }),
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Subscription successful!');
+                    window.location.href = '/';
+                } else {
+                    alert('Subscription failed: ' + data.message);
+                }
+            });
+        }
+    </script>
+    {% endblock %}
+</body>
+</html>

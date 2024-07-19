@@ -220,6 +220,7 @@
         <!-- Add more content as needed -->
     </div>
 
+
     <!-- Left menu -->
     <div class="col-md-3">
         <div class="sidebar">
@@ -232,7 +233,11 @@
                 {% macro render_menu_item(menu_item) %}
                     <li class="nav-item">
                         {% if menu_item.url %}
-                            <a class="nav-link" href="{{ url_for(menu_item.url) }}">{{ menu_item.label }}</a>
+                            {% if menu_item.url in current_app.view_functions %}
+                                <a class="nav-link" href="{{ url_for(menu_item.url) }}">{{ menu_item.label }}</a>
+                            {% else %}
+                                <a class="nav-link" href="{{ url_for('index') }}">{{ menu_item.label }}</a>
+                            {% endif %}
                         {% else %}
                             <span>{{ menu_item.label }}</span>
                         {% endif %}
@@ -251,6 +256,10 @@
                         {% endif %}
                     </li>
                 {% endmacro %}
+
+                {% for main_menu_item in left_menu_items %}
+                    {{ render_menu_item(main_menu_item) }}
+                {% endfor %}
 
                 {% if left_menu_items and left_menu_items|length > 0 %}
                     {% if (left_menu_items | string).find('dict') > -1 %}

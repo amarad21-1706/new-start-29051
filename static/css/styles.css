@@ -81,58 +81,74 @@ footer {
   background-color: #f0f0f0;
 }
 
+.chart-form-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.chart-form-container .form-row {
+  display: flex;
+  align-items: center;
+  margin-right: 20px;
+}
+
+.chart-form-container label {
+  margin-right: 5px;
+}
+
+#chart-container {
+  margin-top: 20px;
+  width: 100%;
+  text-align: center;
+}
 
 .card-header {
-  /* Style for the card header (if you want to separate the title) */
   padding: 10px 15px;
   border-bottom: 1px solid rgba(0, 0, 0, 0.125);
 }
 
 .card-body {
-  /* Style for the card body content */
   padding: 15px;
 }
 
 .list-group-item {
-  /* Style for individual list items within statistics */
   padding: 5px 10px;
 }
 
-.card-text {
-  /* Style for the card body text */
-}
+.card-text {}
 
 .card-footer {
-  /* Style for the card footer (if you use it) */
   padding: 5px 10px;
-  text-align: right;  /* Optional: Align footer text to the right */
+  text-align: right;
 }
 
 .card-title {
-  font-size: 1.25rem; /* Increase font size */
-  margin-bottom: 10px; /* Add bottom margin */
+  font-size: 1.25rem;
+  margin-bottom: 10px;
 }
 
 .card-text {
-  font-size: 1rem; /* Modify font size */
-  line-height: 1.5; /* Adjust line height */
+  font-size: 1rem;
+  line-height: 1.5;
 }
 
 .list-group-item {
-  padding: 10px 15px; /* Adjust padding */
-  border: none; /* Remove border */
+  padding: 10px 15px;
+  border: none;
 }
+
 .card {
-  border: 1px solid #ddd; /* Add border */
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Add box shadow */
+  border: 1px solid #ddd;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
 .card:hover {
-  transform: translateY(-3px); /* Move the card up slightly on hover */
-  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2); /* Add larger box shadow on hover */
+  transform: translateY(-3px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
 }
-
-/* styles.css */
 
 .card-wrapper {
   opacity: 0;
@@ -151,4 +167,26 @@ footer {
   }
 }
 
+.flashes {
+    list-style-type: none;
+    padding: 0;
+}
+
+.flash {
+    padding: 10px;
+    margin: 10px 0;
+    border-radius: 3px;
+}
+
+.flash.danger {
+    background-color: #f8d7da;
+    color: #721c24;
+    border: 1px solid #f5c6cb;
+}
+
+.flash.success {
+    background-color: #d4edda;
+    color: #155724;
+    border: 1px solid #c3e6cb;
+}
 

@@ -1,14 +1,18 @@
-
+import json
 from db import db
 from flask_bcrypt import generate_password_hash, check_password_hash
 from flask_security import RoleMixin, UserMixin
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, LargeBinary, Numeric, func
-from sqlalchemy import func
+from sqlalchemy import (Column, Integer, String, DateTime, ForeignKey,
+                        LargeBinary, Numeric, func, TIMESTAMP, DATE, Sequence)
+
+from sqlalchemy import or_, and_, Enum, event
+
+from sqlalchemy.orm import object_session, validates
+from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm import relationship
-from sqlalchemy import or_, and_, Enum
+from sqlalchemy.orm.session import Session
 
-from sqlalchemy import Column, Integer, String, ForeignKey, TIMESTAMP, DATE, func
-
+from sqlalchemy.ext.mutable import MutableDict
 from wtforms.fields import StringField, TextAreaField, DateTimeField, SelectField, BooleanField, SubmitField
 from datetime import datetime
 
@@ -16,10 +20,13 @@ from sqlalchemy.exc import IntegrityError
 # OR
 # from sqlalchemy.dialects.mysql import JSON  # for MySQL
 # OR
-from sqlalchemy.dialects.sqlite import JSON  # for SQLite
+from sqlalchemy.dialects.sqlite import JSON # for SQLite
 # OR
 # from sqlalchemy.dialects.oracle import JSON  # for Oracle
-import json
+# OR
+from sqlalchemy.dialects.postgresql import JSONB
+
+from wtforms.validators import DataRequired, Regexp
 
 
 class CheckboxField(BooleanField):
@@ -32,17 +39,59 @@ class CheckboxField(BooleanField):
         setattr(obj, name, "Yes" if self.data else "No")  # Customize as per your model
 
 
+# TODO create ContainerCompanies and ContainerRoles?
+class Container(db.Model):
+    __tablename__ = 'container'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    page = db.Column(db.String(255), nullable=False)
+    position = db.Column(db.String(255))
+    content_type = db.Column(db.String(50), nullable=False)
+    content = db.Column(MutableDict.as_mutable(JSONB))
+
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)
+    role_id = db.Column(db.Integer, db.ForeignKey('role.id'), nullable=False)
+    area_id = db.Column(db.Integer, db.ForeignKey('area.id'), nullable=False)
+
+    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
+    updated_at = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
+
+    image = db.Column(db.String(255), nullable=True)
+    description = db.Column(db.String(255))
+    action_type = db.Column(db.String(255), nullable=True)
+    action_url = db.Column(db.String(255), nullable=True)
+    container_order = db.Column(db.Integer, nullable=True)
+
+    def __init__(self, page, content_type, content, company_id, role_id, area_id, position=None, description=None,
+                 action_type=None, action_url=None, image=None, container_order=None):
+        self.page = page
+        self.position = position
+        self.content_type = content_type
+        self.content = content
+        self.company_id = company_id
+        self.role_id = role_id
+        self.area_id = area_id
+        self.description = description
+        self.action_type = action_type
+        self.action_url = action_url
+        self.image = image
+        self.container_order = container_order
+
+    def __repr__(self):
+        return f"Container: {self.page} ({self.position}, {self.content_type}, {self.description}, {self.action_type}, {self.action_url})"
+
+
 class Users(db.Model, UserMixin):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     username = db.Column(String(80), unique=True, nullable=False)
     email = db.Column(String(120), unique=True, nullable=False)
     password_hash = db.Column(String(255), nullable=False)
-    user_2fa_secret = db.Column(String(32), nullable=False)
-    title = db.Column(String(12), nullable=True)
-    first_name = db.Column(String(128), nullable=True)
+    user_2fa_secret = db.Column(String(255), nullable=True)
+    title = db.Column(String(12), nullable=False)
+    first_name = db.Column(String(128), nullable=False)
     mid_name = db.Column(String(128), nullable=True)
-    last_name = db.Column(String(128), nullable=True)
+    last_name = db.Column(String(128), nullable=False)
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)
     company = db.Column(String(128), nullable=True)
     address = db.Column(String(128), nullable=False)
@@ -53,17 +102,28 @@ class Users(db.Model, UserMixin):
     zip_code = db.Column(String(24), nullable=True)
     country = db.Column(String(64), nullable=False)
     tax_code = db.Column(String(128), nullable=True)
-    mobile_phone = db.Column(db.Integer, nullable=False)
-    work_phone = db.Column(db.Integer, nullable=True)
+    mobile_phone = db.Column(db.String(15), nullable=False)
+    work_phone = db.Column(db.String(15), nullable=True)
+
+    # New subscription fields
+    subscription_plan = db.Column(db.String(20), default='free')
+    subscription_status = db.Column(db.String(20), default='inactive')
+    subscription_start_date = db.Column(db.DateTime, nullable=True)
+    subscription_end_date = db.Column(db.DateTime, nullable=True)
 
     #password_hash = db.Column(db.String(128))
     created_on = Column(TIMESTAMP(timezone=True), server_default=func.now())
     updated_on = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
     end_of_registration = db.Column(DATE)
+    cookies_accepted = db.Column(db.Boolean, default=False)
+    analytics = db.Column(db.Boolean, default=False)
+    marketing = db.Column(db.Boolean, default=False)
 
     roles = db.relationship('Role', secondary='user_roles', backref=db.backref('user', lazy='dynamic'),
                             primaryjoin='UserRoles.user_id == Users.id',
                             secondaryjoin='UserRoles.role_id == Role.id')
+
+    user_plans = db.relationship('UserPlans', back_populates='user', uselist=False)
 
     #def get_reset_token(self, expires_sec=1800):
     #    s = Serializer(current_app.config['SECRET_KEY'], expires_sec)
@@ -78,6 +138,13 @@ class Users(db.Model, UserMixin):
     def __init__(self, **kwargs):
         super(Users, self).__init__(**kwargs)
         self.id = kwargs.get('id')
+        self.username = kwargs.get('username')
+        self.email = kwargs.get('email')
+        self.password = kwargs.get('password')
+        self.subscription_plan = kwargs.get('subscription_plan', 'free')
+        self.subscription_status = kwargs.get('subscription_status', 'inactive')
+        self.subscription_start_date = kwargs.get('subscription_start_date')
+        self.subscription_end_date = kwargs.get('subscription_end_date')
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password).decode('utf8')
@@ -108,24 +175,26 @@ class Users(db.Model, UserMixin):
         return 'admin' in [role.name for role in self.roles]
 
     def __repr__(self):
-        return f"<User {self.username} {self.last_name}>"
+        return f"{self.username} {self.last_name}"
 
 
 class Role(db.Model, RoleMixin):
     __tablename__ = 'role'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    role_id = db.Column(db.Integer)
     name = db.Column(String(80), unique=True)
     description = db.Column(String(255))
 
     def __repr__(self):
-        return (f"Role #{self.id}: {self.name} ({self.description})")
+        return (f"{self.name} ({self.description})")
 
 class UserRoles(db.Model):
     __tablename__ = 'user_roles'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
-
+    created_on = Column(DateTime, nullable=False, default=datetime.now)
+    updated_on = Column(DateTime, nullable=True, onupdate=datetime.now)
     #user = relationship('Users', backref='user_roles')
     #role = relationship('Role', backref='user_roles')
 
@@ -166,7 +235,7 @@ class Company(db.Model):
     end_of_registration = db.Column(db.DateTime, nullable=True)
 
     def __repr__(self):
-        return (f"Company ID {self.id}: {self.name}")
+        return (f"{self.name}")
 
 
 
@@ -189,46 +258,48 @@ class PossibleAnswer(db.Model):
 class Questionnaire(db.Model):
     __tablename__ = 'questionnaire'
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    questionnaire_id = db.Column(String(64), unique=True, nullable=False)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    questionnaire_id = db.Column(db.String(64), unique=True, nullable=False)
     questionnaire_type = db.Column(db.String(24), nullable=True, default='Questionnaire')
-    name = db.Column(String(128), unique=True)
-    interval = db.Column(String(12))
-    deadline_date = db.Column(DateTime)
-    status_id = db.Column(Integer, ForeignKey('status.id'))
-    created_on = Column(TIMESTAMP(timezone=True), server_default=func.now())
-    updated_on = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
-    # TODO json?
+    name = db.Column(db.String(128), unique=True, nullable=False)
+    interval = db.Column(db.String(12))  # If this represents a numeric interval, consider using Integer
+    deadline_date = db.Column(db.DateTime)
+    status_id = db.Column(db.Integer, db.ForeignKey('status.id'))
+    created_on = db.Column(db.TIMESTAMP(timezone=True), server_default=func.now())
+    updated_on = db.Column(db.TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
     headers = db.Column(db.JSON)
 
-    steps_questionnaires_relationship = relationship("StepQuestionnaire", back_populates="questionnaire")
+    steps_questionnaires_relationship = db.relationship("StepQuestionnaire", back_populates="questionnaire")
+
+    def __init__(self, questionnaire_id: str, questionnaire_type: str, name: str, interval: str, deadline_date: datetime, status_id: int, headers: dict):
+        self.questionnaire_id = questionnaire_id
+        self.questionnaire_type = questionnaire_type
+        self.name = name
+        self.interval = interval
+        self.deadline_date = deadline_date
+        self.status_id = status_id
+        self.headers = headers
 
     def __repr__(self):
-        return (f"Questionnaire #{self.id}: {self.questionnaire_id} ({self.name})")
-
+        return (f"{self.name}")
 
     def to_json(self):
         return json.dumps({
             "answer_data": self.headers  # Assuming answer_data is already JSON
         })
 
-    def set_headers(self, data):
+    def set_headers(self, data: dict):
         try:
-            self.headers = json.dumps(data)
+            self.headers = data
         except (TypeError, json.JSONDecodeError) as e:
-            # Handle error: data is not serializable or invalid JSON
             print(f"Error setting headers: {e}")
 
-    def get_headers(self):
+    def get_headers(self) -> dict:
         try:
-            if self.headers:
-                return json.loads(self.headers)
-            else:
-                # Handle the case when answer_data is empty
-                return None
+            return self.headers or {}
         except json.JSONDecodeError as e:
-            # Handle JSON decoding errors
-            return None
+            print(f"Error getting headers: {e}")
+            return {}
 
 
 class Question(db.Model):
@@ -246,7 +317,7 @@ class Question(db.Model):
     #inline_fields: Mapped[list[InlineField]] = db.relationship('InlineField', backref='question')
 
     def __repr__(self):
-        return (f"Question #{self.id}: {self.question_id} (answer type={self.answer_type})")
+        return (f"Question: {self.question_id} (answer type={self.answer_type})")
 
     def to_json(self):
         return json.dumps({
@@ -350,9 +421,8 @@ class Answer(db.Model):
     answer_data = db.Column(db.JSON)  # Serialized JSON
 
     def __repr__(self):
-        return (f"<Answer(id={self.id}, company_id={self.company_id}, user_id={self.user_id}, "
-                f"questionnaire_id={self.questionnaire_id}, "
-                f"timestamp={self.timestamp}, submitted={self.submitted}, answer_data={self.answer_data})>")
+        return (f"<Answer: company {self.company_id}, user {self.user_id}, "
+                f"questionnaire {self.questionnaire_id}, answer={self.answer_data})>")
 
     def to_json(self):
         return json.dumps({
@@ -388,13 +458,13 @@ class Answer(db.Model):
 class Status(db.Model):
     __tablename__ = 'status'
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, unique=True, nullable=False)
-    description = Column(String)
+    id = db.Column(Integer, primary_key=True, autoincrement=True)
+    name = db.Column(String, unique=True, nullable=False)
+    description = db.Column(String)
 
 
     def __repr__(self):
-        return (f"Status #{self.id}: {self.name} ({self.description})")
+        return (f"{self.name} ({self.description})")
 
 class Interval(db.Model):
     __tablename__ = 'interval'
@@ -405,21 +475,20 @@ class Interval(db.Model):
     interval_id = db.Column(db.Integer)
 
     def __repr__(self):
-        return (f"Interval # {self.id}: {self.name} ({self.description}, "
-                f"{self.interval_id})")
+        return (f"{self.name} ({self.description})")
 
 
 class Deadline(db.Model):
     __tablename__ = 'deadline'
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    company_id = Column(Integer, ForeignKey('company.id'))
-    area_id = Column(Integer, ForeignKey('area.id'))
-    subarea_id = Column(Integer, ForeignKey('subarea.id'))
-    interval_id = Column(Integer, ForeignKey('interval.interval_id'))
-    status_id = Column(Integer, ForeignKey('status.id'))
-    status_start = Column(String)
-    status_end = Column(String)
+    id = db.Column(Integer, primary_key=True, autoincrement=True)
+    company_id = db.Column(Integer, ForeignKey('company.id'))
+    area_id = db.Column(Integer, ForeignKey('area.id'))
+    subarea_id = db.Column(Integer, ForeignKey('subarea.id'))
+    interval_id = db.Column(Integer, ForeignKey('interval.interval_id'))
+    status_id = db.Column(Integer, ForeignKey('status.id'))
+    status_start = db.Column(String)
+    status_end = db.Column(String)
 
     # Define relationships
     '''company = relationship("Company", back_populates="deadline")
@@ -431,37 +500,54 @@ class Deadline(db.Model):
 class Lexic(db.Model):
     __tablename__ = 'lexic'
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     category = db.Column(db.String(64), nullable=False)
-    name = db.Column(db.String(64), unique=True)
+    name = db.Column(db.String(64), unique=True, nullable=False)
+
+    def __init__(self, category=None, name=None):
+        self.category = category
+        self.name = name
+
     def __repr__(self):
-        return f"Dictionary entry {self.id}: {self.name} ({self.category})"
+        return f"{self.name}"
 
 
 class Area(db.Model):
     __tablename__ = 'area'
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, unique=True, nullable=False)
-    description = Column(String)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(64), unique=True, nullable=False)
+    description = db.Column(db.String(255))
+
+    def __init__(self, name=None, description=None):
+        self.name = name
+        self.description = description
+
     def __repr__(self):
-        return f"Area{self.id}: {self.name} ({self.description})"
+        return f"{self.name} ({self.description})"
 
 
 class Subarea(db.Model):
     __tablename__ = 'subarea'
 
-    id = Column(Integer, primary_key=True, autoincrement=True)
-    name = Column(String, unique=True, nullable=False)
-    description = Column(String)
-    data_type = Column(String)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(64), unique=True, nullable=False)
+    description = db.Column(db.String(255))
+    data_type = db.Column(db.String(64))
+
+    def __init__(self, name=None, description=None, data_type=None):
+        self.name = name
+        self.description = description
+        self.data_type = data_type
 
     def __repr__(self):
-        return f"Subarea {self.id}: {self.name} ({self.description}, {self.data_type})"
+        return f"{self.name} ({self.description})"
+
+
 
 class AreaSubareas(db.Model):
     __tablename__ = 'area_subareas'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     area_id = db.Column(db.Integer, db.ForeignKey('area.id'))
     subarea_id = db.Column(db.Integer, db.ForeignKey('subarea.id'))
     status_id = db.Column(db.Integer, db.ForeignKey('status.id'))
@@ -469,33 +555,32 @@ class AreaSubareas(db.Model):
     caption = db.Column(db.Text(255))
 
     def __repr__(self):
-        return (f"<AreaSubareas(id={self.id}, area_id={self.area_id}, subarea_id={self.subarea_id}, "
-                f"status_id={self.status_id}, interval_id={self.interval_id}, caption='{self.caption}')>")
-
+        return (f"Area={self.area_id}, subarea={self.subarea_id}, "
+                f"status={self.status_id}, interval={self.interval_id}")
 
 class Subject(db.Model):
     __tablename__ = 'subject'
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(50), nullable=False, unique=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(50), nullable=False, unique=False)
     tier_1 = db.Column(db.String(50), nullable=False)
     tier_2 = db.Column(db.String(50), nullable=True)
     tier_3 = db.Column(db.String(50), nullable=True)
 
-    def __init__(self, name, tier):
-        self.id = id
+    def __init__(self, name=None, tier_1=None, tier_2=None, tier_3=None):
         self.name = name
         self.tier_1 = tier_1
+        self.tier_2 = tier_2
+        self.tier_3 = tier_3
 
     def __repr__(self):
-        return (f"Items dictionary # {self.id}: {self.name} ({self.tier_1}, "
-                f"{self.tier_2}, {self.tier_3})")
+        return (f"{self.name} ({self.tier_1})")
 
 
 class LegalDocument(db.Model):
     __tablename__ = 'legal_document'
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(50), nullable=False)
     tier_1 = db.Column(db.String(50), nullable=False)
     tier_2 = db.Column(db.String(50), nullable=False)
@@ -509,14 +594,15 @@ class LegalDocument(db.Model):
         self.tier_3 = tier_3
 
     def __repr__(self):
-        return (f"Documents dictionary {self.id}: {self.name} ({self.tier_1}, "
-                f"{self.tier_2}, {self.tier_3})")
+        return (f"{self.name} ({self.tier_1})")
 
 
 class BaseData(db.Model):
     __tablename__ = 'base_data'
 
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True, unique=True)
+    # id = db.Column(db.Integer, primary_key=True, autoincrement=True, unique=True)
+    id = db.Column(Integer, Sequence('base_data_id_seq'), primary_key=True, autoincrement=True)
+
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'))
     interval_id = db.Column(db.Integer, db.ForeignKey('interval.interval_id'))
@@ -526,15 +612,15 @@ class BaseData(db.Model):
     legal_document_id = db.Column(db.Integer, db.ForeignKey('legal_document.id'), nullable=True)
     record_type = db.Column(db.String(64))
     data_type = db.Column(db.String(128))
-    created_on = Column(TIMESTAMP(timezone=True), server_default=func.now())
-    updated_on = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
-    deadline = Column(DATE)
+    created_on = db.Column(TIMESTAMP(timezone=True), server_default=func.now())
+    updated_on = db.Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
+    deadline = db.Column(DATE)
     created_by = db.Column(db.String(128))
     area_id = db.Column(db.Integer, db.ForeignKey('area.id'))
     subarea_id = db.Column(db.Integer, db.ForeignKey('subarea.id'))
     lexic_id = db.Column(db.Integer, db.ForeignKey('lexic.id'))
     number_of_doc = db.Column(db.String(64))
-    date_of_doc = Column(DATE)
+    date_of_doc = db.Column(DATE)
     fc1 = db.Column(db.String)
     fc2 = db.Column(db.String)
     fc3 = db.Column(db.String)
@@ -586,8 +672,14 @@ class BaseData(db.Model):
     # Define relationship with StepBaseData
     steps_relationship = relationship("StepBaseData", back_populates="base_data")
 
+    # Relationship with BaseDataInline
+    # base_data_inlines = db.relationship('BaseDataInline', backref='base_data', lazy=True, cascade="all, delete-orphan")
+    base_data_inlines = db.relationship('BaseDataInline', backref='parent_base_data', lazy=True, cascade="all, delete-orphan")
+    # Define the relationship
+    # base_data_inlines = db.relationship('BaseDataInline', back_populates='base_data', cascade='all, delete-orphan')
+
     def __repr__(self):
-        return f'<BaseData {self.id}>'
+        return f'<Data ID: {self.id}>'
 
     @classmethod
     def get_documents(cls):
@@ -652,17 +744,9 @@ class BaseData(db.Model):
             'fi1': self.fi1,
             'fi2': self.fi2,
             'fi3': self.fi3,
-            'fi4': self.fi4,
-            'fi5': self.fi5,
             'fn1': self.fn1,
             'fn2': self.fn2,
             'fc1': self.fc1,
-            'fc2': self.fc2,
-            'fc3': self.fc3,
-            'fc4': self.fc4,
-            'fc5': self.fc5,
-            'fc6': self.fc6
-
             # Add more fields as needed for the API view
         }
 
@@ -806,17 +890,52 @@ class BaseData(db.Model):
         return results
 
 
+class BaseDataInline(db.Model):
+   __tablename__ = 'basedata_inline'
+   id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+   base_data_id = db.Column(db.Integer, db.ForeignKey('base_data.id'), nullable=False)
+   name = db.Column(db.String(100), nullable=False)
+   type = db.Column(db.String(100), nullable=False)
+   value = db.Column(db.Integer, nullable=False)
+   record_type = db.Column(db.String(64), nullable=False)
+
+   # Relationship with BaseData
+   #parent_base_data = db.relationship('BaseData', backref=db.backref('base_data_inlines', lazy=True, cascade="all, delete-orphan"))
+
+def after_flush_listener(session, flush_context):
+    updates = []
+    for instance in session.new:
+        if isinstance(instance, BaseData):
+            total_value = sum(inline.value for inline in instance.base_data_inlines)
+            updates.append((instance.id, total_value))
+
+    for instance in session.dirty:
+        if isinstance(instance, BaseData):
+            total_value = sum(inline.value for inline in instance.base_data_inlines)
+            updates.append((instance.id, total_value))
+
+    session.info['fi16_updates'] = updates
+
+def after_flush_postexec_listener(session, flush_context):
+    updates = session.info.get('fi16_updates', [])
+    for base_data_id, total_value in updates:
+        session.query(BaseData).filter(BaseData.id == base_data_id).update({'fi16': total_value})
+
+event.listen(db.session, 'after_flush', after_flush_listener)
+event.listen(db.session, 'after_flush_postexec', after_flush_postexec_listener)
+
+
 class StepBaseData(db.Model):
     __tablename__ = 'step_base_data'
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     base_data_id = db.Column(db.Integer, db.ForeignKey('base_data.id'))
     workflow_id = db.Column(db.Integer, db.ForeignKey('workflow.id'))
     step_id = db.Column(db.Integer, db.ForeignKey('step.id'))
     status_id = db.Column(db.Integer, db.ForeignKey('status.id'))
     start_date = db.Column(db.DateTime, default=func.current_timestamp())
     deadline_date = db.Column(db.DateTime)
-    auto_move = db.Column(db.Boolean, default=False)
+    auto_move = db.Column(db.Integer, default=0)
     end_date = db.Column(db.DateTime)
     hidden_data = db.Column(db.String(255))
     start_recall = db.Column(db.Integer, default=0)
@@ -832,13 +951,19 @@ class StepBaseData(db.Model):
     step = relationship("Step", foreign_keys=[step_id])
     status = relationship("Status", foreign_keys=[status_id])
 
+
+    @validates('auto_move')
+    def validate_auto_move(self, key, value):
+        return int(value)
+
+
     # Define unique constraint
     #__table_args__ = (
     #    UniqueConstraint('base_data_id', 'workflow_id', 'step_id', 'status_id', name='unique_step_base_data'),
     #)
 
     def __repr__(self):
-        return f"Doc WF {self.id}: doc {self.base_data_id} in wf {self.workflow_id}, step {self.step_id}, status {self.status_id}"
+        return f"Workflow ID {self.id}: doc {self.base_data_id} in wf {self.workflow_id}, step {self.step_id}, status {self.status_id}"
 
     @classmethod
     def create(cls, **kwargs):
@@ -859,7 +984,7 @@ class StepBaseData(db.Model):
 class StepQuestionnaire(db.Model):
     __tablename__ = 'step_questionnaire'
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     questionnaire_id = db.Column(db.Integer, db.ForeignKey('questionnaire.id'))
     workflow_id = db.Column(db.Integer, db.ForeignKey('workflow.id'))
     step_id = db.Column(db.Integer, db.ForeignKey('step.id'))
@@ -890,7 +1015,7 @@ class StepQuestionnaire(db.Model):
     #)
 
     def __repr__(self):
-        return f"Quest WF {self.id}: quest {self.questionnaire_id} in wf {self.workflow_id}, step {self.step_id}, status {self.status_id}"
+        return f"Quesionnaire ID {self.id}: quest {self.questionnaire_id} in wf {self.workflow_id}, step {self.step_id}, status {self.status_id}"
 
     @classmethod
     def create(cls, **kwargs):
@@ -909,7 +1034,7 @@ class StepQuestionnaire(db.Model):
 class Workflow(db.Model):
     __tablename__ = 'workflow'
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(50), unique=True)
     description = db.Column(db.String(200))
     status = db.Column(db.String(20))
@@ -923,12 +1048,12 @@ class Workflow(db.Model):
         return {'id': self.id, 'name': self.name}
 
     def __repr__(self):
-        return f"Workflow {self.id}, {self.name} ({self.description})"
+        return f"{self.name} ({self.description})"
 
 
 class Step(db.Model):
     __tablename__ = 'step'
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(db.String(50), unique=True)
     description = db.Column(db.String(200))
     action = db.Column(db.String(50))
@@ -999,13 +1124,13 @@ class Step(db.Model):
 
 
     def __repr__(self):
-        return f"Step {self.id}: {self.name} ({self.description})"
+        return f"{self.name} ({self.description})"
 
 
 class WorkflowSteps(db.Model):
     __tablename__ = 'workflow_steps'
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     workflow_id = db.Column(db.Integer, db.ForeignKey('workflow.id'))
     step_id = db.Column(db.Integer, db.ForeignKey('step.id'))
 
@@ -1013,17 +1138,17 @@ class WorkflowSteps(db.Model):
     step = db.relationship("Step", backref="workflow_steps")
 
     def __repr__(self):
-        return f"WF {self.id} {self.workflow_id}, step {self.step_id}"
+        return f"{self.workflow_id}, step {self.step_id}"
 
 
 class WorkflowBaseData(db.Model):
     __tablename__ = 'workflow_base_data'
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     workflow_id = db.Column(db.Integer, db.ForeignKey('workflow.id'))
     base_data_id = db.Column(db.Integer, db.ForeignKey('base_data.id'))
-    created_on = Column(TIMESTAMP(timezone=True), server_default=func.now())
-    updated_on = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
+    created_on = db.Column(TIMESTAMP(timezone=True), server_default=func.now())
+    updated_on = db.Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
     end_of_registration = db.Column(db.DateTime)
 
     workflow = db.relationship("Workflow", backref="workflow_base_data")
@@ -1038,12 +1163,12 @@ class WorkflowBaseData(db.Model):
     #workflow_data = relationship('BaseData_Workflow', foreign_keys=[workflow_data_id], backref='workflow_base_data')
 
     def __repr__(self):
-        return f"Docs WF {self.id}: doc {self.base_data_id}, wf {self.workflow_id}"
+        return f"Docs workflow: doc {self.base_data_id}, wf {self.workflow_id}"
 
 
 
 class Config(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     config_type = db.Column(db.String(64))
     company_id = db.Column(db.Integer)
     area_id = db.Column(db.Integer)
@@ -1054,8 +1179,8 @@ class Config(db.Model):
     config_date = db.Column(db.String)
 
     def __repr__(self):
-        return (f"Config id={self.id}, type={self.config_type}, company_id={self.company_id}, "
-                f"area_id={self.area_id}, subarea_id={self.subarea_id}")
+        return (f"Config: type={self.config_type}, company={self.company_id}, "
+                f"area={self.area_id}, subarea={self.subarea_id}")
 
 
 
@@ -1083,7 +1208,7 @@ def get_config_values(config_type, company_id=None, area_id=None, subarea_id=Non
 
 class AuditLog(db.Model):
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'))
@@ -1114,7 +1239,7 @@ class AuditLog(db.Model):
 
         '''
         # Return the string representation
-        return (f"Audit log id={self.id}, user {self.user_id}, company {self.company_id}, "
+        return (f"Audit log: {self.id}, user {self.user_id}, company {self.company_id}, "
                 f"doc {self.base_data_id}, workflow {self.workflow_id}, step {self.step_id}, "
                 f"action {self.action}, details ...")
 
@@ -1122,7 +1247,7 @@ class AuditLog(db.Model):
 class Post(db.Model):
     __tablename__ = 'post'
 
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     company_id = db.Column(db.Integer, ForeignKey('company.id'))  # If messages are specific to a company
     user_id = db.Column(db.Integer, ForeignKey('users.id'))  # If messages are targeted at specific users
     sender = db.Column(db.String(255))  # Information about the sender
@@ -1138,17 +1263,88 @@ class Post(db.Model):
     user = relationship("Users")  # If using user_id
 
     def __repr__(self):
-        return f"Message id={self.id}, type={self.message_type}, subject={self.subject}"
+        return f"{self.message_type}, {self.subject}"
 
 
 
 class Ticket(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     subject_id = db.Column(db.Integer, db.ForeignKey('subject.id'), nullable=False)
-    subject = db.Column(db.String(128), nullable=False)
     description = db.Column(db.Text, nullable=False)
-    status_id = db.Column(db.Integer, db.ForeignKey('subject.id'), nullable=False)
+    status_id = db.Column(db.Integer, db.ForeignKey('status.id'), nullable=False, default=2)  # Default status "Open"
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     marked_as_read = db.Column(db.Boolean, default=False)
-    lifespan = db.Column(Enum('one-off', 'persistent', name='lifespan_types'), default='')
+    lifespan = db.Column(Enum('one-off', 'persistent', name='lifespan_types'), default='one-off')
+
+    # users = db.relationship('Users', backref='tickets')
+    user = db.relationship('Users', foreign_keys=[user_id], backref='tickets')
+    subject = db.relationship('Subject', foreign_keys=[subject_id], backref='tickets')
+    status = db.relationship('Status', foreign_keys=[status_id], backref='tickets')
+
+
+class Questionnaire_psf(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), nullable=False)
+    structure = db.Column(db.JSON, nullable=False)
+
+class Response_psf(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    questionnaire_id = db.Column(db.Integer, db.ForeignKey('questionnaire.id'), nullable=False)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    answers = db.Column(db.JSON, nullable=False)
+
+    interval_id = db.Column(db.Integer, db.ForeignKey('interval.interval_id'))
+    subject_id = db.Column(db.Integer, db.ForeignKey('subject.id'))
+    status_id = db.Column(db.Integer, db.ForeignKey('status.id'))
+    record_type = db.Column(db.String(64))
+    created_on = db.Column(TIMESTAMP(timezone=True), server_default=func.now())
+    updated_on = db.Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
+    deadline = db.Column(DATE)
+    area_id = db.Column(db.Integer, db.ForeignKey('area.id'))
+    subarea_id = db.Column(db.Integer, db.ForeignKey('subarea.id'))
+    number_of_doc = db.Column(db.String(64))
+    date_of_doc = db.Column(DATE)
+    file_path = db.Column(db.String(255))
+
+
+
+class Plan(db.Model):
+    __tablename__ = 'plan'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), unique=True, nullable=False)
+    stripe_product_id = db.Column(db.String(128), nullable=False)
+    stripe_price_id = db.Column(db.String(128), nullable=False)
+    user_plans = db.relationship('UserPlans', back_populates='plan')
+    plan_applications = db.relationship('PlanApplications', back_populates='plan')
+
+class Application(db.Model):
+    __tablename__ = 'application'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), unique=True, nullable=False)
+    path = db.Column(db.String(256), nullable=False)  # Path to the menu item or route
+    icon = db.Column(db.String(256), nullable=True)  # URL or path to the app icon
+    plan_applications = db.relationship('PlanApplications', back_populates='application')
+
+class UserPlans(db.Model):
+    __tablename__ = 'user_plans'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    plan_id = db.Column(db.Integer, db.ForeignKey('plan.id'), nullable=False)
+    activation_date = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    expiry_date = db.Column(db.DateTime, nullable=False)
+    status = db.Column(db.String(20), nullable=False, default='active')
+    stripe_subscription_id = db.Column(db.String(128), nullable=True)
+
+    user = db.relationship('Users', back_populates='user_plans')
+    plan = db.relationship('Plan', back_populates='user_plans')
+
+class PlanApplications(db.Model):
+    __tablename__ = 'plan_applications'
+    id = db.Column(db.Integer, primary_key=True)
+    plan_id = db.Column(db.Integer, db.ForeignKey('plan.id'), nullable=False)
+    application_id = db.Column(db.Integer, db.ForeignKey('application.id'), nullable=False)
+
+    plan = db.relationship('Plan', back_populates='plan_applications')
+    application = db.relationship('Application', back_populates='plan_applications')

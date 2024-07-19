@@ -188,6 +188,15 @@
                     "Employee",
                     "Manager"
                 ]
+            },
+            "Charts and Views 1": {
+                "label": "Control areas - Charts",
+                "url": "/chart_form",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin",
+                    "Authority"
+                ]
             }
         }
     },
@@ -199,10 +208,40 @@
         "submenus": {
             "Area di controllo 1": {
                 "label": "Area 1",
-                "url": "/open_admin_app_1",
+                "url": "/area_di_controllo_1",
                 "protected": true,
-                "allowed_roles": ["Admin", "Employee", "Manager"]
+                "allowed_roles": ["Admin", "Employee", "Manager"],
+                "submenus": {
+                    "Area 1a": {
+                        "label": "Raccolta dati",
+                        "url": "/open_admin_app_1",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin",
+                            "Authority", "Employee", "Manager"
+                        ]
+                    },
+                    "Area 1b": {
+                        "label": "Contingencies - PSF",
+                        "url": "/redirect_to_survey/1",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin",
+                            "Authority", "Employee", "Manager"
+                        ]
+                    },
+                    "Area 1c": {
+                        "label": "Check list",
+                        "url": "/questionnaire_psf",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin",
+                            "Authority", "Employee", "Manager"
+                        ]
+                    }
+                }
             },
+
             "Area di controllo 2": {
                 "label": "Area 2",
                 "url": "/open_admin_app_2",
@@ -211,13 +250,19 @@
             },
             "Area di controllo 3": {
                 "label": "Area 3",
-                "url": "/open_admin_app_3",
+                "url": "/open_admin_5",
                 "protected": true,
                 "allowed_roles": ["Admin", "Employee", "Manager"]
             },
             "Area di controllo 10": {
                 "label": "Surveys and Questionnaires",
                 "url": "/open_admin_app_10",
+                "protected": true,
+                "allowed_roles": ["Admin", "Employee", "Manager"]
+            },
+            "Cards One": {
+                "label": "My Actions",
+                "url": "/show_cards",
                 "protected": true,
                 "allowed_roles": ["Admin", "Employee", "Manager"]
             }
@@ -440,7 +485,7 @@
                         ]
                     },
                     "Area 3 - test": {
-                        "label": "Area 3 - Workflows",
+                        "label": "Workflows Area",
                         "url": "/open_admin_3",
                         "protected": true,
                         "allowed_roles": [
@@ -476,6 +521,38 @@
                                 "allowed_roles": [
                                     "Admin"
                                 ]
+                            },
+                            "Manage News": {
+                                "label": "News",
+                                "url": "/admin_news",
+                                "protected": true,
+                                "allowed_roles": [
+                                    "Admin"
+                                ]
+                            },
+                            "Password Reset": {
+                                "label": "Reset User Password",
+                                "url": "/admin_reset_password",
+                                "protected": true,
+                                "allowed_roles": [
+                                    "Admin"
+                                ]
+                            },
+                            "Admin Tickets": {
+                                "label": "Manage Tickets",
+                                "url": "/admin_tickets",
+                                "protected": true,
+                                "allowed_roles": [
+                                    "Admin"
+                                ]
+                            },
+                            "Manage Apps": {
+                                "label": "Manage Apps",
+                                "url": "/admin/manage_apps",
+                                "protected": true,
+                                "allowed_roles": [
+                                    "Admin"
+                                ]
                             }
                         }
                     },
@@ -506,7 +583,8 @@
                                 "allowed_roles": [
                                     "Admin"
                                 ]
-                            },                            "Assign Questionnaires to Companies": {
+                            },
+                            "Assign Questionnaires to Companies": {
                                 "label": "Assign questionnaire to company",
                                 "url": "/manage_questionnaire_companies",
                                 "protected": true,
@@ -537,6 +615,14 @@
                                 "allowed_roles": [
                                     "Admin"
                                 ]
+                            },
+                            "Assign Apps to Plans": {
+                                "label": "Associate Apps to Plans",
+                                "url": "/admin/associate_apps",
+                                "protected": true,
+                                "allowed_roles": [
+                                    "Admin"
+                                ]
                             }
                         }
                     }
@@ -544,15 +630,43 @@
             }
         }
     },
-    "Blog": {
-        "label": "Blog",
-        "url": "/blog/blog",
+    "News and Blog": {
+        "label": "News and Blog",
+        "url": "/public_news",
         "protected": true,
         "allowed_roles": [
             "Admin",
             "Employee",
-            "Manager"
-        ]
+            "Manager",
+            "Authority",
+            "Provider"
+        ],
+        "submenus": {
+            "Blog": {
+                "label": "Blog",
+                "url": "/blog/blog",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin",
+                    "Employee",
+                    "Manager",
+                    "Authority",
+                    "Provider"
+                ]
+            },
+            "News": {
+                "label": "News",
+                "url": "/public_news",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin",
+                    "Employee",
+                    "Manager",
+                    "Authority",
+                    "Provider"
+                ]
+            }
+        }
     },
     "Contacts": {
         "label": "Contact",
@@ -563,6 +677,7 @@
             "Employee",
             "Manager",
             "Authority",
+            "Provider",
             "Guest"
         ],
         "submenus": {
@@ -575,6 +690,7 @@
                     "Employee",
                     "Manager",
                     "Authority",
+                    "Provider",
                     "Guest"
                 ]
             },
@@ -587,6 +703,7 @@
                     "Employee",
                     "Manager",
                     "Authority",
+                    "Provider",
                     "Guest"
                 ]
             },
@@ -599,6 +716,7 @@
                     "Employee",
                     "Manager",
                     "Authority",
+                    "Provider",
                     "Guest"
                 ]
             }
@@ -613,6 +731,7 @@
             "Employee",
             "Manager",
             "Authority",
+            "Provider",
             "Guest"
         ],
         "submenus": {
@@ -625,6 +744,7 @@
                     "Employee",
                     "Manager",
                     "Authority",
+                    "Provider",
                     "Guest"
                 ]
             },
@@ -637,6 +757,7 @@
                     "Employee",
                     "Manager",
                     "Authority",
+                    "Provider",
                     "Guest"
                 ]
             },
@@ -649,8 +770,100 @@
                     "Employee",
                     "Manager",
                     "Authority",
+                    "Provider",
                     "Guest"
                 ]
+            },
+            "myAccount": {
+                "label": "My Account",
+                "url": "/access/account",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin",
+                    "Employee",
+                    "Manager",
+                    "Authority",
+                    "Provider",
+                    "Guest"
+                ],
+                "submenus": {
+                    "Change Password": {
+                        "label": "Change Password",
+                        "url": "/user_change_password",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin",
+                            "Employee",
+                            "Manager",
+                            "Authority",
+                            "Provider",
+                            "Guest"
+                        ]
+                    },
+                    "Personal Data": {
+                        "label": "My Account",
+                        "url": "/update_account",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin",
+                            "Employee",
+                            "Manager",
+                            "Provider",
+                            "Authority",
+                            "Guest"
+                        ]
+                    },
+                    "Subscriptions": {
+                        "label": "Subscriptions",
+                        "url": "/subscriptions",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin",
+                            "Employee",
+                            "Manager",
+                            "Authority",
+                            "Guest"
+                        ]
+                    },
+                    "User Tickets": {
+                        "label": "Tickets",
+                        "url": "/create_ticket",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Employee",
+                            "Manager",
+                            "Authority",
+                            "Provider",
+                            "Guest"
+                        ],
+                        "submenus": {
+                            "Create ticket": {
+                                "label": "Create",
+                                "url": "/create_ticket",
+                                "protected": true,
+                                "allowed_roles": [
+                                    "Employee",
+                                    "Manager",
+                                    "Authority",
+                                    "Provider",
+                                    "Guest"
+                                ]
+                            },
+                            "View tickets": {
+                                "label": "View",
+                                "url": "/view_tickets",
+                                "protected": true,
+                                "allowed_roles": [
+                                    "Employee",
+                                    "Manager",
+                                    "Authority",
+                                    "Provider",
+                                    "Guest"
+                                ]
+                            }
+                        }
+                    }
+                }
             }
         }
     }

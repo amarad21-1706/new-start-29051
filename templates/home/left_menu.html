@@ -270,7 +270,7 @@
             // Display personalized greeting if the user is authenticated
             var username = "{{ current_user.username }}";  // Use the username from the Flask route
             if (username && username !== "Guest") {
-                $("#greeting-section").html("Welcome-, " + username + "!");
+                $("#greeting-section").html("Welcome-, " + username + " " + user_roles "!");
                 $("#greeting-section").show();  // Show the greeting section
             } else {
                 $("#greeting-section").html("Please <a href='{{ url_for('login') }}'>log in</a> or <a href='{{ url_for('signup') }}'>sign up</a>");

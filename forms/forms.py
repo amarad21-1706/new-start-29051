@@ -1,32 +1,126 @@
 
 # Create a dynamic form based on questions
+from db import db
 
-from wtforms import (Form, FormField, IntegerField, BooleanField, FloatField, SelectField, DateField,
-                     TimeField, FileField, StringField, TextAreaField)
-from wtforms.fields import (BooleanField, HiddenField, StringField, SelectField, FloatField, DecimalField,
-                            TimeField, DateField, DateTimeField,
-                            FileField, PasswordField, SubmitField, DateField, TextAreaField,
-                            MonthField, IntegerField)
+from datetime import datetime
+from wtforms import (DecimalField, StringField, BooleanField, FloatField, FileField, DateField,
+                     SelectField, FloatField, IntegerField, IntegerField, DateTimeField, FileField,
+                     Form, FormField, IntegerField, HiddenField, DateTimeField, MonthField,
+                     TimeField, FileField, TextAreaField, PasswordField, SubmitField, EmailField,
+                     RadioField
+                     )
 
-from wtforms.validators import DataRequired, Length, Email, EqualTo, Optional, NumberRange
+from flask_admin.form import rules
+from flask_admin.form.rules import FieldSet
+from wtforms.validators import DataRequired, Length, Email, EqualTo, Optional, NumberRange, Regexp, URL
 import re
 from datetime import datetime
 from wtforms import IntegerField, DateField, validators
+from wtforms import SelectField, SelectMultipleField, SubmitField, HiddenField
+
 from flask_wtf import FlaskForm
-from wtforms import StringField, IntegerField, DateTimeField, FileField
-from wtforms.validators import DataRequired, Optional
 from wtforms_sqlalchemy.fields import QuerySelectField
-
-from models.user import (Subject, Step, Workflow, StepBaseData, WorkflowSteps, BaseData, Question, Questionnaire, QuestionnaireQuestions)
+from models.user import (Users, Company, Subject, Step, Workflow, StepBaseData, WorkflowSteps, BaseData, BaseDataInline,
+                         Question, Questionnaire, QuestionnaireQuestions, Status, LegalDocument,
+                         Area, Subarea, Lexic, Workflow, Interval, Step)
 from flask_admin.model.form import InlineFormAdmin
-
-from wtforms import IntegerField  # Import necessary field type
-from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField, RadioField, SelectField, HiddenField, FormField, SubmitField
-from wtforms.validators import DataRequired, Optional, Length
 from enum import Enum
-
 from flask_admin.contrib.sqla.ajax import QueryAjaxModelLoader
+from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as _
+
+class ManageAppForm(FlaskForm):
+    app_id = HiddenField()
+    name = StringField('Application Name', validators=[DataRequired()])
+    path = StringField('Application Path', validators=[DataRequired()])
+    icon = StringField('Application Icon (URL or internal path)', validators=[URL(require_tld=False)])
+    submit = SubmitField('Save Application')
+
+class AssociateAppsForm(FlaskForm):
+    plan_id = SelectField('Select Plan', coerce=int)
+    application_ids = SelectMultipleField('Select Applications', coerce=int)
+    hidden_tag = HiddenField()
+    submit = SubmitField('Associate')
+
+class UpdateAccountForm(FlaskForm):
+    username = StringField('Username', validators=[DataRequired(), Length(min=2, max=80)])
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    first_name = StringField('First Name', validators=[DataRequired(), Length(min=1, max=128)])
+    mid_name = StringField('Middle Name', validators=[Optional(), Length(max=128)])
+    last_name = StringField('Last Name', validators=[DataRequired(), Length(min=1, max=128)])
+    title = StringField('Title', validators=[DataRequired(), Length(max=12)])
+    address = StringField('Address', validators=[DataRequired(), Length(max=128)])
+    address1 = StringField('Address 1', validators=[Optional(), Length(max=128)])
+    city = StringField('City', validators=[DataRequired(), Length(max=128)])
+    province = StringField('Province', validators=[DataRequired(), Length(max=64)])
+    region = StringField('Region', validators=[DataRequired(), Length(max=64)])
+    zip_code = StringField('Zip Code', validators=[Optional(), Length(max=24)])
+    country = StringField('Country', validators=[DataRequired(), Length(max=64)])
+    tax_code = StringField('Tax Code', validators=[Optional(), Length(max=128)])
+    mobile_phone = StringField('Mobile Phone', validators=[
+        DataRequired(),
+        Regexp(r'^\+?1?\d{9,15}$', message="Phone number must be entered in the format: '+999999999'. Up to 15 digits allowed.")
+    ])
+    work_phone = StringField('Work Phone', validators=[
+        Optional(),
+        Regexp(r'^\+?1?\d{9,15}$', message="Phone number must be entered in the format: '+999999999'. Up to 15 digits allowed.")
+    ])
+    submit = SubmitField('Update')
+
+
+
+class TicketForm(FlaskForm):
+    subject = SelectField('Subject', coerce=int, validators=[DataRequired()])
+    description = TextAreaField('Description', validators=[DataRequired()])
+    submit = SubmitField('Submit')
+
+class ResponseForm(FlaskForm):
+    response = TextAreaField('Response', validators=[DataRequired()])
+    status = SelectField('Status', coerce=int, validators=[DataRequired()])
+    submit = SubmitField('Submit')
+
+
+class LoginForm(FlaskForm):
+    username = StringField('Username', validators=[DataRequired()])
+    password = PasswordField('Password', validators=[DataRequired()])
+    submit = SubmitField('Login')
+
+class BaseDataInlineModelForm(InlineFormAdmin):
+    form_columns = ['name', 'type', 'value', 'record_type']
+    form_label = 'Vendor Data'
+    form_extra_fields = {
+        'id': HiddenField('ID'),
+        'record_type': HiddenField('Record Type')
+    }
+
+    form_edit_rules = ('id', rules.FieldSet(('name', 'type', 'value', 'record_type'), 'Vendor Data'))
+
+    def postprocess_form(self, form_class):
+        form_class.id = HiddenField()
+        form_class.record_type = HiddenField(default='pre-complaint')  # Set the default value directly here
+
+        # Query the Subject table
+        subjects = db.session.query(Subject).filter_by(tier_1='Oggetto').order_by(Subject.tier_2, Subject.tier_3).all()
+
+        # Create choices for the SelectField
+        subject_choices = [(subject.id, f"{subject.tier_2} {subject.tier_3} - {subject.name}") for subject in subjects]
+
+        # Add the SelectField to the form_class
+        form_class.type = SelectField('Type', choices=subject_choices)
+
+        return form_class
+
+
+class ForgotPasswordForm(FlaskForm):
+    email = EmailField(_('Email Address'), validators=[DataRequired(), Email()])
+    # Other form fields, if needed
+    submit = SubmitField(_('Reset Password'))
+
+class ResetPasswordForm101(FlaskForm):
+    password = PasswordField(_('New Password'), validators=[DataRequired()])
+    confirm_password = PasswordField(_('Confirm New Password'),
+                                     validators=[DataRequired(), EqualTo('password', message=_('Passwords must match'))])
+    submit = SubmitField(_('Reset Password'))
+
 
 class CustomSubjectAjaxLoader(QueryAjaxModelLoader):
     def __init__(self, name, session, model=None, fields=None, filter_criteria=None):
@@ -228,7 +322,6 @@ class CustomBaseDataForm(FlaskForm):
     fn9 = StringField('FN9', validators=[Optional()])
     file_path = StringField('File Path', validators=[Optional()])
     no_action = IntegerField('No Action', validators=[Optional()])
-
 
 
 # Define the UserForm class
@@ -488,17 +581,6 @@ class RegistrationForm(FlaskForm):
     submit = SubmitField('Sign Up')
 
 
-class TableForm(FlaskForm):
-    id = HiddenField('id')
-    name = StringField('Name', validators=[DataRequired()])
-    description = StringField('Description')
-    user_id = StringField('User ID', validators=[DataRequired()])
-    column1 = StringField('Column 1')
-    column2 = StringField('Column 2')
-    creation_date = StringField('Creation Date')
-    action = SelectField('Action', choices=[('add', 'Add'), ('update', 'Update'), ('remove', 'Remove')], default='add', validators=[DataRequired()])
-
-
 class UserRoleForm(FlaskForm):
     user = SelectField('User')
     role = SelectField('Role')
@@ -616,11 +698,6 @@ from wtforms import StringField, IntegerField, SelectField
 
 class DynamicForm(Form):
     pass
-
-
-from flask_wtf import FlaskForm as Form
-from wtforms import StringField, BooleanField, FloatField, FileField, DateField, SelectField, IntegerField
-from datetime import datetime
 
 
 # TODO unused?
@@ -862,6 +939,8 @@ def generate_question_html(question, existing_answers, base_path, horizontal=Fal
     html += "</div><hr>"
     return html
 
+
+
 def generate_input_html(input_type, field_name, existing_value, base_path, horizontal=False, order_number=None, width=None):
     css_class = "form-control"
     horizontal_class = "horizontal" if horizontal else "vertical"
@@ -897,8 +976,123 @@ def generate_input_html(input_type, field_name, existing_value, base_path, horiz
             range(11))
         html += f"<select name='{field_name}' class='{input_css_class}'>{options}</select>"
 
+        '''
+        old version, where the file existence was checked IN THE DIRECTORY
+        elif input_type == 'FILE':
+            print('FILE type??', input_type)
+            if existing_value:
+                print('existing value, base path:', existing_value, base_path)
+                file_path = url_for('static', filename=f"{base_path}/{existing_value}")
+                html += f"Current File: <a href='{file_path}' target='_blank'>{existing_value}</a><br>"
+    
+            html += f"""
+            <input type='file' name='{field_name}' class='{input_css_class}'>
+            <label for='{field_name}'>Replace Existing File</label>
+            <input type='checkbox' id='{field_name}_replace' name='replace_existing'>
+            <br>
+            """
+        '''
+
+    # new version, where the file existence is only checked in the DB field!
     elif input_type == 'FILE':
+        # Check if existing_value is present in the database field
         if existing_value:
+            # Don't check for file existence on disk (remove unnecessary print statements)
+
+            html += f"Current File: {existing_value}<br>"  # Display the filename from the database
+
+            # Replace logic using checkbox and database field
+            html += f"""
+                <input type='file' name='{field_name}' class='{input_css_class}'>
+                <label for='{field_name}'>Replace Existing File</label>
+                <input type='checkbox' id='{field_name}_replace' name='replace_existing' value='{existing_value}'>
+                <br>
+                """
+        else:
+            # No existing value, show standard upload field
+            html += f"""
+                <input type='file' name='{field_name}' class='{input_css_class}'>
+                <label for='{field_name}'>Upload File</label>
+                <br>
+                """
+
+    elif input_type == 'DD':
+        html += f"<input type='date' name='{field_name}' value='{existing_value}' class='{input_css_class}'>"
+
+    elif input_type == 'BYN':
+        yes_selected = "selected" if "Yes" == existing_value else ""
+        no_selected = "selected" if "No" == existing_value else ""
+        html += f"<select name='{field_name}' class='{input_css_class}'>"
+        html += f"<option value='Yes' {yes_selected}>Yes</option>"
+        html += f"<option value='No' {no_selected}>No</option></select>"
+
+    elif input_type == 'HML':
+        high_selected = "selected" if existing_value == 'H' else ""
+        medium_selected = "selected" if existing_value == 'M' else ""
+        low_selected = "selected" if existing_value == 'L' else ""
+        html += f"<select name='{field_name}' class='{input_css_class}'>"
+        html += f"<option value='H' {high_selected}>High</option>"
+        html += f"<option value='M' {medium_selected}>Medium</option>"
+        html += f"<option value='L' {low_selected}>Low</option></select>"
+
+    elif input_type == 'NUM':
+        html += f"<input type='number' name='{field_name}' value='{existing_value}' step='0.01' class='{input_css_class}'>"
+
+    elif input_type == 'INT':
+        # Fetch data from the interval table
+        intervals = db.session.query(Interval).all()  # Assuming Interval is your model for the interval table
+        options = ''.join(
+            f"<option value='{interval.id}' {'selected' if str(interval.id) == existing_value else ''}>{interval.description}</option>"
+            for interval in intervals)
+        html += f"<select name='{field_name}' class='{input_css_class}'>{options}</select>"
+
+    else:
+        html += f"<input type='text' name='{field_name}' value='{existing_value}' class='{input_css_class}' autocomplete='off'>"
+
+    html += "</div><br>"
+    return html
+
+
+
+def generate_input_html222(input_type, field_name, existing_value, base_path, horizontal=False, order_number=None, width=None):
+    css_class = "form-control"
+    horizontal_class = "horizontal" if horizontal else "vertical"
+    html = ""
+
+    # Define a style for width if provided, and additional flexbox alignment
+    width_style = f" style='width: {width}px; display: flex; align-items: center;'" if width else " style='display: flex; align-items: center;'"
+
+    if order_number:
+        html += f"<div class='input-group {horizontal_class}'{width_style}>"
+        html += f"<label class='order-number'>{order_number}.</label> "
+    else:
+        order_number = extract_index_with_regex(field_name)
+        html += f"<div class='{horizontal_class}'{width_style}>"
+
+    # Define specific CSS classes for inputs to ensure alignment
+    input_css_class = f"{css_class} form-input"  # Use form-input to handle specific styling
+
+    # Control specific HTML generation
+    if input_type == 'CB':
+        checked = 'checked' if existing_value.lower() == 'on' else ''
+        html += f"<input type='hidden' name='{field_name}' value='off'>"
+        html += f"<input type='checkbox' class='form-check-input' id='{field_name}' name='{field_name}' value='on' {checked}>"
+        label_text = f"A.{order_number}" if order_number else "A "  # Example label
+        html += f"<label class='form-check-label' for='{field_name}'>{label_text}</label>"
+
+    elif input_type == 'TLT':
+        html += f"<textarea name='{field_name}' class='{input_css_class}'>{existing_value}</textarea>"
+
+    elif input_type == 'NI(0-10)':
+        options = ''.join(
+            f"<option value='{num}' {'selected' if str(num) == existing_value else ''}>{num}</option>" for num in
+            range(11))
+        html += f"<select name='{field_name}' class='{input_css_class}'>{options}</select>"
+
+    elif input_type == 'FILE':
+        print('FILE type?', input_type)
+        if existing_value:
+            print('existing value', existing_value)
             file_path = url_for('static', filename=f"{base_path}/{existing_value}")
             html += f"Current File: <a href='{file_path}' target='_blank'>{existing_value}</a>"
         html += f"<input type='file' name='{field_name}' class='{input_css_class}'>"
@@ -1002,20 +1196,4 @@ class PostForm(FlaskForm):
     def __init__(self, *args, **kwargs):
         super(PostForm, self).__init__(*args, **kwargs)
         # Fill company_id and user_id choices from related models (if used)
-
-
-class Flussi_Complaint_Form(FlaskForm):
-    lexic_id = SelectField('Lexic ID')
-
-    def __init__(self, *args, **kwargs):
-        super(Flussi_Complaint_Form, self).__init__(*args, **kwargs)
-        # Populate choices for lexic_id from BaseData
-        base_data_choices = [(entry.id, str(entry.id)) for entry in BaseData.query.all()]
-        self.lexic_id.choices = base_data_choices
-
-    fi1 = IntegerField('Total')
-    fi2 = IntegerField('Of which IVI')
-    fi3 = IntegerField('Of which non-IVI')
-    fc1 = StringField('Provider')
-    submit = SubmitField('Submit')
 
