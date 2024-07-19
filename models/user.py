@@ -744,17 +744,9 @@ class BaseData(db.Model):
             'fi1': self.fi1,
             'fi2': self.fi2,
             'fi3': self.fi3,
-            'fi4': self.fi4,
-            'fi5': self.fi5,
             'fn1': self.fn1,
             'fn2': self.fn2,
             'fc1': self.fc1,
-            'fc2': self.fc2,
-            'fc3': self.fc3,
-            'fc4': self.fc4,
-            'fc5': self.fc5,
-            'fc6': self.fc6
-
             # Add more fields as needed for the API view
         }
 
@@ -922,12 +914,12 @@ def after_flush_listener(session, flush_context):
             total_value = sum(inline.value for inline in instance.base_data_inlines)
             updates.append((instance.id, total_value))
 
-    session.info['fi3_updates'] = updates
+    session.info['fi16_updates'] = updates
 
 def after_flush_postexec_listener(session, flush_context):
-    updates = session.info.get('fi3_updates', [])
+    updates = session.info.get('fi16_updates', [])
     for base_data_id, total_value in updates:
-        session.query(BaseData).filter(BaseData.id == base_data_id).update({'fi3': total_value})
+        session.query(BaseData).filter(BaseData.id == base_data_id).update({'fi16': total_value})
 
 event.listen(db.session, 'after_flush', after_flush_listener)
 event.listen(db.session, 'after_flush_postexec', after_flush_postexec_listener)

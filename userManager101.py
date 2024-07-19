@@ -25,19 +25,24 @@ class UserManager:
                 session['user_id'] = user.id
                 session['username'] = user.username
                 session['roles'] = [role.name for role in user.roles]
+
+                session['email'] = user.email
+
                 print('roles', session['roles'])
                 return user
             else:
                 print('Not logged in!')
                 session['user_id'] = None
-                session['username'] = 'guest'
-                session['roles'] = ['guest']
+                session['email'] = None
+                session['username'] = 'Guest'
+                session['roles'] = ['Guest']
                 return None
         except Exception as e:
             print(f'Db error (4): {e}')
             session['user_id'] = None
-            session['username'] = 'guest'
-            session['roles'] = ['guest']
+            session['email'] = None
+            session['username'] = 'Guest'
+            session['roles'] = ['Guest']
             return None
 
 

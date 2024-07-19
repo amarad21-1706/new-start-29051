@@ -41,7 +41,7 @@ from workflow_manager import (add_transition_log, create_card,
 
 from app_defs import get_user_roles, create_message, generate_menu_tree
 from models.user import (Users, UserRoles, Role, Container, Questionnaire, Question,
-        QuestionnaireQuestions,
+        QuestionnaireQuestions, Application, PlanApplications,
         Answer, Company, Area, Subarea, AreaSubareas,
         QuestionnaireCompanies, CompanyUsers, Status, Lexic,
         Interval, Subject,
@@ -53,7 +53,8 @@ from models.user import (Users, UserRoles, Role, Container, Questionnaire, Quest
 
 # from master_password_reset import admin_reset_password, AdminResetPasswordForm
 
-from forms.forms import (UpdateAccountForm, TicketForm, ResponseForm, LoginForm, ForgotPasswordForm, ResetPasswordForm101, RegistrationForm,
+from forms.forms import (UpdateAccountForm, TicketForm, ResponseForm, LoginForm, ForgotPasswordForm,
+                         ResetPasswordForm101, RegistrationForm,
                          QuestionnaireCompanyForm, CustomBaseDataForm,
         QuestionnaireQuestionForm, WorkflowStepForm, WorkflowBaseDataForm,
                          BaseDataWorkflowStepForm,
@@ -873,6 +874,8 @@ def login():
                         session['user_roles'] = [role.name for role in user.roles] if user.roles else []
                         session['user_id'] = user.id
                         session['username'] = username
+                        session['email'] = user.email
+                        print('session email', session['email'])
 
                         try:
                             company_user = CompanyUsers.query.filter_by(user_id=user.id).first()
@@ -4091,10 +4094,18 @@ def handle_checkout_session(session):
 
 
 @app.route('/subscribe', methods=['POST'])
+@login_required
 def subscribe():
     data = request.get_json()
     plan = data.get('plan')
     email = session.get('email')
+    user_id = session.get('user_id')
+
+    print('session username', user_id)
+    user = Users.query.filter_by(id=user_id).first()
+
+    print('session user', user.email, 'plan', plan)
+    print('session email 2', email)
 
     if not email:
         return jsonify({"success": False, "message": "User not logged in."}), 400

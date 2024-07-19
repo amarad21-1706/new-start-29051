@@ -47,6 +47,7 @@ def subscription_required(f):
             return f(*args, **kwargs)  # Allow access if user has Admin or Authority role
 
         email = session.get('email')
+        print('session email', email)
         #current_app.logger.debug(f'user email: {email}')
         user = Users.query.filter_by(email=email).first()
 
