@@ -5,6 +5,9 @@ from flask_security import RoleMixin, UserMixin
 from sqlalchemy import (Column, Integer, String, DateTime, ForeignKey,
                         LargeBinary, Numeric, func, TIMESTAMP, DATE, Sequence, Boolean)
 
+from wtforms.widgets import DateTimeInput
+from wtforms.validators import DataRequired, Regexp, EqualTo, Email, Length
+
 from sqlalchemy import or_, and_, Enum, event
 
 from sqlalchemy.orm import object_session, validates
@@ -26,7 +29,6 @@ from sqlalchemy.dialects.sqlite import JSON # for SQLite
 # OR
 from sqlalchemy.dialects.postgresql import JSONB
 
-from wtforms.validators import DataRequired, Regexp
 
 
 class CheckboxField(BooleanField):
@@ -112,8 +114,8 @@ class Users(db.Model, UserMixin):
     subscription_end_date = db.Column(db.DateTime, nullable=True)
 
     #password_hash = db.Column(db.String(128))
-    created_on = Column(TIMESTAMP(timezone=True), server_default=func.now())
-    updated_on = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
+    created_on = Column(DateTime, nullable=False)
+    updated_on = Column(DateTime, nullable=True, onupdate=datetime.now)
     end_of_registration = db.Column(DATE)
     cookies_accepted = db.Column(db.Boolean, default=False)
     analytics = db.Column(db.Boolean, default=False)
@@ -196,7 +198,7 @@ class UserRoles(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
-    created_on = Column(DateTime, nullable=False, default=datetime.now)
+    created_on = Column(DateTime, nullable=False)
     updated_on = Column(DateTime, nullable=True, onupdate=datetime.now)
     #user = relationship('Users', backref='user_roles')
     #role = relationship('Role', backref='user_roles')
@@ -207,8 +209,8 @@ class CompanyUsers(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'))
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    created_on = Column(TIMESTAMP(timezone=True), server_default=func.now())
-    updated_on = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
+    created_on = Column(DateTime, nullable=False)
+    updated_on = Column(DateTime, nullable=True, onupdate=datetime.now)
     end_of_registration = db.Column(db.DateTime, nullable=True)
 
     company = relationship('Company', backref='company_users')
@@ -233,8 +235,8 @@ class Company(db.Model):
     website = db.Column(String(100))
     tax_code = db.Column(String(24), nullable=True)
     employees = db.relationship('Employee', backref='company', lazy=True)
-    created_on = Column(TIMESTAMP(timezone=True), server_default=func.now())
-    updated_on = Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
+    created_on = db.Column(db.DateTime)
+    updated_on = db.Column(db.DateTime, default=datetime.utcnow)
     end_of_registration = db.Column(db.DateTime, nullable=True)
 
     def __repr__(self):
@@ -268,8 +270,8 @@ class Questionnaire(db.Model):
     interval = db.Column(db.String(12))  # If this represents a numeric interval, consider using Integer
     deadline_date = db.Column(db.DateTime)
     status_id = db.Column(db.Integer, db.ForeignKey('status.id'))
-    created_on = db.Column(db.TIMESTAMP(timezone=True), server_default=func.now())
-    updated_on = db.Column(db.TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
+    created_on = Column(DateTime, nullable=False)
+    updated_on = Column(DateTime, nullable=True, onupdate=datetime.now)
     headers = db.Column(db.JSON)
 
     steps_questionnaires_relationship = db.relationship("StepQuestionnaire", back_populates="questionnaire")
@@ -383,7 +385,7 @@ class Table(db.Model):
 
     column1 = db.Column(String(100))
     column2 = db.Column(String(100))
-    created_on = Column(TIMESTAMP(timezone=True), server_default=func.now())
+    created_on = Column(DateTime, nullable=False)
 
     # Define relationships if needed
     user = db.relationship('Users', backref=db.backref('tables', lazy=True))
@@ -615,8 +617,8 @@ class BaseData(db.Model):
     legal_document_id = db.Column(db.Integer, db.ForeignKey('legal_document.id'), nullable=True)
     record_type = db.Column(db.String(64))
     data_type = db.Column(db.String(128))
-    created_on = db.Column(TIMESTAMP(timezone=True), server_default=func.now())
-    updated_on = db.Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
+    created_on = db.Column(DateTime, nullable=False)
+    updated_on = db.Column(DateTime, nullable=True, onupdate=datetime.now)
     deadline = db.Column(DATE)
     created_by = db.Column(db.String(128))
     area_id = db.Column(db.Integer, db.ForeignKey('area.id'))
@@ -1150,8 +1152,8 @@ class WorkflowBaseData(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     workflow_id = db.Column(db.Integer, db.ForeignKey('workflow.id'))
     base_data_id = db.Column(db.Integer, db.ForeignKey('base_data.id'))
-    created_on = db.Column(TIMESTAMP(timezone=True), server_default=func.now())
-    updated_on = db.Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
+    created_on = Column(DateTime, nullable=False)
+    updated_on = Column(DateTime, nullable=True, onupdate=datetime.now)
     end_of_registration = db.Column(db.DateTime)
 
     workflow = db.relationship("Workflow", backref="workflow_base_data")
@@ -1212,6 +1214,7 @@ def get_config_values(config_type, company_id=None, area_id=None, subarea_id=Non
 class AuditLog(db.Model):
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'))
@@ -1302,8 +1305,8 @@ class Response_psf(db.Model):
     subject_id = db.Column(db.Integer, db.ForeignKey('subject.id'))
     status_id = db.Column(db.Integer, db.ForeignKey('status.id'))
     record_type = db.Column(db.String(64))
-    created_on = db.Column(TIMESTAMP(timezone=True), server_default=func.now())
-    updated_on = db.Column(TIMESTAMP(timezone=True), server_default=func.now(), onupdate=func.now())
+    created_on = Column(DateTime, nullable=False)
+    updated_on = Column(DateTime, nullable=True, onupdate=datetime.now)
     deadline = db.Column(DATE)
     area_id = db.Column(db.Integer, db.ForeignKey('area.id'))
     subarea_id = db.Column(db.Integer, db.ForeignKey('subarea.id'))
@@ -1338,7 +1341,7 @@ class UserPlans(db.Model):
     activation_date = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
     expiry_date = db.Column(db.DateTime, nullable=False)
     status = db.Column(db.String(20), nullable=False, default='active')
-    stripe_subscription_id = db.Column(db.String(128), nullable=True)
+    stripe_subscription_id = db.Column(db.String(255), nullable=True)
 
     user = db.relationship('Users', back_populates='user_plans')
     plan = db.relationship('Plan', back_populates='user_plans')

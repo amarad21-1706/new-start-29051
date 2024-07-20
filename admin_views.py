@@ -48,6 +48,7 @@ from models.user import (Users, UserRoles, Role, Table, Questionnaire, Question,
                          Container, Config, get_config_values)
 
 
+from wtforms.widgets import DateTimeInput
 from forms.forms import (LoginForm, ForgotPasswordForm, ResetPasswordForm101, RegistrationForm,
                          QuestionnaireCompanyForm, CustomBaseDataForm,
         QuestionnaireQuestionForm, WorkflowStepForm, WorkflowBaseDataForm,
@@ -87,8 +88,8 @@ def check_record_exists(form, company_id):
 class BaseDataView(ModelView):
     can_view_details = True
     can_export = True
-    can_edit = True
-    can_delete = True
+    can_edit = False
+    can_delete = False
     can_create = True
 
     def is_accessible(self):
@@ -123,37 +124,28 @@ class BaseDataView(ModelView):
         return redirect(url_for('login', next=request.url))
 
     def on_model_change(self, form, model, is_created):
-        # Convert string dates to datetime objects
-        for field_name in ['created_on', 'updated_on', 'deadline', 'date_of_doc']:
-            field = getattr(form, field_name, None)
-            if field and field.data and isinstance(field.data, str):
-                model_data = self._parse_datetime_string(field.data)
-                setattr(model, field_name, model_data)
+        if is_created:
+            model.created_on = datetime.utcnow()
+        model.updated_on = datetime.utcnow()
 
-    def on_form_prefill(self, form, id):
-        # Ensure date fields are datetime objects
-        for field_name in ['created_on', 'updated_on', 'deadline', 'date_of_doc']:
-            field = getattr(form, field_name, None)
-            data = getattr(field, 'data', None)
-            if data and isinstance(data, str):
-                form_data = self._parse_datetime_string(data)
-                setattr(field, 'data', form_data)
+        # Example of ensuring correct types
+        if form.number_of_doc.data:
+            model.number_of_doc = str(form.number_of_doc.data)
+        if form.deadline.data:
+            model.deadline = form.deadline.data if isinstance(form.deadline.data, datetime) else datetime.strptime(
+                form.deadline.data, '%Y-%m-%d %H:%M:%S')
+        if form.date_of_doc.data:
+            model.date_of_doc = form.date_of_doc.data if isinstance(form.date_of_doc.data,
+                                                                    datetime) else datetime.strptime(
+                form.date_of_doc.data, '%Y-%m-%d %H:%M:%S')
 
-    def _parse_datetime_string(self, date_string):
-        """Parse datetime string to datetime object with multiple formats."""
-        datetime_formats = [
-            "%Y-%m-%d %H:%M:%S.%f%z",  # with microseconds and timezone
-            "%Y-%m-%d %H:%M:%S.%f",  # with microseconds
-            "%Y-%m-%d %H:%M:%S%z",  # with timezone
-            "%Y-%m-%d %H:%M:%S",  # without microseconds and timezone
-            "%Y-%m-%d"  # date only
-        ]
-        for fmt in datetime_formats:
-            try:
-                return datetime.strptime(date_string, fmt)
-            except ValueError:
-                continue
-        raise ValueError(f"Time data '{date_string}' does not match any of the formats.")
+    def create_form(self, obj=None):
+        form = super(BaseDataView, self).create_form(obj)
+        return form
+
+    def edit_form(self, obj=None):
+        form = super(BaseDataView, self).edit_form(obj)
+        return form
 
 
 class CustomBooleanField(BooleanField):
@@ -707,13 +699,6 @@ class DocumentsBaseDataDetails(ModelView):
         id_list = [int(id) for id in ids]
 
         # Define the selected columns you want to retrieve
-        '''
-        column_list = [StepBaseData.id, StepBaseData.base_data_id, StepBaseData.workflow_id,
-                       StepBaseData.step_id, StepBaseData.status_id, StepBaseData.auto_move,
-                       StepBaseData.start_date, StepBaseData.deadline_date, StepBaseData.end_date,
-                       StepBaseData.hidden_data, StepBaseData.start_recall, StepBaseData.deadline_recall,
-                       StepBaseData.end_recall, StepBaseData.recall_unit]  # Add or remove columns as needed
-        '''
         column_list = [StepBaseData.base_data_id, StepBaseData.workflow_id,
                        StepBaseData.step_id, StepBaseData.status_id, StepBaseData.auto_move,
                        StepBaseData.start_date, StepBaseData.deadline_date, StepBaseData.end_date,
@@ -4394,7 +4379,7 @@ def create_admin_views(app, intervals):
         admin_app4.add_view(SubjectModelView(Subject, db.session, name='Subjects', endpoint='subjects_data_view'))
         admin_app4.add_view(WorkflowView(Workflow, db.session, name='Workflows', endpoint='workflows_data_view'))
         admin_app4.add_view(StepView(Step, db.session, name='Steps', endpoint='steps_data_view'))
-        admin_app4.add_view(AuditLogView(AuditLog, db.session, name='Audit Log', endpoint='audit_data_view'))
+        # admin_app4.add_view(AuditLogView(AuditLog, db.session, name='Audit Log', endpoint='audit_data_view'))
         admin_app4.add_view(PostView(Post, db.session, name='Posts', endpoint='posts_data_view'))
         admin_app4.add_view(TicketView(Ticket, db.session, name='Tickets', endpoint='tickets_data_view'))
         admin_app4.add_view(BaseDataView(BaseData, db.session, name='Database', endpoint='base_data_view'))
@@ -4590,8 +4575,19 @@ class SurveyResponseView(MethodView):
 
 
 # Define custom forms for each model
-class CompanyForm(ModelView):
-    form_excluded_columns = ('employees',)  # Exclude employees relationship from the form
+
+class CompanyForm(FlaskForm):
+    name = StringField('Name', validators=[DataRequired()])
+    description = StringField('Description')
+    address = StringField('Address')
+    phone_number = StringField('Phone Number')
+    website = StringField('Website')
+    taxcode = StringField('Tax Code', render_kw={'readonly': True})
+    email = StringField('Email', validators=[Email()])
+
+    created_on = DateTimeField('Created', format='%Y-%m-%d %H:%M:%S', widget=DateTimeInput(), render_kw={'readonly': True})
+    updated_on = DateTimeField('Updated', format='%Y-%m-%d %H:%M:%S', widget=DateTimeInput(), render_kw={'readonly': True})
+
 
 class QuestionnaireForm(ModelView):
     can_create = True
@@ -4624,8 +4620,6 @@ class QuestionnaireCompaniesForm(ModelView):
     column_default_sort = ('questionnaire_id', True)  # Sort by question_id (ascending)
     pass
 
-class AuditLogForm(ModelView):
-    pass  # No custom form needed for Questionnaire
 
 class TicketForm(ModelView):
     pass  # No custom form needed for Questionnaire
@@ -4884,11 +4878,45 @@ class WorkflowStepsForm(ModelView):
     can_view_details = True
     pass
 
-# Define ModelView declarations for each model
-class CompanyView(CompanyForm):
-    column_searchable_list = ['name', 'description', 'address', 'phone_number', 'email']
-    column_filters = ['name', 'address', 'phone_number', 'email']
 
+
+class CompanyView(ModelView):
+    form = CompanyForm  # Set the form
+
+    form_excluded_columns = ('id', 'updated_on', 'created_on')  # Exclude employees relationship from the form
+
+    column_searchable_list = ['name', 'description', 'address', 'phone_number', 'email']
+    column_filters = column_searchable_list
+
+    def on_model_change(self, form, model, is_created):
+        # Convert string dates to datetime objects
+        if hasattr(form, 'created_on') and form.created_on.data:
+            if isinstance(form.created_on.data, str):
+                model.created_on = datetime.strptime(form.created_on.data, '%Y-%m-%d %H:%M:%S')
+            else:
+                model.created_on = form.created_on.data
+
+        if hasattr(form, 'updated_on') and form.updated_on.data:
+            if isinstance(form.updated_on.data, str):
+                model.updated_on = datetime.strptime(form.updated_on.data, '%Y-%m-%d %H:%M:%S')
+            else:
+                model.updated_on = form.updated_on.data
+
+    def create_form(self, obj=None):
+        form = super(CompanyView, self).create_form(obj)
+        if form.created_on.data and isinstance(form.created_on.data, str):
+            form.created_on.data = datetime.strptime(form.created_on.data, '%Y-%m-%d %H:%M:%S')
+        if form.updated_on.data and isinstance(form.updated_on.data, str):
+            form.updated_on.data = datetime.strptime(form.updated_on.data, '%Y-%m-%d %H:%M:%S')
+        return form
+
+    def edit_form(self, obj=None):
+        form = super(CompanyView, self).edit_form(obj)
+        if form.created_on.data and isinstance(form.created_on.data, str):
+            form.created_on.data = datetime.strptime(form.created_on.data, '%Y-%m-%d %H:%M:%S')
+        if form.updated_on.data and isinstance(form.updated_on.data, str):
+            form.updated_on.data = datetime.strptime(form.updated_on.data, '%Y-%m-%d %H:%M:%S')
+        return form
 
 class StepQuestionnaireView(StepQuestionnaireForm):
     can_create = True
@@ -4927,8 +4955,6 @@ class LegalDocumentView(LegalDocumentForm):
     pass  # No customizations needed for LegalDocumentView
 
 
-class AuditLogView(AuditLogForm):
-    pass  # No customizations needed for
 
 class TicketView(TicketForm):
     pass  # No customizations needed for

@@ -21,7 +21,7 @@ import pandas as pd
 from flask_login import current_user
 import json
 import pytz
-
+from flask_caching import Cache
 import os
 from dotenv import load_dotenv
 
@@ -101,6 +101,14 @@ class Config:
 
         self.RECAPTCHA_PUBLIC_KEY = os.environ.get('RECAPTCHA_PUBLIC_KEY')
         self.RECAPTCHA_PRIVATE_KEY = os.environ.get('RECAPTCHA_PRIVATE_KEY')
+
+        # Configure Flask-Caching
+        self.CACHE_TYPE = 'RedisCache'
+        self.CACHE_REDIS_HOST = 'localhost'
+        self.CACHE_REDIS_PORT = 6379
+        self.CACHE_REDIS_DB = 0
+        self.CACHE_REDIS_URL = 'redis://localhost:6379/0'
+        self.CACHE_DEFAULT_TIMEOUT = 300
 
         # CAPTCHA
         # selfRECAPTCHA_PUBLIC_KEY = some_keys['recaptcha_public_key']

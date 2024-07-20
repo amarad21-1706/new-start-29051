@@ -218,6 +218,31 @@ class StepBaseDataInlineForm(InlineFormAdmin):
 from wtforms import FieldList
 
 
+
+class SignupForm(FlaskForm):
+    username = StringField('Username', validators=[DataRequired()])
+    email = EmailField('Email', validators=[DataRequired(), Email()])
+    password = PasswordField('Password', validators=[DataRequired()])
+    confirm_password = PasswordField('Repeat Password', validators=[
+        DataRequired(), EqualTo('password', message='Passwords must match')])
+    first_name = StringField('First Name', validators=[DataRequired()])
+    mid_name = StringField('Middle Name')
+    last_name = StringField('Last Name', validators=[DataRequired()])
+    address = StringField('Address', validators=[DataRequired()])
+    address1 = StringField('Address 1')
+    country = SelectField('Country', validators=[DataRequired()])
+    region = SelectField('Region', validators=[DataRequired()])
+    city = SelectField('City', validators=[DataRequired()])
+    zip_code = SelectField('Zip Code', validators=[DataRequired()])
+    street = SelectField('Street', validators=[DataRequired()])
+    phone_prefix = SelectField('Phone Prefix', validators=[DataRequired()])
+    mobile_phone = StringField('Mobile Phone', validators=[DataRequired()])
+    work_phone = StringField('Work Phone')
+    province = StringField('Province')
+    tax_code = StringField('Tax Code')
+    terms = BooleanField('I accept the Terms of Use', validators=[DataRequired()])
+    submit = SubmitField('Sign Up')
+
 class InlineSurveyForm(InlineFormAdmin):
     def __init__(self, model=None, form_data=None, **kwargs):
         super(InlineSurveyForm, self).__init__(model, **kwargs)

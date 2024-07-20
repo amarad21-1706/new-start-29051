@@ -53,14 +53,14 @@ from models.user import (Users, UserRoles, Role, Container, Questionnaire, Quest
 
 # from master_password_reset import admin_reset_password, AdminResetPasswordForm
 
-from forms.forms import (UpdateAccountForm, TicketForm, ResponseForm, LoginForm, ForgotPasswordForm,
+from forms.forms import (SignupForm, UpdateAccountForm, TicketForm, ResponseForm, LoginForm, ForgotPasswordForm,
                          ResetPasswordForm101, RegistrationForm,
                          QuestionnaireCompanyForm, CustomBaseDataForm,
         QuestionnaireQuestionForm, WorkflowStepForm, WorkflowBaseDataForm,
                          BaseDataWorkflowStepForm,
         UserRoleForm, CompanyUserForm, UserDocumentsForm, StepBaseDataInlineForm,
         create_dynamic_form, CustomFileLoaderForm,
-        CustomSubjectAjaxLoader, BaseSurveyForm)
+        CustomSubjectAjaxLoader, BaseSurveyForm, AuditLogForm)
 
 from flask_mail import Mail, Message
 from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as _
@@ -149,6 +149,11 @@ from werkzeug.datastructures import ImmutableMultiDict
 from flask_login import login_user, logout_user, current_user
 import os
 
+from flask_caching import Cache
+import geocoder
+
+from opencage.geocoder import OpenCageGeocode
+
 # for graphical representation of workflows
 # Additional libraries for visualization (choose one)
 # Option 1: Flask-Vis (lightweight)
@@ -164,6 +169,16 @@ from custom_encoder import CustomJSONEncoder
 
 from admin_views import create_admin_views  # Import the admin views module
 
+import pycountry
+import phonenumbers
+from phonenumbers.phonenumberutil import region_code_for_country_code
+from phonenumbers.phonenumberutil import NumberParseException, PhoneNumberType
+
+from cachetools import TTLCache, cached
+
+# OPENCAGE API KEY
+# aad0f13ea1af46c6b89153e6b7bd7928
+
 print('1')
 app = create_app()
 print('app created')
@@ -172,8 +187,21 @@ print('app created')
 mail = Mail(app)
 print('mail server active')
 
+
 app.json_encoder = CustomJSONEncoder
 print('JSON decoder on')
+
+#cache = Cache(app)
+# Choose one geocoder based on your preference:
+# geocoder = geocoder.geocoder  # Original implementation
+geocoder = OpenCageGeocode('aad0f13ea1af46c6b89153e6b7bd7928')  # Using OpenCageGeocode
+GEONAMES_USERNAME = 'amarad21'
+
+cache = TTLCache(maxsize=100, ttl=86400)  # Adjust cache size and TTL as needed
+NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
+
+print('geolocator on')
+# Create a cache with a TTL of 600 seconds and a max size of 100 items
 
 # Setup Limiter
 limiter = Limiter(
@@ -1768,19 +1796,132 @@ def guest_page():
 # TODO Verifica esistenza stesso username o stessa mail (già presente?)
 # TODO Usare user = db.session.execute(db.select(User).filter_by(username=username)).scalar_one()
 # TODO oppure users = db.session.execute(db.select(User).order_by(Users.username)).scalars()
+
+
+import pycountry
+
+# Get all countries
+# countries = [{'name': country.name, 'code': country.alpha_2} for country in pycountry.countries]
+
+# Get subdivisions for a specific country
+# country_code = 'US'  # Example for the United States
+# subdivisions = [{'name': subdivision.name} for subdivision in pycountry.subdivisions.get(country_code)]
+
+import phonenumbers
+from phonenumbers.phonenumberutil import region_code_for_country_code
+
+'''
+@app.route('/invalidate_cache')
+def invalidate_cache():
+    cache.delete('/countries')
+    cache.delete('/regions')
+    cache.delete('/cities')
+    cache.delete('/zip_codes')
+    cache.delete('/streets')
+    cache.delete('/phone_prefixes')
+    return jsonify({'message': 'Cache invalidated'})
+'''
+
+# Get phone prefixes
+# prefixes = [{'country': region_code_for_country_code(country_code), 'prefix': f'+{country_code}'}
+#             for country_code in phonenumbers.SUPPORTED_REGIONS]
+
+
+# Function to fetch phone prefixes
+@cached(cache)
+def fetch_phone_prefixes():
+    prefixes = []
+    for country in pycountry.countries:
+        try:
+            example_number = phonenumbers.example_number_for_type(
+                country.alpha_2, PhoneNumberType.MOBILE
+            )
+            phone_prefix = f"+{example_number.country_code}" if example_number else None
+            if phone_prefix:
+                prefixes.append({'prefix': phone_prefix, 'country': country.name})
+        except (NumberParseException, AttributeError, KeyError) as e:
+            print(f"Error with country {country.name}: {e}")
+            continue  # Skip countries that cause exceptions
+    return prefixes
+
+@app.route('/phone_prefixes', methods=['GET'])
+def get_phone_prefixes():
+    return jsonify(fetch_phone_prefixes())
+
+
+# Function to fetch regions
+@app.route('/regions', methods=['GET'])
+@cached(cache)
+def get_regions():
+    country_code = request.args.get('country_code')
+    print('country code', country_code)
+    if not country_code:
+        return jsonify({'error': 'Country code is required'}), 400
+
+    subdivisions = [sub for sub in pycountry.subdivisions if sub.country_code == country_code]
+    regions = [{'code': sub.code, 'name': sub.name} for sub in subdivisions]
+    print('regions', regions)
+    return jsonify(regions)
+
+@app.route('/cities', methods=['GET'])
+@cached(cache)
+def get_cities():
+    region_name = request.args.get('region_name')
+    if not region_name:
+        return jsonify({'error': 'Region name is required'}), 400
+
+    url = f'http://api.geonames.org/searchJSON?formatted=true&q={region_name}&maxRows=10&username={GEONAMES_USERNAME}'
+    response = requests.get(url)
+    data = response.json()
+    cities = [{'name': city.get('name', 'Undefined'), 'geonameId': city.get('geonameId', 'Undefined')} for city in data.get('geonames', [])]
+    return jsonify(cities)
+
+@app.route('/zip_codes', methods=['GET'])
+@cached(cache)
+def get_zip_codes():
+    city_name = request.args.get('city_name')
+    print('city', city_name)
+    if not city_name:
+        return jsonify({'error': 'City name is required'}), 400
+
+    url = f'http://api.geonames.org/postalCodeSearchJSON?placename={city_name}&maxRows=10&username={GEONAMES_USERNAME}'
+    response = requests.get(url)
+    data = response.json()
+    zip_codes = [{'postalCode': place.get('postalCode', 'Undefined')} for place in data.get('postalCodes', [])]
+
+    print('response - zip codes', data)
+    return jsonify(zip_codes)
+
+@app.route('/streets', methods=['GET'])
+@cached(cache)
+def get_streets():
+    city_id = request.args.get('city_id')
+    if not city_id:
+        return jsonify({'error': 'City ID is required'}), 400
+
+    url = f'http://api.geonames.org/streetSearchJSON?geonameId={city_id}&maxRows=10&username={GEONAMES_USERNAME}'
+    response = requests.get(url)
+    data = response.json()
+    print('streets data', data)
+    streets = [{'name': place.get('street', 'Undefined')} for place in data.get('streets', [])]
+    return jsonify(streets)
+
+
+@app.route('/countries', methods=['GET'])
+def get_countries():
+    print('Fetching countries')
+    countries = [{'alpha2Code': country.alpha_2, 'name': country.name} for country in pycountry.countries]
+    return jsonify(countries)
+
+
 @app.route('/access/signup', methods=['GET', 'POST'])
 def signup():
-    # Setup logging
-    #logging.debug('Signup route accessed')
-
-    clear_flashed_messages()
-    form = RegistrationForm()
-    print('signup1')
+    form = SignupForm()
     if form.validate_on_submit():
-        print('signup1 2')
         new_user = Users(
             username=form.username.data,
             email=form.email.data,
+            password_hash=generate_password_hash(form.password.data),
             user_2fa_secret=pyotp.random_base32(),
             first_name=form.first_name.data,
             mid_name=form.mid_name.data,
@@ -1796,15 +1937,13 @@ def signup():
             mobile_phone=form.mobile_phone.data,
             work_phone=form.work_phone.data,
             created_on=datetime.now(),
-            updated_on=datetime.now()
-
-            # Add other fields from the form as needed
+            updated_on=datetime.now(),
+            terms_accepted=form.terms.data
         )
 
         try:
             # Set the hashed password
             new_user.set_password(form.password.data)
-
             db.session.add(new_user)
 
             try:
@@ -1834,7 +1973,6 @@ def signup():
             return redirect(url_for('login'))
 
         except IntegrityError as e:
-            print('signup 11', e)
             db.session.rollback()
             flash('Username already exists. Please choose a different username.', 'error')
             return render_template('access/signup.html', form=form)
