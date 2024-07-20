@@ -17,7 +17,7 @@ from wtforms.fields import DateField
 from flask_admin import BaseView
 from flask_admin.base import expose
 from wtforms import IntegerField, FileField, HiddenField
-from datetime import datetime
+from datetime import datetime, date
 
 from sqlalchemy import and_
 from flask_wtf import FlaskForm
@@ -131,13 +131,20 @@ class BaseDataView(ModelView):
         # Example of ensuring correct types
         if form.number_of_doc.data:
             model.number_of_doc = str(form.number_of_doc.data)
-        if form.deadline.data:
-            model.deadline = form.deadline.data if isinstance(form.deadline.data, datetime) else datetime.strptime(
-                form.deadline.data, '%Y-%m-%d %H:%M:%S')
+        # if form.deadline.data:
+        #     model.deadline = form.deadline.data if isinstance(form.deadline.data, datetime) else datetime.strptime(
+        #         form.deadline.data, '%Y-%m-%d %H:%M:%S')
+        # Handling date fields correctly
         if form.date_of_doc.data:
-            model.date_of_doc = form.date_of_doc.data if isinstance(form.date_of_doc.data,
-                                                                    datetime) else datetime.strptime(
-                form.date_of_doc.data, '%Y-%m-%d %H:%M:%S')
+            if isinstance(form.date_of_doc.data, datetime):
+                model.date_of_doc = form.date_of_doc.data
+            elif isinstance(form.date_of_doc.data, date):
+                model.date_of_doc = datetime.combine(form.date_of_doc.data, datetime.min.time())
+            elif isinstance(form.date_of_doc.data, str):
+                model.date_of_doc = datetime.strptime(form.date_of_doc.data, '%Y-%m-%d %H:%M:%S')
+            else:
+                raise ValidationError("Invalid date format for date_of_doc.")
+
 
     def create_form(self, obj=None):
         form = super(BaseDataView, self).create_form(obj)
@@ -3842,7 +3849,7 @@ def create_admin_views(app, intervals):
                     raise ValidationError("Please check the values you entered.")
 
                 # Check if at least one inline record exists
-                if model.fi3.data != 0 and not model.base_data_inlines:
+                if model.fi3 != 0 and not model.base_data_inlines:
                     raise ValidationError("At least one Vendor record is required.")
 
                 if form.fi0.data == None or form.interval_ord.data == None:
