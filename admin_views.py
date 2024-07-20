@@ -84,9 +84,6 @@ def check_record_exists(form, company_id):
 
 
 
-
-
-
 class BaseDataView(ModelView):
     can_view_details = True
     can_export = True
@@ -882,7 +879,7 @@ class Tabella21_dataView(ModelView):
                      'fi1': 'UDD', 'fi2': 'PdR',
                      'fc1': 'Note'}
     column_descriptions = {'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
-                           'fi0': 'Inserire anno (es. 2024)',
+                           'fi0': 'Inserire anno (in formato YYYY)',
                            'fi1': 'Numero UDD', 'fi2': 'Numero PdR',
                            'fc1': 'Note (opzionale)'}
 
@@ -1159,7 +1156,7 @@ class Tabella22_dataView(ModelView):
                      'fi1': 'UDD', 'fi2': 'PdR',
                      'fc1': 'Note'}
     column_descriptions = {'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
-                           'fi0': 'Inserire anno (es. 2024)',
+                           'fi0': 'Inserire anno (in formato YYYY)',
                            'fi1': 'Numero UDD', 'fi2': 'Numero PdR',
                            'fc1': 'Note (opzionale)'}
 
@@ -2805,7 +2802,6 @@ class AttiDataView(BaseDataView):
         config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
                                           subarea_id=None)
         nr_intervals = config_values[0]
-        print(f"nr_intervals: {nr_intervals}, intervals: {self.intervals}")
 
         if self.intervals:
             current_interval = [t[2] for t in self.intervals if t[0] == nr_intervals]
@@ -2987,7 +2983,6 @@ class ContenziosiDataView(BaseDataView):
         config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
                                           subarea_id=None)
         nr_intervals = config_values[0]
-        print(f"nr_intervals: {nr_intervals}, intervals: {self.intervals}")
 
         if self.intervals:
             current_interval = [t[2] for t in self.intervals if t[0] == nr_intervals]
@@ -3169,7 +3164,6 @@ class IniziativeDsoAsDataView(BaseDataView):
         config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
                                           subarea_id=None)
         nr_intervals = config_values[0]
-        print(f"nr_intervals: {nr_intervals}, intervals: {self.intervals}")
 
         if self.intervals:
             current_interval = [t[2] for t in self.intervals if t[0] == nr_intervals]
@@ -3918,180 +3912,6 @@ def create_admin_views(app, intervals):
                 return model
 
 
-        class CustomAttiDataView(ModelView):
-            create_template = 'admin/area_1/create_base_data_2.html'
-            subarea_id = 2
-            area_id = 1
-            # inline_models = (BaseDataInlineModelForm(BaseDataInline),)
-
-            def __init__(self, *args, **kwargs):
-                self.intervals = kwargs.pop('intervals', None)
-                super().__init__(*args, **kwargs)
-                self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
-
-            form_extra_fields = {
-                'file_path': CustomFileUploadField('File', base_path=config.UPLOAD_FOLDER)
-            }
-
-            column_editable_list = ['fc1']
-            form_widget_args = {
-                'fc1': {'widget': XEditableWidget()},
-            }
-
-            column_list = (
-            'fi0', 'interval_ord', 'subject', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc1')
-            form_columns = ('fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc1')
-            column_labels = {'fi0': 'Anno di rif.', 'interval_ord': 'Periodo di rif.', 'subject': 'Oggetto',
-                             'number_of_doc': 'Nr. documento', 'date_of_doc': 'Data documento', 'file_path': 'Allegati',
-                             'no_action': 'Conferma assenza doc.', 'fc1': 'Note'}
-            column_descriptions = {'interval_ord': '(inserire il numero; es. 1: primo quadrimestre; 2: secondo ecc.)',
-                                   'fi0': 'Inserire anno (es. 2024)', 'subject_id': 'Seleziona oggetto',
-                                   'fc2': 'Note', 'file_path': 'Allegati',
-                                   'no_action': 'Dichiarazione di assenza di documenti (1)'}
-            column_filters = ('subject', 'fc2', 'no_action')
-            form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
-
-            column_default_sort = ('created_on', False)
-            column_searchable_list = ['fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'fc1']
-            column_filters = ['fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'fc1']
-            form_excluded_columns = ['user_id', 'company_id', 'status_id', 'created_by', 'created_on', 'updated_on']
-
-            # Customize the order of fields in the create form
-            form_create_rules = [
-                'number_of_doc', 'date_of_doc', 'file_path',
-                'fi0',
-                'interval_ord',
-                'fc1',
-                # FieldSet(('base_data_inlines',), 'Vendor Data')  # Include the inline form
-            ]
-
-            def scaffold_form(self):
-                form_class = super(CustomAttiDataView, self).scaffold_form()
-                current_year = datetime.now().year
-                year_choices = [(str(year), str(year)) for year in range(current_year - 5, current_year + 2)]
-                default_year = str(current_year)
-
-                form_class.fi0 = SelectField(
-                    'Anno',
-                    coerce=int,
-                    choices=year_choices,
-                    default=default_year
-                )
-
-                config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
-                                                  subarea_id=None)
-                nr_intervals = config_values[0]
-                current_interval = [t[2] for t in self.intervals if t[0] == nr_intervals]
-                first_element = current_interval[0] if current_interval else None
-                interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
-
-                form_class.interval_ord = SelectField(
-                    'Periodo',
-                    coerce=int,
-                    choices=interval_choices,
-                    default=first_element
-                )
-
-                return form_class
-
-            def create_model(self, form):
-                try:
-                    print('Starting create_model')
-                    model = self.model()
-                    form.populate_obj(model)
-
-                    # Ensure required fields are not null
-                    if model.fi0 is None or model.interval_ord is None:
-                        raise ValidationError("Fields 'Year' and 'Interval' cannot be null.")
-
-                    if 'number_of_doc' == None or 'date_of_doc' == None:
-                        raise ValidationError("Fields 'Number' and 'Date' of document cannot be null.")
-
-                    self.session.commit()
-                    return model
-
-                except Exception as ex:
-                    if not self.handle_view_exception(ex):
-                        raise
-                    flash(f'Failed to create record. {str(ex)}', 'error')
-                    self.session.rollback()
-                    return False
-
-            def on_model_change(self, form, model, is_created):
-                super().on_model_change(form, model, is_created)
-                form.populate_obj(model)
-                if is_created:
-                    model.created_on = datetime.now()
-                else:
-                    pass
-
-                user_id = current_user.id
-                try:
-                    company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-                except:
-                    company_id = None
-                    pass
-
-                area_id = self.area_id
-                subarea_id = self.subarea_id
-                subarea_name = self.subarea_name
-                status_id = 1
-
-                config_values = get_config_values(config_type='area_interval', company_id=company_id,
-                                                  area_id=self.area_id, subarea_id=self.subarea_id)
-                interval_id = config_values[0]
-                interval_ord = form.interval_ord.data
-                year_id = form.fi0.data
-                lexic_id = form.lexic_id.data
-                subject_id = form.subject_id.data
-
-                record_type = 'control_area'
-                data_type = self.subarea_name
-                legal_document_id = None
-
-                if form.interval_ord.data > 3 or form.interval_ord.data < 0:
-                    raise ValidationError(
-                        "Period must be less than or equal to the number of fractions (e.g. 4 for quarters, 12 for months)")
-                    pass
-
-                if form.fi0.data < 2000 or form.fi0.data > 2099:
-                    raise ValidationError("Please check the year")
-                    pass
-
-                with current_app.app_context():
-                    result, message = check_status_extended(is_created, company_id, lexic_id, subject_id,
-                                                            legal_document_id, interval_ord, interval_id, year_id,
-                                                            area_id, subarea_id, form.fi1.data, None, None, None, None,
-                                                            None, None, None, None, datetime.today(), db.session)
-
-                if result == False:
-                    raise ValidationError(message)
-                    pass
-
-                model.lexic_id = lexic_id
-                model.updated_on = datetime.now()
-                model.user_id = user_id
-                model.company_id = company_id
-                model.data_type = data_type
-                model.record_type = record_type
-                model.area_id = area_id
-                model.subarea_id = subarea_id
-                model.fi0 = year_id
-                model.interval_id = interval_id
-                model.interval_ord = interval_ord
-                model.status_id = status_id
-                model.subject_id = subject_id
-                model.legal_document_id = legal_document_id
-
-                if is_created:
-                    self.session.add(model)
-                else:
-                    self.session.merge(model)
-                self.session.commit()
-
-                return model
-
-
         # =================================================================================================================
         # Define custom form for CustomAdminIndexView2
         # =================================================================================================================
@@ -4152,7 +3972,7 @@ def create_admin_views(app, intervals):
                              'fc1': 'Note'}
             column_descriptions = {
                 'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
-                'fi0': 'Inserire anno (es. 2024)',
+                'fi0': 'Inserire anno (in formato YYYY)',
                 'fi1': '(numero)', 'fi2': 'di cui: PdR domestico', 'fi3': 'PdR non domestico',
                 'fn1': 'di cui % domestico', 'fn2': '% non domestico',
                 'fc1': '(opzionale)'}
