@@ -90,6 +90,12 @@
           justify-content: flex-start;
           margin-top: 10px;
         }
+
+        hr {
+            border: 0;
+            border-top: 1px solid #ccc;
+            margin: 20px 0;
+        }
     </style>
 </head>
 <body>
@@ -99,7 +105,14 @@
             <button onclick="goBack()">Back</button>
         </div>
         <h2>Sign Up</h2>
+
+        <!-- Thin Line -->
+        <hr class="my-4">
+
         <p style="text-align: center; font-weight: bold;">Please enter your data</p>
+
+        <!-- Thin Line -->
+        <hr class="my-4">
 
         <!-- Form -->
         <form method="post" action="{{ url_for('signup') }}">
@@ -222,6 +235,9 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Thin Line -->
+            <hr class="my-4">
 
             <!-- Terms of Use -->
             <div class="form-group terms full-width text-center">
