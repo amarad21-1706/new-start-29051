@@ -1849,67 +1849,80 @@ def get_phone_prefixes():
     return jsonify(fetch_phone_prefixes())
 
 
-# Function to fetch regions
-@app.route('/regions', methods=['GET'])
+
+@app.route('/regions')
 @cached(cache)
 def get_regions():
     country_code = request.args.get('country_code')
-    print('country code', country_code)
     if not country_code:
         return jsonify({'error': 'Country code is required'}), 400
 
-    subdivisions = [sub for sub in pycountry.subdivisions if sub.country_code == country_code]
-    regions = [{'code': sub.code, 'name': sub.name} for sub in subdivisions]
-    print('regions', regions)
-    return jsonify(regions)
-
-@app.route('/cities', methods=['GET'])
-@cached(cache)
-def get_cities():
-    region_name = request.args.get('region_name')
-    if not region_name:
-        return jsonify({'error': 'Region name is required'}), 400
-
-    url = f'http://api.geonames.org/searchJSON?formatted=true&q={region_name}&maxRows=10&username={GEONAMES_USERNAME}'
+    url = f'http://api.geonames.org/childrenJSON?geonameId={country_code}&username={GEONAMES_USERNAME}'
     response = requests.get(url)
     data = response.json()
-    cities = [{'name': city.get('name', 'Undefined'), 'geonameId': city.get('geonameId', 'Undefined')} for city in data.get('geonames', [])]
+    regions = [{'code': region['geonameId'], 'name': region['name']} for region in data.get('geonames', [])]
+    return jsonify(regions)
+
+@app.route('/cities')
+@cached(cache)
+def get_cities():
+    country_code = request.args.get('country_code')
+    region_code = request.args.get('region_code')
+    if not country_code or not region_code:
+        return jsonify({'error': 'Country code and region code are required'}), 400
+
+    url = f'http://api.geonames.org/searchJSON?formatted=true&country={country_code}&adminCode1={region_code}&maxRows=500&username={GEONAMES_USERNAME}'
+    response = requests.get(url)
+    data = response.json()
+    cities = [{'name': city['name'], 'geonameId': city['geonameId']} for city in data.get('geonames', [])]
     return jsonify(cities)
 
-@app.route('/zip_codes', methods=['GET'])
+@app.route('/zip_codes')
 @cached(cache)
 def get_zip_codes():
     city_name = request.args.get('city_name')
-    print('city', city_name)
     if not city_name:
         return jsonify({'error': 'City name is required'}), 400
 
-    url = f'http://api.geonames.org/postalCodeSearchJSON?placename={city_name}&maxRows=10&username={GEONAMES_USERNAME}'
+    url = f'http://api.geonames.org/postalCodeSearchJSON?placename={city_name}&maxRows=1000&username={GEONAMES_USERNAME}'
     response = requests.get(url)
     data = response.json()
     zip_codes = [{'postalCode': place.get('postalCode', 'Undefined')} for place in data.get('postalCodes', [])]
-
-    print('response - zip codes', data)
     return jsonify(zip_codes)
 
-@app.route('/streets', methods=['GET'])
+@app.route('/streets')
 @cached(cache)
 def get_streets():
     city_id = request.args.get('city_id')
     if not city_id:
         return jsonify({'error': 'City ID is required'}), 400
 
-    url = f'http://api.geonames.org/streetSearchJSON?geonameId={city_id}&maxRows=10&username={GEONAMES_USERNAME}'
+    url = f'http://api.geonames.org/streetSearchJSON?geonameId={city_id}&maxRows=1000&username={GEONAMES_USERNAME}'
     response = requests.get(url)
     data = response.json()
-    print('streets data', data)
     streets = [{'name': place.get('street', 'Undefined')} for place in data.get('streets', [])]
     return jsonify(streets)
 
+'''
+
+@app.route('/phone_prefixes')
+@cached(cache)
+def get_phone_prefixes():
+    prefixes = []
+    for country in pycountry.countries:
+        try:
+            example_number = phonenumbers.example_number_for_type(country.alpha_2, phonenumbers.PhoneNumberType.MOBILE)
+            phone_prefix = f"+{example_number.country_code}" if example_number else None
+            if phone_prefix:
+                prefixes.append({'prefix': phone_prefix, 'country': country.name})
+        except Exception as e:
+            print(f"Error with country {country.name}: {str(e)}")
+            continue
+    return jsonify(prefixes)
+'''
 
 @app.route('/countries', methods=['GET'])
 def get_countries():
-    print('Fetching countries')
     countries = [{'alpha2Code': country.alpha_2, 'name': country.name} for country in pycountry.countries]
     return jsonify(countries)
 
