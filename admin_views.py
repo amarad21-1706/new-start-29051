@@ -33,8 +33,8 @@ from copy import deepcopy
 
 from sqlalchemy import text
 
-from config.config import (get_if_active, get_subarea_name, get_current_interval, get_subarea_interval_type,
-create_audit_log, remove_duplicates, create_notification)
+from config.config import (get_if_active, get_subarea_name, get_current_interval, get_current_intervals,
+                           get_subarea_interval_type, create_audit_log, remove_duplicates, create_notification)
 
 from config.custom_fields import CustomFileUploadField  # Import the custom field
 
@@ -82,6 +82,83 @@ def check_record_exists(form, company_id):
     )
     return query.first() is not None
 
+
+
+
+
+
+class BaseDataView(ModelView):
+    can_view_details = True
+    can_export = True
+    can_edit = True
+    can_delete = True
+    can_create = True
+
+    def is_accessible(self):
+        return current_user.is_authenticated and (current_user.has_role('Admin') or current_user.has_role('Employee')
+                                                  or current_user.has_role('Manager'))
+
+    def _handle_view(self, name, **kwargs):
+        if not self.is_accessible():
+            return redirect(url_for('login', next=request.url))
+
+    def can_edit(self):
+        return current_user.is_authenticated and (current_user.has_role('Admin') or current_user.has_role('Manager')
+                                                  or current_user.has_role('Employee'))
+
+    def can_delete(self):
+        return current_user.is_authenticated and current_user.has_role('Admin')
+
+    def can_create(self):
+        return current_user.is_authenticated and (current_user.has_role('Admin') or current_user.has_role('Manager')
+                                                  or current_user.has_role('Employee'))
+
+    def can_view_details(self):
+        return current_user.is_authenticated and (current_user.has_role('Admin') or current_user.has_role('Manager')
+                                                  or current_user.has_role('Employee'))
+
+    def is_accessible(self):
+        # Add logic here to check if the user has access to this view
+        return True
+
+    def inaccessible_callback(self, name, **kwargs):
+        # Redirect to the login page if the user doesn't have access
+        return redirect(url_for('login', next=request.url))
+
+    def on_model_change(self, form, model, is_created):
+        # Convert string dates to datetime objects
+        for field_name in ['created_on', 'updated_on', 'deadline', 'date_of_doc']:
+            field = getattr(form, field_name, None)
+            if field and field.data and isinstance(field.data, str):
+                model_data = self._parse_datetime_string(field.data)
+                setattr(model, field_name, model_data)
+
+    def on_form_prefill(self, form, id):
+        # Ensure date fields are datetime objects
+        for field_name in ['created_on', 'updated_on', 'deadline', 'date_of_doc']:
+            field = getattr(form, field_name, None)
+            data = getattr(field, 'data', None)
+            if data and isinstance(data, str):
+                form_data = self._parse_datetime_string(data)
+                setattr(field, 'data', form_data)
+
+    def _parse_datetime_string(self, date_string):
+        """Parse datetime string to datetime object with multiple formats."""
+        datetime_formats = [
+            "%Y-%m-%d %H:%M:%S.%f%z",  # with microseconds and timezone
+            "%Y-%m-%d %H:%M:%S.%f",  # with microseconds
+            "%Y-%m-%d %H:%M:%S%z",  # with timezone
+            "%Y-%m-%d %H:%M:%S",  # without microseconds and timezone
+            "%Y-%m-%d"  # date only
+        ]
+        for fmt in datetime_formats:
+            try:
+                return datetime.strptime(date_string, fmt)
+            except ValueError:
+                continue
+        raise ValueError(f"Time data '{date_string}' does not match any of the formats.")
+
+
 class CustomBooleanField(BooleanField):
     def process_formdata(self, valuelist):
         if not valuelist or valuelist[0] == '':  # Check for empty string or empty list
@@ -97,7 +174,6 @@ class CheckboxField(BooleanField):
             self.data = False
     def populate_obj(self, obj, name):
         setattr(obj, name, "Yes" if self.data else "No")  # Customize as per your model
-
 
 
 class DocumentsAssignedBaseDataView(ModelView):
@@ -658,7 +734,9 @@ class DocumentsBaseDataDetails(ModelView):
 
 # BASE PER LE View 2, 3, 4, 6, 7 e 8 (NO FLUSSI PRE-COMPLAINT!)
 # ==================================
+
 class BaseDataViewCommon(ModelView):
+    can_view_details = True
     can_export = True
     inline_models = (StepBaseDataInlineForm(StepBaseData),)
     form_extra_fields = {
@@ -684,10 +762,19 @@ class BaseDataViewCommon(ModelView):
             default=default_year
         )
 
-        config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id, subarea_id=None)
+        config_values = get_config_values(config_type='area_interval', company_id=None,
+                                          area_id=self.area_id, subarea_id=None)
         nr_intervals = config_values[0]
 
-        current_interval = [t[2] for t in self.intervals if t[0] == nr_intervals]
+        # config_values = get_config_values(config_type='area_interval', company_id=None, area_id=1,
+        # subarea_id=None)
+        # intervals = get_current_intervals(db.session)
+
+        try:
+            current_interval = [t[2] for t in self.intervals if t[0] == nr_intervals]
+        except:
+            current_interval = intervals[1]
+
         first_element = current_interval[0] if current_interval else None
         interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
 
@@ -743,10 +830,13 @@ class BaseDataViewCommon(ModelView):
 
     def create_model(self, form):
         try:
+            print("Creating a new model instance")
             model = self.model()
             form.populate_obj(model)
+            print(f"Model populated: {model.__dict__}")
             self.session.add(model)
             self.session.commit()
+            print(f"Model created with values: {model.__dict__}")
             return model
         except Exception as ex:
             if not self.handle_view_exception(ex):
@@ -756,138 +846,8 @@ class BaseDataViewCommon(ModelView):
             return False
 
     def on_model_change(self, form, model, is_created):
-        super().on_model_change(form, model, is_created)
-        form.populate_obj(model)
-
-        uploaded_file = form.file_path.data
-        if is_created:
-            model.created_on = datetime.now()
-
-        user_id = current_user.id
-        try:
-            company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-        except:
-            company_id = None
-
-        area_id = self.area_id
-        subarea_id = self.subarea_id
-        data_type = self.subarea_name
-        nr_intervals = get_subarea_interval_type(self.area_id, self.subarea_id)
-        interval_id = nr_intervals
-        status_id = 1
-        record_type = 'control_area'
-
-        year_id = form.fi0.data
-        interval_ord = form.interval_ord.data
-        subject_id = form.subject_id.data
-        no_action = form.no_action.data
-
-        if form.date_of_doc.data and form.number_of_doc.data and form.fi0.data and form.interval_ord.data and form.subject_id.data:
-            if check_record_exists(form, company_id):
-                raise ValidationError("Document already exists!")
-
-        if not form.date_of_doc.data and not form.number_of_doc.data:
-            raise ValidationError("Document data is missing.")
-
-        if form.date_of_doc.data:
-            if form.date_of_doc.data > datetime.today().date():
-                raise ValidationError("Date of document cannot be a future date.")
-
-        if form.date_of_doc.data:
-            if form.date_of_doc.data.year != form.fi0.data:
-                raise ValidationError("Date of document must be consistent with the reporting year.")
-
-        if not form.fi0.data or not form.interval_ord.data:
-            raise ValidationError("Time interval reference fields cannot be null.")
-
-        if not form.subject_id.data:
-            raise ValidationError("Document type can not be null.")
-
-        if form.interval_ord.data > 3 or form.interval_ord.data < 0:
-            raise ValidationError("Period must be less than or equal to the number of fractions (e.g. 4 for quarters, 12 for months).")
-
-        if form.fi0.data < 2000 or form.fi0.data > 2099:
-            raise ValidationError("Please check the year")
-
-        if self._uncheck_if_document(model, form):
-            pass
-        if self._validate_no_action(model, form):
-            pass
-
-        with current_app.app_context():
-            result, message = check_status_limited(is_created, company_id, subject_id, None, year_id, interval_ord, interval_id, area_id, subarea_id, datetime.today(), db.session)
-
-        if not result:
-            raise ValidationError(message)
-
-        model.updated_on = datetime.now()
-        model.user_id = user_id
-        model.company_id = company_id
-        model.data_type = data_type
-        model.record_type = record_type
-        model.area_id = area_id
-        model.subarea_id = subarea_id
-        model.fi0 = year_id
-        model.interval_id = interval_id
-        model.interval_ord = interval_ord
-        model.status_id = status_id
-        model.subject_id = subject_id
-        model.legal_document_id = None
-        model.no_action = no_action
-
-        if is_created:
-            self.session.add(model)
-        else:
-            self.session.merge(model)
-        self.session.commit()
-
-        remove_duplicates(self.session, StepBaseData, ['base_data_id', 'workflow_id', 'step_id'])
-
-        inline_form_data = form.data.get('steps_relationship', [])
-        if form.date_of_doc.data:
-            inline_data_string = f"At {datetime.now()} a new document dated {form.date_of_doc.data.year} "
-            inline_data_string += f"was created by the user {user_id} ({company_id}. "
-            inline_data_string += f"Area {area_id}, subarea {subarea_id}, reference period {interval_ord}/{interval_id}/{year_id}. "
-
-        for data in inline_form_data:
-            for field_name, field_value in data.items():
-                inline_data_string += f"{field_name}: {field_value}\n"
-
-        try:
-            create_notification(
-                self.session,
-                company_id=company_id,
-                user_id=user_id,
-                sender="System",
-                message_type="noticeboard",
-                subject="Document and Workflow Created",
-                body=inline_data_string,
-                lifespan='one-off'
-            )
-        except:
-            print('Error creating notification')
-
-        action_type = 'update'
-        if is_created:
-            action_type = 'create'
-
-        try:
-            create_audit_log(
-                self.session,
-                company_id=company_id,
-                user_id=user_id,
-                base_data_id=None,
-                workflow_id=None,
-                step_id=None,
-                action=action_type,
-                details=inline_data_string
-            )
-        except:
-            print('Error creating audit trail record')
-
-        return model
-
-
+        # Overridden in subclass
+        pass
 
 
 class Tabella21_dataView(ModelView):
@@ -2714,21 +2674,6 @@ class MyIntegerIntervalField(IntegerField):
 # TODO *** salva file (attachment) in folder company (dove si trova? perché non funziona più?)
 
 
-class AttiDataView(BaseDataViewCommon):
-    create_template = 'admin/area_1/create_base_data_2.html'
-    subarea_id = 2
-    area_id = 1
-
-    column_list = ('fi0', 'interval_ord', 'subject', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    form_columns = ('fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    column_labels = {'fi0': 'Anno di rif.', 'interval_ord': 'Periodo di rif.', 'subject': 'Oggetto',
-                     'number_of_doc': 'Nr. documento', 'date_of_doc': 'Data documento', 'file_path': 'Allegati',
-                     'no_action': 'Conferma assenza doc.', 'fc2': 'Note'}
-    column_descriptions = {'interval_ord': '(inserire il numero; es. 1: primo quadrimestre; 2: secondo ecc.)',
-                           'fi0': 'Inserire anno (es. 2024)', 'subject_id': 'Seleziona oggetto',
-                           'fc2': 'Note', 'file_path': 'Allegati', 'no_action': 'Dichiarazione di assenza di documenti (1)'}
-    column_filters = ('subject', 'fc2', 'no_action')
-    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
 
 
 class ContingenciesDataView(ModelView):
@@ -2751,6 +2696,23 @@ class ContingenciesDataView(ModelView):
         url = self.get_show_survey_url(context)
         return Markup('<a href="' + url + '">View Survey</a>')  # Generate HTML link
 
+
+
+class DocumentUploadView(BaseDataViewCommon):
+    create_template = 'admin/area_1/create_base_data_8.html'
+    subarea_id = 1
+    area_id = 3
+
+    column_list = ('fi0', 'interval_ord', 'subject', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
+    form_columns = ('fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
+    column_labels = {'fi0': 'Anno di rif.', 'interval_ord': 'Periodo di rif.', 'subject': 'Oggetto',
+                     'number_of_doc': 'Nr. documento', 'date_of_doc': 'Data documento', 'file_path': 'Allegati',
+                     'no_action': 'Conferma assenza doc.', 'fc2': 'Note'}
+    column_descriptions = {'interval_ord': '(inserire il numero; es. 1: primo quadrimestre; 2: secondo ecc.)',
+                           'fi0': 'Inserire anno (es. 2024)', 'subject_id': 'Seleziona oggetto',
+                           'fc2': 'Note', 'file_path': 'Allegati', 'no_action': 'Dichiarazione di assenza di documenti (1)'}
+    column_filters = ('subject', 'fc2', 'no_action')
+    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
 
 
 
@@ -2782,91 +2744,913 @@ class ContingenciesDataView222(BaseDataViewCommon):
         return redirect(redirect_url)
 
 
-class ContenziosiDataView(BaseDataViewCommon):
+
+
+class AttiDataView(BaseDataView):
+    create_template = 'admin/area_1/create_base_data_2.html'
+    subarea_id = 2
+    area_id = 1
+
+    # Adjusted order of fields
+    column_list = ('number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
+    form_columns = ('number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
+
+    column_labels = {
+        'number_of_doc': 'Nr. documento',
+        'date_of_doc': 'Data documento',
+        'file_path': 'Allegato',
+        'no_action': 'Conferma assenza doc.',
+        'subject_id': 'Oggetto',
+        'fi0': 'Anno di rif.',
+        'interval_ord': 'Periodo di rif.',
+        'fc2': 'Note'
+    }
+
+    column_descriptions = {
+        'number_of_doc': 'Nr. documento allegato',
+        'date_of_doc': 'Data documento allegato',
+        'file_path': 'Allegato',
+        'no_action': 'Dichiarazione di assenza di documenti da allegare (1)',
+        'subject_id': 'Seleziona oggetto',
+        'fi0': 'Inserire anno di riferimento (in formato YYYY)',
+        'interval_ord': '(inserire il periodo; es. 1: primo quadrimestre; 2: secondo ecc.)',
+        'fc2': 'Note',
+    }
+
+    column_filters = ('number_of_doc', 'date_of_doc', 'subject_id', 'fi0', 'interval_ord', 'fc2')
+    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
+
+    def __init__(self, model, session, **kwargs):
+        self.intervals = kwargs.pop('intervals', [])
+        self.area_id = kwargs.pop('area_id', None)
+        self.subarea_id = kwargs.pop('subarea_id', None)
+        super().__init__(model, session, **kwargs)
+        self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
+
+    def scaffold_form(self):
+        form_class = super().scaffold_form()
+
+        current_year = datetime.now().year
+        year_choices = [(year, year) for year in range(current_year - 11, current_year + 1)]
+        default_year = current_year
+
+        form_class.fi0 = SelectField(
+            'Anno di rif.',
+            coerce=int,
+            choices=year_choices,
+            default=default_year,
+            widget=Select2Widget()
+        )
+
+        config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
+                                          subarea_id=None)
+        nr_intervals = config_values[0]
+        print(f"nr_intervals: {nr_intervals}, intervals: {self.intervals}")
+
+        if self.intervals:
+            current_interval = [t[2] for t in self.intervals if t[0] == nr_intervals]
+            first_element = current_interval[0] if current_interval else None
+            interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
+        else:
+            first_element = None
+            interval_choices = []
+
+        form_class.interval_ord = SelectField(
+            'Periodo di rif.',
+            coerce=int,
+            choices=interval_choices,
+            default=first_element,
+            widget=Select2Widget()
+        )
+
+        form_class.subject_id = SelectField(
+            'Tipo di documento',
+            validators=[InputRequired()],
+            coerce=int,
+            choices=[(subject.id, subject.name) for subject in Subject.query.filter_by(tier_1='Legale').all()],
+            widget=Select2Widget()
+        )
+
+        form_class.no_action = BooleanField('Dichiarazione di assenza di documenti')  # Use BooleanField
+        form_class.fc2 = StringField('Note')
+
+        # Ensure base_path is set for FileUploadField
+        upload_folder = current_app.config.get('UPLOAD_FOLDER', 'uploads')
+        form_class.file_path = FileUploadField('Allegati',
+                                               base_path=upload_folder)  # Correctly display file upload button
+
+        return form_class
+
+    def on_model_change(self, form, model, is_created):
+
+        # Custom validation logic
+        if not form.fi0.data or not form.interval_ord.data:
+            raise ValidationError("Time interval reference fields cannot be null")
+
+        if not form.date_of_doc.data or not form.number_of_doc.data:
+            raise ValidationError("Document data is missing.")
+
+        if form.date_of_doc.data.year != form.fi0.data:
+            raise ValidationError("Date of document must be consistent with the reporting year.")
+
+        if not form.file_path.data and not form.no_action.data:
+            raise ValidationError(
+                'If no file exists, then this absence must be acknowledged by checking the "no documents" box.')
+
+        if form.file_path.data and form.no_action.data:
+            raise ValidationError(
+                'The no-document box is checked but a document was uploaded - please confirm either of the two.')
+
+        # Populate the necessary fields
+        model.user_id = current_user.id
+        model.company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
+        model.area_id = self.area_id
+        model.subarea_id = self.subarea_id
+        model.interval_id = form.interval_ord.data  # Assuming interval_id is same as interval_ord
+        model.created_by = current_user.id
+        # Check for duplicate documents
+        existing_document = self.session.query(self.model).filter_by(
+            number_of_doc=form.number_of_doc.data,
+            date_of_doc=form.date_of_doc.data,
+            company_id=model.company_id,
+            subarea_id=model.subarea_id,
+            area_id=model.area_id,
+            subject_id=form.subject_id.data,
+        ).first()
+        if existing_document and existing_document.id != model.id:
+            raise ValidationError('A document with the same number, date, subarea, area, and subject already exists.')
+
+        if is_created:
+            model.status_id = 1
+            model.created_on = datetime.now()
+        else:
+            model.status_id = 14 # Updated
+
+        super().on_model_change(form, model, is_created)
+
+    def get_query(self):
+        query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
+        if current_user.is_authenticated:
+            if current_user.has_role('Admin') or current_user.has_role('Authority'):
+                return query
+            elif current_user.has_role('Manager'):
+                subquery = db.session.query(CompanyUsers.company_id).filter(
+                    CompanyUsers.user_id == current_user.id).subquery()
+                query = query.filter(self.model.company_id.in_(subquery))
+            elif current_user.has_role('Employee'):
+                return query.filter(self.model.user_id == current_user.id)
+        return query.filter(self.model.id < 0)
+
+    def create_form(self, obj=None):
+        form = super(AttiDataView, self).create_form(obj)
+        form.subject_id = form.subject_id
+        form.number_of_doc = form.number_of_doc
+        form.date_of_doc = form.date_of_doc
+        form.file_path = form.file_path
+        form.no_action = form.no_action
+        form.fi0 = form.fi0
+        form.interval_ord = form.interval_ord
+        form.fc2 = form.fc2
+        return form
+
+    def edit_form(self, obj=None):
+        form = super(AttiDataView, self).edit_form(obj)
+        form.subject_id = form.subject_id
+        form.number_of_doc = form.number_of_doc
+        form.date_of_doc = form.date_of_doc
+        form.file_path = form.file_path
+        form.no_action = form.no_action
+        form.fi0 = form.fi0
+        form.interval_ord = form.interval_ord
+        form.fc2 = form.fc2
+        return form
+
+
+
+
+class ContenziosiDataView(BaseDataView):
     create_template = 'admin/area_1/create_base_data_4.html'
     subarea_id = 4
     area_id = 1
 
-    column_list = ('fi0', 'interval_ord', 'subject', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    form_columns = ('fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    column_labels = {'fi0': 'Anno di rif.', 'interval_ord': 'Periodo di rif.', 'subject': 'Oggetto',
-                     'number_of_doc': 'Nr. documento', 'date_of_doc': 'Data documento', 'file_path': 'Allegati',
-                     'no_action': 'Conferma assenza doc.', 'fc2': 'Note'}
-    column_descriptions = {'interval_ord': '(inserire il numero; es. 1: primo quadrimestre; 2: secondo ecc.)',
-                           'fi0': 'Inserire anno (es. 2024)', 'subject_id': 'Seleziona oggetto',
-                           'fc2': 'Note', 'file_path': 'Allegati', 'no_action': 'Dichiarazione di assenza di documenti (1)'}
-    column_filters = ('subject', 'fc2', 'no_action')
+    # Adjusted order of fields
+    column_list = ('number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
+    form_columns = ('number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
+
+    column_labels = {
+        'number_of_doc': 'Nr. documento',
+        'date_of_doc': 'Data documento',
+        'file_path': 'Allegato',
+        'no_action': 'Conferma assenza doc.',
+        'subject_id': 'Oggetto',
+        'fi0': 'Anno di rif.',
+        'interval_ord': 'Periodo di rif.',
+        'fc2': 'Note'
+    }
+
+    column_descriptions = {
+        'number_of_doc': 'Nr. documento allegato',
+        'date_of_doc': 'Data documento allegato',
+        'file_path': 'Allegato',
+        'no_action': 'Dichiarazione di assenza di documenti da allegare (1)',
+        'subject_id': 'Seleziona oggetto',
+        'fi0': 'Inserire anno di riferimento (in formato YYYY)',
+        'interval_ord': '(inserire il periodo; es. 1: primo quadrimestre; 2: secondo ecc.)',
+        'fc2': 'Note',
+    }
+
+    column_filters = ('number_of_doc', 'date_of_doc', 'subject_id', 'fi0', 'interval_ord', 'fc2')
     form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
 
+    def __init__(self, model, session, **kwargs):
+        self.intervals = kwargs.pop('intervals', [])
+        self.area_id = kwargs.pop('area_id', None)
+        self.subarea_id = kwargs.pop('subarea_id', None)
+        super().__init__(model, session, **kwargs)
+        self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
+
+    def scaffold_form(self):
+        form_class = super().scaffold_form()
+
+        current_year = datetime.now().year
+        year_choices = [(year, year) for year in range(current_year - 11, current_year + 1)]
+        default_year = current_year
+
+        form_class.fi0 = SelectField(
+            'Anno di rif.',
+            coerce=int,
+            choices=year_choices,
+            default=default_year,
+            widget=Select2Widget()
+        )
+
+        config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
+                                          subarea_id=None)
+        nr_intervals = config_values[0]
+        print(f"nr_intervals: {nr_intervals}, intervals: {self.intervals}")
+
+        if self.intervals:
+            current_interval = [t[2] for t in self.intervals if t[0] == nr_intervals]
+            first_element = current_interval[0] if current_interval else None
+            interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
+        else:
+            first_element = None
+            interval_choices = []
+
+        form_class.interval_ord = SelectField(
+            'Periodo di rif.',
+            coerce=int,
+            choices=interval_choices,
+            default=first_element,
+            widget=Select2Widget()
+        )
+
+        form_class.subject_id = SelectField(
+            'Tipo di documento',
+            validators=[InputRequired()],
+            coerce=int,
+            choices=[(subject.id, subject.name) for subject in Subject.query.filter_by(tier_1='Legale').all()],
+            widget=Select2Widget()
+        )
+
+        form_class.no_action = BooleanField('Dichiarazione di assenza di documenti')  # Use BooleanField
+        form_class.fc2 = StringField('Note')
+
+        # Ensure base_path is set for FileUploadField
+        upload_folder = current_app.config.get('UPLOAD_FOLDER', 'uploads')
+        form_class.file_path = FileUploadField('Allegati',
+                                               base_path=upload_folder)  # Correctly display file upload button
+
+        return form_class
+
+    def on_model_change(self, form, model, is_created):
+
+        # Custom validation logic
+        if not form.fi0.data or not form.interval_ord.data:
+            raise ValidationError("Time interval reference fields cannot be null")
+
+        if not form.date_of_doc.data or not form.number_of_doc.data:
+            raise ValidationError("Document data is missing.")
+
+        if form.date_of_doc.data.year != form.fi0.data:
+            raise ValidationError("Date of document must be consistent with the reporting year.")
+
+        if not form.file_path.data and not form.no_action.data:
+            raise ValidationError(
+                'If no file exists, then this absence must be acknowledged by checking the "no documents" box.')
+
+        if form.file_path.data and form.no_action.data:
+            raise ValidationError(
+                'The no-document box is checked but a document was uploaded - please confirm either of the two.')
+
+        # Populate the necessary fields
+        model.user_id = current_user.id
+        model.company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
+        model.area_id = self.area_id
+        model.subarea_id = self.subarea_id
+        model.interval_id = form.interval_ord.data  # Assuming interval_id is same as interval_ord
+        model.created_by = current_user.id
+        # Check for duplicate documents
+        existing_document = self.session.query(self.model).filter_by(
+            number_of_doc=form.number_of_doc.data,
+            date_of_doc=form.date_of_doc.data,
+            company_id=model.company_id,
+            subarea_id=model.subarea_id,
+            area_id=model.area_id,
+            subject_id=form.subject_id.data,
+        ).first()
+        if existing_document and existing_document.id != model.id:
+            raise ValidationError('A document with the same number, date, subarea, area, and subject already exists.')
+
+        if is_created:
+            model.status_id = 1
+            model.created_on = datetime.now()
+        else:
+            model.status_id = 14 # Updated
+
+        super().on_model_change(form, model, is_created)
+
+    def get_query(self):
+        query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
+        if current_user.is_authenticated:
+            if current_user.has_role('Admin') or current_user.has_role('Authority'):
+                return query
+            elif current_user.has_role('Manager'):
+                subquery = db.session.query(CompanyUsers.company_id).filter(
+                    CompanyUsers.user_id == current_user.id).subquery()
+                query = query.filter(self.model.company_id.in_(subquery))
+            elif current_user.has_role('Employee'):
+                return query.filter(self.model.user_id == current_user.id)
+        return query.filter(self.model.id < 0)
+
+    def create_form(self, obj=None):
+        form = super(ContenziosiDataView, self).create_form(obj)
+        form.subject_id = form.subject_id
+        form.number_of_doc = form.number_of_doc
+        form.date_of_doc = form.date_of_doc
+        form.file_path = form.file_path
+        form.no_action = form.no_action
+        form.fi0 = form.fi0
+        form.interval_ord = form.interval_ord
+        form.fc2 = form.fc2
+        return form
+
+    def edit_form(self, obj=None):
+        form = super(ContenziosiDataView, self).edit_form(obj)
+        form.subject_id = form.subject_id
+        form.number_of_doc = form.number_of_doc
+        form.date_of_doc = form.date_of_doc
+        form.file_path = form.file_path
+        form.no_action = form.no_action
+        form.fi0 = form.fi0
+        form.interval_ord = form.interval_ord
+        form.fc2 = form.fc2
+        return form
 
 
-class IniziativeDsoAsDataView(BaseDataViewCommon):
-    create_template = 'admin/area_1/create_base_data_6.html'
+
+
+class IniziativeDsoAsDataView(BaseDataView):
+    create_template = 'admin/area_1/create_base_data_8.html'
     subarea_id = 6
     area_id = 1
 
-    column_list = ('fi0', 'interval_ord', 'subject', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    form_columns = ('fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    column_labels = {'fi0': 'Anno di rif.', 'interval_ord': 'Periodo di rif.', 'subject': 'Oggetto',
-                     'number_of_doc': 'Nr. documento', 'date_of_doc': 'Data documento', 'file_path': 'Allegati',
-                     'no_action': 'Conferma assenza doc.', 'fc2': 'Note'}
-    column_descriptions = {'interval_ord': '(inserire il numero; es. 1: primo quadrimestre; 2: secondo ecc.)',
-                           'fi0': 'Inserire anno (es. 2024)', 'subject_id': 'Seleziona oggetto',
-                           'fc2': 'Note', 'file_path': 'Allegati', 'no_action': 'Dichiarazione di assenza di documenti (1)'}
-    column_filters = ('subject', 'fc2', 'no_action')
+    # Adjusted order of fields
+    column_list = ('number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
+    form_columns = ('number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
+
+    column_labels = {
+        'number_of_doc': 'Nr. documento',
+        'date_of_doc': 'Data documento',
+        'file_path': 'Allegato',
+        'no_action': 'Conferma assenza doc.',
+        'subject_id': 'Oggetto',
+        'fi0': 'Anno di rif.',
+        'interval_ord': 'Periodo di rif.',
+        'fc2': 'Note'
+    }
+
+    column_descriptions = {
+        'number_of_doc': 'Nr. documento allegato',
+        'date_of_doc': 'Data documento allegato',
+        'file_path': 'Allegato',
+        'no_action': 'Dichiarazione di assenza di documenti da allegare (1)',
+        'subject_id': 'Seleziona oggetto',
+        'fi0': 'Inserire anno di riferimento (in formato YYYY)',
+        'interval_ord': '(inserire il periodo; es. 1: primo quadrimestre; 2: secondo ecc.)',
+        'fc2': 'Note',
+    }
+
+    column_filters = ('number_of_doc', 'date_of_doc', 'subject_id', 'fi0', 'interval_ord', 'fc2')
     form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
 
+    def __init__(self, model, session, **kwargs):
+        self.intervals = kwargs.pop('intervals', [])
+        self.area_id = kwargs.pop('area_id', None)
+        self.subarea_id = kwargs.pop('subarea_id', None)
+        super().__init__(model, session, **kwargs)
+        self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
+
+    def scaffold_form(self):
+        form_class = super().scaffold_form()
+
+        current_year = datetime.now().year
+        year_choices = [(year, year) for year in range(current_year - 11, current_year + 1)]
+        default_year = current_year
+
+        form_class.fi0 = SelectField(
+            'Anno di rif.',
+            coerce=int,
+            choices=year_choices,
+            default=default_year,
+            widget=Select2Widget()
+        )
+
+        config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
+                                          subarea_id=None)
+        nr_intervals = config_values[0]
+        print(f"nr_intervals: {nr_intervals}, intervals: {self.intervals}")
+
+        if self.intervals:
+            current_interval = [t[2] for t in self.intervals if t[0] == nr_intervals]
+            first_element = current_interval[0] if current_interval else None
+            interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
+        else:
+            first_element = None
+            interval_choices = []
+
+        form_class.interval_ord = SelectField(
+            'Periodo di rif.',
+            coerce=int,
+            choices=interval_choices,
+            default=first_element,
+            widget=Select2Widget()
+        )
+
+        form_class.subject_id = SelectField(
+            'Tipo di documento',
+            validators=[InputRequired()],
+            coerce=int,
+            choices=[(subject.id, subject.name) for subject in Subject.query.filter_by(tier_1='Legale').all()],
+            widget=Select2Widget()
+        )
+
+        form_class.no_action = BooleanField('Dichiarazione di assenza di documenti')  # Use BooleanField
+        form_class.fc2 = StringField('Note')
+
+        # Ensure base_path is set for FileUploadField
+        upload_folder = current_app.config.get('UPLOAD_FOLDER', 'uploads')
+        form_class.file_path = FileUploadField('Allegati',
+                                               base_path=upload_folder)  # Correctly display file upload button
+
+        return form_class
+
+    def on_model_change(self, form, model, is_created):
+
+        # Custom validation logic
+        if not form.fi0.data or not form.interval_ord.data:
+            raise ValidationError("Time interval reference fields cannot be null")
+
+        if not form.date_of_doc.data or not form.number_of_doc.data:
+            raise ValidationError("Document data is missing.")
+
+        if form.date_of_doc.data.year != form.fi0.data:
+            raise ValidationError("Date of document must be consistent with the reporting year.")
+
+        if not form.file_path.data and not form.no_action.data:
+            raise ValidationError(
+                'If no file exists, then this absence must be acknowledged by checking the "no documents" box.')
+
+        if form.file_path.data and form.no_action.data:
+            raise ValidationError(
+                'The no-document box is checked but a document was uploaded - please confirm either of the two.')
+
+        # Populate the necessary fields
+        model.user_id = current_user.id
+        model.company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
+        model.area_id = self.area_id
+        model.subarea_id = self.subarea_id
+        model.interval_id = form.interval_ord.data  # Assuming interval_id is same as interval_ord
+        model.created_by = current_user.id
+        # Check for duplicate documents
+        existing_document = self.session.query(self.model).filter_by(
+            number_of_doc=form.number_of_doc.data,
+            date_of_doc=form.date_of_doc.data,
+            company_id=model.company_id,
+            subarea_id=model.subarea_id,
+            area_id=model.area_id,
+            subject_id=form.subject_id.data,
+        ).first()
+        if existing_document and existing_document.id != model.id:
+            raise ValidationError('A document with the same number, date, subarea, area, and subject already exists.')
+
+        if is_created:
+            model.status_id = 1
+            model.created_on = datetime.now()
+        else:
+            model.status_id = 14 # Updated
+
+        super().on_model_change(form, model, is_created)
+
+    def get_query(self):
+        query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
+        if current_user.is_authenticated:
+            if current_user.has_role('Admin') or current_user.has_role('Authority'):
+                return query
+            elif current_user.has_role('Manager'):
+                subquery = db.session.query(CompanyUsers.company_id).filter(
+                    CompanyUsers.user_id == current_user.id).subquery()
+                query = query.filter(self.model.company_id.in_(subquery))
+            elif current_user.has_role('Employee'):
+                return query.filter(self.model.user_id == current_user.id)
+        return query.filter(self.model.id < 0)
+
+    def create_form(self, obj=None):
+        form = super(IniziativeDsoAsDataView, self).create_form(obj)
+        form.subject_id = form.subject_id
+        form.number_of_doc = form.number_of_doc
+        form.date_of_doc = form.date_of_doc
+        form.file_path = form.file_path
+        form.no_action = form.no_action
+        form.fi0 = form.fi0
+        form.interval_ord = form.interval_ord
+        form.fc2 = form.fc2
+        return form
+
+    def edit_form(self, obj=None):
+        form = super(IniziativeDsoAsDataView, self).edit_form(obj)
+        form.subject_id = form.subject_id
+        form.number_of_doc = form.number_of_doc
+        form.date_of_doc = form.date_of_doc
+        form.file_path = form.file_path
+        form.no_action = form.no_action
+        form.fi0 = form.fi0
+        form.interval_ord = form.interval_ord
+        form.fc2 = form.fc2
+        return form
 
 
-class IniziativeAsDsoDataView(BaseDataViewCommon):
+
+
+class IniziativeAsDsoDataView(BaseDataView):
     create_template = 'admin/area_1/create_base_data_7.html'
     subarea_id = 7
     area_id = 1
 
-    column_list = ('fi0', 'interval_ord', 'subject', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    form_columns = ('fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    column_labels = {'fi0': 'Anno di rif.', 'interval_ord': 'Periodo di rif.', 'subject': 'Oggetto',
-                     'number_of_doc': 'Nr. documento', 'date_of_doc': 'Data documento', 'file_path': 'Allegati',
-                     'no_action': 'Conferma assenza doc.', 'fc2': 'Note'}
-    column_descriptions = {'interval_ord': '(inserire il numero; es. 1: primo quadrimestre; 2: secondo ecc.)',
-                           'fi0': 'Inserire anno (es. 2024)', 'subject_id': 'Seleziona oggetto',
-                           'fc2': 'Note', 'file_path': 'Allegati', 'no_action': 'Dichiarazione di assenza di documenti (1)'}
-    column_filters = ('subject', 'fc2', 'no_action')
+    # Adjusted order of fields
+    column_list = ('number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
+    form_columns = ('number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
+
+    column_labels = {
+        'number_of_doc': 'Nr. documento',
+        'date_of_doc': 'Data documento',
+        'file_path': 'Allegato',
+        'no_action': 'Conferma assenza doc.',
+        'subject_id': 'Oggetto',
+        'fi0': 'Anno di rif.',
+        'interval_ord': 'Periodo di rif.',
+        'fc2': 'Note'
+    }
+
+    column_descriptions = {
+        'number_of_doc': 'Nr. documento allegato',
+        'date_of_doc': 'Data documento allegato',
+        'file_path': 'Allegato',
+        'no_action': 'Dichiarazione di assenza di documenti da allegare (1)',
+        'subject_id': 'Seleziona oggetto',
+        'fi0': 'Inserire anno di riferimento (in formato YYYY)',
+        'interval_ord': '(inserire il periodo; es. 1: primo quadrimestre; 2: secondo ecc.)',
+        'fc2': 'Note',
+    }
+
+    column_filters = ('number_of_doc', 'date_of_doc', 'subject_id', 'fi0', 'interval_ord', 'fc2')
     form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
 
+    def __init__(self, model, session, **kwargs):
+        self.intervals = kwargs.pop('intervals', [])
+        self.area_id = kwargs.pop('area_id', None)
+        self.subarea_id = kwargs.pop('subarea_id', None)
+        super().__init__(model, session, **kwargs)
+        self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
 
-class IniziativeDsoDsoDataView(BaseDataViewCommon):
+    def scaffold_form(self):
+        form_class = super().scaffold_form()
+
+        current_year = datetime.now().year
+        year_choices = [(year, year) for year in range(current_year - 11, current_year + 1)]
+        default_year = current_year
+
+        form_class.fi0 = SelectField(
+            'Anno di rif.',
+            coerce=int,
+            choices=year_choices,
+            default=default_year,
+            widget=Select2Widget()
+        )
+
+        config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
+                                          subarea_id=None)
+        nr_intervals = config_values[0]
+
+        if self.intervals:
+            current_interval = [t[2] for t in self.intervals if t[0] == nr_intervals]
+            first_element = current_interval[0] if current_interval else None
+            interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
+        else:
+            first_element = None
+            interval_choices = []
+
+        form_class.interval_ord = SelectField(
+            'Periodo di rif.',
+            coerce=int,
+            choices=interval_choices,
+            default=first_element,
+            widget=Select2Widget()
+        )
+
+        form_class.subject_id = SelectField(
+            'Tipo di documento',
+            validators=[InputRequired()],
+            coerce=int,
+            choices=[(subject.id, subject.name) for subject in Subject.query.filter_by(tier_1='Legale').all()],
+            widget=Select2Widget()
+        )
+
+        form_class.no_action = BooleanField('Dichiarazione di assenza di documenti')  # Use BooleanField
+        form_class.fc2 = StringField('Note')
+
+        # Ensure base_path is set for FileUploadField
+        upload_folder = current_app.config.get('UPLOAD_FOLDER', 'uploads')
+        form_class.file_path = FileUploadField('Allegati',
+                                               base_path=upload_folder)  # Correctly display file upload button
+
+        return form_class
+
+    def on_model_change(self, form, model, is_created):
+
+        # Custom validation logic
+        if not form.fi0.data or not form.interval_ord.data:
+            raise ValidationError("Time interval reference fields cannot be null")
+
+        if not form.date_of_doc.data or not form.number_of_doc.data:
+            raise ValidationError("Document data is missing.")
+
+        if form.date_of_doc.data.year != form.fi0.data:
+            raise ValidationError("Date of document must be consistent with the reporting year.")
+
+        if not form.file_path.data and not form.no_action.data:
+            raise ValidationError(
+                'If no file exists, then this absence must be acknowledged by checking the "no documents" box.')
+
+        if form.file_path.data and form.no_action.data:
+            raise ValidationError(
+                'The no-document box is checked but a document was uploaded - please confirm either of the two.')
+
+        # Populate the necessary fields
+        model.user_id = current_user.id
+        model.company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
+        model.area_id = self.area_id
+        model.subarea_id = self.subarea_id
+        model.interval_id = form.interval_ord.data  # Assuming interval_id is same as interval_ord
+        model.created_by = current_user.id
+
+        # Check for duplicate documents
+        existing_document = self.session.query(self.model).filter_by(
+            number_of_doc=form.number_of_doc.data,
+            date_of_doc=form.date_of_doc.data,
+            company_id=model.company_id,
+            subarea_id=model.subarea_id,
+            area_id=model.area_id,
+            subject_id=form.subject_id.data,
+        ).first()
+        if existing_document and existing_document.id != model.id:
+            raise ValidationError('A document with the same number, date, subarea, area, and subject already exists.')
+
+        if is_created:
+            model.status_id = 1
+            model.created_on = datetime.now()
+        else:
+            model.status_id = 14 # Updated
+
+        super().on_model_change(form, model, is_created)
+
+    def get_query(self):
+        query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
+        if current_user.is_authenticated:
+            if current_user.has_role('Admin') or current_user.has_role('Authority'):
+                return query
+            elif current_user.has_role('Manager'):
+                subquery = db.session.query(CompanyUsers.company_id).filter(
+                    CompanyUsers.user_id == current_user.id).subquery()
+                query = query.filter(self.model.company_id.in_(subquery))
+            elif current_user.has_role('Employee'):
+                return query.filter(self.model.user_id == current_user.id)
+        return query.filter(self.model.id < 0)
+
+    def create_form(self, obj=None):
+        form = super(IniziativeAsDsoDataView, self).create_form(obj)
+        form.subject_id = form.subject_id
+        form.number_of_doc = form.number_of_doc
+        form.date_of_doc = form.date_of_doc
+        form.file_path = form.file_path
+        form.no_action = form.no_action
+        form.fi0 = form.fi0
+        form.interval_ord = form.interval_ord
+        form.fc2 = form.fc2
+        return form
+
+    def edit_form(self, obj=None):
+        form = super(IniziativeAsDsoDataView, self).edit_form(obj)
+        form.subject_id = form.subject_id
+        form.number_of_doc = form.number_of_doc
+        form.date_of_doc = form.date_of_doc
+        form.file_path = form.file_path
+        form.no_action = form.no_action
+        form.fi0 = form.fi0
+        form.interval_ord = form.interval_ord
+        form.fc2 = form.fc2
+        return form
+
+
+class IniziativeDsoDsoDataView(BaseDataView):
     create_template = 'admin/area_1/create_base_data_8.html'
     subarea_id = 8
     area_id = 1
 
-    column_list = ('fi0', 'interval_ord', 'subject', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    form_columns = ('fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    column_labels = {'fi0': 'Anno di rif.', 'interval_ord': 'Periodo di rif.', 'subject': 'Oggetto',
-                     'number_of_doc': 'Nr. documento', 'date_of_doc': 'Data documento', 'file_path': 'Allegati',
-                     'no_action': 'Conferma assenza doc.', 'fc2': 'Note'}
-    column_descriptions = {'interval_ord': '(inserire il numero; es. 1: primo quadrimestre; 2: secondo ecc.)',
-                           'fi0': 'Inserire anno (es. 2024)', 'subject_id': 'Seleziona oggetto',
-                           'fc2': 'Note', 'file_path': 'Allegati', 'no_action': 'Dichiarazione di assenza di documenti (1)'}
-    column_filters = ('subject', 'fc2', 'no_action')
+    # Adjusted order of fields
+    column_list = ('number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
+    form_columns = ('number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
+
+    column_labels = {
+        'number_of_doc': 'Nr. documento',
+        'date_of_doc': 'Data documento',
+        'file_path': 'Allegato',
+        'no_action': 'Conferma assenza doc.',
+        'subject_id': 'Oggetto',
+        'fi0': 'Anno di rif.',
+        'interval_ord': 'Periodo di rif.',
+        'fc2': 'Note'
+    }
+
+    column_descriptions = {
+        'number_of_doc': 'Nr. documento allegato',
+        'date_of_doc': 'Data documento allegato',
+        'file_path': 'Allegato',
+        'no_action': 'Dichiarazione di assenza di documenti da allegare (1)',
+        'subject_id': 'Seleziona oggetto',
+        'fi0': 'Inserire anno di riferimento (in formato YYYY)',
+        'interval_ord': '(inserire il periodo; es. 1: primo quadrimestre; 2: secondo ecc.)',
+        'fc2': 'Note',
+    }
+
+    column_filters = ('number_of_doc', 'date_of_doc', 'subject_id', 'fi0', 'interval_ord', 'fc2')
     form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
 
-class DocumentUploadView(BaseDataViewCommon):
-    create_template = 'admin/area_1/create_base_data_8.html'
-    subarea_id = 1
-    area_id = 3
+    def __init__(self, model, session, **kwargs):
+        self.intervals = kwargs.pop('intervals', [])
+        self.area_id = kwargs.pop('area_id', None)
+        self.subarea_id = kwargs.pop('subarea_id', None)
+        super().__init__(model, session, **kwargs)
+        self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
 
-    column_list = ('fi0', 'interval_ord', 'subject', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    form_columns = ('fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    column_labels = {'fi0': 'Anno di rif.', 'interval_ord': 'Periodo di rif.', 'subject': 'Oggetto',
-                     'number_of_doc': 'Nr. documento', 'date_of_doc': 'Data documento', 'file_path': 'Allegati',
-                     'no_action': 'Conferma assenza doc.', 'fc2': 'Note'}
-    column_descriptions = {'interval_ord': '(inserire il numero; es. 1: primo quadrimestre; 2: secondo ecc.)',
-                           'fi0': 'Inserire anno (es. 2024)', 'subject_id': 'Seleziona oggetto',
-                           'fc2': 'Note', 'file_path': 'Allegati', 'no_action': 'Dichiarazione di assenza di documenti (1)'}
-    column_filters = ('subject', 'fc2', 'no_action')
-    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
+    def scaffold_form(self):
+        form_class = super().scaffold_form()
 
+        current_year = datetime.now().year
+        year_choices = [(year, year) for year in range(current_year - 11, current_year + 1)]
+        default_year = current_year
+
+        form_class.fi0 = SelectField(
+            'Anno di rif.',
+            coerce=int,
+            choices=year_choices,
+            default=default_year,
+            widget=Select2Widget()
+        )
+
+        config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
+                                          subarea_id=None)
+        nr_intervals = config_values[0]
+
+        if self.intervals:
+            current_interval = [t[2] for t in self.intervals if t[0] == nr_intervals]
+            first_element = current_interval[0] if current_interval else None
+            interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
+        else:
+            first_element = None
+            interval_choices = []
+
+        form_class.interval_ord = SelectField(
+            'Periodo di rif.',
+            coerce=int,
+            choices=interval_choices,
+            default=first_element,
+            widget=Select2Widget()
+        )
+
+        form_class.subject_id = SelectField(
+            'Tipo di documento',
+            validators=[InputRequired()],
+            coerce=int,
+            choices=[(subject.id, subject.name) for subject in Subject.query.filter_by(tier_1='Legale').all()],
+            widget=Select2Widget()
+        )
+
+        form_class.no_action = BooleanField('Dichiarazione di assenza di documenti')  # Use BooleanField
+        form_class.fc2 = StringField('Note')
+
+        # Ensure base_path is set for FileUploadField
+        upload_folder = current_app.config.get('UPLOAD_FOLDER', 'uploads')
+        form_class.file_path = FileUploadField('Allegati',
+                                               base_path=upload_folder)  # Correctly display file upload button
+
+        return form_class
+
+    def on_model_change(self, form, model, is_created):
+
+        # Custom validation logic
+        if not form.fi0.data or not form.interval_ord.data:
+            raise ValidationError("Time interval reference fields cannot be null")
+
+        if not form.date_of_doc.data or not form.number_of_doc.data:
+            raise ValidationError("Document data is missing.")
+
+        if form.date_of_doc.data.year != form.fi0.data:
+            raise ValidationError("Date of document must be consistent with the reporting year.")
+
+        if not form.file_path.data and not form.no_action.data:
+            raise ValidationError(
+                'If no file exists, then this absence must be acknowledged by checking the "no documents" box.')
+
+        if form.file_path.data and form.no_action.data:
+            raise ValidationError(
+                'The no-document box is checked but a document was uploaded - please confirm either of the two.')
+
+        # Populate the necessary fields
+        model.user_id = current_user.id
+        model.company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
+        model.area_id = self.area_id
+        model.subarea_id = self.subarea_id
+        model.interval_id = form.interval_ord.data  # Assuming interval_id is same as interval_ord
+        model.created_by = current_user.id
+        # Check for duplicate documents
+        existing_document = self.session.query(self.model).filter_by(
+            number_of_doc=form.number_of_doc.data,
+            date_of_doc=form.date_of_doc.data,
+            company_id=model.company_id,
+            subarea_id=model.subarea_id,
+            area_id=model.area_id,
+            subject_id=form.subject_id.data,
+        ).first()
+        if existing_document and existing_document.id != model.id:
+            raise ValidationError('A document with the same number, date, subarea, area, and subject already exists.')
+
+        if is_created:
+            model.status_id = 1
+            model.created_on = datetime.now()
+        else:
+            model.status_id = 14 # Updated
+
+        super().on_model_change(form, model, is_created)
+
+    def get_query(self):
+        query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
+        if current_user.is_authenticated:
+            if current_user.has_role('Admin') or current_user.has_role('Authority'):
+                return query
+            elif current_user.has_role('Manager'):
+                subquery = db.session.query(CompanyUsers.company_id).filter(
+                    CompanyUsers.user_id == current_user.id).subquery()
+                query = query.filter(self.model.company_id.in_(subquery))
+            elif current_user.has_role('Employee'):
+                return query.filter(self.model.user_id == current_user.id)
+        return query.filter(self.model.id < 0)
+
+    def create_form(self, obj=None):
+        form = super(IniziativeDsoDsoDataView, self).create_form(obj)
+        form.subject_id = form.subject_id
+        form.number_of_doc = form.number_of_doc
+        form.date_of_doc = form.date_of_doc
+        form.file_path = form.file_path
+        form.no_action = form.no_action
+        form.fi0 = form.fi0
+        form.interval_ord = form.interval_ord
+        form.fc2 = form.fc2
+        return form
+
+    def edit_form(self, obj=None):
+        form = super(IniziativeDsoDsoDataView, self).edit_form(obj)
+        form.subject_id = form.subject_id
+        form.number_of_doc = form.number_of_doc
+        form.date_of_doc = form.date_of_doc
+        form.file_path = form.file_path
+        form.no_action = form.no_action
+        form.fi0 = form.fi0
+        form.interval_ord = form.interval_ord
+        form.fc2 = form.fc2
+        return form
+
+# END OF SIMILAR VIEWS
 
 
 def create_admin_views(app, intervals):
@@ -3133,6 +3917,181 @@ def create_admin_views(app, intervals):
 
                 return model
 
+
+        class CustomAttiDataView(ModelView):
+            create_template = 'admin/area_1/create_base_data_2.html'
+            subarea_id = 2
+            area_id = 1
+            # inline_models = (BaseDataInlineModelForm(BaseDataInline),)
+
+            def __init__(self, *args, **kwargs):
+                self.intervals = kwargs.pop('intervals', None)
+                super().__init__(*args, **kwargs)
+                self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
+
+            form_extra_fields = {
+                'file_path': CustomFileUploadField('File', base_path=config.UPLOAD_FOLDER)
+            }
+
+            column_editable_list = ['fc1']
+            form_widget_args = {
+                'fc1': {'widget': XEditableWidget()},
+            }
+
+            column_list = (
+            'fi0', 'interval_ord', 'subject', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc1')
+            form_columns = ('fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc1')
+            column_labels = {'fi0': 'Anno di rif.', 'interval_ord': 'Periodo di rif.', 'subject': 'Oggetto',
+                             'number_of_doc': 'Nr. documento', 'date_of_doc': 'Data documento', 'file_path': 'Allegati',
+                             'no_action': 'Conferma assenza doc.', 'fc1': 'Note'}
+            column_descriptions = {'interval_ord': '(inserire il numero; es. 1: primo quadrimestre; 2: secondo ecc.)',
+                                   'fi0': 'Inserire anno (es. 2024)', 'subject_id': 'Seleziona oggetto',
+                                   'fc2': 'Note', 'file_path': 'Allegati',
+                                   'no_action': 'Dichiarazione di assenza di documenti (1)'}
+            column_filters = ('subject', 'fc2', 'no_action')
+            form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
+
+            column_default_sort = ('created_on', False)
+            column_searchable_list = ['fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'fc1']
+            column_filters = ['fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'fc1']
+            form_excluded_columns = ['user_id', 'company_id', 'status_id', 'created_by', 'created_on', 'updated_on']
+
+            # Customize the order of fields in the create form
+            form_create_rules = [
+                'number_of_doc', 'date_of_doc', 'file_path',
+                'fi0',
+                'interval_ord',
+                'fc1',
+                # FieldSet(('base_data_inlines',), 'Vendor Data')  # Include the inline form
+            ]
+
+            def scaffold_form(self):
+                form_class = super(CustomAttiDataView, self).scaffold_form()
+                current_year = datetime.now().year
+                year_choices = [(str(year), str(year)) for year in range(current_year - 5, current_year + 2)]
+                default_year = str(current_year)
+
+                form_class.fi0 = SelectField(
+                    'Anno',
+                    coerce=int,
+                    choices=year_choices,
+                    default=default_year
+                )
+
+                config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
+                                                  subarea_id=None)
+                nr_intervals = config_values[0]
+                current_interval = [t[2] for t in self.intervals if t[0] == nr_intervals]
+                first_element = current_interval[0] if current_interval else None
+                interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
+
+                form_class.interval_ord = SelectField(
+                    'Periodo',
+                    coerce=int,
+                    choices=interval_choices,
+                    default=first_element
+                )
+
+                return form_class
+
+            def create_model(self, form):
+                try:
+                    print('Starting create_model')
+                    model = self.model()
+                    form.populate_obj(model)
+
+                    # Ensure required fields are not null
+                    if model.fi0 is None or model.interval_ord is None:
+                        raise ValidationError("Fields 'Year' and 'Interval' cannot be null.")
+
+                    if 'number_of_doc' == None or 'date_of_doc' == None:
+                        raise ValidationError("Fields 'Number' and 'Date' of document cannot be null.")
+
+                    self.session.commit()
+                    return model
+
+                except Exception as ex:
+                    if not self.handle_view_exception(ex):
+                        raise
+                    flash(f'Failed to create record. {str(ex)}', 'error')
+                    self.session.rollback()
+                    return False
+
+            def on_model_change(self, form, model, is_created):
+                super().on_model_change(form, model, is_created)
+                form.populate_obj(model)
+                if is_created:
+                    model.created_on = datetime.now()
+                else:
+                    pass
+
+                user_id = current_user.id
+                try:
+                    company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
+                except:
+                    company_id = None
+                    pass
+
+                area_id = self.area_id
+                subarea_id = self.subarea_id
+                subarea_name = self.subarea_name
+                status_id = 1
+
+                config_values = get_config_values(config_type='area_interval', company_id=company_id,
+                                                  area_id=self.area_id, subarea_id=self.subarea_id)
+                interval_id = config_values[0]
+                interval_ord = form.interval_ord.data
+                year_id = form.fi0.data
+                lexic_id = form.lexic_id.data
+                subject_id = form.subject_id.data
+
+                record_type = 'control_area'
+                data_type = self.subarea_name
+                legal_document_id = None
+
+                if form.interval_ord.data > 3 or form.interval_ord.data < 0:
+                    raise ValidationError(
+                        "Period must be less than or equal to the number of fractions (e.g. 4 for quarters, 12 for months)")
+                    pass
+
+                if form.fi0.data < 2000 or form.fi0.data > 2099:
+                    raise ValidationError("Please check the year")
+                    pass
+
+                with current_app.app_context():
+                    result, message = check_status_extended(is_created, company_id, lexic_id, subject_id,
+                                                            legal_document_id, interval_ord, interval_id, year_id,
+                                                            area_id, subarea_id, form.fi1.data, None, None, None, None,
+                                                            None, None, None, None, datetime.today(), db.session)
+
+                if result == False:
+                    raise ValidationError(message)
+                    pass
+
+                model.lexic_id = lexic_id
+                model.updated_on = datetime.now()
+                model.user_id = user_id
+                model.company_id = company_id
+                model.data_type = data_type
+                model.record_type = record_type
+                model.area_id = area_id
+                model.subarea_id = subarea_id
+                model.fi0 = year_id
+                model.interval_id = interval_id
+                model.interval_ord = interval_ord
+                model.status_id = status_id
+                model.subject_id = subject_id
+                model.legal_document_id = legal_document_id
+
+                if is_created:
+                    self.session.add(model)
+                else:
+                    self.session.merge(model)
+                self.session.commit()
+
+                return model
+
+
         # =================================================================================================================
         # Define custom form for CustomAdminIndexView2
         # =================================================================================================================
@@ -3235,9 +4194,6 @@ def create_admin_views(app, intervals):
                 config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
                                                   subarea_id=None)
                 nr_intervals = config_values[0]
-
-                # OLD
-                # nr_intervals = get_subarea_interval_type(self.area_id, self.subarea_id)
 
                 current_interval = [t[2] for t in self.intervals if
                                     t[0] == nr_intervals]  # int(get_current_interval(3))  # quadriester
@@ -3503,13 +4459,21 @@ def create_admin_views(app, intervals):
                        endpoint='open_admin',
         )
 
-        admin_app1.add_view(CustomFlussiDataView(name='Pre-complaint flows', session=db.session, model=BaseData,
+        admin_app1.add_view(CustomFlussiDataView(model=BaseData, session=db.session, name='Pre-complaint flows',
                                                  intervals=intervals, endpoint='flussi_data_view'))
 
-        # Example of adding the specific view
         admin_app1.add_view(
-            AttiDataView(model=BaseData, session=db.session, name='Complaint documents', intervals=intervals, area_id=1,
-                         subarea_id=2, endpoint='atti_data_view'))
+            AttiDataView(model=BaseData, session=db.session, name='Atti complaint', intervals=intervals, area_id=1,
+                                subarea_id=2, endpoint='atti_data_view'))
+
+        #admin_app1.add_view(
+        #    ContingenciesDataView(model=BaseData, session=db.session, name='Disputes', intervals=intervals, area_id=1,
+        # subarea_id=3, endpoint='atti_data_view'))
+
+        # Example of adding the specific view
+        # admin_app1.add_view(
+        #     AttiDataView(model=BaseData, session=db.session, name='Complaint documents', intervals=intervals, area_id=1,
+        #                  subarea_id=2, endpoint='atti_data_view'))
         #admin_app1.add_view(
         #    ContingenciesDataView(model=BaseData, session=db.session, name='Contingencies', intervals=intervals, area_id=1,
         #                           subarea_id=3, endpoint='show_survey/1'))
@@ -3533,7 +4497,7 @@ def create_admin_views(app, intervals):
         # admin_app1.add_view(CustomContingenciesView(name='Contingencies', endpoint='contingencies_data_view'))
 
         admin_app1.add_view(
-            ContenziosiDataView(model=BaseData, session=db.session, name='Disputes', intervals=intervals, area_id=1,
+            ContenziosiDataView(model=BaseData, session=db.session, name='Contingencies', intervals=intervals, area_id=1,
                                 subarea_id=4, endpoint='contenziosi_data_view'))
         admin_app1.add_view(
             IniziativeDsoAsDataView(model=BaseData, session=db.session, name='DSO-AS Initiatives', intervals=intervals, area_id=1,
@@ -3541,10 +4505,10 @@ def create_admin_views(app, intervals):
         admin_app1.add_view(
             IniziativeAsDsoDataView(model=BaseData, session=db.session, name='AS-DSO Initiatives', intervals=intervals, area_id=1,
                                 subarea_id=7, endpoint='iniziative_as_dso_data_view'))
-        admin_app1.add_view(
-            IniziativeDsoDsoDataView(model=BaseData, session=db.session, name='DSO-DSO Initiatives', intervals=intervals, area_id=1,
-                                subarea_id=8, endpoint='iniziative_dso_dso_data_view'))
 
+        admin_app1.add_view(
+            IniziativeDsoDsoDataView(model=BaseData, session=db.session, name='Iniziative DSO-DSO', intervals=intervals, area_id=1,
+                                subarea_id=8, endpoint='iniziative_dso_dso_data_view'))
 
         # Second Flask-Admin instance with the second Area index view
         # ===========================================================
@@ -3910,53 +4874,6 @@ class UsersView(ModelView):
     def on_form_prefill(self, form, id):
         # Ensure date fields are datetime objects
         for field_name in ['created_on', 'updated_on', 'end_of_registration']:
-            field = getattr(form, field_name)
-            data = getattr(field, 'data')
-            if data and isinstance(data, str):
-                form_data = self._parse_datetime_string(data)
-                setattr(field, 'data', form_data)
-
-    def _parse_datetime_string(self, date_string):
-        """Parse datetime string to datetime object with multiple formats."""
-        datetime_formats = [
-            "%Y-%m-%d %H:%M:%S.%f%z",  # with microseconds and timezone
-            "%Y-%m-%d %H:%M:%S.%f",    # with microseconds
-            "%Y-%m-%d %H:%M:%S%z",     # with timezone
-            "%Y-%m-%d %H:%M:%S",       # without microseconds and timezone
-            "%Y-%m-%d"                 # date only
-        ]
-        for fmt in datetime_formats:
-            try:
-                return datetime.strptime(date_string, fmt)
-            except ValueError:
-                continue
-        raise ValueError(f"Time data '{date_string}' does not match any of the formats.")
-
-
-
-class BaseDataView(ModelView):
-
-    can_view_details = False  # Disable the "Retrieve" view
-
-    def is_accessible(self):
-        # Add logic here to check if the user has access to this view
-        return True
-
-    def inaccessible_callback(self, name, **kwargs):
-        # Redirect to the login page if the user doesn't have access
-        return redirect(url_for('login', next=request.url))
-
-    def on_model_change(self, form, model, is_created):
-        # Convert string dates to datetime objects
-        for field_name in ['created_on', 'updated_on', 'deadline', 'date_of_doc']:
-            field = getattr(form, field_name)
-            if field.data and isinstance(field.data, str):
-                model_data = self._parse_datetime_string(field.data)
-                setattr(model, field_name, model_data)
-
-    def on_form_prefill(self, form, id):
-        # Ensure date fields are datetime objects
-        for field_name in ['created_on', 'updated_on', 'deadline', 'date_of_doc']:
             field = getattr(form, field_name)
             data = getattr(field, 'data')
             if data and isinstance(data, str):

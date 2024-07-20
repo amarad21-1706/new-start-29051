@@ -49,7 +49,7 @@ from models.user import (Users, UserRoles, Role, Container, Questionnaire, Quest
         Workflow, Step, BaseData, Container, WorkflowSteps, WorkflowBaseData,
          StepBaseData, Config,
          Application, PlanApplications, Plan, Users, UserPlans,  # Adjust based on actual imports
-         Questionnaire_psf, Response_psf, get_config_values)
+         Questionnaire_psf, Response_psf)
 
 # from master_password_reset import admin_reset_password, AdminResetPasswordForm
 
@@ -68,7 +68,7 @@ from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as
 from app_factory import create_app, roles_required, subscription_required
 
 from config.config import (get_current_intervals,
-                           generate_company_questionnaire_report_data, generate_area_subarea_report_data,
+        generate_company_questionnaire_report_data, generate_area_subarea_report_data,
         generate_html_cards, get_session_workflows,
         generate_html_cards_progression_with_progress_bars111, generate_html_cards_progression_with_progress_bars_in_short,
         get_pd_report_from_base_data_wtq, get_areas,
@@ -225,7 +225,6 @@ def initialize_app(app):
         return intervals
 
 intervals = initialize_app(app)
-print('intervals', intervals)
 
 # Initialize the admin views
 admin_app1, admin_app2, admin_app3, admin_app4, admin_app10 = create_admin_views(app, intervals)
@@ -865,7 +864,8 @@ def login():
                                            body='È stato rilevato un nuovo accesso al tuo account il ' +
                                                 cet_time.strftime('%Y-%m-%d') + '. Se eri tu, non devi fare nulla. ' +
                                                 'In caso contrario, ti aiuteremo a proteggere il tuo account; ' +
-                                                "non rispondere a questa mail e contatta l'amministratore del sistema.",
+                                                "non rispondere a questo messaggio, apri un ticket o contatta " +
+                                                "l'amministratore del sistema.",
                                            sender='System', company_id=None,
                                            lifespan='one-off', allow_overwrite=True)
                         except Exception as e:
@@ -1670,7 +1670,6 @@ def custom_roles_required(*roles):
                 abort(403)  # Forbidden
         return wrapper
     return decorator
-
 
 
 @app.route('/admin')
@@ -4257,13 +4256,6 @@ def edit_news(id):
         more_link = request.form['more_link']
         body = request.form['body']
 
-        print('headline:', headline)
-        print('short_text:', short_text)
-        print('image_url:', image_url)
-        print('link_type:', link_type)
-        print('more_link:', more_link)
-        print('body:', body)
-
         # Update the JSONB content field explicitly
         news_item.content = {
             'headline': headline,
@@ -4277,12 +4269,9 @@ def edit_news(id):
         try:
             db.session.flush()  # Add this line
             db.session.commit()
-            print('News item updated successfully in the database')
-            print('Updated news item:', news_item.content)
             flash('News item updated successfully!')
         except Exception as e:
             db.session.rollback()
-            print(f'Error updating news item: {e}')
             flash('An error occurred while updating the news item. Please try again.', 'danger')
 
         return redirect(url_for('admin_news'))

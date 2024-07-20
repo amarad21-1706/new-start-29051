@@ -3,7 +3,7 @@ from db import db
 from flask_bcrypt import generate_password_hash, check_password_hash
 from flask_security import RoleMixin, UserMixin
 from sqlalchemy import (Column, Integer, String, DateTime, ForeignKey,
-                        LargeBinary, Numeric, func, TIMESTAMP, DATE, Sequence)
+                        LargeBinary, Numeric, func, TIMESTAMP, DATE, Sequence, Boolean)
 
 from sqlalchemy import or_, and_, Enum, event
 
@@ -173,6 +173,9 @@ class Users(db.Model, UserMixin):
     def is_admin(self):
         # Check if the user has an admin role
         return 'admin' in [role.name for role in self.roles]
+
+    def has_role(self, role_name):
+        return any(role.name == role_name for role in self.roles)
 
     def __repr__(self):
         return f"{self.username} {self.last_name}"
@@ -657,7 +660,7 @@ class BaseData(db.Model):
     fn8 = db.Column(db.Numeric)
     fn9 = db.Column(db.Numeric)
     file_path = db.Column(db.String(255))
-    no_action = db.Column(db.Integer, default=0)
+    no_action = db.Column(db.Boolean, default=False)  # Change to BOOLEAN type
 
     user = db.relationship('Users', foreign_keys=[user_id])
     company = db.relationship('Company', foreign_keys=[company_id])
