@@ -3758,7 +3758,33 @@ def create_admin_views(app, intervals):
 
                 return form_class
 
+            def get_query(self):
+                query = self.session.query(self.model)
+
+                # Filter by area_id and subarea_id
+                query = query.filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
+
+                # Filter by company_id based on user role (optional):
+                if current_user.is_authenticated:
+                    if current_user.has_role('Admin') or current_user.has_role('Authority'):
+                        # No additional filtering needed for Admin or Authority roles
+                        pass
+                    elif current_user.has_role('Manager'):
+                        # Filter for Manager's companies
+                        subquery = db.session.query(CompanyUsers.company_id).filter(
+                            CompanyUsers.user_id == current_user.id).subquery()
+                        query = query.filter(self.model.company_id.in_(subquery))
+                    elif current_user.has_role('Employee'):
+                        # Filter for Employee's records
+                        query = query.filter(self.model.user_id == current_user.id)
+
+                # Additional filtering based on other criteria (optional):
+                # You can add further filtering logic here based on other fields
+                # in your model, like specific dates, statuses, etc.
+
+                return query
             def create_model(self, form):
+
                 try:
                     print('Starting create_model')
                     model = self.model()
@@ -3777,13 +3803,31 @@ def create_admin_views(app, intervals):
                     if model.fi1 != model.fi2 + model.fi3:
                         raise ValidationError("The sum of 'IVI' and 'A' must equal 'Total'.")
 
-                    self.session.add(model)
-                    self.session.commit()
-                    print('Model committed, setting inline record types')
+                    # ... other logic ...
 
                     # Ensure the relationship is correctly defined
                     if not hasattr(model, 'base_data_inlines'):
                         raise Exception('base_data_inlines relationship is not defined on the model')
+
+                    # Set area_id and subarea_id from your class attributes
+                    model.area_id = self.area_id
+                    model.subarea_id = self.subarea_id
+
+
+                    # Determine company_id based on user role or logic (handle None case)
+                    try:
+                        company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
+                    except:
+                        company_id = None  # Consider handling this case differently if necessary
+                    model.company_id = company_id
+
+                    # Set user_id from current user
+                    model.user_id = current_user.id
+
+                    self.session.add(model)
+                    self.session.commit()
+                    print('Model committed, setting inline record types')
+
 
                     # Update record_type for each inline model
                     for inline in model.base_data_inlines:
@@ -3791,22 +3835,30 @@ def create_admin_views(app, intervals):
                         inline.record_type = 'pre-complaint'
                         self.session.add(inline)
 
-                    self.session.commit()
-                    print('Inlines updated and committed')
-
                     # Verify the inline updates
+                    '''
                     for inline in model.base_data_inlines:
                         updated_inline = self.session.query(BaseDataInline).get(inline.id)
                         print(f'Updated record_type for inline {updated_inline.id}: {updated_inline.record_type}')
                         assert updated_inline.record_type == 'pre-complaint'
+                    '''
+
+                    self.session.commit()
+                    print('Inlines updated and committed')
+
+                    # ... remaining code ...
 
                     return model
+
                 except Exception as ex:
                     if not self.handle_view_exception(ex):
                         raise
                     flash(f'Failed to create record. {str(ex)}', 'error')
                     self.session.rollback()
                     return False
+
+
+
 
             def on_model_change(self, form, model, is_created):
                 super().on_model_change(form, model, is_created)

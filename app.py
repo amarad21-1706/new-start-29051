@@ -1850,6 +1850,7 @@ def get_phone_prefixes():
 
 
 
+
 @app.route('/regions')
 @cached(cache)
 def get_regions():
@@ -1857,7 +1858,16 @@ def get_regions():
     if not country_code:
         return jsonify({'error': 'Country code is required'}), 400
 
-    url = f'http://api.geonames.org/childrenJSON?geonameId={country_code}&username={GEONAMES_USERNAME}'
+    # Map country codes to GeoNames geonameId
+    country_to_geonameid = {
+        'IT': 3175395  # Add more mappings if needed
+    }
+
+    geoname_id = country_to_geonameid.get(country_code)
+    if not geoname_id:
+        return jsonify({'error': 'Invalid country code'}), 400
+
+    url = f'http://api.geonames.org/childrenJSON?geonameId={geoname_id}&username={GEONAMES_USERNAME}'
     response = requests.get(url)
     data = response.json()
     regions = [{'code': region['geonameId'], 'name': region['name']} for region in data.get('geonames', [])]
