@@ -622,9 +622,9 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
             cookies_accepted = 'true' if current_user.is_authenticated and current_user.cookies_accepted else 'false'
             show_cookie_banner = 'Admin' not in user_roles and cookies_accepted == 'false'
 
-            current_app.logger.debug(f"User Roles: {user_roles}")
-            current_app.logger.debug(f"Show Cookie Banner: {show_cookie_banner}")
-            current_app.logger.debug(f"Cookies Accepted: {cookies_accepted}")
+            #current_app.logger.debug(f"User Roles: {user_roles}")
+            #current_app.logger.debug(f"Show Cookie Banner: {show_cookie_banner}")
+            #current_app.logger.debug(f"Cookies Accepted: {cookies_accepted}")
 
             additional_data = {
                 "username": username,
@@ -1815,6 +1815,7 @@ from phonenumbers.phonenumberutil import region_code_for_country_code
 def invalidate_cache():
     cache.delete('/countries')
     cache.delete('/regions')
+    cache.delete('/provinces')
     cache.delete('/cities')
     cache.delete('/zip_codes')
     cache.delete('/streets')
@@ -1827,15 +1828,14 @@ def invalidate_cache():
 #             for country_code in phonenumbers.SUPPORTED_REGIONS]
 
 
+
 # Function to fetch phone prefixes
-@cached(cache)
+# @cached(cache)
 def fetch_phone_prefixes():
     prefixes = []
     for country in pycountry.countries:
         try:
-            example_number = phonenumbers.example_number_for_type(
-                country.alpha_2, PhoneNumberType.MOBILE
-            )
+            example_number = phonenumbers.example_number_for_type(country.alpha_2, PhoneNumberType.MOBILE)
             phone_prefix = f"+{example_number.country_code}" if example_number else None
             if phone_prefix:
                 prefixes.append({'prefix': phone_prefix, 'country': country.name})
@@ -1848,88 +1848,92 @@ def fetch_phone_prefixes():
 def get_phone_prefixes():
     return jsonify(fetch_phone_prefixes())
 
-
-
-
+# Function to fetch regions
 @app.route('/regions')
-@cached(cache)
+# @cached(cache)
 def get_regions():
     country_code = request.args.get('country_code')
     if not country_code:
         return jsonify({'error': 'Country code is required'}), 400
 
-    # Map country codes to GeoNames geonameId
-    country_to_geonameid = {
-        'IT': 3175395  # Add more mappings if needed
-    }
-
-    geoname_id = country_to_geonameid.get(country_code)
-    if not geoname_id:
-        return jsonify({'error': 'Invalid country code'}), 400
-
-    url = f'http://api.geonames.org/childrenJSON?geonameId={geoname_id}&username={GEONAMES_USERNAME}'
+    url = f'http://api.geonames.org/countryInfoJSON?country={country_code}&username=amarad21'
     response = requests.get(url)
     data = response.json()
-    regions = [{'code': region['geonameId'], 'name': region['name']} for region in data.get('geonames', [])]
+
+    if 'geonames' not in data:
+        return jsonify({'error': 'Invalid response from GeoNames API'}), 500
+
+    country_geoname_id = data['geonames'][0].get('geonameId', None)
+    if not country_geoname_id:
+        return jsonify({'error': 'Could not find geonameId for the country'}), 500
+
+    url = f'http://api.geonames.org/childrenJSON?geonameId={country_geoname_id}&username=amarad21'
+    response = requests.get(url)
+    data = response.json()
+
+    if 'geonames' not in data:
+        return jsonify({'error': 'Invalid response from GeoNames API'}), 500
+
+    regions = [{'code': region.get('geonameId', 'No geonameId'), 'name': region.get('name', 'No name')} for region in data.get('geonames', [])]
     return jsonify(regions)
 
-@app.route('/cities')
-@cached(cache)
-def get_cities():
-    country_code = request.args.get('country_code')
-    region_code = request.args.get('region_code')
-    if not country_code or not region_code:
-        return jsonify({'error': 'Country code and region code are required'}), 400
 
-    url = f'http://api.geonames.org/searchJSON?formatted=true&country={country_code}&adminCode1={region_code}&maxRows=500&username={GEONAMES_USERNAME}'
+@app.route('/provinces')
+def get_provinces():
+    region_code = request.args.get('region_code')
+    if not region_code:
+        return jsonify({'error': 'Region code is required'}), 400
+
+    url = f'http://api.geonames.org/childrenJSON?geonameId={region_code}&username=amarad21'
     response = requests.get(url)
     data = response.json()
-    cities = [{'name': city['name'], 'geonameId': city['geonameId']} for city in data.get('geonames', [])]
+
+    if 'geonames' not in data:
+        return jsonify({'error': 'Invalid response from GeoNames API'}), 500
+
+    provinces = [{'code': province.get('geonameId', 'No geonameId'), 'name': province.get('name', 'No name')} for province in data.get('geonames', [])]
+    return jsonify(provinces)
+
+@app.route('/cities')
+def get_cities():
+    province_code = request.args.get('province_code')
+    if not province_code:
+        return jsonify({'error': 'Province code is required'}), 400
+
+    url = f'http://api.geonames.org/childrenJSON?geonameId={province_code}&username=amarad21'
+    response = requests.get(url)
+    data = response.json()
+
+    if 'geonames' not in data:
+        return jsonify({'error': 'Invalid response from GeoNames API'}), 500
+
+    cities = [{'name': city.get('name', 'No name'), 'geonameId': city.get('geonameId', 'No geonameId')} for city in data.get('geonames', [])]
     return jsonify(cities)
 
-@app.route('/zip_codes')
-@cached(cache)
-def get_zip_codes():
-    city_name = request.args.get('city_name')
-    if not city_name:
-        return jsonify({'error': 'City name is required'}), 400
-
-    url = f'http://api.geonames.org/postalCodeSearchJSON?placename={city_name}&maxRows=1000&username={GEONAMES_USERNAME}'
-    response = requests.get(url)
-    data = response.json()
-    zip_codes = [{'postalCode': place.get('postalCode', 'Undefined')} for place in data.get('postalCodes', [])]
-    return jsonify(zip_codes)
-
 @app.route('/streets')
-@cached(cache)
 def get_streets():
     city_id = request.args.get('city_id')
     if not city_id:
         return jsonify({'error': 'City ID is required'}), 400
 
-    url = f'http://api.geonames.org/streetSearchJSON?geonameId={city_id}&maxRows=1000&username={GEONAMES_USERNAME}'
+    url = f'http://api.geonames.org/streetSearchJSON?geonameId={city_id}&maxRows=1000&username=amarad21'
     response = requests.get(url)
     data = response.json()
     streets = [{'name': place.get('street', 'Undefined')} for place in data.get('streets', [])]
     return jsonify(streets)
 
-'''
+@app.route('/zip_codes')
+def get_zip_codes():
+    city_name = request.args.get('city_name')
+    if not city_name:
+        return jsonify({'error': 'City name is required'}), 400
 
-@app.route('/phone_prefixes')
-@cached(cache)
-def get_phone_prefixes():
-    prefixes = []
-    for country in pycountry.countries:
-        try:
-            example_number = phonenumbers.example_number_for_type(country.alpha_2, phonenumbers.PhoneNumberType.MOBILE)
-            phone_prefix = f"+{example_number.country_code}" if example_number else None
-            if phone_prefix:
-                prefixes.append({'prefix': phone_prefix, 'country': country.name})
-        except Exception as e:
-            print(f"Error with country {country.name}: {str(e)}")
-            continue
-    return jsonify(prefixes)
-'''
+    url = f'http://api.geonames.org/postalCodeSearchJSON?placename={city_name}&maxRows=1000&username=amarad21'
+    response = requests.get(url)
+    data = response.json()
+    zip_codes = [{'postalCode': place.get('postalCode', 'Undefined')} for place in data.get('postalCodes', [])]
+    return jsonify(zip_codes)
+
 
 @app.route('/countries', methods=['GET'])
 def get_countries():
@@ -4085,7 +4089,7 @@ def handle_exception(e):
     '''
     # Temporarily disable login redirection during debugging
     if not app.debug:
-        app.logger.error(f"An error occurred: {e}", exc_info=True)
+        #app.logger.error(f"An error occurred: {e}", exc_info=True)
         return render_template('error.html', error=e), 500
     else:
         raise e  # Raise the exception in debug mode for detailed traceback

@@ -56,8 +56,8 @@
             background-color: #007bff;
             color: #fff;
             border: none;
-            padding: 10px 20px;
-            margin: 5px;
+            padding: 10px 20px; /* Increased padding for smaller buttons */
+            margin: 5px;  /* Added margin for spacing */
             border-radius: 4px;
             cursor: pointer;
             width: 150px;
@@ -84,11 +84,11 @@
         }
 
         .terms {
-            display: flex;
-            flex-wrap: wrap;
-            align-items: center;
-            justify-content: flex-start;
-            margin-top: 10px;
+          display: flex;
+          flex-wrap: wrap; /* Wrap terms and checkbox on separate lines */
+          align-items: center;
+          justify-content: flex-start;
+          margin-top: 10px;
         }
 
         hr {
@@ -101,8 +101,8 @@
 <body>
     <div class="container">
         <div class="top-buttons">
-            <button type="button" onclick="goHome()">Home</button>
-            <button type="button" onclick="goBack()">Back</button>
+            <button onclick="goHome()">Home</button>
+            <button onclick="goBack()">Back</button>
         </div>
         <h2>Sign Up</h2>
 
@@ -160,6 +160,18 @@
                         <label class="form-label" for="last_name">Last Name:</label>
                         <input class="input" type="text" id="last_name" name="last_name" required>
                     </div>
+
+                    <!-- Address -->
+                    <div class="form-group">
+                        <label class="form-label" for="address">Address:</label>
+                        <input class="input" type="text" id="address" name="address" required>
+                    </div>
+
+                    <!-- Address 1 -->
+                    <div class="form-group">
+                        <label class="form-label" for="address1">Address 1:</label>
+                        <input class="input" type="text" id="address1" name="address1">
+                    </div>
                 </div>
                 <div class="col-md-6">
                     <!-- Country -->
@@ -177,7 +189,7 @@
                     <!-- Province -->
                     <div class="form-group">
                         <label class="form-label" for="province">Province:</label>
-                        <select class="input" id="province" name="province" required></select>
+                        <input class="input" type="text" id="province" name="province">
                     </div>
 
                     <!-- City -->
@@ -186,28 +198,16 @@
                         <select class="input" id="city" name="city" required></select>
                     </div>
 
-                    <!-- Street -->
-                    <div class="form-group">
-                        <label class="form-label" for="street">Street:</label>
-                        <select class="input" id="street" name="street" required></select>
-                    </div>
-
                     <!-- Zip Code -->
                     <div class="form-group">
                         <label class="form-label" for="zip_code">Zip Code:</label>
                         <select class="input" id="zip_code" name="zip_code" required></select>
                     </div>
 
-                    <!-- Address -->
+                    <!-- Street -->
                     <div class="form-group">
-                        <label class="form-label" for="address">Address:</label>
-                        <input class="input" type="text" id="address" name="address" required>
-                    </div>
-
-                    <!-- Address 1 -->
-                    <div class="form-group">
-                        <label class="form-label" for="address1">Address 1:</label>
-                        <input class="input" type="text" id="address1" name="address1">
+                        <label class="form-label" for="street">Street:</label>
+                        <select class="input" id="street" name="street" required></select>
                     </div>
 
                     <!-- Phone Prefix -->
@@ -280,16 +280,6 @@
             document.getElementById('country').addEventListener('change', function() {
                 const countryCode = this.value;
                 console.log(`Selected country code: ${countryCode}`);
-
-                // Reset dependent dropdowns
-                document.getElementById('region').innerHTML = '<option value="">Select Region</option>';
-                document.getElementById('province').innerHTML = '<option value="">Select Province</option>';
-                document.getElementById('city').innerHTML = '<option value="">Select City</option>';
-                document.getElementById('street').innerHTML = '<option value="">Select Street</option>';
-                document.getElementById('zip_code').innerHTML = '<option value="">Select ZIP Code</option>';
-                document.getElementById('address').value = '';
-                document.getElementById('address1').value = '';
-
                 fetch(`/regions?country_code=${countryCode}`)
                     .then(response => response.json())
                     .then(data => {
@@ -307,15 +297,6 @@
             document.getElementById('region').addEventListener('change', function() {
                 const regionCode = this.value;
                 console.log(`Selected region code: ${regionCode}`);
-
-                // Reset dependent dropdowns
-                document.getElementById('province').innerHTML = '<option value="">Select Province</option>';
-                document.getElementById('city').innerHTML = '<option value="">Select City</option>';
-                document.getElementById('street').innerHTML = '<option value="">Select Street</option>';
-                document.getElementById('zip_code').innerHTML = '<option value="">Select ZIP Code</option>';
-                document.getElementById('address').value = '';
-                document.getElementById('address1').value = '';
-
                 fetch(`/provinces?region_code=${regionCode}`)
                     .then(response => response.json())
                     .then(data => {
@@ -333,14 +314,6 @@
             document.getElementById('province').addEventListener('change', function() {
                 const provinceCode = this.value;
                 console.log(`Selected province code: ${provinceCode}`);
-
-                // Reset dependent dropdowns
-                document.getElementById('city').innerHTML = '<option value="">Select City</option>';
-                document.getElementById('street').innerHTML = '<option value="">Select Street</option>';
-                document.getElementById('zip_code').innerHTML = '<option value="">Select ZIP Code</option>';
-                document.getElementById('address').value = '';
-                document.getElementById('address1').value = '';
-
                 fetch(`/cities?province_code=${provinceCode}`)
                     .then(response => response.json())
                     .then(data => {
@@ -356,14 +329,18 @@
             });
 
             document.getElementById('city').addEventListener('change', function() {
+                const cityName = this.options[this.selectedIndex].text;
                 const cityId = this.value;
-                console.log(`Selected city ID: ${cityId}`);
-
-                // Reset dependent dropdowns
-                document.getElementById('street').innerHTML = '<option value="">Select Street</option>';
-                document.getElementById('zip_code').innerHTML = '<option value="">Select ZIP Code</option>';
-                document.getElementById('address').value = '';
-                document.getElementById('address1').value = '';
+                console.log(`Selected city: ${cityName}, ID: ${cityId}`);
+                fetch(`/zip_codes?city_name=${cityName}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const zipSelect = document.getElementById('zip_code');
+                        zipSelect.innerHTML = '<option value="">Select ZIP Code</option>';
+                        data.forEach(zip => {
+                            zipSelect.innerHTML += `<option value="${zip.postalCode}">${zip.postalCode}</option>`;
+                        });
+                    });
 
                 fetch(`/streets?city_id=${cityId}`)
                     .then(response => response.json())
@@ -373,24 +350,6 @@
                         data.forEach(street => {
                             streetSelect.innerHTML += `<option value="${street.name}">${street.name}</option>`;
                         });
-                    })
-                    .catch(error => {
-                        console.error('Error fetching streets:', error);
-                    });
-
-                const cityName = this.options[this.selectedIndex].text;
-                console.log(`Selected city: ${cityName}`);
-                fetch(`/zip_codes?city_name=${cityName}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        const zipSelect = document.getElementById('zip_code');
-                        zipSelect.innerHTML = '<option value="">Select ZIP Code</option>';
-                        data.forEach(zip => {
-                            zipSelect.innerHTML += `<option value="${zip.postalCode}">${zip.postalCode}</option>`;
-                        });
-                    })
-                    .catch(error => {
-                        console.error('Error fetching zip codes:', error);
                     });
             });
 
@@ -404,6 +363,8 @@
                     });
                 });
         });
+
+
     </script>
 </body>
 </html>
