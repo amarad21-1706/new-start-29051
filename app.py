@@ -2405,15 +2405,21 @@ def dashboard_company_audit_progression():
                 filtered_records.append(record)
         return filtered_records
 
+    print('step 0', time_scope)
+
     sorted_values_raw = get_pd_report_from_base_data_wtq(engine)
+    print('step 1', sorted_values_raw)
     # Example usage to filter 'current' records
     sorted_values = filter_records_by_time_qualifier(sorted_values_raw, time_scope)
 
     if is_user_role(session, current_user.id, 'Admin'):
+        print('admin')
         company_id = None  # will list all companies' cards
     else:
         company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
+        print('non-admin', company_id)
 
+    print('values', sorted_values)
     html_cards = generate_html_cards_progression_with_progress_bars_in_short(sorted_values, time_scope or {}, session,
                                                                        company_id)
 
@@ -2423,14 +2429,64 @@ def dashboard_company_audit_progression():
 
     return render_template('admin_cards_progression.html', html_cards=html_cards, user_roles=user_roles)
 
+
 @login_required
 @app.route('/company_overview_current')
 def company_overview_current():
+    session = db.session  # Create a new database session object
+    engine = db.engine  # Get the engine object from SQLAlchemy
+    time_scope = 'current'
+
+    def filter_records_by_time_qualifier(records, time_qualifier):
+        filtered_records = []
+        for record in records:
+            if record['time_qualifier'] == time_qualifier:
+                filtered_records.append(record)
+        return filtered_records
+
+    try:
+        print('step 0 - filtered records', time_scope)
+        sorted_values_raw = get_pd_report_from_base_data_wtq(engine)
+
+        # Check if no data was found
+        if not sorted_values_raw:
+            return render_template('no_records.html')
+
+        print('step 1 - raw records', sorted_values_raw, time_scope)
+        # Example usage to filter 'current' records
+        sorted_values = filter_records_by_time_qualifier(sorted_values_raw, time_scope)
+
+        print('step 2 - sorted records', sorted_values, time_scope)
+        if is_user_role(session, current_user.id, 'Admin'):
+            company_id = None  # will list all companies' cards
+        else:
+            company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
+
+        html_cards = generate_html_cards_progression_with_progress_bars111(
+            sorted_values, time_scope or {}, db.session, company_id
+        )
+
+        # Write HTML code to a file
+        with open('report_cards1.html', 'w') as f:
+            f.write(html_cards)
+
+        return render_template('admin_cards_progression.html', html_cards=html_cards, user_roles=user_roles)
+
+    except Exception as e:
+        # logging.error(f'Error in company_overview_current: {e}')
+        return render_template('error.html', error_message=str(e)), 500
+
+
+
+@login_required
+@app.route('/company_overview_current222')
+def company_overview_current222():
     # logging.basicConfig(level=logging.DEBUG)
 
     session = db.session  # Create a new database session object
     engine = db.engine  # Get the engine object from SQLAlchemy
     time_scope = 'current'
+
     try:
         def filter_records_by_time_qualifier(records, time_qualifier):
             filtered_records = []
@@ -2439,10 +2495,14 @@ def company_overview_current():
                     filtered_records.append(record)
             return filtered_records
 
+        print('step 0 - filtered records', filtered_records, time_scope)
         sorted_values_raw = get_pd_report_from_base_data_wtq(engine)
+
+        print('step 1 - raw records', sorted_values_raw, time_scope)
         # Example usage to filter 'current' records
         sorted_values = filter_records_by_time_qualifier(sorted_values_raw, time_scope)
 
+        print('step 2 - sorted records', sorted_values, time_scope)
         if is_user_role(session, current_user.id, 'Admin'):
             company_id = None  # will list all companies' cards
         else:
@@ -2479,11 +2539,15 @@ def company_overview_historical():
 
     sorted_values_raw = get_pd_report_from_base_data_wtq(engine)
 
+    # Check if no data was found
+    if not sorted_values_raw:
+        return render_template('no_records.html')
+
     # Example usage to filter 'current' records
     sorted_values = filter_records_by_time_qualifier(sorted_values_raw, time_scope)
 
     if is_user_role(db.session, current_user.id, 'Admin'):
-        company_id = None # will list all companies' cards
+        company_id = None  # will list all companies' cards
     else:
         company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
 
@@ -2494,6 +2558,59 @@ def company_overview_historical():
         f.write(html_cards)
 
     return render_template('admin_cards_progression.html', html_cards=html_cards, user_roles=user_roles)
+
+
+
+@app.route('/company_overview_historical222')
+@login_required
+def company_overview_historical222():
+    try:
+        session = db.session  # Create a new database session object
+        engine = db.engine  # Get the engine object from SQLAlchemy
+        time_scope = 'past'
+
+        def filter_records_by_time_qualifier(records, time_qualifier):
+            filtered_records = []
+            for record in records:
+                if record['time_qualifier'] == time_qualifier:
+                    filtered_records.append(record)
+            return filtered_records
+
+        # Initialize filtered_records to avoid referencing before assignment
+        filtered_records = []
+
+        print('step 0 - filtered records', filtered_records, time_scope)
+
+        sorted_values_raw = get_pd_report_from_base_data_wtq(engine)
+        print('step 1 - sorted values raw', sorted_values_raw)
+
+        # Example usage to filter 'current' records
+        sorted_values = filter_records_by_time_qualifier(sorted_values_raw, time_scope)
+        print('step 2 - sorted values', sorted_values)
+
+        if is_user_role(db.session, current_user.id, 'Admin'):
+            company_id = None  # will list all companies' cards
+        else:
+            company_user = CompanyUsers.query.filter_by(user_id=current_user.id).first()
+            if company_user:
+                company_id = company_user.company_id
+            else:
+                company_id = None
+            print('step 3 - company id', company_id)
+
+        html_cards = generate_html_cards_progression_with_progress_bars111(sorted_values, time_scope, db.session, company_id)
+        print('step 4 - html cards generated')
+
+        # Write HTML code to a file
+        with open('report_cards1.html', 'w') as f:
+            f.write(html_cards)
+
+        return render_template('admin_cards_progression.html', html_cards=html_cards, user_roles=user_roles)
+
+    except Exception as e:
+        logging.error(f"Error in company_overview_historical: {e}")
+        return str(e), 500
+
 
 @login_required
 @app.route('/control_area_1')
@@ -4597,6 +4714,6 @@ if __name__ == '__main__':
 
     port = int(os.environ.get('PORT', 5000))
 
-    logging.basicConfig(filename='app.log', level=logging.DEBUG)
     # TODO DEBUG
-    app.run(debug=False, host='0.0.0.0', port=port, extra_files=['./static/js/menuStructure101.json'])
+    logging.basicConfig(filename='app.log', level=logging.DEBUG)
+    app.run(debug=True, host='0.0.0.0', port=port, extra_files=['./static/js/menuStructure101.json'])

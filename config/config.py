@@ -907,6 +907,51 @@ def get_time_qualifier(interval_id, interval_ord, year):
     elif year > current_year:
         result = "future"
     else:  # Same year as current year
+        # Handle null values for interval_id and interval_ord
+        if interval_id is None or interval_ord is None:
+            result = "unknown"
+        else:
+            if interval_id == 1:  # year
+                result = "current"
+            elif interval_id == 2:  # semester
+                current_interval_ord = (current_date.month + 5) // 6
+            elif interval_id == 3:  # quadrimester
+                current_interval_ord = (current_date.month + 3) // 4
+            elif interval_id == 4:  # quarter
+                current_interval_ord = (current_date.month + 2) // 3
+            elif interval_id == 5:  # month
+                current_interval_ord = current_date.month
+            elif interval_id == 6:  # fortnight
+                current_interval_ord = int(current_date.strftime('%W')) // 2
+            elif interval_id == 7:  # week
+                current_interval_ord = int(current_date.strftime('%W'))
+            else:
+                result = "unknown"
+
+            # Ensure current_interval_ord is defined before using it
+            if 'current_interval_ord' in locals():
+                if interval_ord < current_interval_ord:
+                    result = "past"
+                elif interval_ord > current_interval_ord:
+                    result = "future"
+                else:  # Same interval order as current interval order
+                    result = "current"
+            else:
+                result = "unknown"
+
+    return result
+
+
+
+def get_time_qualifier333(interval_id, interval_ord, year):
+    current_date = datetime.now()
+    current_year = current_date.year
+
+    if year < current_year:
+        result = "past"
+    elif year > current_year:
+        result = "future"
+    else:  # Same year as current year
         if interval_id == 1:  # year
             result = "current"
         elif interval_id == 2:  # semester
@@ -1039,6 +1084,7 @@ def get_pd_report_from_base_data(session):
     return sorted_records
 
 
+
 def get_pd_report_from_base_data_wtq(engine):
     try:
         # Assuming BaseData and Company are your SQLAlchemy models
@@ -1067,6 +1113,118 @@ def get_pd_report_from_base_data_wtq(engine):
 
         # Fetch query results into DataFrame
         df = pd.read_sql(query.statement, connection)  # Use query.statement
+
+        # Check if the DataFrame is empty
+        if df.empty:
+            print("No data returned.")
+            return []
+
+        # Apply the logic for assigning time qualifier to each record
+        df['time_qualifier'] = df.apply(
+            lambda row: get_time_qualifier(row['interval_id'], row['interval_ord'], row['fi0']), axis=1)
+
+        # Sort the DataFrame by time_qualifier, area_id, subarea_id, interval_ord, and year
+        sorted_df = df.sort_values(by=['fi0', 'interval_ord', 'area_id', 'subarea_id'],
+                                   ascending=[False, True, True, True])
+
+        # To drop a single column without returning a new df
+        sorted_df.drop('interval_id', axis=1, inplace=True)
+
+        # Convert DataFrame to list of dictionaries
+        sorted_records = sorted_df.to_dict(orient='records')
+
+        return sorted_records
+
+    except Exception as e:
+        print(f"Error in get_pd_report_from_base_data_wtq: {e}")
+        raise
+
+    finally:
+        connection.close()
+
+
+def get_pd_report_from_base_data_wtq333(engine):
+    try:
+        connection = engine.connect()
+
+        query = db.session.query(
+            BaseData.company_id,
+            Company.name.label('company_name'),
+            BaseData.area_id,
+            BaseData.subarea_id,
+            BaseData.interval_id,
+            BaseData.interval_ord,
+            BaseData.fi0,
+            func.count().label('record_count')
+        ).join(
+            Company, BaseData.company_id == Company.id
+        ).group_by(
+            BaseData.company_id,
+            Company.name,
+            BaseData.area_id,
+            BaseData.subarea_id,
+            BaseData.interval_id,
+            BaseData.interval_ord,
+            BaseData.fi0
+        )
+
+        df = pd.read_sql(query.statement, connection)
+        print('DataFrame structure:', df)
+
+        if df.empty:
+            print("No data returned.")
+            return []
+
+        # Apply the logic for assigning time qualifier to each record
+        df['time_qualifier'] = df.apply(
+            lambda row: get_time_qualifier(row['interval_id'], row['interval_ord'], row['fi0']), axis=1)
+
+        sorted_df = df.sort_values(by=['fi0', 'interval_ord', 'area_id', 'subarea_id'], ascending=[False, True, True, True])
+
+        sorted_df.drop('interval_id', axis=1, inplace=True)
+        sorted_records = sorted_df.to_dict(orient='records')
+
+        return sorted_records
+
+    except Exception as e:
+        print(f"Error in get_pd_report_from_base_data_wtq: {e}")
+        raise
+
+    finally:
+        connection.close()
+
+
+def get_pd_report_from_base_data_wtq222(engine):
+    try:
+        # Assuming BaseData and Company are your SQLAlchemy models
+        connection = engine.connect()
+
+        query = db.session.query(
+            BaseData.company_id,
+            Company.name.label('company_name'),  # Add the company name to the query
+            BaseData.area_id,
+            BaseData.subarea_id,
+            BaseData.interval_id,
+            BaseData.interval_ord,
+            BaseData.fi0,
+            func.count().label('record_count')
+        ).join(
+            Company, BaseData.company_id == Company.id  # Join with Company model to get company name
+        ).group_by(
+            BaseData.company_id,
+            Company.name,
+            BaseData.area_id,
+            BaseData.subarea_id,
+            BaseData.interval_id,
+            BaseData.interval_ord,
+            BaseData.fi0
+        )
+
+        # Fetch query results into DataFrame
+        df = pd.read_sql(query.statement, connection)  # Use query.statement
+
+        print('df', df.head())
+        print(df.tail())  # Print last 5 rows
 
         # Debugging: Print the DataFrame structure
 
