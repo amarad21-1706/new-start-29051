@@ -1969,7 +1969,8 @@ def signup():
                 tax_code=form.tax_code.data,
                 terms_accepted=form.terms_accepted.data,
                 created_on=datetime.utcnow(),
-                updated_on=datetime.utcnow()
+                updated_on=datetime.utcnow(),
+                user_2fa_secret=pyotp.random_base32()  # Generate the 2FA secret
             )
 
             print(form.password.data)
