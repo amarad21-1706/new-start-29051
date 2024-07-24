@@ -1397,10 +1397,11 @@ def load_workflow_controls():
 
 # TOD how to eliminate relationship fields in the Question and workflow CREATE templates?
 
+
+@app.route('/open_admin_app_4')
 @login_required
 @roles_required('Admin')
 # Define the index route
-@app.route('/open_admin_app_4')
 def open_admin_app_4():
     user_id = current_user.id
     return redirect(url_for('open_admin_4.index'))
@@ -1488,10 +1489,10 @@ def open_admin_app_3():
     return redirect(url_for('open_admin_3.index'))
 
 
+@app.route('/open_admin_app_10')
 @login_required
 @roles_required('Admin')
 # Define the index route
-@app.route('/open_admin_app_10')
 def open_admin_app_10():
     user_id = current_user.id
     company_row = db.session.query(Company.name) \
@@ -1999,10 +2000,11 @@ def terms_of_use():
     return render_template('home/terms_of_use.html')
 
 
+
+@app.route('/create_step', methods=['GET', 'POST'])
 @login_required
 # TODO this is a test route. TB cancelled
 @roles_required('Admin')
-@app.route('/create_step', methods=['GET', 'POST'])
 def create_step():
     if request.method == 'POST':
         new_step = Step(
@@ -2185,9 +2187,10 @@ def dashboard_company():
     # Your view logic goes here
     return render_template('dashboard/company.html')
 
+
+@app.route('/overview_statistics_1')
 @login_required
 @roles_required('Admin')
-@app.route('/overview_statistics_1')
 def overview_statistics_1():
     user_id = current_user.id  # Implement your user authentication logic
     if not user_id:
@@ -2297,9 +2300,10 @@ def handle_card_click():
 ''' 
 System setup, admin: Company->User(s)
 '''
+
+@app.route('/dashboard_setup_companies_users')
 @login_required
 @roles_required('Admin')
-@app.route('/dashboard_setup_companies_users')
 def dashboard_setup_companies_users():
     # Assuming you have access to the session object
     '''
@@ -2323,9 +2327,10 @@ def dashboard_setup_companies_users():
 ''' 
 System setup, admin: User->Role(s)
 '''
+
+@app.route('/dashboard_setup_user_roles')
 @login_required
 @roles_required('Admin')
-@app.route('/dashboard_setup_user_roles')
 def dashboard_setup_user_roles():
 
     # Generate HTML report
@@ -2338,9 +2343,10 @@ def dashboard_setup_user_roles():
 ''' 
 System setup, admin: Questionnaire->Question(s)
 '''
+
+@app.route('/dashboard_setup_questionnaire_questions')
 @login_required
 @roles_required('Admin')
-@app.route('/dashboard_setup_questionnaire_questions')
 def dashboard_setup_questionnaire_questions():
     # Assuming you have access to the session object
     # Generate HTML report
@@ -2363,8 +2369,10 @@ def generate_setup_company_questionnaire():
     return render_template('generic_report.html', title="Questionnaires and Companies", columns=["Company", "Questionnaire name", "Questionnaire id"], rows=report_data)
 
 #@login_required
-@roles_required('Admin')
+
 @app.route('/dashboard_setup_workflow_steps')
+@login_required
+@roles_required('Admin')
 def dashboard_setup_workflow_steps():
     # Generate HTML report
     report_data = generate_workflow_step_report_data(db.session)
@@ -2376,8 +2384,9 @@ def dashboard_setup_workflow_steps():
 report of workflow of documents
 '''
 #@login_required
-@roles_required('Admin')
 @app.route('/dashboard_setup_workflow_base_data')
+@login_required
+@roles_required('Admin')
 def dashboard_setup_workflow_base_data():
 
     # Generate HTML report
@@ -2394,9 +2403,10 @@ def dashboard_setup_workflow_base_data():
 '''
 Route to manage trilateral link document/workflow/step
 '''
+
+@app.route('/dashboard_setup_step_base_data')
 @login_required
 @roles_required('Admin')
-@app.route('/dashboard_setup_step_base_data')
 def dashboard_setup_step_base_data():
     # Generate HTML report
 
@@ -2427,9 +2437,10 @@ def dashboard_setup_step_base_data():
 ''' 
 System setup, admin: Area->Subareas
 '''
+
+@app.route('/dashboard_setup_area_subareas')
 @login_required
 @roles_required('Admin')
-@app.route('/dashboard_setup_area_subareas')
 def dashboard_setup_area_subareas():
     # Generate HTML report
     report_data = generate_area_subarea_report_data(db.session)
@@ -2614,9 +2625,9 @@ def control_area_3():
                            current_route=current_route_url, current_app=current_app)
 
 
+@app.route('/home/site_map', methods=['GET', 'POST'])
 @login_required
 @roles_required('Admin')
-@app.route('/home/site_map',  methods=['GET', 'POST'])
 def site_map():
     # ... (your existing code)
 
@@ -2961,9 +2972,10 @@ def parse_form_data_bws(form_data):
 
     return parsed_data
 
+
+@app.route('/delete_records_bws', methods=['GET', 'POST'])
 @login_required
 @roles_required('Admin')
-@app.route('/delete_records_bws', methods=['GET', 'POST'])
 def delete_records_bws():
     # Retrieve JSON data sent from the client-side
     forms_data = request.json.get('forms_data', [])
@@ -3052,6 +3064,7 @@ Trilateral entry form route - 3-key entry_trilateral_tiangle_triangolo_SERVER SI
 '''
 
 @app.route('/manage_base_data_workflow_step', methods=['GET', 'POST'])
+@login_required
 @roles_required('Admin')
 def manage_base_data_workflow_step():
 
@@ -3142,9 +3155,10 @@ def manage_base_data_workflow_step():
     return render_template('manage_base_data_workflow_step.html', form=form, message=message)
 
 
+
+@app.route('/manage_company_users', methods=['GET', 'POST'])
 @login_required
 @roles_required('Admin')
-@app.route('/manage_company_users', methods=['GET', 'POST'])
 def manage_company_users():
     form = CompanyUserForm()
     message = None
@@ -3195,9 +3209,9 @@ def manage_company_users():
     return render_template('manage_company_users.html', form=form, message=message)
 
 
+@app.route('/manage_questionnaire_companies', methods=['GET', 'POST'])
 @login_required
 @roles_required('Admin')
-@app.route('/manage_questionnaire_companies', methods=['GET', 'POST'])
 def manage_questionnaire_companies():
     form = QuestionnaireCompanyForm()
     message = None
@@ -4049,9 +4063,9 @@ def noticeboard():
     return render_template('home/noticeboard.html', unmarked_messages=unmarked_messages)
 
 
+@app.route('/auditlog')
 @login_required
 @roles_required('Admin')
-@app.route('/auditlog')
 def auditlog():
     # Retrieve unmarked messages from the database
     audit_log = AuditLog.query.order_by(AuditLog.timestamp.desc()).all()
