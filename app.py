@@ -89,15 +89,6 @@ from modules.chart_service import ChartService
 
 from modules.admin_routes import admin_bp
 
-
-'''
-from admin_views import (ContainerAdmin, CompanyView, QuestionnaireView, QuestionView,
-        StatusView, LexicView, AreaView, StepQuestionnaireView,
-        SubareaView, SubjectView, PostView, TicketView, WorkflowView, StepView, AuditLogView,
-        QuestionnaireQuestionsView, WorkflowStepsView, QuestionnaireCompaniesView,
-        OpenQuestionnairesView, BaseDataView, UsersView)
-'''
-
 from flask import flash, current_app, get_flashed_messages
 # from flask_admin.exceptions import ValidationError
 
@@ -180,9 +171,7 @@ from cachetools import TTLCache, cached
 # OPENCAGE API KEY
 # aad0f13ea1af46c6b89153e6b7bd7928
 
-print('1')
 app = create_app()
-print('app created')
 
 # Setup Mail
 mail = Mail(app)
@@ -201,7 +190,7 @@ GEONAMES_USERNAME = 'amarad21'
 cache = TTLCache(maxsize=100, ttl=86400)  # Adjust cache size and TTL as needed
 NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 
-print('geolocator on')
+print('geo-names on')
 # Create a cache with a TTL of 600 seconds and a max size of 100 items
 
 # Setup Limiter
@@ -219,7 +208,6 @@ print('CORS active')
 
 # Setup LoginManager
 login_manager = LoginManager(app)
-print('login manager active')
 
 stripe.api_key = app.config['STRIPE_API_KEY']
 stripe.publishable_key = app.config['STRIPE_PUBLISHABLE_KEY']
@@ -257,6 +245,7 @@ intervals = initialize_app(app)
 
 # Initialize the admin views
 admin_app1, admin_app2, admin_app3, admin_app4, admin_app10 = create_admin_views(app, intervals)
+print('intervals', intervals)
 
 @app.route('/set_session')
 def set_session():
@@ -269,20 +258,6 @@ def get_session():
     value = session.get('key')
     return f'Session value: {value}'
 
-'''
-@login_manager.user_loader
-def load_user(user_id):
-    user = user_manager.load_user(user_id)
-    # print('user loaded', user)
-    # print_routes()
-
-    # clear_flashed_messages()
-    if user:
-        # Store user roles in the session
-        session['user_roles'] = [role.name for role in user.roles] if user.roles else []
-        #print('roles', session['user_roles'])
-    return user
-'''
 
 def check_internet():
     url = "https://www.google.com"
@@ -339,7 +314,6 @@ with app.app_context():
     # db.create_all()
 
     app.register_blueprint(admin_bp)
-    print('admin blueprint registered')
 
     user_roles_blueprint = create_crud_blueprint(UserRoles, 'user_roles')
     app.register_blueprint(user_roles_blueprint, url_prefix='/model_user_roles')
@@ -372,10 +346,6 @@ with open(Path(json_file_path), 'r') as file:
 # Create an instance of MenuBuilder
 menu_builder = MenuBuilder(main_menu_items, ["Guest"])
 parsed_menu_data = menu_builder.parse_menu_data(user_roles=["Guest"], is_authenticated=False, include_protected=False)
-
-def print_routes():
-    with current_app.test_request_context():
-        print(current_app.url_map)
 
 
 def is_user_role(session, user_id, role_name):
@@ -480,7 +450,6 @@ def create_company_folder(company_id, subfolder):
         folder_path = None
         folder_name = f"company_id_{company_id}/{subfolder}"
         folder_path = os.path.join(app.config['COMPANY_FILES_DIR'], folder_name)
-        print('folder_path', folder_path)
         if not os.path.exists(folder_path):
             os.makedirs(folder_path)
             print('Folder created:', folder_path)
@@ -812,7 +781,6 @@ def forgot_password():
                 flash(_('No user found with that email address.'), 'danger')
             return redirect(url_for('forgot_password'))
         except Exception as e:
-            print(f"Error: {e}")  # Log the error for debugging purposes
             flash(_('An error occurred while processing your request. Please try again later.'), 'danger')
             return render_template('access/forgot_password.html', form=form)
     return render_template('access/forgot_password.html', form=form)
@@ -904,13 +872,11 @@ def login():
                         session['user_id'] = user.id
                         session['username'] = username
                         session['email'] = user.email
-                        print('session email', session['email'])
 
                         try:
                             company_user = CompanyUsers.query.filter_by(user_id=user.id).first()
                             company_id = company_user.company_id if company_user else None
                             session['company_id'] = company_id
-                            print(">>>> session['company_id']", session['company_id'])
                         except Exception as e:
                             print('Error retrieving company ID:', e)
                             company_id = None
@@ -966,8 +932,6 @@ def left_menu():
         if role:
             role_ids.append(role.id)
 
-    print('role_ids', role_ids)
-
     # TODO select containers by role, company etc!
     # containers = Container.query.filter_by(page='link').all()
     try:
@@ -980,7 +944,6 @@ def left_menu():
             print('container 3:', container.page, container.content_type, container.content)
     except:
 
-        print('No container data found 3')
         containers = None
 
     # Check if the lists intersect
@@ -1015,7 +978,6 @@ def left_menu():
         "left_menu_items": left_menu_items,
         "containers": containers,
     }
-    print('additional data', additional_data)
     return render_template('home/home.html', **additional_data)
 
 
@@ -1032,7 +994,6 @@ def index():
     # Determine if the cookie banner should be shown
     show_cookie_banner = 'Admin' not in user_roles and cookies_accepted == 'false'
 
-    print('show_cookie_banner1', show_cookie_banner)
     # Create MenuBuilder with user roles
     menu_builder = MenuBuilder(main_menu_items, allowed_roles=user_roles)
     # Generate menu for the current user
@@ -1134,8 +1095,6 @@ def show_cards():
       }
   ]
   '''
-
-  print('card data for base_cards_template:', containers_data)
 
   return render_template('base_cards_template.html', containers=containers_data, create_card=create_card)
 
@@ -1291,16 +1250,14 @@ def user_documents():
                     pass
 
             else:
-
-                print('no workflow data for first document')
                 #app.logger.info("No workflow data found for the first document")
                 #return render_template('workflow/no_workflow_data.html')  # Handle case where no workflow data exists
                 pass
 
         else:
-            print('no docs for current user')
             #app.logger.info("No documents found for the current user")
             #return render_template('workflow/no_documents.html')  # Handle the case where no documents exist
+            pass
 
     except Exception as e:
         #app.logger.error("An error occurred: %s", e)
@@ -1434,14 +1391,11 @@ def open_admin_app_1():
     user_subscription_plan = current_user.subscription_plan
     user_subscription_status = current_user.subscription_status
 
-    print('subscription plan, status', user_subscription_plan, user_subscription_status)
-
     template = "Area di controllo 1 - Atti, iniziative, documenti"
     placeholder_value = company_name if company_name else None
     formatted_string = template.format(placeholder_value) if placeholder_value else template
 
     admin_app1.name = formatted_string
-    print('*** admin_app1.name', admin_app1.name)
 
     return redirect(url_for('open_admin.index'))
 
@@ -1451,7 +1405,6 @@ def open_admin_app_1():
 @login_required
 @subscription_required
 def open_admin_app_2():
-    print('subscription required route')
     user_id = current_user.id
     company_row = db.session.query(Company.name) \
         .join(CompanyUsers, CompanyUsers.company_id == Company.id) \
@@ -1464,7 +1417,6 @@ def open_admin_app_2():
     formatted_string = template.format(placeholder_value) if placeholder_value else template
     admin_app2.name = formatted_string
 
-    print('*** admin_app2.name', admin_app2.name)
     return redirect(url_for('open_admin_2.index'))
 
 
@@ -1485,7 +1437,6 @@ def open_admin_app_3():
     formatted_string = template.format(placeholder_value) if placeholder_value else template
     admin_app3.name = formatted_string
 
-    print('*** admin_app3.name', admin_app3.name)
     return redirect(url_for('open_admin_3.index'))
 
 
@@ -1506,8 +1457,6 @@ def open_admin_app_10():
     placeholder_value = company_name
     formatted_string = template.format(placeholder_value) if placeholder_value else template
     admin_app10.name = formatted_string
-
-    print('*** admin_app10.name', admin_app3.name)
 
     return redirect(url_for('open_admin_10.index'))
 
@@ -1726,7 +1675,6 @@ def manager_page():
 def employee_page():
 
     #session['user_roles'] = [role.name for role in users.roles] if users.roles else []
-    print("employee route")
     left_menu = get_left_menu_items(["Employee"])
     try:
         additional_data = {
@@ -1777,7 +1725,6 @@ def get_left_menu_items_limited(role, area):
 def guest_page():
 
     # app.logger.debug("Home route accessed")
-    # print('guest page')
     is_authenticated = current_user.is_autenticated
     # Render the home page with 'Guest' menu
     additional_data = {
@@ -1973,7 +1920,6 @@ def signup():
                 user_2fa_secret=pyotp.random_base32()  # Generate the 2FA secret
             )
 
-            print(form.password.data)
             new_user.set_password(form.password.data)
             try:
                 db.session.add(new_user)
@@ -1984,12 +1930,10 @@ def signup():
                 return redirect(url_for('login'))
             except Exception as e:
                 db.session.rollback()
-                print(traceback.format_exc())
                 logging.error(f"Error committing to the database: {e}")
                 logging.error(traceback.format_exc())
                 flash('An error occurred during signup', 'error')
         else:
-            print(f"Form errors: {form.errors}")
             flash('Form validation failed. Please check your input.', 'error')
 
     return render_template('access/signup.html', title='Sign Up', form=form)
@@ -2141,7 +2085,6 @@ def save_card():
         db.session.commit()
         return jsonify({"message": "Card content saved successfully"})
     except Exception as e:
-        print(e)
         return jsonify({"message": "Error saving card content"})
 
 @login_required
@@ -2226,7 +2169,6 @@ def overview_statistics_1():
         }
     ]
 
-    print('card data', card_data)
     return render_template('base_cards_template.html', containers=card_data, create_card=create_card)
 
 @login_required
@@ -2250,7 +2192,7 @@ def deadlines_1():
 
         # Append card data to the list
         cards.append({'html': card_html, 'id': card_data['id'], 'deadline_before': card_data['deadline_before']})
-    print(cards)
+
     return render_template('base_cards_deadlines_template.html', cards=cards)
 
 
@@ -2395,7 +2337,6 @@ def dashboard_setup_workflow_base_data():
     report_data = []
     for data in report_data_raw:
         file_name, file_extension = extract_filename_and_extension(data[0])
-        #print(f"{file_name}{file_extension}")
         report_data.append([f"{file_name}{file_extension}", data[1]])
 
     # Render the template with the report data
@@ -2421,7 +2362,6 @@ def dashboard_setup_step_base_data():
         file_path_index = columns.index(
             "Document name")  # Replace "your_column_names_list" with the actual list of column names
         file_name, file_extension = extract_filename_and_extension(data[file_path_index])
-        #print(f"{file_name}{file_extension}")
         # Replace the value at the file_path_index with 'some_value'
         data[file_path_index] = f"{file_name}{file_extension}"
 
@@ -3604,11 +3544,9 @@ def show_survey(questionnaire_id):
         ).first()
 
         if existing_answer and existing_answer.answer_data:
-            # print('existing answer found', existing_answer.answer_data)
             merged_fields = merge_answer_fields(question.answer_fields, existing_answer.answer_data)  # Make sure this function is set to merge JSON fields correctly
             form_data[str(question.id)] = merged_fields
         else:
-            # print('no existing data found')
             form_data[str(question.id)] = question.answer_fields
 
         questions.append({
@@ -3619,7 +3557,6 @@ def show_survey(questionnaire_id):
             'answer_width': question.answer_width,
             'answer_fields': form_data[str(question.id)]
         })
-    # print('questions list', questions)
     dynamic_html = create_dynamic_form(form, {'questions': questions, 'form_data': form_data}, company_id, horizontal)  # Adjust this function to accept horizontal flag
     return render_template('survey.html', form=form, headers=headers, dynamic_html=dynamic_html, questionnaire_name=selected_questionnaire.name, today=datetime.now().date())
 
@@ -3722,7 +3659,6 @@ def serialize_answers(form_data):
     answers = {}
     print('serialize answers, form_data:', form_data)
     for key in form_data.keys():
-        print('serialize answers, key:', key)
         # Extract width data, assuming it's submitted as part of the form data
         width_key = key + '_width'  # Assuming width data is submitted with a key suffix '_width'
         width = form_data.get(width_key, '')  # Default width is an empty string if not provided
@@ -4266,11 +4202,7 @@ def subscribe():
     email = session.get('email')
     user_id = session.get('user_id')
 
-    print('session username', user_id)
     user = Users.query.filter_by(id=user_id).first()
-
-    print('session user', user.email, 'plan', plan)
-    print('session email 2', email)
 
     if not email:
         return jsonify({"success": False, "message": "User not logged in."}), 400
@@ -4411,10 +4343,8 @@ def admin_news():
 @login_required
 @roles_required('Admin')
 def edit_news(id):
-    print(f'Entering edit_news route {id}')
     news_item = Container.query.get_or_404(id)
     if request.method == 'POST':
-        print('Form data received')
         headline = request.form['headline']
         short_text = request.form['short_text']
         image_url = request.form['image_url']
@@ -4474,6 +4404,8 @@ def detailed_news(id):
 
 @app.route('/create_ticket', methods=['GET', 'POST'])
 @login_required
+
+@roles_required('Admin', 'Authority', 'Manager', 'Employee', 'Provider')
 def create_ticket():
     form = TicketForm()
     form.subject.choices = [(s.id, s.name) for s in Subject.query.filter_by(tier_1='Tickets').all()]
@@ -4663,21 +4595,8 @@ if __name__ == '__main__':
         "public_menu": guest_menu_data
     }
 
-    # Start the application
-    # app.run(debug=False, port=5000, host='localhost', extra_files=['./static/js/menuStructure101.json'])
-    # Change the port number
-
-    '''
-    25May2024
-    port = int(os.environ.get('PORT', 5000)) # 5000
-    app.run(debug=True, host='0.0.0.0', port=port, extra_files=['./static/js/menuStructure101.json'])
-    '''
-    #port = int(os.environ.get('PORT', 5000))
-
     port = int(os.environ.get('PORT', 5000))
-    #logging.basicConfig(level=logging.DEBUG)
-    # logging.debug(f"Starting app on port {port}")
 
     logging.basicConfig(filename='app.log', level=logging.DEBUG)
     # TODO DEBUG
-    app.run(debug=True, host='0.0.0.0', port=port, extra_files=['./static/js/menuStructure101.json'])
+    app.run(debug=False, host='0.0.0.0', port=port, extra_files=['./static/js/menuStructure101.json'])

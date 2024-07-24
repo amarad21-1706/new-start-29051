@@ -24,6 +24,7 @@ import pytz
 from flask_caching import Cache
 import os
 from dotenv import load_dotenv
+from sqlalchemy import func
 
 load_dotenv()  # Load environment variables from .env file if present
 
@@ -1038,7 +1039,6 @@ def get_pd_report_from_base_data(session):
     return sorted_records
 
 
-from sqlalchemy import func
 def get_pd_report_from_base_data_wtq(engine):
     try:
         # Assuming BaseData and Company are your SQLAlchemy models

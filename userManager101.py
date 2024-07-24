@@ -8,26 +8,23 @@ from flask_login import current_user
 
 from flask_sqlalchemy import SQLAlchemy
 from flask_babel import Domain
-
+import bcrypt
 
 class UserManager:
     def __init__(self, db: SQLAlchemy):
         self.db = db
-
 
     def authenticate_user(self, username, password):
         try:
             print('auth', username, password)
             user = Users.query.filter_by(username=username).options(joinedload(Users.roles)).first()
             print('user', user)
-            if user and check_password_hash(user.password_hash, password):
+            if user and user.check_password(password):  # Use the custom check_password method
                 print('checked ok', user)
                 session['user_id'] = user.id
                 session['username'] = user.username
                 session['roles'] = [role.name for role in user.roles]
-
                 session['email'] = user.email
-
                 print('roles', session['roles'])
                 return user
             else:

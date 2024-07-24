@@ -29,7 +29,7 @@ from sqlalchemy.dialects.sqlite import JSON # for SQLite
 # OR
 from sqlalchemy.dialects.postgresql import JSONB
 from werkzeug.security import generate_password_hash, check_password_hash
-
+import bcrypt
 
 class CheckboxField(BooleanField):
     def process_formdata(self, valuelist):
@@ -148,15 +148,17 @@ class Users(db.Model, UserMixin):
         self.subscription_start_date = kwargs.get('subscription_start_date')
         self.subscription_end_date = kwargs.get('subscription_end_date')
 
-
     def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
+        # Use bcrypt to hash the password
+        self.password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
     def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
+        # Check if the hash is PBKDF2
+        if self.password_hash.startswith("pbkdf2:sha256:"):
+            return check_password_hash(self.password_hash, password)
 
-        # Implement your password checking logic here
-        #return bcrypt.check_password_hash(self.password, password.encode('utf-8'))
+        # Otherwise, assume it's bcrypt
+        return bcrypt.checkpw(password.encode('utf-8'), self.password_hash.encode('utf-8'))
 
     def is_active(self):
         # Implement the logic to check if the user is active
