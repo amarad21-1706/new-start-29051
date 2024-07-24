@@ -2,19 +2,20 @@
 # DEBUG LOGGING LOGGER TOOLBAR: see app_factory.py
 
 # app.py (or run.py)
+import traceback
 import re
 import requests
 import stripe
 
-# import logging
-# from logging import FileHandler, Formatter
+import logging
+from logging import FileHandler, Formatter
 from flask_wtf.csrf import CSRFProtect
 from sqlalchemy import or_, and_, desc, func, not_, null, exists, extract, select
 
 from sqlalchemy.orm import sessionmaker
 
 from sqlalchemy.exc import OperationalError
-
+from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.exceptions import HTTPException
 from db import db
 from flask import g, make_response
@@ -1944,65 +1945,50 @@ def get_countries():
 @app.route('/access/signup', methods=['GET', 'POST'])
 def signup():
     form = SignupForm()
-    if form.validate_on_submit():
-        new_user = Users(
-            username=form.username.data,
-            email=form.email.data,
-            password_hash=generate_password_hash(form.password.data),
-            user_2fa_secret=pyotp.random_base32(),
-            first_name=form.first_name.data,
-            mid_name=form.mid_name.data,
-            last_name=form.last_name.data,
-            address=form.address.data,
-            address1=form.address1.data,
-            city=form.city.data,
-            province=form.province.data,
-            region=form.region.data,
-            zip_code=form.zip_code.data,
-            country=form.country.data,
-            tax_code=form.tax_code.data,
-            mobile_phone=form.mobile_phone.data,
-            work_phone=form.work_phone.data,
-            created_on=datetime.now(),
-            updated_on=datetime.now(),
-            terms_accepted=form.terms.data
-        )
+    if request.method == 'POST':
+        if form.validate_on_submit():
+            new_user = Users(
+                username=form.username.data,
+                email=form.email.data,
+                title=form.title.data,
+                first_name=form.first_name.data,
+                mid_name=form.mid_name.data,
+                last_name=form.last_name.data,
+                country=form.country.data,
+                region=form.region.data,
+                province=form.province.data,
+                zip_code=form.zip_code.data,
+                city=form.city.data,
+                street=form.street.data,
+                address=form.address.data,
+                address1=form.address1.data,
+                phone_prefix=form.phone_prefix.data,
+                mobile_phone=form.mobile_phone.data,
+                work_phone=form.work_phone.data,
+                tax_code=form.tax_code.data,
+                terms_accepted=form.terms_accepted.data,
+                created_on=datetime.utcnow(),
+                updated_on=datetime.utcnow()
+            )
 
-        try:
-            # Set the hashed password
+            print(form.password.data)
             new_user.set_password(form.password.data)
-            db.session.add(new_user)
-
             try:
+                db.session.add(new_user)
+
                 db.session.commit()
 
-            except Exception as commit_error:
-                # logging.error(f'Error committing to the database: {commit_error}')
+                flash('Your account has been created! You can now log in.', 'success')
+                return redirect(url_for('login'))
+            except Exception as e:
                 db.session.rollback()
+                print(traceback.format_exc())
+                logging.error(f"Error committing to the database: {e}")
+                logging.error(traceback.format_exc())
                 flash('An error occurred during signup', 'error')
-                return render_template('access/signup.html', title='Sign Up', form=form)
-
-            # Retrieve the newly assigned user ID
-
-            new_user_id = new_user.id
-
-            # Create a new record in UserRoles table
-            # user_role_employee = UserRoles(user_id=new_user_id, role_id=4)
-            # db.session.add(user_role_employee)
-
-            # Create a new record in UserRoles table for role ID 5 (Guest)
-
-            user_role_guest = UserRoles(user_id=new_user_id, role_id=5)
-
-            db.session.add(user_role_guest)
-            db.session.commit()
-            flash('Your account has been created! You can now log in.', 'success')
-            return redirect(url_for('login'))
-
-        except IntegrityError as e:
-            db.session.rollback()
-            flash('Username already exists. Please choose a different username.', 'error')
-            return render_template('access/signup.html', form=form)
+        else:
+            print(f"Form errors: {form.errors}")
+            flash('Form validation failed. Please check your input.', 'error')
 
     return render_template('access/signup.html', title='Sign Up', form=form)
 
@@ -4512,6 +4498,7 @@ def view_tickets():
     tickets = Ticket.query.filter_by(user_id=current_user.id).all()
     return render_template('view_tickets.html', tickets=tickets)
 
+
 @app.route('/admin_tickets')
 @login_required
 @roles_required('Admin')
@@ -4643,12 +4630,6 @@ def update_cookies():
 
     return response
 
-
-
-if __name__ == '__main__':
-    app.run(debug=True)
-
-
 if __name__ == '__main__':
     # Load menu items from JSON file
     current_dir = get_current_directory()
@@ -4681,5 +4662,7 @@ if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     #logging.basicConfig(level=logging.DEBUG)
     # logging.debug(f"Starting app on port {port}")
+
+    logging.basicConfig(filename='app.log', level=logging.DEBUG)
     # TODO DEBUG
-    app.run(debug=False, host='0.0.0.0', port=port, extra_files=['./static/js/menuStructure101.json'])
+    app.run(debug=True, host='0.0.0.0', port=port, extra_files=['./static/js/menuStructure101.json'])

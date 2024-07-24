@@ -90,6 +90,9 @@ def create_app(conf=None):
     mail = Mail(app)
     CORS(app)
 
+    app.config['DEBUG'] = True
+    app.config['TESTING'] = True
+
     limiter = Limiter(
         get_remote_address,
         app=app,

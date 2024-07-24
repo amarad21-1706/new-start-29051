@@ -28,7 +28,7 @@ from sqlalchemy.dialects.sqlite import JSON # for SQLite
 # from sqlalchemy.dialects.oracle import JSON  # for Oracle
 # OR
 from sqlalchemy.dialects.postgresql import JSONB
-
+from werkzeug.security import generate_password_hash, check_password_hash
 
 
 class CheckboxField(BooleanField):
@@ -86,40 +86,40 @@ class Container(db.Model):
 class Users(db.Model, UserMixin):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    username = db.Column(String(80), unique=True, nullable=False)
-    email = db.Column(String(120), unique=True, nullable=False)
-    password_hash = db.Column(String(255), nullable=False)
-    user_2fa_secret = db.Column(String(255), nullable=True)
-    title = db.Column(String(12), nullable=False)
-    first_name = db.Column(String(128), nullable=False)
-    mid_name = db.Column(String(128), nullable=True)
-    last_name = db.Column(String(128), nullable=False)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    email = db.Column(db.String(120), unique=True, nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
+    user_2fa_secret = db.Column(db.String(255), nullable=True)
+    title = db.Column(db.String(12), nullable=True)
+    first_name = db.Column(db.String(128), nullable=False)
+    mid_name = db.Column(db.String(128), nullable=True)
+    last_name = db.Column(db.String(128), nullable=False)
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=True)
-    company = db.Column(String(128), nullable=True)
-    address = db.Column(String(128), nullable=False)
-    address1 = db.Column(String(128), nullable=True)
-    city = db.Column(String(128), nullable=False)
-    province = db.Column(String(64), nullable=False)
-    region = db.Column(String(64), nullable=False)
-    zip_code = db.Column(String(24), nullable=True)
-    country = db.Column(String(64), nullable=False)
-    tax_code = db.Column(String(128), nullable=True)
+    company = db.Column(db.String(128), nullable=True)
+    address = db.Column(db.String(128), nullable=False)
+    address1 = db.Column(db.String(128), nullable=True)
+    city = db.Column(db.String(128), nullable=True)
+    province = db.Column(db.String(64), nullable=True)
+    region = db.Column(db.String(64), nullable=True)
+    zip_code = db.Column(db.String(24), nullable=True)
+    country = db.Column(db.String(64), nullable=False)
+    tax_code = db.Column(db.String(128), nullable=True)
+    phone_prefix = db.Column(db.String(15), nullable=False)
     mobile_phone = db.Column(db.String(15), nullable=False)
     work_phone = db.Column(db.String(15), nullable=True)
-
-    # New subscription fields
+    street = db.Column(db.String(128), nullable=True)
     subscription_plan = db.Column(db.String(20), default='free')
     subscription_status = db.Column(db.String(20), default='inactive')
     subscription_start_date = db.Column(db.DateTime, nullable=True)
     subscription_end_date = db.Column(db.DateTime, nullable=True)
-
-    #password_hash = db.Column(db.String(128))
-    created_on = Column(DateTime, nullable=False)
-    updated_on = Column(DateTime, nullable=True, onupdate=datetime.now)
-    end_of_registration = db.Column(DATE)
+    created_on = db.Column(db.DateTime, nullable=False)
+    updated_on = db.Column(db.DateTime, nullable=True, onupdate=db.func.now())
+    end_of_registration = db.Column(db.Date)
     cookies_accepted = db.Column(db.Boolean, default=False)
     analytics = db.Column(db.Boolean, default=False)
     marketing = db.Column(db.Boolean, default=False)
+    terms_accepted = db.Column(db.Boolean, nullable=False, default=False)
+    accepted_terms_date = db.Column(db.DateTime, nullable=True)
 
     roles = db.relationship('Role', secondary='user_roles', backref=db.backref('user', lazy='dynamic'),
                             primaryjoin='UserRoles.user_id == Users.id',
@@ -148,8 +148,9 @@ class Users(db.Model, UserMixin):
         self.subscription_start_date = kwargs.get('subscription_start_date')
         self.subscription_end_date = kwargs.get('subscription_end_date')
 
+
     def set_password(self, password):
-        self.password_hash = generate_password_hash(password).decode('utf8')
+        self.password_hash = generate_password_hash(password)
 
     def check_password(self, password):
         return check_password_hash(self.password_hash, password)

@@ -27,6 +27,7 @@ from flask_admin.model.form import InlineFormAdmin
 from enum import Enum
 from flask_admin.contrib.sqla.ajax import QueryAjaxModelLoader
 from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as _
+# from werkzeug.security import generate_password_hash, check_password_hash
 
 class ManageAppForm(FlaskForm):
     app_id = HiddenField()
@@ -44,6 +45,7 @@ class AssociateAppsForm(FlaskForm):
 class UpdateAccountForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(min=2, max=80)])
     email = StringField('Email', validators=[DataRequired(), Email()])
+    title = StringField('Title', validators=[DataRequired(), Length(min=1, max=24)])
     first_name = StringField('First Name', validators=[DataRequired(), Length(min=1, max=128)])
     mid_name = StringField('Middle Name', validators=[Optional(), Length(max=128)])
     last_name = StringField('Last Name', validators=[DataRequired(), Length(min=1, max=128)])
@@ -225,22 +227,24 @@ class SignupForm(FlaskForm):
     password = PasswordField('Password', validators=[DataRequired()])
     confirm_password = PasswordField('Repeat Password', validators=[
         DataRequired(), EqualTo('password', message='Passwords must match')])
+    title = SelectField('Title', choices=[('', ''), ('Mr.', 'Mr.'), ('Mrs.', 'Mrs.')], validators=[DataRequired()])
     first_name = StringField('First Name', validators=[DataRequired()])
     mid_name = StringField('Middle Name')
     last_name = StringField('Last Name', validators=[DataRequired()])
+    country = StringField('Country', validators=[DataRequired()])
+    region = StringField('Region', validators=[DataRequired()])
+    province = StringField('Province')
+    zip_code = StringField('Zip Code')
+    city = StringField('City')
+    street = StringField('Street')
     address = StringField('Address', validators=[DataRequired()])
     address1 = StringField('Address 1')
-    country = SelectField('Country', validators=[DataRequired()])
-    region = SelectField('Region', validators=[DataRequired()])
-    city = SelectField('City', validators=[DataRequired()])
-    zip_code = SelectField('Zip Code', validators=[DataRequired()])
-    street = SelectField('Street', validators=[DataRequired()])
-    phone_prefix = SelectField('Phone Prefix', validators=[DataRequired()])
+    phone_prefix = StringField('Phone Prefix', validators=[DataRequired()])
     mobile_phone = StringField('Mobile Phone', validators=[DataRequired()])
     work_phone = StringField('Work Phone')
-    province = StringField('Province')
     tax_code = StringField('Tax Code')
-    terms = BooleanField('I accept the Terms of Use', validators=[DataRequired()])
+    terms_accepted = BooleanField('I accept the Terms of Use', validators=[DataRequired()])
+
     submit = SubmitField('Sign Up')
 
 class InlineSurveyForm(InlineFormAdmin):
