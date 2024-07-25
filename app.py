@@ -785,8 +785,9 @@ def forgot_password():
             return render_template('access/forgot_password.html', form=form)
     return render_template('access/forgot_password.html', form=form)
 
-@login_required
+
 @app.route('/reset_password/<token>', methods=['GET', 'POST'])
+@login_required
 def reset_password(token):
     user = Users.query.filter_by(user_2fa_secret=token).first()
     if not user:
@@ -2445,18 +2446,15 @@ def company_overview_current():
         return filtered_records
 
     try:
-        print('step 0 - filtered records', time_scope)
         sorted_values_raw = get_pd_report_from_base_data_wtq(engine)
 
         # Check if no data was found
         if not sorted_values_raw:
             return render_template('no_records.html')
 
-        print('step 1 - raw records', sorted_values_raw, time_scope)
         # Example usage to filter 'current' records
         sorted_values = filter_records_by_time_qualifier(sorted_values_raw, time_scope)
 
-        print('step 2 - sorted records', sorted_values, time_scope)
         if is_user_role(session, current_user.id, 'Admin'):
             company_id = None  # will list all companies' cards
         else:
