@@ -1,0 +1,385 @@
+.container {
+    display: grid;
+    grid-template-columns: 1fr; /* Single column for all content */
+    grid-gap: 10px; /* Add spacing between content blocks */
+}
+
+.content-block {
+    color: white; /* Light color for dark background */
+    background-color: rgba(0, 0, 0, 0.6); /* Semi-transparent background */
+    padding: 10px;
+    border-radius: 5px;
+    text-shadow: 1px 1px 2px #000; /* Text shadow for readability */
+}
+
+@font-face {
+    font-family: 'Geneve';
+    src: url('{{ url_for('static', filename='fonts/Geneve.ttf') }}') format('truetype');
+}
+
+body {
+    font-family: 'Geneve', sans-serif;
+    background-image: url("{{ url_for('static', filename='images/background_image.jpg') }}");
+    background-size: cover;
+    background-repeat: no-repeat;
+    color: lightgrey;
+}
+
+.flashes {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+.flashes li {
+    margin-bottom: 5px;
+}
+
+.alert {
+    padding: 8px 12px;
+    font-size: 14px;
+    border-radius: 4px;
+}
+
+.alert-success {
+    background-color: #d4edda;
+    color: #1557ff;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    color: #884b00;
+}
+
+.alert-info {
+    background-color: #cce5ff;
+    color: #aa1111;
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    color: #ff0000;
+}
+
+/* Define a custom class for general content */
+.general-content {
+    color: #fff3cd; /* Adjust the color as needed */
+}
+
+.gray-text {
+    color: lightgray;
+}
+
+.blue-text {
+    color: lightblue;
+}
+
+.white-text {
+    color: white;
+}
+
+.dark-text {
+    color: #333;
+}
+
+h1 {
+    color: lightgrey;
+}
+
+p {
+    color: white;
+}
+
+.main-menu {
+    list-style: none;
+    display: flex;
+    margin: 0;
+    padding: 0;
+    z-index: 1000;
+    position: relative;
+}
+
+.navbar-nav>li {
+    position: relative;
+}
+
+.navbar-nav>li:not(:last-child) {
+    margin-right: 10px;
+    background-color: lightgray;
+}
+
+.submenu {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    background-color: #fff;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    display: none;
+}
+
+.navbar-nav>li:hover>.submenu {
+    display: block;
+}
+
+.has-submenu .submenu-indicator::after {
+    content: '\25B6';
+    margin-left: 5px;
+    display: inline-block;
+    transform: rotate(90deg);
+    transition: transform 0.3s ease;
+}
+
+.submenu .submenu {
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 100%;
+}
+
+.submenu.show {
+    display: block;
+}
+
+.has-submenu.active .submenu-indicator::after {
+    transform: rotate(0deg);
+}
+
+.sticky-top {
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+}
+
+.navbar.shrink {
+    transition: padding 0.3s;
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.left-menu {
+    border-right: 1px solid #eeb800;
+    float: left;
+    width: 20%;
+    background-color: #aaeeef;
+    padding: 20px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+.left-menu h3 {
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+.left-menu ul li {
+    margin-bottom: 10px;
+}
+
+.left-menu ul {
+    list-style: none;
+    padding: 0;
+}
+
+.sidebar {
+    padding: 20px;
+}
+
+#greeting-section {
+    text-align: right;
+}
+
+@media (max-width: 992px) {
+    .card-column {
+        grid-template-columns: 1fr; /* Stack columns on smaller screens */
+    }
+}
+
+@media (max-width: 768px) {
+    .card-column {
+        grid-template-columns: 1fr; /* Stack columns on smaller screens */
+    }
+}
+
+.fit-image {
+    width: 100%;
+    height: auto;
+    max-height: 200px; /* Adjust the max-height as needed */
+    object-fit: cover; /* Ensure the image covers the area while maintaining aspect ratio */
+    object-position: center; /* Center the image */
+}
+
+.navbar-logo {
+    height: 50px;
+    position: absolute;
+    right: 20px;
+    top: 0;
+}
+
+.carousel-item {
+    height: 300px; /* Adjust the height as needed */
+    display: -moz-inline-stack; /* Enable flexbox for better content arrangement */
+    align-items: center; /* Center content vertically within the carousel item */
+}
+
+.card {
+    flex: 1; /* Allow cards to fill available space within carousel item */
+    color: #333;
+    /* Adjust padding or margin as needed to avoid extra space */
+}
+
+.carousel-item .card {
+    width: 80%; /* Set card width to 80% to fit nicely between the buttons */
+    margin: 0 10px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 5px;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+    padding: 10px;
+    text-align: center;
+    transition: transform 0.3s, box-shadow 0.3s;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    height: 100%;
+    font-size: 0.9em;
+    color: #333; /* Set the font color here */
+}
+
+.carousel-item .card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+    color: darkblue;
+}
+
+.card-header {
+    font-size: 1.1em;
+    font-weight: bold;
+    color: #333;
+}
+
+.card-body {
+    padding: 10px 0;
+    color: #333;
+    flex: 1;
+}
+
+.card-footer {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+}
+
+.card-button {
+    background-color: blue;
+    color: #fff;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    font-size: 0.9em;
+    width: max-content;
+}
+
+.card-button:hover {
+    background-color: darkblue;
+    color: #0bcb9a;
+}
+
+.card-link {
+    color: darkblue;
+    text-decoration: none;
+    transition: color 0.3s;
+    font-size: 0.9em;
+}
+
+.card-link:hover {
+    color: blue;
+}
+
+/* Add CSS for fixed video dimensions */
+.video-fixed-dimensions {
+    width: 640px; /* Set fixed width */
+    height: 360px; /* Set fixed height */
+    max-width: 100%; /* Ensure responsiveness */
+}
+
+.app-box {
+    border-radius: 8px;
+    overflow: hidden;
+    cursor: pointer;
+    text-align: center;
+    font-size: 1em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.3s, box-shadow 0.3s;
+}
+
+.app-box:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+}
+
+.cookie-banner {
+    position: fixed;
+    bottom: 0;
+    width: 100%;
+    background-color: #007BFF; /* Dark background */
+    padding: 5px; /* Reduce padding */
+    text-align: center;
+    border-top: 1px solid #ccc;
+    color: #fff; /* Light text */
+    font-size: 12px; /* Smaller font size */
+}
+
+.cookie-banner p {
+    margin: 0;
+    padding: 0;
+}
+
+.cookie-banner form {
+    display: inline-block;
+    margin: 5px; /* Reduce margin */
+}
+
+.cookie-banner button {
+    margin: 3px; /* Reduce margin */
+    padding: 5px 10px; /* Reduce padding */
+    font-size: 12px; /* Smaller font size */
+}
+
+.footer-section {
+    background-color: #f8f9fa;
+    padding: 20px 0;
+}
+
+.footer-section .footer-links {
+    margin-bottom: 10px;
+}
+
+.footer-section .footer-links .top-row {
+    font-size: 1.1em;
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.footer-section .footer-links a {
+    color: #333;
+    text-decoration: none;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.footer-section .footer-links a:hover {
+    text-decoration: underline;
+}
+
+.footer-section .footer-links .column-title {
+    font-size: 1.1em;
+    font-weight: bold;
+}
+
+.footer-section .footer-links .column-content a {
+    font-size: 0.9em;
+    font-weight: normal;
+}

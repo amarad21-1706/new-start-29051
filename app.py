@@ -522,7 +522,8 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
             if callable(getattr(current_user, 'is_authenticated', None)):
                 is_authenticated = current_user.is_authenticated()
             else:
-                is_authenticated = current_user.is_authenticated
+                i
+                s_authenticated = current_user.is_authenticated
 
             username = current_user.username if current_user.is_authenticated else "Guest"
             user_roles = session.get('user_roles', ['Guest'])

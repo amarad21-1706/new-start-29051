@@ -1,0 +1,48 @@
+$(document).ready(function() {
+    $('.navbar-nav .nav-item').hover(function() {
+        $(this).find('.submenu').first().stop(true, true).delay(100).slideDown(150);
+    }, function() {
+        $(this).find('.submenu').first().stop(true, true).delay(100).slideUp(150);
+    });
+
+    $('.has-submenu').hover(function() {
+        $(this).find('.submenu').first().stop(true, true).delay(100).slideDown(150);
+    }, function() {
+        $(this).find('.submenu').first().stop(true, true).delay(100).slideUp(150);
+    });
+
+    var navbar = $(".navbar");
+    var sticky = navbar.offset().top;
+
+    $(window).scroll(function() {
+        if (window.pageYOffset >= sticky) {
+            navbar.addClass("sticky-top shrink");
+        } else {
+            navbar.removeClass("sticky-top shrink");
+        }
+    });
+
+    var username = "{{ username }}"; // Use the username from the Flask route
+
+    if (username && username !== "Guest") {
+        $("#greeting-section").html("W e l c o m e,  " + username + "!");
+        $("#greeting-section").show(); // Show the greeting section
+    } else {
+        $("#greeting-section").html("Please <a href='{{ url_for('login') }}'>log in</a> or <a href='{{ url_for('signup') }}'>sign up</a>");
+        $("#greeting-section").show(); // Show the greeting section
+    }
+
+    // Show noticeboard modal when icon is clicked
+    document.getElementById("messages-icon").addEventListener("click", function() {
+        document.getElementById("noticeboard-modal").style.display = "block";
+    });
+
+    // Close modal when close button is clicked
+    document.getElementsByClassName("close")[0].addEventListener("click", function() {
+        document.getElementById("noticeboard-modal").style.display = "none";
+    });
+
+    setTimeout(function() {
+        $('.flashes').fadeOut('fast');
+    }, 2000); // Change '2000' to the desired time interval in milliseconds (e.g., 3000 for 3 seconds)
+});

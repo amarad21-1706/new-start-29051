@@ -9,60 +9,92 @@
             background-color: #001f3f;
             color: #fff;
             font-family: 'Cambria', sans-serif;
-            margin: 20px; /* 30% margin on left and right */
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            max-width: 600px;
             padding: 20px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            text-align: center;
         }
 
         h1 {
             color: #5cdb95;
-            font-size: 20px;
-            margin-bottom: 20px; /* Add some space below headers */
+            font-size: 24px;
+            margin-bottom: 20px;
         }
 
         p {
             margin-bottom: 10px;
-            font-size: 16px;
+            font-size: 18px;
         }
 
-        div {
-            color: #5cdb95;
-            font-size: 14px;
-            margin-top: 20px; /* Add space above the debug message */
+        .contact-info {
+            margin-bottom: 30px;
+        }
+
+        .contact-info p {
+            margin: 10px 0;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
         }
 
         button {
             background-color: #5cdb95;
             color: #001f3f;
-            padding: 10px 15px;
-            margin-right: 10px;
+            padding: 10px 20px;
             cursor: pointer;
             border: none;
             border-radius: 5px;
             font-size: 16px;
+            transition: background-color 0.3s ease;
         }
 
-        /* Add more styles as needed */
+        button:hover {
+            background-color: #3e8e41;
+        }
+
+        .debug-message {
+            margin-top: 20px;
+            color: #5cdb95;
+            font-size: 14px;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 10px;
+            border-radius: 5px;
+        }
     </style>
 </head>
 <body>
-    <h1>You can reach us at:</h1>
-    <p>...</p>
-    <p>Email: ___@___.it</p>
-    <p>...</p>
-    <p>Phone: +39.02.1111111.</p>
-    <p>...</p>
-    <p>Address: ... ITALY</p>
-    <p>...</p>
+    <div class="container">
+        <h1>You can reach us at:</h1>
+        <div class="contact-info">
+            <p>Email: info@ilmgroup.net</p>
+            <p>Phone: +39 3355616214</p>
+            <p>Address: Via Giovanni Boccaccio 39, 20123, Milano (MI)</p>
+        </div>
 
-    <div>
-        <p>{{ debug_message }}</p>
+        <div class="button-group">
+            <button onclick="goBack()">Back</button>
+            <button onclick="goHome()">Home</button>
+        </div>
+
+        <div class="debug-message">
+            <p>{{ debug_message }}</p>
+        </div>
     </div>
-
-    <!-- Back Button -->
-    <button onclick="goBack()">Back</button>
-
-    <!-- Home Button -->
-    <button onclick="goHome()">Home</button>
 
     <script>
         // Function to navigate back
