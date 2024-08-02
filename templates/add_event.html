@@ -33,10 +33,12 @@
         flatpickr("#start-picker", {
             enableTime: true,
             dateFormat: "Y-m-d H:i:S",
+            defaultDate: "{{ form.start.data.strftime('%Y-%m-%d %H:%M:%S') }}"
         });
         flatpickr("#end-picker", {
             enableTime: true,
             dateFormat: "Y-m-d H:i:S",
+            defaultDate: "{{ form.end.data.strftime('%Y-%m-%d %H:%M:%S') }}"
         });
     });
 </script>

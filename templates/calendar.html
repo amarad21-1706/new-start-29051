@@ -9,7 +9,7 @@
   <script src="{{ url_for('static', filename='fullcalendar/moment/moment-with-locales.js') }}"></script>
   <script src="{{ url_for('static', filename='fullcalendar/fullcalendar/index.global.js') }}"></script>
   <script src="{{ url_for('static', filename='fullcalendar/interaction/index.global.min.js') }}"></script>
-  <script src="{{ url_for('static', filename='fullcalendar/daygrid/index.global.js/') }}"></script>
+  <script src="{{ url_for('static', filename='fullcalendar/daygrid/index.global.js') }}"></script>
   {% endblock %}
 </head>
 <body>
@@ -37,18 +37,18 @@
           editable: true,
           selectable: true,
           eventClick: function(info) {
-            // Implement your logic for event click (e.g., open modal)
-            console.log('Event clicked:', info.event);
+            window.location.href = `/edit-event/${info.event.id}`;
           },
           eventDrop: function(info) {
-            // Handle event drag and drop (implement server-side update)
             updateEvent(info.event.id, info.event.startStr, info.event.endStr);
           },
           eventResize: function(info) {
-            // Handle event resize (implement server-side update)
             updateEvent(info.event.id, info.event.startStr, info.event.endStr);
           },
-          eventColor: '#378006'
+          eventColor: '#378006',
+          dateClick: function(info) {
+            handleDateClick(info);
+          }
         });
         calendar.render();
       } else {
@@ -62,6 +62,26 @@
         });
       }
     });
+
+    let clickTimeout;
+
+    function handleDateClick(info) {
+      if (clickTimeout) {
+        clearTimeout(clickTimeout);
+        clickTimeout = null;
+        onDateDblClick(info);
+      } else {
+        clickTimeout = setTimeout(() => {
+          clickTimeout = null;
+          // Single click action here (if needed)
+        }, 300); // Adjust the delay as needed for double-click detection
+      }
+    }
+
+    function onDateDblClick(info) {
+      const selectedDate = info.dateStr;
+      window.location.href = `/add-event?date=${selectedDate}`;
+    }
 
     // Function to update event data on the server (replace with your implementation)
     function updateEvent(eventId, newStart, newEnd) {

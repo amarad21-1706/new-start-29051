@@ -4688,24 +4688,50 @@ def get_events():
         return jsonify({'error': str(e)}), 500
 
 
+from datetime import datetime, timedelta
+
+from datetime import datetime, timedelta
+
+from flask import request
+from datetime import datetime
+
+
 @app.route('/add-event', methods=['GET', 'POST'])
 def add_event():
     form = EventForm()
-    print('add 1', form.data)
+
+    # Calculate default start and end times
+    selected_date_str = request.args.get('date')
+    if selected_date_str:
+        selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d')
+    else:
+        selected_date = datetime.now()
+
+    now = datetime.now()
+
+    # If selected date is today, calculate the next sharp hour for start time
+    if selected_date.date() == now.date():
+        start_time = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+    else:
+        start_time = selected_date.replace(hour=now.hour, minute=0, second=0, microsecond=0)
+
+    # End time: one hour after the start time
+    end_time = start_time + timedelta(hours=1)
+
+    # Set the default values for the form
+    if request.method == 'GET':
+        form.start.data = start_time
+        form.end.data = end_time
+
     if form.validate_on_submit():
-        print('add 2, validated')
         if current_user:
             user_id = current_user.id if current_user.is_authenticated else 0
-
-            print('add 3, user ok', user_id)
             event = Event(
                 title=form.title.data,
                 start=form.start.data,
                 end=form.end.data,
                 user_id=user_id  # Assuming the user ID is required
             )
-
-            print('add 3, start', form.start.data)
             db.session.add(event)
             db.session.commit()
             flash('Event added successfully!', 'success')
@@ -4714,6 +4740,7 @@ def add_event():
             flash('User not logged in', 'warning')
             return redirect(url_for('login'))
     return render_template('add_event.html', form=form)
+
 
 
 @app.route('/edit-event/<int:event_id>', methods=['GET', 'POST'])
