@@ -1371,6 +1371,7 @@ class Event(db.Model):
 
     def to_dict(self):
         return {
+            'id': self.id,  # Include the ID here
             'title': self.title,
             'start': self.start.isoformat(),
             'end': self.end.isoformat()

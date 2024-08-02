@@ -37,7 +37,9 @@
           editable: true,
           selectable: true,
           eventClick: function(info) {
-            window.location.href = `/edit-event/${info.event.id}`;
+            const eventId = info.event.id;
+            console.log('Event ID:', eventId); // Debugging line to ensure the event ID is present
+            window.location.href = `/edit-event/${eventId}`;
           },
           eventDrop: function(info) {
             updateEvent(info.event.id, info.event.startStr, info.event.endStr);

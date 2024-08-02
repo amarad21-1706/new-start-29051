@@ -4665,7 +4665,6 @@ def set_cookies():
 
     return response
 
-
 @app.route('/api/events')
 def get_events():
     try:
@@ -4677,23 +4676,20 @@ def get_events():
         if end_date:
             end_date = datetime.fromisoformat(end_date)
 
-        if start_date and end_date:
-            events = Event.query.filter(Event.start >= start_date, Event.end <= end_date).all()
+        if current_user and current_user.is_authenticated:
+            user_id = current_user.id
         else:
-            events = Event.query.all()
+            return jsonify({'error': 'User not authenticated'}), 401
+
+        if start_date and end_date:
+            events = Event.query.filter(Event.user_id == user_id, Event.start >= start_date, Event.end <= end_date).all()
+        else:
+            events = Event.query.filter_by(user_id=user_id).all()
 
         return jsonify([event.to_dict() for event in events])
     except Exception as e:
         app.logger.error(f"Error fetching events: {e}")
         return jsonify({'error': str(e)}), 500
-
-
-from datetime import datetime, timedelta
-
-from datetime import datetime, timedelta
-
-from flask import request
-from datetime import datetime
 
 
 @app.route('/add-event', methods=['GET', 'POST'])
