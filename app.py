@@ -4665,6 +4665,7 @@ def set_cookies():
 
     return response
 
+
 @app.route('/api/events')
 def get_events():
     try:
@@ -4678,13 +4679,24 @@ def get_events():
 
         if current_user and current_user.is_authenticated:
             user_id = current_user.id
+            company_id = current_user.company_id
+            is_manager = Role.query.join(UserRoles).filter(UserRoles.user_id == user_id,
+                                                           Role.name == 'Manager').count() > 0
         else:
             return jsonify({'error': 'User not authenticated'}), 401
 
         if start_date and end_date:
-            events = Event.query.filter(Event.user_id == user_id, Event.start >= start_date, Event.end <= end_date).all()
+            if is_manager:
+                events = Event.query.filter(Event.company_id == company_id, Event.start >= start_date,
+                                            Event.end <= end_date).all()
+            else:
+                events = Event.query.filter(Event.user_id == user_id, Event.start >= start_date,
+                                            Event.end <= end_date).all()
         else:
-            events = Event.query.filter_by(user_id=user_id).all()
+            if is_manager:
+                events = Event.query.filter_by(company_id=company_id).all()
+            else:
+                events = Event.query.filter_by(user_id=user_id).all()
 
         return jsonify([event.to_dict() for event in events])
     except Exception as e:
@@ -4720,14 +4732,16 @@ def add_event():
             form.end.data = default_end
 
         if form.validate_on_submit():
-            if current_user:
-                user_id = current_user.id if current_user.is_authenticated else 0
+            if current_user and current_user.is_authenticated:
+                user_id = current_user.id
+                company_id = current_user.company_id
 
                 event = Event(
                     title=form.title.data,
                     start=form.start.data,
                     end=form.end.data,
-                    user_id=user_id  # Assuming the user ID is required
+                    user_id=user_id,
+                    company_id=company_id  # Include the company_id
                 )
                 db.session.add(event)
                 db.session.commit()
@@ -4744,10 +4758,21 @@ def add_event():
         return redirect(url_for('calendar'))
 
 
-
 @app.route('/edit-event/<int:event_id>', methods=['GET', 'POST'])
 def edit_event(event_id):
     event = Event.query.get_or_404(event_id)
+
+    if not current_user or not current_user.is_authenticated:
+        flash('User not authenticated', 'warning')
+        return redirect(url_for('login'))
+
+    is_manager = Role.query.join(UserRoles).filter(UserRoles.user_id == current_user.id,
+                                                   Role.name == 'Manager').count() > 0
+
+    if not is_manager and event.user_id != current_user.id:
+        flash('Permission denied', 'danger')
+        return redirect(url_for('calendar'))
+
     form = EventForm(obj=event)
     if form.validate_on_submit():
         event.title = form.title.data
@@ -4758,17 +4783,32 @@ def edit_event(event_id):
         return redirect(url_for('calendar'))
     return render_template('edit_event.html', form=form, event=event)
 
+
 @app.route('/delete-event/<int:event_id>', methods=['POST'])
 def delete_event(event_id):
     event = Event.query.get_or_404(event_id)
+
+    if not current_user or not current_user.is_authenticated:
+        flash('User not authenticated', 'warning')
+        return redirect(url_for('login'))
+
+    is_manager = Role.query.join(UserRoles).filter(UserRoles.user_id == current_user.id,
+                                                   Role.name == 'Manager').count() > 0
+
+    if not is_manager and event.user_id != current_user.id:
+        flash('Permission denied', 'danger')
+        return redirect(url_for('calendar'))
+
     db.session.delete(event)
     db.session.commit()
     flash('Event deleted successfully!', 'success')
     return redirect(url_for('calendar'))
 
+
 @app.route('/calendar')
 def calendar():
     return render_template('calendar.html')
+
 
 
 @app.route('/cookie-settings')
