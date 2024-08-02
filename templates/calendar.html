@@ -20,6 +20,15 @@
     <div id="calendar"></div>
     {% block content %}
     {% endblock %}
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flashes">
+      {% for category, message in messages %}
+      <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
   </main>
   <script>
     document.addEventListener('DOMContentLoaded', function() {
