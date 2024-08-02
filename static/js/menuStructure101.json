@@ -309,6 +309,12 @@
                     "Admin",
                     "Authority"
                 ]
+            },
+            "Calendar-1": {
+                "label": "Agenda",
+                "url": "/calendar",
+                "protected": true,
+                "allowed_roles": ["Admin", "Authority"]
             }
         }
     },
@@ -559,6 +565,12 @@
                                 "allowed_roles": [
                                     "Admin"
                                 ]
+                            },
+                            "Calendar-2": {
+                                "label": "Agenda",
+                                "url": "/calendar",
+                                "protected": true,
+                                "allowed_roles": ["Admin"]
                             }
                         }
                     },

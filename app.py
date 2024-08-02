@@ -4694,48 +4694,54 @@ def get_events():
 
 @app.route('/add-event', methods=['GET', 'POST'])
 def add_event():
-    form = EventForm()
+    date = request.args.get('date')
+    time = request.args.get('time', '00:00:00')  # Default to midnight if no time is provided
 
-    # Calculate default start and end times
-    selected_date_str = request.args.get('date')
-    if selected_date_str:
-        selected_date = datetime.strptime(selected_date_str, '%Y-%m-%d')
-    else:
-        selected_date = datetime.now()
+    print(f"Received date: {date}")  # Debugging line
+    print(f"Received time: {time}")  # Debugging line
 
-    now = datetime.now()
-
-    # If selected date is today, calculate the next sharp hour for start time
-    if selected_date.date() == now.date():
-        start_time = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
-    else:
-        start_time = selected_date.replace(hour=now.hour, minute=0, second=0, microsecond=0)
-
-    # End time: one hour after the start time
-    end_time = start_time + timedelta(hours=1)
-
-    # Set the default values for the form
-    if request.method == 'GET':
-        form.start.data = start_time
-        form.end.data = end_time
-
-    if form.validate_on_submit():
-        if current_user:
-            user_id = current_user.id if current_user.is_authenticated else 0
-            event = Event(
-                title=form.title.data,
-                start=form.start.data,
-                end=form.end.data,
-                user_id=user_id  # Assuming the user ID is required
-            )
-            db.session.add(event)
-            db.session.commit()
-            flash('Event added successfully!', 'success')
-            return redirect(url_for('calendar'))
+    try:
+        if date and time:
+            # Combine date and time strings and convert to datetime object
+            datetime_str = f"{date} {time}"
+            print(f"Combined datetime string: {datetime_str}")  # Debugging line
+            default_start = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
+            default_end = default_start + timedelta(hours=1)
         else:
-            flash('User not logged in', 'warning')
-            return redirect(url_for('login'))
-    return render_template('add_event.html', form=form)
+            now = datetime.now()
+            default_start = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+            default_end = default_start + timedelta(hours=1)
+
+        form = EventForm()
+
+        # Use datetime objects for the form fields
+        if request.method == 'GET':
+            form.start.data = default_start
+            form.end.data = default_end
+
+        if form.validate_on_submit():
+            if current_user:
+                user_id = current_user.id if current_user.is_authenticated else 0
+
+                event = Event(
+                    title=form.title.data,
+                    start=form.start.data,
+                    end=form.end.data,
+                    user_id=user_id  # Assuming the user ID is required
+                )
+                db.session.add(event)
+                db.session.commit()
+                flash('Event added successfully!', 'success')
+                return redirect(url_for('calendar'))
+            else:
+                flash('User not logged in', 'warning')
+                return redirect(url_for('login'))
+        return render_template('add_event.html', form=form)
+
+    except Exception as e:
+        app.logger.error(f"Error processing date and time: {e}")
+        flash('Error processing date and time. Please try again.', 'danger')
+        return redirect(url_for('calendar'))
 
 
 
