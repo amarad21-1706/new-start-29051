@@ -4690,38 +4690,29 @@ def get_events():
 
 @app.route('/add-event', methods=['GET', 'POST'])
 def add_event():
-    print('add 1')
     form = EventForm()
-
-    print('add 2')
+    print('add 1', form.data)
     if form.validate_on_submit():
-
-        print('add 3')
+        print('add 2, validated')
         if current_user:
-
-            print('add 4')
             user_id = current_user.id if current_user.is_authenticated else 0
+
+            print('add 3, user ok', user_id)
             event = Event(
                 title=form.title.data,
                 start=form.start.data,
-                end=form.end.data
+                end=form.end.data,
+                user_id=user_id  # Assuming the user ID is required
             )
 
-            print('add 5')
-            event.user = user_id  # Assuming you have a way to get the current user
-
-            print('add 6')
+            print('add 3, start', form.start.data)
             db.session.add(event)
             db.session.commit()
             flash('Event added successfully!', 'success')
             return redirect(url_for('calendar'))
         else:
-
-            print('add 7')
             flash('User not logged in', 'warning')
             return redirect(url_for('login'))
-
-    print('add 8')
     return render_template('add_event.html', form=form)
 
 

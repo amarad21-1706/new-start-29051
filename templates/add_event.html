@@ -2,10 +2,14 @@
 
 {% block title %}Add Event{% endblock %}
 
+{% block head %}
+<link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+{% endblock %}
+
 {% block content %}
 <h2>Add Event</h2>
-    <form method="POST" action="/add-event">  {{ form.hidden_tag() }}
-    </form>
+<form method="POST" action="/add-event">
     {{ form.hidden_tag() }}
     <div class="form-group">
         {{ form.title.label(class="form-control-label") }}
@@ -13,14 +17,27 @@
     </div>
     <div class="form-group">
         {{ form.start.label(class="form-control-label") }}
-        {{ form.start(class="form-control") }}
+        {{ form.start(class="form-control", id="start-picker") }}
     </div>
     <div class="form-group">
         {{ form.end.label(class="form-control-label") }}
-        {{ form.end(class="form-control") }}
+        {{ form.end(class="form-control", id="end-picker") }}
     </div>
     <div class="form-group">
         {{ form.submit(class="btn btn-primary") }}
     </div>
 </form>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        flatpickr("#start-picker", {
+            enableTime: true,
+            dateFormat: "Y-m-d H:i:S",
+        });
+        flatpickr("#end-picker", {
+            enableTime: true,
+            dateFormat: "Y-m-d H:i:S",
+        });
+    });
+</script>
 {% endblock %}
