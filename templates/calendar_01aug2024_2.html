@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+   <meta charset="UTF-8">
+   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+   <title>Calendar</title>
+   <link href="{{ url_for('static', filename='fullcalendar/main.css') }}" rel="stylesheet" />
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+   <script src="{{ url_for('static', filename='fullcalendar/index.global.min.js') }}"></script>
+   <script>
+       $(document).ready(function() {
+           var calendarEl = document.getElementById('calendar');
+           var calendar = new FullCalendar.Calendar(calendarEl, {
+                initialView: 'dayGridMonth',
+                events: '/api/events',
+                headerToolbar: {
+                    left: 'prev,next today',
+                    center: 'title',
+                    right: 'dayGridMonth,timeGridWeek,timeGridDay'
+                  },
+                editable: true,
+                selectable: true,
+                eventColor: '#378006'
+           });
+           calendar.render();
+           var newEvent = {
+              title: 'New Event',
+              start: '2024-08-15T10:00:00',
+              end: '2024-08-15T12:00:00'
+            };
+            calendar.addEvent(newEvent);
+       });
+   </script>
+</head>
+<body>
+   <div id="calendar"></div>
+</body>
+</html>

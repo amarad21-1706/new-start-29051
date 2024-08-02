@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}Edit Event{% endblock %}
+
+{% block content %}
+<h2>Edit Event</h2>
+<form method="POST">
+    {{ form.hidden_tag() }}
+    <div class="form-group">
+        {{ form.title.label(class="form-control-label") }}
+        {{ form.title(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.start.label(class="form-control-label") }}
+        {{ form.start(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.end.label(class="form-control-label") }}
+        {{ form.end(class="form-control") }}
+    </div>
+    <div class="form-group">
+        {{ form.submit(class="btn btn-primary") }}
+    </div>
+</form>
+<form method="POST" action="{{ url_for('delete_event', event_id=event.id) }}" onsubmit="return confirm('Are you sure you want to delete this event?');">
+    <button type="submit" class="btn btn-danger">Delete Event</button>
+</form>
+{% endblock %}

@@ -6,6 +6,8 @@
     <title>{% block title %}Your Default Title{% endblock %}</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.min.css">
     <!-- Add additional stylesheets or custom styles here -->
+    {% block head %}
+    {% endblock %}
 </head>
 <body>
     <div class="container">
@@ -56,12 +58,7 @@
     </div>
     <!-- Move this line to the end of the body -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/js/bootstrap.bundle.min.js"></script>
-
+    {% block scripts %}
+    {% endblock %}
 </body>
 </html>
-
-
-
-
-
-

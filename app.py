@@ -41,7 +41,7 @@ from workflow_manager import (add_transition_log, create_card,
                               create_model_card, deadline_approaching)
 
 from app_defs import get_user_roles, create_message, generate_menu_tree
-from models.user import (Users, UserRoles, Role, Container, Questionnaire, Question,
+from models.user import (Users, UserRoles, Event, Role, Container, Questionnaire, Question,
         QuestionnaireQuestions, Application, PlanApplications,
         Answer, Company, Area, Subarea, AreaSubareas,
         QuestionnaireCompanies, CompanyUsers, Status, Lexic,
@@ -55,7 +55,7 @@ from models.user import (Users, UserRoles, Role, Container, Questionnaire, Quest
 # from master_password_reset import admin_reset_password, AdminResetPasswordForm
 
 from forms.forms import (SignupForm, UpdateAccountForm, TicketForm, ResponseForm, LoginForm, ForgotPasswordForm,
-                         ResetPasswordForm101, RegistrationForm,
+                         ResetPasswordForm101, RegistrationForm, EventForm,
                          QuestionnaireCompanyForm, CustomBaseDataForm,
         QuestionnaireQuestionForm, WorkflowStepForm, WorkflowBaseDataForm,
                          BaseDataWorkflowStepForm,
@@ -4664,6 +4664,91 @@ def set_cookies():
     current_app.logger.debug("Set cookies accepted to true in both cookie and database")
 
     return response
+
+
+@app.route('/api/events')
+def get_events():
+    try:
+        start_date = request.args.get('start', default=None)
+        end_date = request.args.get('end', default=None)
+
+        if start_date:
+            start_date = datetime.fromisoformat(start_date)
+        if end_date:
+            end_date = datetime.fromisoformat(end_date)
+
+        if start_date and end_date:
+            events = Event.query.filter(Event.start >= start_date, Event.end <= end_date).all()
+        else:
+            events = Event.query.all()
+
+        return jsonify([event.to_dict() for event in events])
+    except Exception as e:
+        app.logger.error(f"Error fetching events: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/add-event', methods=['GET', 'POST'])
+def add_event():
+    print('add 1')
+    form = EventForm()
+
+    print('add 2')
+    if form.validate_on_submit():
+
+        print('add 3')
+        if current_user:
+
+            print('add 4')
+            user_id = current_user.id if current_user.is_authenticated else 0
+            event = Event(
+                title=form.title.data,
+                start=form.start.data,
+                end=form.end.data
+            )
+
+            print('add 5')
+            event.user = user_id  # Assuming you have a way to get the current user
+
+            print('add 6')
+            db.session.add(event)
+            db.session.commit()
+            flash('Event added successfully!', 'success')
+            return redirect(url_for('calendar'))
+        else:
+
+            print('add 7')
+            flash('User not logged in', 'warning')
+            return redirect(url_for('login'))
+
+    print('add 8')
+    return render_template('add_event.html', form=form)
+
+
+@app.route('/edit-event/<int:event_id>', methods=['GET', 'POST'])
+def edit_event(event_id):
+    event = Event.query.get_or_404(event_id)
+    form = EventForm(obj=event)
+    if form.validate_on_submit():
+        event.title = form.title.data
+        event.start = form.start.data
+        event.end = form.end.data
+        db.session.commit()
+        flash('Event updated successfully!', 'success')
+        return redirect(url_for('calendar'))
+    return render_template('edit_event.html', form=form, event=event)
+
+@app.route('/delete-event/<int:event_id>', methods=['POST'])
+def delete_event(event_id):
+    event = Event.query.get_or_404(event_id)
+    db.session.delete(event)
+    db.session.commit()
+    flash('Event deleted successfully!', 'success')
+    return redirect(url_for('calendar'))
+
+@app.route('/calendar')
+def calendar():
+    return render_template('calendar.html')
 
 
 @app.route('/cookie-settings')

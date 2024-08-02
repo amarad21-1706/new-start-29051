@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Calendar{% endblock %}
+
+{% block head %}
+<!-- FullCalendar CSS from CDN -->
+<!-- FullCalendar CSS from a reliable CDN -->
+
+<link href="{{ url_for('static', filename='fullcalendar/fullcalendar/main.min.css') }}" rel="stylesheet" />
+<script src="{{ url_for('static', filename='fullcalendar/jquery.js/jquery.min.js') }}"></script>
+<script src="{{ url_for('static', filename='fullcalendar/moment.js') }}"></script>
+<script src="{{ url_for('static', filename='fullcalendar/moment-with-locales.js') }}"></script>
+<script src="{{ url_for('static', filename='fullcalendar/index.global.js') }}"></script>
+<script src="{{ url_for('static', filename='fullcalendar/interaction/index.global.min.js') }}"></script>
+<script src="{{ url_for('static', filename='fullcalendar/daygrid/index.global.js/') }}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        var calendarEl = document.getElementById('calendar');
+        var calendar = new FullCalendar.Calendar(calendarEl, {
+            initialView: 'dayGridMonth',
+            events: '/api/events', // Fetch events from server
+            editable: true,
+            selectable: true,
+            eventClick: function(info) { // Handle event click
+                // Implement your logic for event click (e.g., open modal)
+                console.log('Event clicked:', info.event);
+            },
+            eventDrop: function(info) { // Handle event drag and drop
+                // Update event data on the server using AJAX
+                updateEvent(info.event.id, info.event.startStr, info.event.endStr);
+            },
+            eventResize: function(info) { // Handle event resize
+                // Update event duration on the server using AJAX
+                updateEvent(info.event.id, info.event.startStr, info.event.endStr);
+            },
+            eventColor: '#378006'
+        });
+        calendar.render();
+    });
+
+    // Function to update event data on the server (replace with your implementation)
+    function updateEvent(eventId, newStart, newEnd) {
+        $.ajax({
+            url: '/update-event/' + eventId,
+            type: 'POST',
+            data: {
+                start: newStart,
+                end: newEnd
+            },
+            success: function(response) {
+                // Handle success response (e.g., update calendar)
+                console.log('Event updated:', response);
+            },
+            error: function(error) {
+                console.error('Error updating event:', error);
+            }
+        });
+    }
+</script>
+{% endblock %}
+
+{% block content %}
+<div id='calendar'></div>
+{% endblock %}

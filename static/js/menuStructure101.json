@@ -265,6 +265,12 @@
                 "url": "/show_cards",
                 "protected": true,
                 "allowed_roles": ["Admin", "Employee", "Manager"]
+            },
+            "Calendar-Events": {
+                "label": "Calendar",
+                "url": "/calendar",
+                "protected": true,
+                "allowed_roles": ["Admin", "Employee", "Manager", "Authority", "Provider"]
             }
         }
     },

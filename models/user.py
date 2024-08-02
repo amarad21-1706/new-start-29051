@@ -1357,3 +1357,21 @@ class PlanApplications(db.Model):
 
     plan = db.relationship('Plan', back_populates='plan_applications')
     application = db.relationship('Application', back_populates='plan_applications')
+
+
+class Event(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(80), nullable=False)
+    start = db.Column(db.DateTime, nullable=False)
+    end = db.Column(db.DateTime, nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+
+    user = db.relationship('Users', backref='events')
+  # Define relationship
+
+    def to_dict(self):
+        return {
+            'title': self.title,
+            'start': self.start.isoformat(),
+            'end': self.end.isoformat()
+        }

@@ -3,7 +3,8 @@
 from db import db
 
 from datetime import datetime
-from wtforms import (DecimalField, StringField, BooleanField, FloatField, FileField, DateField,
+from wtforms import (DecimalField, StringField, BooleanField, FloatField, FileField, DateField, TimeField,
+                    DateTimeLocalField, ValidationError,
                      SelectField, FloatField, IntegerField, IntegerField, DateTimeField, FileField,
                      Form, FormField, IntegerField, HiddenField, DateTimeField, MonthField,
                      TimeField, FileField, TextAreaField, PasswordField, SubmitField, EmailField,
@@ -20,7 +21,7 @@ from wtforms import SelectField, SelectMultipleField, SubmitField, HiddenField
 
 from flask_wtf import FlaskForm
 from wtforms_sqlalchemy.fields import QuerySelectField
-from models.user import (Users, Company, Subject, Step, Workflow, StepBaseData, WorkflowSteps, BaseData, BaseDataInline,
+from models.user import (Users, Company, Event, Subject, Step, Workflow, StepBaseData, WorkflowSteps, BaseData, BaseDataInline,
                          Question, Questionnaire, QuestionnaireQuestions, Status, LegalDocument,
                          Area, Subarea, Lexic, Workflow, Interval, Step)
 from flask_admin.model.form import InlineFormAdmin
@@ -68,7 +69,11 @@ class UpdateAccountForm(FlaskForm):
     ])
     submit = SubmitField('Update')
 
-
+class EventForm(FlaskForm):
+    title = StringField('Title', validators=[DataRequired()])
+    start = DateTimeField('Start', format='%Y-%m-%d %H:%M:%S', validators=[DataRequired()])
+    end = DateTimeField('End', format='%Y-%m-%d %H:%M:%S', validators=[DataRequired()])
+    submit = SubmitField('Submit')
 
 class TicketForm(FlaskForm):
     subject = SelectField('Subject', coerce=int, validators=[DataRequired()])
