@@ -446,8 +446,9 @@ def create_company_folder(company_id, subfolder):
     Returns:
         str: The path of the created folder or None if it already exists.
     """
+
+    folder_path = None
     try:
-        folder_path = None
         folder_name = f"company_id_{company_id}/{subfolder}"
         folder_path = os.path.join(app.config['COMPANY_FILES_DIR'], folder_name)
         if not os.path.exists(folder_path):
@@ -527,7 +528,8 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
             username = current_user.username if current_user.is_authenticated else "Guest"
             user_roles = session.get('user_roles', ['Guest'])
 
-            intersection = set(user_roles) & set(["Employee", "Manager", "Authority", "Admin", "Provider"])
+            intersection = set(user_roles) & {"Employee", "Manager", "Authority", "Admin", "Provider"}
+
             allowed_roles = list(intersection) if intersection else ["Guest"]
 
             menu_builder_instance = MenuBuilder(main_menu_items, allowed_roles=allowed_roles)
@@ -776,12 +778,13 @@ def forgot_password():
 
                 mail.send(msg)
 
-                flash(_('An email has been sent with instructions to reset your password.'), 'success')
+                # Convert LazyString to str before passing to flash
+                flash(str(_('An email has been sent with instructions to reset your password.')), 'success')
             else:
-                flash(_('No user found with that email address.'), 'danger')
+                flash(str(_('No user found with that email address.')), 'danger')
             return redirect(url_for('forgot_password'))
         except Exception as e:
-            flash(_('An error occurred while processing your request. Please try again later.'), 'danger')
+            flash(str(_('An error occurred while processing your request. Please try again later.')), 'danger')
             return render_template('access/forgot_password.html', form=form)
     return render_template('access/forgot_password.html', form=form)
 
@@ -914,38 +917,37 @@ def login():
 # TODO left_menu.html of home.html?
 #@generate_route_and_menu('/home', allowed_roles=["Employee"], template='home/left_menu.html')
 @generate_route_and_menu('/home', allowed_roles=["Employee"], template='home/home.html')
-
 def left_menu():
-    #app.logger.debug("Home route accessed")
-
     username = current_user.username if current_user.is_authenticated else "Guest"
     if callable(getattr(current_user, 'is_authenticated', None)):
         is_authenticated = current_user.is_authenticated()
     else:
         is_authenticated = current_user.is_authenticated
+
     user_roles = session.get('user_roles', [])
     allowed_roles = ["Employee", "Manager", "Authority", "Admin", "Provider"]
-    #menu_builder_instance = MenuBuilder(main_menu_items, allowed_roles=allowed_roles)
 
+    # Fetch role IDs
     role_ids = []
     for role_name in user_roles:
         role = Role.query.filter_by(name=role_name).first()
         if role:
             role_ids.append(role.id)
 
-    # TODO select containers by role, company etc!
-    # containers = Container.query.filter_by(page='link').all()
-    try:
-        containers = Container.query.filter(
-            Container.role_id.in_(role_ids)
-        ).order_by(Container.page.desc()).all()
+    # Fetch containers based on role IDs
+    containers = []
+    if role_ids:
+        try:
+            containers = Container.query.filter(
+                Container.role_id.in_(role_ids)
+            ).order_by(Container.page.desc()).all()
 
-        # Iterate over the containers and print the 'container' field
-        for container in containers:
-            print('container 3:', container.page, container.content_type, container.content)
-    except:
-
-        containers = None
+            # Iterate over the containers and print the 'container' field
+            for container in containers:
+                print('container:', container.page, container.content_type, container.content)
+        except Exception as e:
+            app.logger.error(f"Error fetching containers: {e}")
+            containers = []
 
     # Check if the lists intersect
     intersection = set(user_roles) & set(allowed_roles)
@@ -953,19 +955,15 @@ def left_menu():
     left_menu_items = []
     if intersection:
         left_menu_items = get_left_menu_items(list(intersection))
-    else:
-        pass
 
     # Check for unread notices
+    unread_notices_count = 0
     if is_authenticated:
         unread_notices_count = Post.query.filter_by(user_id=current_user.id, marked_as_read=False).count()
 
-    else:
-        unread_notices_count = 0
-
     additional_data = {
-        "username": current_user.username,
-        "is_authenticated": current_user.is_authenticated,
+        "username": username,
+        "is_authenticated": is_authenticated,
         "user_roles": user_roles,
         "unread_notices_count": unread_notices_count,
         "main_menu_items": None,
@@ -975,12 +973,12 @@ def left_menu():
         "employee_menu_data": None,
         "guest_menu_data": None,
         "allowed_roles": allowed_roles,
-        "limited_menu": limited_menu,
+        "limited_menu": None,  # Assuming limited_menu is defined elsewhere
         "left_menu_items": left_menu_items,
         "containers": containers,
     }
-    return render_template('home/home.html', **additional_data)
 
+    return render_template('home/home.html', **additional_data)
 
 
 @app.route('/')

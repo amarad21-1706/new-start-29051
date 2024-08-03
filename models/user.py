@@ -1070,10 +1070,10 @@ class Step(db.Model):
     deadline_date = db.Column(db.DateTime, nullable=True)
     reminder_date = db.Column(db.DateTime, nullable=True)
 
-
-    def __init__(self, base_data_id, step_id, hidden_data, workflow_id, start_date=None,
+    def __init__(self, base_data_id=None, step_id=None, hidden_data=None, workflow_id=None, start_date=None,
                  deadline_date=None, auto_move=False, end_date=None, start_recall=None,
-                 deadline_recall=None, end_recall=None, recall_unit=None, open_action=None):
+                 deadline_recall=None, end_recall=None, recall_unit=None, open_action=None,
+                 name=None, description=None, action=None, order=None):
         self.base_data_id = base_data_id
         self.workflow_id = workflow_id
         self.step_id = step_id
@@ -1082,12 +1082,15 @@ class Step(db.Model):
         self.auto_move = auto_move
         self.end_date = end_date
         self.hidden_data = hidden_data
-
         self.start_recall = start_recall
         self.deadline_recall = deadline_recall
         self.end_recall = end_recall
         self.recall_unit = recall_unit
         self.open_action = open_action
+        self.name = name
+        self.description = description
+        self.action = action
+        self.order = order
 
     def step_transition(self, workflow_id, step_offset):
         """Moves the document by step_offset within the constraints of the workflow."""
@@ -1124,12 +1127,10 @@ class Step(db.Model):
         self.step_id = new_step.id
         db.session.commit()
 
-
     def status_change(self, to_status):
         """Changes the status of the document."""
         self.status_id = to_status
         db.session.commit()
-
 
     def __repr__(self):
         return f"{self.name} ({self.description})"
