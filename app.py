@@ -1000,27 +1000,23 @@ def index():
     # Generate menu for the current user
     generated_menu = menu_builder.generate_menu(user_roles=user_roles, is_authenticated=True, include_protected=False)
 
-    return render_template('home/home.html', analytics=analytics, marketing=marketing, generated_menu=generated_menu, show_cookie_banner=show_cookie_banner)
+    # Check if the user has events
+    try:
+        if user_id:
+            events = Event.query.filter_by(user_id=user_id).count()
+            has_events = events > 0
+        else:
+            has_events = False
+    except Exception as e:
+        app.logger.error(f"Error checking for events: {e}")
+        has_events = False
 
-'''
-@app.route('/')
-@generate_route_and_menu('/', allowed_roles=["Guest"], template='home/home.html', include_protected=False,
-                         limited_menu=True)
-def index():
+    return render_template('home/home.html',
+                           analytics=analytics, marketing=marketing,
+                           generated_menu=generated_menu,
+                           show_cookie_banner=show_cookie_banner,
+                           has_events=has_events)
 
-    # app.logger.debug("Home route accessed")
-    user_id = session.get('user_id')
-    user_roles = session.get('user_roles', [])
-    #user_roles = ['Guest']
-
-    # Create MenuBuilder with user roles
-    menu_builder = MenuBuilder(main_menu_items, allowed_roles=user_roles)
-    # Generate menu for the current user
-    generated_menu = menu_builder.generate_menu(user_roles=user_roles, is_authenticated=True,
-                                                include_protected=False)
-    pass
-    # return render_template('home/home.html', **additional_data)
-'''
 
 @login_required
 @app.route('/access/logout', methods=['GET'])
@@ -4803,6 +4799,30 @@ def delete_event(event_id):
     db.session.commit()
     flash('Event deleted successfully!', 'success')
     return redirect(url_for('calendar'))
+
+@app.route('/update-event/<int:event_id>', methods=['POST'])
+def update_event(event_id):
+    event = Event.query.get_or_404(event_id)
+
+    if not current_user or not current_user.is_authenticated:
+        return jsonify({'error': 'User not authenticated'}), 401
+
+    is_manager = Role.query.join(UserRoles).filter(UserRoles.user_id == current_user.id,
+                                                   Role.name == 'Manager').count() > 0
+
+    if not is_manager and event.user_id != current_user.id:
+        return jsonify({'error': 'Permission denied'}), 403
+
+    try:
+        new_start = datetime.fromisoformat(request.form.get('start'))
+        new_end = datetime.fromisoformat(request.form.get('end'))
+        event.start = new_start
+        event.end = new_end
+        db.session.commit()
+        return jsonify({'success': 'Event updated successfully'}), 200
+    except Exception as e:
+        app.logger.error(f"Error updating event: {e}")
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route('/calendar')
