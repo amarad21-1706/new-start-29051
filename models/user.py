@@ -1374,6 +1374,7 @@ class Event(db.Model):
     company_id = db.Column(Integer, ForeignKey('company.id'), nullable=False)
     color = db.Column(String(7))
     recurrence = db.Column(String(255))
+    recurrence_end = db.Column(DateTime, nullable=True)
     created_at = db.Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = db.Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
 
@@ -1396,6 +1397,7 @@ class Event(db.Model):
             'company_id': self.company_id,
             'color': self.color,
             'recurrence': self.recurrence,
+            'recurrence_end': self.recurrence_end.isoformat() if self.recurrence_end else None,
             'created_at': self.created_at.isoformat(),
             'updated_at': self.updated_at.isoformat()
         }

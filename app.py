@@ -4696,25 +4696,29 @@ def get_events():
         return jsonify({'error': str(e)}), 500
 
 
+
 @app.route('/add-event', methods=['GET', 'POST'])
+@login_required
 def add_event():
     date = request.args.get('date')
-    time = request.args.get('time', '00:00:00')  # Default to midnight if no time is provided
+    time = request.args.get('time', '00:00:00')
 
-    print(f"Received date: {date}")  # Debugging line
-    print(f"Received time: {time}")  # Debugging line
+    app.logger.info(f"Received date: {date}")
+    app.logger.info(f"Received time: {time}")
 
     try:
+        # Combine date and time strings and convert to datetime object
         if date and time:
-            # Combine date and time strings and convert to datetime object
             datetime_str = f"{date} {time}"
-            print(f"Combined datetime string: {datetime_str}")  # Debugging line
+            app.logger.info(f"Combined datetime string: {datetime_str}")
             default_start = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
             default_end = default_start + timedelta(hours=1)
+            app.logger.info(f"Parsed default start: {default_start}, Parsed default end: {default_end}")
         else:
             now = datetime.now()
             default_start = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
             default_end = default_start + timedelta(hours=1)
+            app.logger.info(f"Generated default start: {default_start}, Generated default end: {default_end}")
 
         form = EventForm()
 
@@ -4722,11 +4726,20 @@ def add_event():
         if request.method == 'GET':
             form.start.data = default_start
             form.end.data = default_end
+            form.recurrence_end.data = default_end
+
+        if request.method == 'POST':
+            app.logger.info(f"Form data received: {request.form}")
 
         if form.validate_on_submit():
+            app.logger.info(f"Form validated: {form.data}")
+            app.logger.info(f"Start: {form.start.data}, End: {form.end.data}, Recurrence End: {form.recurrence_end.data}")
+
             if current_user and current_user.is_authenticated:
                 user_id = current_user.id
-                company_id = current_user.company_id
+                # company_id = current_user.company_id
+                company_id = session.get('company_id')
+                print('compid', company_id)
 
                 event = Event(
                     title=form.title.data,
@@ -4738,21 +4751,33 @@ def add_event():
                     user_id=user_id,
                     company_id=company_id,
                     color=form.color.data,
-                    recurrence=form.recurrence.data
+                    recurrence=form.recurrence.data,
+                    recurrence_end=form.recurrence_end.data if form.recurrence_end.data else None
                 )
                 db.session.add(event)
                 db.session.commit()
                 flash('Event added successfully!', 'success')
+                app.logger.info('Event added successfully!')
                 return redirect(url_for('calendar'))
             else:
                 flash('User not logged in', 'warning')
+                app.logger.warning('User not logged in')
                 return redirect(url_for('login'))
+        else:
+            app.logger.warning('Form validation failed')
+            app.logger.warning(f"Form errors: {form.errors}")
+
         return render_template('add_event.html', form=form)
 
-    except Exception as e:
-        app.logger.error(f"Error processing date and time: {e}")
+    except ValueError as e:
+        app.logger.error(f"ValueError: {e}")
         flash('Error processing date and time. Please try again.', 'danger')
         return redirect(url_for('calendar'))
+    except Exception as e:
+        app.logger.error(f"Exception: {e}")
+        flash('An unexpected error occurred. Please try again.', 'danger')
+        return redirect(url_for('calendar'))
+
 
 
 @app.route('/edit-event/<int:event_id>', methods=['GET', 'POST'])

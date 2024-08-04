@@ -78,6 +78,7 @@ class EventForm(FlaskForm):
     location = StringField('Location')
     color = ColorField('Color')
     recurrence = StringField('Recurrence')
+    recurrence_end = DateTimeField('Recurrence End', format='%Y-%m-%d %H:%M:%S')
     submit = SubmitField('Submit')
 
 class TicketForm(FlaskForm):
