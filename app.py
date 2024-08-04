@@ -4779,8 +4779,8 @@ def add_event():
         return redirect(url_for('calendar'))
 
 
-
 @app.route('/edit-event/<int:event_id>', methods=['GET', 'POST'])
+@login_required
 def edit_event(event_id):
     event = Event.query.get_or_404(event_id)
 
@@ -4795,19 +4795,34 @@ def edit_event(event_id):
         return redirect(url_for('calendar'))
 
     form = EventForm(obj=event)
-    if form.validate_on_submit():
-        event.title = form.title.data
-        event.start = form.start.data
-        event.end = form.end.data
-        event.description = form.description.data
-        event.all_day = form.all_day.data
-        event.location = form.location.data
-        event.color = form.color.data
-        event.recurrence = form.recurrence.data
-        db.session.commit()
-        flash('Event updated successfully!', 'success')
-        return redirect(url_for('calendar'))
+
+    if request.method == 'POST':
+        app.logger.info(f"Form data received: {request.form}")
+        if form.validate_on_submit():
+            try:
+                event.title = form.title.data
+                event.start = form.start.data
+                event.end = form.end.data
+                event.description = form.description.data
+                event.all_day = form.all_day.data
+                event.location = form.location.data
+                event.color = form.color.data
+                event.recurrence = form.recurrence.data
+                event.recurrence_end = form.recurrence_end.data if form.recurrence.data else None
+
+                db.session.commit()
+                flash('Event updated successfully!', 'success')
+                return redirect(url_for('calendar'))
+            except Exception as e:
+                db.session.rollback()
+                app.logger.error(f"Error updating event: {e}")
+                flash('An error occurred while updating the event. Please try again.', 'danger')
+        else:
+            app.logger.warning('Form validation failed')
+            app.logger.warning(f"Form errors: {form.errors}")
+
     return render_template('edit_event.html', form=form, event=event)
+
 
 
 @app.route('/delete-event/<int:event_id>', methods=['POST'])

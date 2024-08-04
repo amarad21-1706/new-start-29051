@@ -5,21 +5,27 @@ from db import db
 from datetime import datetime
 from wtforms import (DecimalField, StringField, BooleanField, FloatField, FileField, DateField, TimeField,
                     DateTimeLocalField, ValidationError,
-                     SelectField, FloatField, IntegerField, IntegerField, DateTimeField, FileField,
+                     SelectField, SelectMultipleField, FloatField, IntegerField, IntegerField,
+                     DateTimeField, FileField,
                      Form, FormField, IntegerField, HiddenField, DateTimeField, MonthField,
                      TimeField, FileField, TextAreaField, PasswordField, SubmitField, EmailField,
-                     RadioField, ColorField
+                     RadioField, validators
                      )
+# Import ColorField
+from wtforms.fields import ColorField  # Correct import
+
+
+from flask_wtf import FlaskForm
+from wtforms import StringField, DateTimeField, BooleanField, SubmitField, SelectField, TextAreaField
+from wtforms.validators import DataRequired
 
 from flask_admin.form import rules
 from flask_admin.form.rules import FieldSet
-from wtforms.validators import DataRequired, Length, Email, EqualTo, Optional, NumberRange, Regexp, URL
+from wtforms.validators import (DataRequired, Length, Email, EqualTo, Optional, NumberRange, Regexp, URL,
+                                ValidationError)
 import re
 from datetime import datetime
-from wtforms import IntegerField, DateField, validators
-from wtforms import SelectField, SelectMultipleField, SubmitField, HiddenField
 
-from flask_wtf import FlaskForm
 from wtforms_sqlalchemy.fields import QuerySelectField
 from models.user import (Users, Company, Event, Subject, Step, Workflow, StepBaseData, WorkflowSteps, BaseData, BaseDataInline,
                          Question, Questionnaire, QuestionnaireQuestions, Status, LegalDocument,
@@ -69,6 +75,10 @@ class UpdateAccountForm(FlaskForm):
     ])
     submit = SubmitField('Update')
 
+
+class ColorField(StringField):
+    pass  # Define or import ColorField appropriately
+
 class EventForm(FlaskForm):
     title = StringField('Title', validators=[DataRequired()])
     start = DateTimeField('Start', format='%Y-%m-%d %H:%M:%S', validators=[DataRequired()])
@@ -76,7 +86,7 @@ class EventForm(FlaskForm):
     description = TextAreaField('Description')
     all_day = BooleanField('All Day')
     location = StringField('Location')
-    color = ColorField('Color')
+    color = ColorField('Color')  # Ensure ColorField is defined or imported
     recurrence = SelectField('Recurrence', choices=[
         ('', 'None'),
         ('daily', 'Daily'),
@@ -84,12 +94,16 @@ class EventForm(FlaskForm):
         ('monthly', 'Monthly'),
         ('quarterly', 'Quarterly')
     ])
-    recurrence_end = DateTimeField('Recurrence End', format='%Y-%m-%d %H:%M:%S')
+    recurrence_end = DateField('Recurrence End', format='%Y-%m-%d')
     submit = SubmitField('Submit')
 
     def validate_end(self, end):
         if self.start.data >= end.data:
             raise ValidationError('End time must be after start time.')
+
+    def validate_recurrence_end(self, recurrence_end):
+        if self.recurrence.data and self.recurrence.data != '' and self.recurrence_end.data and self.end.data.date() >= self.recurrence_end.data:
+            raise ValidationError('Recurrence end date must be after event end date.')
 
 class TicketForm(FlaskForm):
     subject = SelectField('Subject', coerce=int, validators=[DataRequired()])

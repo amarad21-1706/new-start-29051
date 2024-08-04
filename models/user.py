@@ -1374,9 +1374,9 @@ class Event(db.Model):
     company_id = db.Column(Integer, ForeignKey('company.id'), nullable=False)
     color = db.Column(String(7))
     recurrence = db.Column(String(255))
-    recurrence_end = db.Column(DateTime, nullable=True)
-    created_at = db.Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = db.Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    recurrence_end = db.Column(db.Date, nullable=True)
+    created_at = db.Column(DateTime, default=datetime.utcnow, nullable=True)
+    updated_at = db.Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=True)
 
     user = relationship('Users', backref='events')
     company = relationship('Company', backref='events')
