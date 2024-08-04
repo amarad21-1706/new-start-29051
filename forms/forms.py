@@ -77,9 +77,19 @@ class EventForm(FlaskForm):
     all_day = BooleanField('All Day')
     location = StringField('Location')
     color = ColorField('Color')
-    recurrence = StringField('Recurrence')
+    recurrence = SelectField('Recurrence', choices=[
+        ('', 'None'),
+        ('daily', 'Daily'),
+        ('weekly', 'Weekly'),
+        ('monthly', 'Monthly'),
+        ('quarterly', 'Quarterly')
+    ])
     recurrence_end = DateTimeField('Recurrence End', format='%Y-%m-%d %H:%M:%S')
     submit = SubmitField('Submit')
+
+    def validate_end(self, end):
+        if self.start.data >= end.data:
+            raise ValidationError('End time must be after start time.')
 
 class TicketForm(FlaskForm):
     subject = SelectField('Subject', coerce=int, validators=[DataRequired()])
