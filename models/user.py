@@ -1360,24 +1360,44 @@ class PlanApplications(db.Model):
     application = db.relationship('Application', back_populates='plan_applications')
 
 
-
 class Event(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(80), nullable=False)
-    start = db.Column(db.DateTime, nullable=False)
-    end = db.Column(db.DateTime, nullable=False)
-    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)
-    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    __tablename__ = 'event'
 
-    user = db.relationship('Users', backref='events')
-    company = db.relationship('Company', backref='events')
+    id = db.Column(Integer, primary_key=True, autoincrement=True)
+    title = db.Column(String(255), nullable=False)
+    start = db.Column(DateTime, nullable=False)
+    end = db.Column(DateTime, nullable=False)
+    description = db.Column(String)
+    all_day = db.Column(Boolean, default=False)
+    location = Column(String(255))
+    user_id = db.Column(Integer, ForeignKey('users.id'), nullable=False)
+    company_id = db.Column(Integer, ForeignKey('company.id'), nullable=False)
+    color = db.Column(String(7))
+    recurrence = db.Column(String(255))
+    created_at = db.Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+
+    user = relationship('Users', backref='events')
+    company = relationship('Company', backref='events')
+
+    def __repr__(self):
+        return f'<Event {self.title}>'
 
     def to_dict(self):
         return {
-            'id': self.id,  # Include the ID here
+            'id': self.id,
             'title': self.title,
             'start': self.start.isoformat(),
-            'end': self.end.isoformat()
+            'end': self.end.isoformat(),
+            'description': self.description,
+            'all_day': self.all_day,
+            'location': self.location,
+            'user_id': self.user_id,
+            'company_id': self.company_id,
+            'color': self.color,
+            'recurrence': self.recurrence,
+            'created_at': self.created_at.isoformat(),
+            'updated_at': self.updated_at.isoformat()
         }
 
 

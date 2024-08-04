@@ -8,7 +8,7 @@ from wtforms import (DecimalField, StringField, BooleanField, FloatField, FileFi
                      SelectField, FloatField, IntegerField, IntegerField, DateTimeField, FileField,
                      Form, FormField, IntegerField, HiddenField, DateTimeField, MonthField,
                      TimeField, FileField, TextAreaField, PasswordField, SubmitField, EmailField,
-                     RadioField
+                     RadioField, ColorField
                      )
 
 from flask_admin.form import rules
@@ -73,6 +73,11 @@ class EventForm(FlaskForm):
     title = StringField('Title', validators=[DataRequired()])
     start = DateTimeField('Start', format='%Y-%m-%d %H:%M:%S', validators=[DataRequired()])
     end = DateTimeField('End', format='%Y-%m-%d %H:%M:%S', validators=[DataRequired()])
+    description = TextAreaField('Description')
+    all_day = BooleanField('All Day')
+    location = StringField('Location')
+    color = ColorField('Color')
+    recurrence = StringField('Recurrence')
     submit = SubmitField('Submit')
 
 class TicketForm(FlaskForm):

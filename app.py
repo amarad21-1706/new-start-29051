@@ -4660,6 +4660,7 @@ def set_cookies():
     return response
 
 
+
 @app.route('/api/events')
 def get_events():
     try:
@@ -4674,18 +4675,15 @@ def get_events():
         if current_user and current_user.is_authenticated:
             user_id = current_user.id
             company_id = current_user.company_id
-            is_manager = Role.query.join(UserRoles).filter(UserRoles.user_id == user_id,
-                                                           Role.name == 'Manager').count() > 0
+            is_manager = Role.query.join(UserRoles).filter(UserRoles.user_id == user_id, Role.name == 'Manager').count() > 0
         else:
             return jsonify({'error': 'User not authenticated'}), 401
 
         if start_date and end_date:
             if is_manager:
-                events = Event.query.filter(Event.company_id == company_id, Event.start >= start_date,
-                                            Event.end <= end_date).all()
+                events = Event.query.filter(Event.company_id == company_id, Event.start >= start_date, Event.end <= end_date).all()
             else:
-                events = Event.query.filter(Event.user_id == user_id, Event.start >= start_date,
-                                            Event.end <= end_date).all()
+                events = Event.query.filter(Event.user_id == user_id, Event.start >= start_date, Event.end <= end_date).all()
         else:
             if is_manager:
                 events = Event.query.filter_by(company_id=company_id).all()
@@ -4734,8 +4732,13 @@ def add_event():
                     title=form.title.data,
                     start=form.start.data,
                     end=form.end.data,
+                    description=form.description.data,
+                    all_day=form.all_day.data,
+                    location=form.location.data,
                     user_id=user_id,
-                    company_id=company_id  # Include the company_id
+                    company_id=company_id,
+                    color=form.color.data,
+                    recurrence=form.recurrence.data
                 )
                 db.session.add(event)
                 db.session.commit()
@@ -4760,8 +4763,7 @@ def edit_event(event_id):
         flash('User not authenticated', 'warning')
         return redirect(url_for('login'))
 
-    is_manager = Role.query.join(UserRoles).filter(UserRoles.user_id == current_user.id,
-                                                   Role.name == 'Manager').count() > 0
+    is_manager = Role.query.join(UserRoles).filter(UserRoles.user_id == current_user.id, Role.name == 'Manager').count() > 0
 
     if not is_manager and event.user_id != current_user.id:
         flash('Permission denied', 'danger')
@@ -4772,6 +4774,11 @@ def edit_event(event_id):
         event.title = form.title.data
         event.start = form.start.data
         event.end = form.end.data
+        event.description = form.description.data
+        event.all_day = form.all_day.data
+        event.location = form.location.data
+        event.color = form.color.data
+        event.recurrence = form.recurrence.data
         db.session.commit()
         flash('Event updated successfully!', 'success')
         return redirect(url_for('calendar'))
@@ -4786,8 +4793,7 @@ def delete_event(event_id):
         flash('User not authenticated', 'warning')
         return redirect(url_for('login'))
 
-    is_manager = Role.query.join(UserRoles).filter(UserRoles.user_id == current_user.id,
-                                                   Role.name == 'Manager').count() > 0
+    is_manager = Role.query.join(UserRoles).filter(UserRoles.user_id == current_user.id, Role.name == 'Manager').count() > 0
 
     if not is_manager and event.user_id != current_user.id:
         flash('Permission denied', 'danger')
@@ -4805,8 +4811,7 @@ def update_event(event_id):
     if not current_user or not current_user.is_authenticated:
         return jsonify({'error': 'User not authenticated'}), 401
 
-    is_manager = Role.query.join(UserRoles).filter(UserRoles.user_id == current_user.id,
-                                                   Role.name == 'Manager').count() > 0
+    is_manager = Role.query.join(UserRoles).filter(UserRoles.user_id == current_user.id, Role.name == 'Manager').count() > 0
 
     if not is_manager and event.user_id != current_user.id:
         return jsonify({'error': 'Permission denied'}), 403
@@ -4826,8 +4831,6 @@ def update_event(event_id):
 @app.route('/calendar')
 def calendar():
     return render_template('calendar.html')
-
-
 
 @app.route('/cookie-settings')
 @login_required
