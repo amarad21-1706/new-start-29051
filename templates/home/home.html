@@ -13,14 +13,14 @@
         /* Ensure the top bar and menu items have the same background */
         .navbar, .navbar .nav-link {
             background-color: #333; /* Change to your top bar background color */
-            color: #AAAABB; /* Change to your preferred text color */
+            color: #bcbcbc; /* Change to your preferred text color */
         }
 
         /* Change background color on hover */
         .navbar .nav-link:hover,
         .navbar .nav-link:focus,
         .navbar .nav-link:active {
-            background-color: #333; /* Change to your desired hover background color */
+            background-color: #0101ae; /* Change to your desired hover background color */
             color: #fff; /* Ensure text color remains readable */
         }
 
@@ -77,7 +77,7 @@
 
         body {
             font-family: 'Geneve', sans-serif;
-            background-image: url("{{ url_for('static', filename='images/background_image.jpg') }}");
+            background-image: url("{{ url_for('static', filename='images/dark_night_sky_1.png') }}");
             background-size: cover;
             background-repeat: no-repeat;
             color: lightgrey;
@@ -172,6 +172,7 @@
             background-color: #333;
             box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             display: none;
+            z-index: 1000;
         }
 
         .navbar-nav>li:hover>.submenu {

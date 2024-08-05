@@ -354,8 +354,21 @@ def is_user_role(session, user_id, role_name):
     # Check if the specified role name (in lowercase) is in the user's roles
     return role_name in user_roles
 
-'''
 
+'''
+class AnimatedGIFApp(App):
+    def build(self):
+        Window.size = (800, 800)
+        self.title = 'Starry Night Background'
+        layout = BoxLayout()
+        self.image = Image(source="static/images/starry_night.gif")
+        layout.add_widget(self.image)
+        Clock.schedule_interval(self.update, 1 / 10.0)  # Adjust the interval to match the GIF frame rate
+        return layout
+
+    def update(self, dt):
+        self.image.reload()
+     
 def role_required(required_role):
     def decorator(func):
         @wraps(func)
