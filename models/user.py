@@ -1373,7 +1373,7 @@ class Event(db.Model):
     user_id = db.Column(Integer, ForeignKey('users.id'), nullable=False)
     company_id = db.Column(Integer, ForeignKey('company.id'), nullable=False)
     color = db.Column(String(7))
-    recurrence = db.Column(String(255))
+    recurrence = db.Column(String(255), nullable=True)
     recurrence_end = db.Column(db.Date, nullable=True)
     created_at = db.Column(DateTime, default=datetime.utcnow, nullable=True)
     updated_at = db.Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=True)

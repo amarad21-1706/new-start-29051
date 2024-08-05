@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>My App</title>
+    <title>First Audit</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <style>
@@ -20,7 +20,7 @@
         .navbar .nav-link:hover,
         .navbar .nav-link:focus,
         .navbar .nav-link:active {
-            background-color: #0101ae; /* Change to your desired hover background color */
+            background-color: #1f8a7b; /* Change to your desired hover background color */
             color: #fff; /* Ensure text color remains readable */
         }
 
@@ -358,11 +358,11 @@
             position: fixed;
             bottom: 0;
             width: 100%;
-            background-color: #1171FF;
+            background-color: #19a1a1;
             padding: 5px;
             text-align: center;
             border-top: 1px solid #ccc;
-            color: #fff;
+            color: #cccbb6;
             font-size: 12px;
         }
 
@@ -383,7 +383,10 @@
         }
 
         .footer-section {
-            background-color: #f8f9fa;
+            background-color: #001133;
+            border-top: 4px solid darkred; /* Turquoise line separator */
+            padding: 10px 20px; /* Footer padding */
+            color: #8d908e;
             padding: 20px 0;
         }
 
@@ -398,7 +401,7 @@
         }
 
         .footer-section .footer-links a {
-            color: #333;
+            color: #5aa;
             text-decoration: none;
             display: block;
             margin-bottom: 5px;
@@ -583,7 +586,7 @@
                                 {% if container.content_type == 'card' %}
                                     <div class="col-md-3 mb-4">
                                         <a href="{{ container.content.url }}" style="text-decoration: none;">
-                                            <div class="app-box" style="position: relative; padding-bottom: 75%; background-color: {% if container.content.image_url %}transparent{% else %}{{ ["#5a6268", "#6c757d", "#adb5bd", "#ced4da"]|random }}{% endif %}; color: white;">
+                                            <div class="app-box" style="position: relative; padding-bottom: 75%; background-color: {% if container.content.image_url %}transparent{% else %}{{ ["#5a6268", "#6c757d", "#adb5bd", "#ced4da"]|random }}{% endif %}; color: lightslategray;">
                                                 {% if container.content.image_url %}
                                                     <img src="{{ container.content.image_url }}" alt="{{ container.content.header }}" style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0;">
                                                 {% else %}

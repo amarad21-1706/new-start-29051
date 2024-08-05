@@ -79,6 +79,7 @@ class UpdateAccountForm(FlaskForm):
 class ColorField(StringField):
     pass  # Define or import ColorField appropriately
 
+
 class EventForm(FlaskForm):
     title = StringField('Title', validators=[DataRequired()])
     start = DateTimeField('Start', format='%Y-%m-%d %H:%M:%S', validators=[DataRequired()])
@@ -97,16 +98,16 @@ class EventForm(FlaskForm):
     recurrence_end = DateField('Recurrence End', format='%Y-%m-%d')
     submit = SubmitField('Submit')
 
-
     def validate_end(self, end):
         if self.start.data >= end.data:
             raise ValidationError('End time must be after start time.')
 
     def validate_recurrence_end(self, recurrence_end):
-        if self.recurrence.data and self.recurrence.data != '' and self.recurrence_end.data:
+        if self.recurrence.data not in [None, ''] and self.recurrence_end.data:
             end_date = self.end.data.date() if isinstance(self.end.data, datetime) else self.end.data
             if end_date >= self.recurrence_end.data:
                 raise ValidationError('Recurrence end date must be after event end date.')
+
 
 class TicketForm(FlaskForm):
     subject = SelectField('Subject', coerce=int, validators=[DataRequired()])

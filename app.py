@@ -4890,7 +4890,11 @@ def edit_event(event_id):
                 event.location = form.location.data
                 event.color = form.color.data
                 event.recurrence = form.recurrence.data
-                event.recurrence_end = form.recurrence_end.data if form.recurrence.data else None
+
+                if form.recurrence.data:
+                    event.recurrence_end = form.recurrence_end.data
+                else:
+                    event.recurrence_end = None
 
                 db.session.commit()
                 flash('Event updated successfully!', 'success')
@@ -4901,10 +4905,9 @@ def edit_event(event_id):
                 flash('An error occurred while updating the event. Please try again.', 'danger')
         else:
             app.logger.warning('Form validation failed')
-            app.logger.warning(f"Form errors: {form.errors}")
+            app.logger.warning(f"Form errors 1: {form.errors}")
 
     return render_template('edit_event.html', form=form, event=event)
-
 
 
 @app.route('/delete-event/<int:event_id>', methods=['POST'])
