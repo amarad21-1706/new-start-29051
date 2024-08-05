@@ -21,7 +21,7 @@ from db import db
 from flask import g, make_response
 from flask import flash
 import datetime
-
+from dateutil import rrule
 from flask_wtf import FlaskForm
 from wtforms import EmailField
 from wtforms.validators import Email, InputRequired, NumberRange
@@ -1967,12 +1967,8 @@ def create_step():
         </form>
     '''
 
-@app.route('/home/contact/email',  methods=['GET', 'POST'])
-def contact_email():
-    return render_template('home/contact.html')
-
-@app.route('/home/contact/phone',  methods=['GET', 'POST'])
-def contact_phone():
+@app.route('/home/contact/contact_us',  methods=['GET', 'POST'])
+def contact_us():
     return render_template('home/contact.html')
 
 
@@ -4661,6 +4657,45 @@ def set_cookies():
 
 
 
+def generate_event_instances(event):
+    instances = []
+    if event.recurrence and event.recurrence_end:
+        start_date = event.start
+        end_date = datetime.combine(event.recurrence_end, datetime.min.time())  # Convert date to datetime
+        duration = event.end - event.start
+
+        if event.recurrence == 'daily':
+            freq = rrule.DAILY
+        elif event.recurrence == 'weekly':
+            freq = rrule.WEEKLY
+        elif event.recurrence == 'monthly':
+            freq = rrule.MONTHLY
+        elif event.recurrence == 'quarterly':
+            freq = rrule.MONTHLY
+            interval = 3
+        else:
+            return instances
+
+        rr = rrule.rrule(freq, dtstart=start_date, until=end_date, interval=interval)
+
+        for dt in rr.between(start_date, end_date, inc=True):
+            instance_start = datetime(dt.year, dt.month, dt.day, event.start.hour, event.start.minute)
+            instance_end = instance_start + duration  # Adjust end time as needed
+            instances.append({
+                'title': event.title,
+                'start': instance_start.isoformat(),
+                'end': instance_end.isoformat(),
+                'description': event.description,
+                'all_day': event.all_day,
+                'location': event.location,
+                'color': event.color,
+                'recurrence': event.recurrence,
+                'recurrence_end': event.recurrence_end.isoformat() if event.recurrence_end else None
+            })
+
+    return instances
+
+
 @app.route('/api/events')
 def get_events():
     try:
@@ -4696,7 +4731,6 @@ def get_events():
         return jsonify({'error': str(e)}), 500
 
 
-
 @app.route('/add-event', methods=['GET', 'POST'])
 @login_required
 def add_event():
@@ -4726,20 +4760,30 @@ def add_event():
         if request.method == 'GET':
             form.start.data = default_start
             form.end.data = default_end
-            form.recurrence_end.data = default_end
+            form.recurrence_end.data = default_end.date()
 
         if request.method == 'POST':
             app.logger.info(f"Form data received: {request.form}")
 
+            if not form.validate():
+                app.logger.warning('Form validation failed (POST)')
+                for fieldName, errorMessages in form.errors.items():
+                    for err in errorMessages:
+                        app.logger.warning(f"Error in {fieldName}: {err}")
+                app.logger.warning(f"Form errors: {form.errors}")
+            else:
+                app.logger.info(f"Form validation succeeded: {form.data}")
+
+        print('validation check')
         if form.validate_on_submit():
+            print('valid!')
             app.logger.info(f"Form validated: {form.data}")
             app.logger.info(f"Start: {form.start.data}, End: {form.end.data}, Recurrence End: {form.recurrence_end.data}")
 
             if current_user and current_user.is_authenticated:
                 user_id = current_user.id
-                # company_id = current_user.company_id
                 company_id = session.get('company_id')
-                print('compid', company_id)
+                app.logger.info(f"Current user: {current_user}, User ID: {user_id}, Company ID: {company_id}")
 
                 event = Event(
                     title=form.title.data,
@@ -4754,8 +4798,33 @@ def add_event():
                     recurrence=form.recurrence.data,
                     recurrence_end=form.recurrence_end.data if form.recurrence_end.data else None
                 )
-                db.session.add(event)
+
+                if event.recurrence:
+                    instances = generate_event_instances(event)  # Call your function to generate instances
+                    for instance_data in instances:
+                        new_event = Event(
+                            title=instance_data['title'],
+                            start=datetime.fromisoformat(instance_data['start']),
+                            end=datetime.fromisoformat(instance_data['end']),
+                            description=instance_data['description'],
+                            all_day=instance_data['all_day'],
+                            location=instance_data['location'],
+                            color=instance_data['color'],
+                            recurrence=instance_data['recurrence'],
+                            recurrence_end=instance_data['recurrence_end'],
+                            user_id=user_id,
+                            company_id=company_id,
+                        )
+
+                        print('added branch 1')
+                        db.session.add(new_event)
+                else:
+                    print('added branch 2')
+                    db.session.add(event)
+
                 db.session.commit()
+
+                print('committed')
                 flash('Event added successfully!', 'success')
                 app.logger.info('Event added successfully!')
                 return redirect(url_for('calendar'))
@@ -4764,8 +4833,8 @@ def add_event():
                 app.logger.warning('User not logged in')
                 return redirect(url_for('login'))
         else:
-            app.logger.warning('Form validation failed')
-            app.logger.warning(f"Form errors: {form.errors}")
+            app.logger.warning('Form validation failed on submit')
+            app.logger.warning(f"Form errors on submit: {form.errors}")
 
         return render_template('add_event.html', form=form)
 

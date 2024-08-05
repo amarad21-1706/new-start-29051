@@ -571,16 +571,19 @@
                             {% endif %}
                         {% endfor %}
                     {% else %}
-                        <p>No news items found.</p>
+                        <p>No news found.</p>
                     {% endif %}
                 </div>
 
+                {% if cards %}
                 <div id="myCarousel" class="carousel slide mt-5" data-bs-ride="carousel">
+                    {% if cards|length > 1 %}
                     <div class="carousel-indicators">
                         {% for card in cards %}
                         <button type="button" data-bs-target="#myCarousel" data-bs-slide-to="{{ loop.index0 }}" class="{% if loop.index == 1 %}active{% endif %}" aria-current="{% if loop.index == 1 %}true{% else %}false{% endif %}" aria-label="Slide {{ loop.index }}"></button>
                         {% endfor %}
                     </div>
+                    {% endif %}
 
                     <div class="carousel-inner">
                         {% for card in cards %}
@@ -619,6 +622,7 @@
                         {% endfor %}
                     </div>
 
+                    {% if cards|length > 1 %}
                     <button class="carousel-control-prev" type="button" data-bs-target="#myCarousel" data-bs-slide="prev">
                         <span class="carousel-control-prev-icon" aria-hidden="true"></span>
                         <span class="visually-hidden">Previous</span>
@@ -627,7 +631,9 @@
                         <span class="carousel-control-next-icon" aria-hidden="true"></span>
                         <span class="visually-hidden">Next</span>
                     </button>
+                    {% endif %}
                 </div>
+                {% endif %}
 
                 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.7/dist/umd/popper.min.js"></script>
                 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js"></script>
@@ -656,7 +662,7 @@
                             {% endif %}
                         {% endfor %}
                     {% else %}
-                        <p>No containers found to display.</p>
+                        <p>[...]</p>
                     {% endif %}
                 </div>
 
@@ -699,8 +705,8 @@
                 <div class="col">
                     <div class="column-title">Contact</div>
                     <div class="column-content">
-                        <a href="{{ url_for('contact_email') }}">Contact Us</a>
                         <a href="{{ url_for('create_ticket') }}">Report an issue</a>
+                        <a href="{{ url_for('contact_us') }}">Contact</a>
                         <a href="#">Report a page</a>
                     </div>
                 </div>

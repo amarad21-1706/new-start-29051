@@ -700,21 +700,8 @@
         ],
         "submenus": {
             "Mail": {
-                "label": "eMail",
-                "url": "/home/contact/email",
-                "protected": false,
-                "allowed_roles": [
-                    "Admin",
-                    "Employee",
-                    "Manager",
-                    "Authority",
-                    "Provider",
-                    "Guest"
-                ]
-            },
-            "Signup": {
-                "label": "Phone",
-                "url": "/home/contact/phone",
+                "label": "Contact Us",
+                "url": "/home/contact/contact_us",
                 "protected": false,
                 "allowed_roles": [
                     "Admin",

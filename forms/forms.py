@@ -97,13 +97,16 @@ class EventForm(FlaskForm):
     recurrence_end = DateField('Recurrence End', format='%Y-%m-%d')
     submit = SubmitField('Submit')
 
+
     def validate_end(self, end):
         if self.start.data >= end.data:
             raise ValidationError('End time must be after start time.')
 
     def validate_recurrence_end(self, recurrence_end):
-        if self.recurrence.data and self.recurrence.data != '' and self.recurrence_end.data and self.end.data.date() >= self.recurrence_end.data:
-            raise ValidationError('Recurrence end date must be after event end date.')
+        if self.recurrence.data and self.recurrence.data != '' and self.recurrence_end.data:
+            end_date = self.end.data.date() if isinstance(self.end.data, datetime) else self.end.data
+            if end_date >= self.recurrence_end.data:
+                raise ValidationError('Recurrence end date must be after event end date.')
 
 class TicketForm(FlaskForm):
     subject = SelectField('Subject', coerce=int, validators=[DataRequired()])

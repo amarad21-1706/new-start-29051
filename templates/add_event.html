@@ -94,7 +94,6 @@
             defaultDate: "{{ form.end.data.strftime('%Y-%m-%d %H:%M:%S') }}"
         });
         flatpickr("#recurrence-end-picker", {
-            enableTime: true,
             dateFormat: "Y-m-d",
             defaultDate: "{{ form.recurrence_end.data.strftime('%Y-%m-%d') if form.recurrence_end.data else '' }}"
         });
