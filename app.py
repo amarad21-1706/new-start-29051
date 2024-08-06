@@ -5024,7 +5024,7 @@ def add_to_cart(product_id):
                 )
                 db.session.add(new_cart_item)
             db.session.commit()
-            print('add to cart 6')
+            print('added to cart (', product_to_add.id, ')')
             flash('Product added to cart successfully!', 'success')
         else:
             print('add to cart 7 no prod')
@@ -5036,40 +5036,63 @@ def add_to_cart(product_id):
         flash('An error occurred while adding to cart.', 'error')
         return redirect(url_for('products_page'))
 
-def get_cart_items():
-    cart_items = session.get('cart', [])
-    product_ids = [item['product_id'] for item in cart_items]
+
+def get_cart_items(user_id, company_id, role):
+    print('getting items')
+    if 'Manager' in role:
+        cart_items = Cart.query.filter_by(company_id=company_id).all()
+    else:
+        cart_items = Cart.query.filter_by(user_id=user_id).all()
+
+    product_ids = [item.product_id for item in cart_items]
     products = Product.query.filter(Product.id.in_(product_ids)).all()
 
     items = []
     for item in cart_items:
-        product = next((p for p in products if p.id == item['product_id']), None)
+        product = next((p for p in products if p.id == item.product_id), None)
         if product:
             items.append({
-                'id': product.id,
+                'product_id': product.id,
                 'name': product.name,
                 'price': product.price,
-                'quantity': item['quantity']
+                'quantity': item.quantity
             })
     return items
+
 
 
 @app.route('/cart')
 def cart():
     try:
-        cart_items = session.get('cart', [])
-        logging.debug(f"Cart items before filtering: {cart_items}")
-
+        # Fetch user and company details from session
         company_id = session.get('company_id') if session.get('company_id') else -1
         user_id = current_user.id
         print('cart route', company_id, user_id)
 
-        if 'Manager' in current_user.roles:
-            filtered_cart_items = [item for item in cart_items if item['company_id'] == company_id]
+        # Determine the correct cart items based on user role
+        if 'Manager' in [role.name for role in current_user.roles]:
+            cart_items = Cart.query.filter_by(company_id=company_id).all()
         else:
-            filtered_cart_items = [item for item in cart_items if item['user_id'] == user_id]
+            cart_items = Cart.query.filter_by(user_id=user_id).all()
 
-        logging.debug(f"Filtered cart items: {filtered_cart_items}")
+        logging.debug(f"Cart items from DB: {cart_items}")
+
+        # Prepare a dictionary to hold the product details
+        product_ids = [item.product_id for item in cart_items]
+        products = Product.query.filter(Product.id.in_(product_ids)).all()
+        product_dict = {product.id: product for product in products}
+
+        # Prepare items for rendering
+        filtered_cart_items = []
+        for item in cart_items:
+            product = product_dict.get(item.product_id)
+            if product:
+                filtered_cart_items.append({
+                    'product_id': product.id,
+                    'name': product.name,
+                    'price': product.price,
+                    'quantity': item.quantity
+                })
 
         total_price = sum(item['price'] * item['quantity'] for item in filtered_cart_items)
         return render_template('cart.html', cart=filtered_cart_items, total_price=total_price)
@@ -5078,32 +5101,45 @@ def cart():
         return "An error occurred", 500
 
 
+
 @app.route('/update_cart_item/<int:product_id>', methods=['POST'])
 def update_cart_item(product_id):
     try:
         quantity = int(request.form.get('quantity', 1))
-        cart = session.get('cart', [])
-        for item in cart:
-            if item['id'] == product_id and item['user_id'] == current_user.id:
-                item['quantity'] = quantity
-                break
-        session['cart'] = cart
+        user_id = current_user.id
+        company_id = session.get('company_id')
+
+        cart_item = Cart.query.filter_by(product_id=product_id, user_id=user_id, company_id=company_id).first()
+        if cart_item:
+            cart_item.quantity = quantity
+            db.session.commit()
+            flash('Cart updated successfully!', 'success')
+        else:
+            flash('Cart item not found.', 'error')
         return redirect(url_for('cart'))
     except Exception as e:
-        logging.error(f"Error updating cart item: {e}")
-        return "An error occurred", 500
+        db.session.rollback()
+        flash('An error occurred while updating the cart.', 'error')
+        return redirect(url_for('cart'))
 
-@app.route('/delete_cart_item/<int:product_id>', methods=['POST'])
-def delete_cart_item(product_id):
+@app.route('/remove_from_cart/<int:product_id>', methods=['GET'])
+def remove_from_cart(product_id):
     try:
-        cart = session.get('cart', [])
-        cart = [item for item in cart if not (item['id'] == product_id and item['user_id'] == current_user.id)]
-        session['cart'] = cart
+        user_id = current_user.id
+        company_id = session.get('company_id')
+
+        cart_item = Cart.query.filter_by(product_id=product_id, user_id=user_id, company_id=company_id).first()
+        if cart_item:
+            db.session.delete(cart_item)
+            db.session.commit()
+            flash('Item removed from cart successfully!', 'success')
+        else:
+            flash('Cart item not found.', 'error')
         return redirect(url_for('cart'))
     except Exception as e:
-        logging.error(f"Error deleting cart item: {e}")
-        return "An error occurred", 500
-
+        db.session.rollback()
+        flash('An error occurred while removing the item from cart.', 'error')
+        return redirect(url_for('cart'))
 
 @app.route('/checkout', methods=['GET', 'POST'])
 @login_required

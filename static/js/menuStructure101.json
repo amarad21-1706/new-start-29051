@@ -310,6 +310,60 @@
                     "Authority"
                 ]
             },
+            "Compliance": {
+                "label": "Auditing",
+                "url": "/dashboard/authority/dashboard_a3",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin",
+                    "Authority"
+                ]
+            },
+            "Controls": {
+                "label": "Controls",
+                "url": "/dashboard/authority/dashboard_a3",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin",
+                    "Authority"
+                ]
+            },
+            "Disciplinary": {
+                "label": "Disciplinary Actions",
+                "url": "/dashboard/authority/dashboard_a3",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin",
+                    "Authority"
+                ]
+            },
+            "Remediation": {
+                "label": "Remediation",
+                "url": "/dashboard/authority/dashboard_a3",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin",
+                    "Authority"
+                ]
+            },
+            "Statistics": {
+                "label": "Statistics",
+                "url": "/dashboard/authority/dashboard_a3",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin",
+                    "Authority"
+                ]
+            },
+            "Regulation": {
+                "label": "Regulation",
+                "url": "/dashboard/authority/dashboard_a3",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin",
+                    "Authority"
+                ]
+            },
             "Calendar-1": {
                 "label": "Agenda",
                 "url": "/calendar",
@@ -826,7 +880,6 @@
                             "Admin",
                             "Employee",
                             "Manager",
-                            "Authority",
                             "Guest"
                         ]
                     },
@@ -838,7 +891,6 @@
                             "Admin",
                             "Employee",
                             "Manager",
-                            "Authority",
                             "Guest"
                         ]
                     },
