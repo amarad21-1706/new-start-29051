@@ -133,78 +133,56 @@
                 "label": "Authority Controls",
                 "url": "/dashboard/company/dashboard_controls",
                 "protected": true,
-                "allowed_roles": [
-                    "Admin",
-                    "Employee",
-                    "Manager"
-                ]
+                "allowed_roles": ["Admin", "Employee", "Manager"]
             },
             "Remediation": {
                 "label": "Remediation",
                 "url": "/dashboard/company/dashboard_remediation",
                 "protected": true,
                 "allowed_roles": [
-                    "Admin",
-                    "Employee",
-                    "Manager"
-                ]
+                    "Admin", "Employee", "Manager"]
             },
             "Compliance": {
                 "label": "Compliance",
                 "url": "/dashboard/company/dashboard_compliance",
                 "protected": true,
                 "allowed_roles": [
-                    "Admin",
-                    "Employee",
-                    "Manager"
-                ]
+                    "Admin", "Employee", "Manager"]
             },
             "Proceedings": {
                 "label": "Proceedings",
                 "url": "/dashboard/company/dashboard_proceedings",
                 "protected": true,
                 "allowed_roles": [
-                    "Admin",
-                    "Employee",
-                    "Manager"
-                ]
+                    "Admin", "Employee", "Manager"]
             },
             "Deadlines": {
                 "label": "Deadlines",
                 "url": "/deadlines_1",
                 "protected": true,
-                "allowed_roles": [
-                    "Admin",
-                    "Employee",
-                    "Manager"
-                ]
+                "allowed_roles": ["Admin", "Employee", "Manager"]
             },
             "Control areas - workflow": {
                 "label": "Control areas - workflow",
                 "url": "/dashboard/left_menu_route",
                 "protected": true,
                 "allowed_roles": [
-                    "Admin",
-                    "Employee",
-                    "Manager"
-                ]
+                    "Admin", "Employee", "Manager"]
             },
             "Charts and Views 1": {
                 "label": "Control areas - Charts",
                 "url": "/chart_form",
                 "protected": true,
                 "allowed_roles": [
-                    "Admin",
-                    "Authority"
-                ]
+                    "Admin", "Authority"]
             }
         }
     },
-    "Workflows": {
-        "label": "Company",
-        "url": "/company",
+    "Reserved": {
+        "label": "Reserved Area",
+        "url": "/reserved",
         "protected": false,
-        "allowed_roles": ["Admin", "Employee", "Manager"],
+        "allowed_roles": ["Admin", "Authority", "Employee", "Manager"],
         "submenus": {
             "Area di controllo 1": {
                 "label": "Area 1",
@@ -217,31 +195,24 @@
                         "url": "/open_admin_app_1",
                         "protected": true,
                         "allowed_roles": [
-                            "Admin",
-                            "Authority", "Employee", "Manager"
-                        ]
+                            "Admin", "Employee", "Manager"]
                     },
                     "Area 1b": {
                         "label": "Contingencies - PSF",
                         "url": "/redirect_to_survey/1",
                         "protected": true,
                         "allowed_roles": [
-                            "Admin",
-                            "Authority", "Employee", "Manager"
-                        ]
+                            "Admin", "Employee", "Manager"]
                     },
                     "Area 1c": {
                         "label": "Check list",
                         "url": "/questionnaire_psf",
                         "protected": true,
                         "allowed_roles": [
-                            "Admin",
-                            "Authority", "Employee", "Manager"
-                        ]
+                            "Admin", "Employee", "Manager"]
                     }
                 }
             },
-
             "Area di controllo 2": {
                 "label": "Area 2",
                 "url": "/open_admin_app_2",
@@ -264,7 +235,49 @@
                 "label": "My Actions",
                 "url": "/show_cards",
                 "protected": true,
-                "allowed_roles": ["Admin", "Employee", "Manager"]
+                "allowed_roles": ["Admin", "Authority", "Employee", "Manager"]
+            },
+            "Compliance": {
+                "label": "Auditing",
+                "url": "/dashboard/authority/dashboard_a3",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin", "Authority"]
+            },
+            "Controls": {
+                "label": "Controls",
+                "url": "/dashboard/authority/dashboard_a3",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin", "Authority"]
+            },
+            "Disciplinary": {
+                "label": "Disciplinary Actions",
+                "url": "/dashboard/authority/dashboard_a3",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin", "Authority"]
+            },
+            "Remediation": {
+                "label": "Remediation",
+                "url": "/dashboard/authority/dashboard_a3",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin", "Authority"]
+            },
+            "Statistics": {
+                "label": "Statistics",
+                "url": "/dashboard/authority/dashboard_a3",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin", "Authority"]
+            },
+            "Regulation": {
+                "label": "Regulation",
+                "url": "/dashboard/authority/dashboard_a3",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin", "Authority"]
             },
             "Calendar-Events": {
                 "label": "Calendar",
@@ -274,106 +287,8 @@
             }
         }
     },
-    "Authority": {
-        "label": "Authority",
-        "url": "/dashboard/authority/dashboard_a1",
-        "protected": true,
-        "allowed_roles": [
-            "Admin",
-            "Authority"
-        ],
-        "submenus": {
-            "Area 1": {
-                "label": "Area 1",
-                "url": "/dashboard/authority/area_aut1",
-                "protected": true,
-                "allowed_roles": [
-                    "Admin",
-                    "Authority"
-                ]
-            },
-            "Area 2": {
-                "label": "Area 2",
-                "url": "/dashboard/authority/dashboard_a2",
-                "protected": true,
-                "allowed_roles": [
-                    "Admin",
-                    "Authority"
-                ]
-            },
-            "Area 3": {
-                "label": "Area 3",
-                "url": "/dashboard/authority/dashboard_a3",
-                "protected": true,
-                "allowed_roles": [
-                    "Admin",
-                    "Authority"
-                ]
-            },
-            "Compliance": {
-                "label": "Auditing",
-                "url": "/dashboard/authority/dashboard_a3",
-                "protected": true,
-                "allowed_roles": [
-                    "Admin",
-                    "Authority"
-                ]
-            },
-            "Controls": {
-                "label": "Controls",
-                "url": "/dashboard/authority/dashboard_a3",
-                "protected": true,
-                "allowed_roles": [
-                    "Admin",
-                    "Authority"
-                ]
-            },
-            "Disciplinary": {
-                "label": "Disciplinary Actions",
-                "url": "/dashboard/authority/dashboard_a3",
-                "protected": true,
-                "allowed_roles": [
-                    "Admin",
-                    "Authority"
-                ]
-            },
-            "Remediation": {
-                "label": "Remediation",
-                "url": "/dashboard/authority/dashboard_a3",
-                "protected": true,
-                "allowed_roles": [
-                    "Admin",
-                    "Authority"
-                ]
-            },
-            "Statistics": {
-                "label": "Statistics",
-                "url": "/dashboard/authority/dashboard_a3",
-                "protected": true,
-                "allowed_roles": [
-                    "Admin",
-                    "Authority"
-                ]
-            },
-            "Regulation": {
-                "label": "Regulation",
-                "url": "/dashboard/authority/dashboard_a3",
-                "protected": true,
-                "allowed_roles": [
-                    "Admin",
-                    "Authority"
-                ]
-            },
-            "Calendar-1": {
-                "label": "Agenda",
-                "url": "/calendar",
-                "protected": true,
-                "allowed_roles": ["Admin", "Authority"]
-            }
-        }
-    },
-    "ILM": {
-        "label": "ILM",
+    "Admin": {
+        "label": "Admin",
         "url": "/dashboard/ILM/dashboard_m1",
         "protected": true,
         "allowed_roles": [
