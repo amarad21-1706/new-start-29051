@@ -771,8 +771,9 @@ def handle_db_error(error):
    return render_template('db_error.html'), 500
 
 
-@login_required
+
 @app.route('/forgot_password', methods=['GET', 'POST'])
+@login_required
 def forgot_password():
     form = ForgotPasswordForm()
     if form.validate_on_submit():
@@ -822,6 +823,7 @@ def reset_password(token):
 
 
 @app.route("/send_email___")
+@login_required
 def send_email___():
     mail = Mail(app)
     msg = Message("Hello from ILM",
@@ -831,8 +833,9 @@ def send_email___():
     mail.send(msg)
     return "Email sent successfully!"
 
-@login_required
+
 @app.route("/send_email")
+@login_required
 def send_email():
     # Example usage
     api_key = "20cb76ced830ab536fa7cd718d1c1141-b02bcf9f-5936b742"
@@ -1034,8 +1037,9 @@ def index():
                            has_events=has_events)
 
 
-@login_required
+
 @app.route('/access/logout', methods=['GET'])
+@login_required
 def logout():
 
 
@@ -1072,8 +1076,8 @@ def logout():
     return render_template('access/logout.html', **additional_data)
 
 
-@login_required
 @app.route('/show_cards')
+@login_required
 def show_cards():
   company_id = session['company_id']  # Access company ID from session
   #card_data = get_cards(company_id)
@@ -1112,21 +1116,23 @@ def show_cards():
   return render_template('base_cards_template.html', containers=containers_data, create_card=create_card)
 
 
-@login_required
 # TODO add Home and Back buttons
 @app.route('/document_workflow_visualization_d3js')
+@login_required
 def workflow_visualization():
     return render_template('document_workflow_visualization_d3js.html')
 
-@login_required
+
 @app.route('/custom_base_atti')
+@login_required
 def custom_base_atti_index():
     form = CustomFileLoaderForm()  # Instantiate your form object here
     return render_template('custom_file_loader.html', form=form)
 
 
-@login_required
+
 @app.route('/user_documents_d3')
+@login_required
 def user_documents_d3():
     # Define colors
     LIGHT_GRAY = '#D3D3D3'
@@ -1199,8 +1205,8 @@ def user_documents_d3():
 
 
 
-@login_required
 @app.route('/custom_action/', methods=['GET', 'POST'])
+@login_required
 def custom_action():
     if request.method == 'POST':
         # Process the form data and perform complex operations
@@ -1219,8 +1225,9 @@ def custom_action():
         # Render the data input template
         return render_template('set_dws_rich_data.html')
 
-@login_required
+
 @app.route('/user_documents')
+@login_required
 def user_documents():
     form = UserDocumentsForm()
 
@@ -1277,9 +1284,10 @@ def user_documents():
         return render_template('error.html', error_message=str(e))  # Render a generic error page
 
 
-@login_required
+
 # Document workflow view route (using Plotly)
 @app.route('/documents/<int:company_id>/<int:base_data_id>/<int:workflow_id>', methods=['GET', 'POST'])
+@login_required
 def document_workflow(company_id, base_data_id, workflow_id):
     document = BaseData.query.filter_by(company_id=company_id, id=base_data_id, workflow_id=workflow_id).first()
 
@@ -1309,8 +1317,9 @@ def document_workflow(company_id, base_data_id, workflow_id):
 class CustomStepQuestionnaireForm(Form):
     inline_form = None
 
-@login_required
+
 @app.route('/file-upload', methods=['POST'])
+@login_required
 def upload_file():
     # Check if file is uploaded
     if 'file_path' not in request.files:
@@ -1339,8 +1348,9 @@ def upload_file():
 
     return jsonify({'controls': dynamic_controls_html})
 
-@login_required
+
 @app.route('/load_workflow_controls', methods=['GET'])
+@login_required
 def load_workflow_controls():
     # Query your database for workflows
     workflows = Workflow.query.all()
@@ -1433,9 +1443,9 @@ def open_admin_app_2():
     return redirect(url_for('open_admin_2.index'))
 
 
-@login_required
 # Define the index route
 @app.route('/open_admin_app_3')
+@login_required
 def open_admin_app_3():
     user_id = current_user.id
     company_row = db.session.query(Company.name) \
@@ -1455,7 +1465,7 @@ def open_admin_app_3():
 
 @app.route('/open_admin_app_10')
 @login_required
-@roles_required('Admin')
+@roles_required('Admin', 'Manager', 'Employee')
 # Define the index route
 def open_admin_app_10():
     user_id = current_user.id
@@ -1476,8 +1486,9 @@ def open_admin_app_10():
 
 # TODO: ***** inserire come action: move one step forward!
 
-@login_required
+
 @app.route('/detach_documents_from_workflow_step', methods=['POST'])
+@login_required
 def detach_documents_from_workflow_step():
     try:
         # Get the selected document IDs from the request body
@@ -1519,8 +1530,9 @@ def detach_documents_from_workflow_step():
         return jsonify({'success_message': None, 'error_message': error_message})
 
 
-@login_required
+
 @app.route('/attach_documents_to_workflow_step', methods=['POST'])
+@login_required
 def attach_documents_to_workflow_step():
     #try:
     # Get the selected Workflow and Step IDs from the form data
@@ -1567,6 +1579,7 @@ def attach_documents_to_workflow_step():
 
 
 @app.route('/action_manage_dws_deadline', methods=['POST'])
+@login_required
 def manage_deadline():
     # Parse the list of IDs
     ids_str = request.form.get('ids')
@@ -1632,6 +1645,7 @@ def execute_workflow(workflow_id):
 
 # Route to get subject names based on subject IDs
 @app.route('/get_subject_names/<int:subject_id>')
+@login_required
 def get_subject_name(subject_id):
     subject = Subject.query.filter_by(id=subject_id).first()
 
@@ -1641,6 +1655,7 @@ def get_subject_name(subject_id):
         return jsonify({'name': 'Not Found'})
 
 @app.route('/handle_dynamic_url/<endpoint>')
+@login_required
 def handle_dynamic_url(endpoint):
     # You can handle the dynamic URL here, for example, redirect to a default view
     return redirect(url_for('index'))
@@ -2012,8 +2027,9 @@ def services():
 def history():
     return render_template('home/history.html')
 
-@login_required
+
 @app.route('/workflow/control_areas/area_1', methods=['GET', 'POST'])
+@login_required
 def area_1():
     if request.method == 'GET' and current_user.is_authenticated:
         # Assuming user_id is available, adjust the query accordingly
@@ -2078,9 +2094,9 @@ def area_1():
 
 
 # ... (Other imports and setup)
-@login_required
 # F l a s k  route to handle saving card content
 @app.route('/save_card', methods=['POST'])
+@login_required
 def save_card():
 
     # Get data from the request
@@ -2096,8 +2112,8 @@ def save_card():
     except Exception as e:
         return jsonify({"message": "Error saving card content"})
 
-@login_required
 @app.route('/workflow/control_areas/area_3',  methods=['GET', 'POST'])
+@login_required
 def area_3():
     # Assuming user_id is available, adjust the query accordingly
     user_id = current_user.id  # Implement your user authentication logic
@@ -2108,8 +2124,9 @@ def area_3():
     return render_template('workflow/control_areas/area_3.html',
                            specific_table=specific_table, tables=tables)
 
-@login_required
+
 @app.route('/update_cell', methods=['POST'])
+@login_required
 def update_cell():
     if request.method == 'POST':
         column = request.form.get('column')
@@ -2134,8 +2151,9 @@ def aboutus_1():
     return render_template('home/aboutus_1.html')
 
 
-@login_required
+
 @app.route('/dashboard/company')
+@login_required
 def dashboard_company():
     # Your view logic goes here
     return render_template('dashboard/company.html')
@@ -2180,8 +2198,8 @@ def overview_statistics_1():
 
     return render_template('base_cards_template.html', containers=card_data, create_card=create_card)
 
-@login_required
 @app.route('/deadlines_1')
+@login_required
 def deadlines_1():
     user_id = current_user.id  # Implement your user authentication logic
     if not user_id:
@@ -2205,8 +2223,8 @@ def deadlines_1():
     return render_template('base_cards_deadlines_template.html', cards=cards)
 
 
-@login_required
 @app.route('/dashboard_company_audit')
+@login_required
 def dashboard_company_audit():
 
     session = db.session  # Create a new database session object
@@ -2241,8 +2259,8 @@ def dashboard_company_audit():
 
 
 # Define the route for handling card clicks
-@login_required
 @app.route('/handle_card_click')
+@login_required
 def handle_card_click():
     card_id = request.args.get('id')
     # Handle the card click action here, if needed
@@ -2311,8 +2329,8 @@ def dashboard_setup_questionnaire_questions():
 ''' 
 System setup, admin: Company - > Questionnaire(s)
 '''
-@login_required
 @app.route('/generate_setup_company_questionnaire')
+@login_required
 def generate_setup_company_questionnaire():
     # Generate HTML report
     report_data = generate_company_questionnaire_report_data(db.session)
@@ -2398,8 +2416,8 @@ def dashboard_setup_area_subareas():
     # Render the template with the report data
     return render_template('generic_report.html', title="Control Areas and Subareas", columns=["Area", "Subarea", "Data Type"], rows=report_data)
 
-@login_required
 @app.route('/dashboard_company_audit_progression')
+@login_required
 def dashboard_company_audit_progression():
 
     session = db.session  # Create a new database session object
@@ -2439,8 +2457,8 @@ def dashboard_company_audit_progression():
     return render_template('admin_cards_progression.html', html_cards=html_cards, user_roles=user_roles)
 
 
-@login_required
 @app.route('/company_overview_current')
+@login_required
 def company_overview_current():
     session = db.session  # Create a new database session object
     engine = db.engine  # Get the engine object from SQLAlchemy
@@ -2484,8 +2502,8 @@ def company_overview_current():
 
 
 
-@login_required
 @app.route('/company_overview_current222')
+@login_required
 def company_overview_current222():
     # logging.basicConfig(level=logging.DEBUG)
 
@@ -2529,8 +2547,8 @@ def company_overview_current222():
         return render_template('error.html', error_message=str(e)), 500
 
 
-@login_required
 @app.route('/company_overview_historical')
+@login_required
 def company_overview_historical():
     session = db.session  # Create a new database session object
     engine = db.engine  # Get the engine object from SQLAlchemy
@@ -2618,8 +2636,9 @@ def company_overview_historical222():
         return str(e), 500
 
 
-@login_required
 @app.route('/control_area_1')
+@login_required
+@roles_required('Admin', 'Manager', 'Employee')
 def control_area_1():
     # Get the current route from the request object
     current_route = request.url_rule
@@ -2640,8 +2659,10 @@ def control_area_1():
     # If the condition is not met, you should still return a response
     return render_template('control_area_1.html',
                            current_route=current_route, left_menu_items=None)
-@login_required
+
 @app.route('/control_area_2')
+@login_required
+@roles_required('Admin', 'Manager', 'Employee')
 def control_area_2():
     # Get the current route from the request object
     current_route = request.url_rule
@@ -2664,8 +2685,9 @@ def control_area_2():
     return render_template('control_area_2.html',
                            current_route=current_route, current_app=current_app)
 
-@login_required
 @app.route('/control_area_3')
+@login_required
+@roles_required('Admin', 'Manager', 'Employee')
 def control_area_3():
     # Get the current route from the request object
     current_route = request.url_rule
@@ -2746,7 +2768,6 @@ def generate_captcha(width, height, length):
     return captcha_text, image_data
 
 
-
 @app.route('/clear_flashed_messages', methods=['POST'])
 def clear_flashed_messages():
     messages = get_flashed_messages(True)  # Clear flashed messages without retrieving them
@@ -2810,7 +2831,7 @@ def manage_user_roles():
 
 @app.route('/manage_workflow_steps', methods=['GET', 'POST'])
 @login_required
-@roles_required('Admin')
+@roles_required('Admin', 'Manager', 'Employee')
 def manage_workflow_steps():
     form = WorkflowStepForm()
     message = None
@@ -4199,6 +4220,8 @@ def chart_form():
 
 
 @app.route('/questionnaire/<int:id>', methods=['GET'])
+@login_required
+@roles_required('Admin', 'Manager', 'Employee')
 def get_questionnaire(id):
     questionnaire = Questionnaire_psf.query.get(id)
     if questionnaire:
@@ -4212,6 +4235,8 @@ def get_questionnaire(id):
 
 # Route to open F l a s k -Admin
 @app.route('/subscriptions')
+@login_required
+@roles_required('Manager', 'Employee')
 def subscriptions():
     user = Users.query.filter_by(email=session.get('email')).first()
     if user:
@@ -4232,6 +4257,8 @@ def subscriptions():
 
 
 @app.route('/create-checkout-session', methods=['POST'])
+@login_required
+@roles_required('Admin', 'Manager', 'Employee')
 def create_checkout_session():
     session = stripe.checkout.Session.create(
         payment_method_types=['card'],
@@ -4258,6 +4285,8 @@ def success():
     return 'Payment succeeded'
 
 @app.route('/cancel')
+@login_required
+@roles_required('Manager', 'Employee')
 def cancel():
     return 'Payment canceled'
 
@@ -4266,6 +4295,8 @@ def cancel():
 # Set up a webhook endpoint to handle events from Stripe, such as payment success.
 
 @app.route('/webhook', methods=['POST'])
+@login_required
+@roles_required('Manager', 'Employee')
 def stripe_webhook():
     payload = request.get_data(as_text=True)
     sig_header = request.headers.get('Stripe-Signature')
@@ -4319,6 +4350,7 @@ def handle_checkout_session(session):
 
 @app.route('/subscribe', methods=['POST'])
 @login_required
+@roles_required('Manager', 'Employee')
 def subscribe():
     data = request.get_json()
     plan = data.get('plan')
@@ -4351,43 +4383,16 @@ def subscribe():
 # END STRIPE
 
 
-'''
-@app.route('/questionnaire/<int:id>', methods=['GET'])
-def get_questionnaire(id):
-    questionnaire = Questionnaire_psf.query.get(id)
-    if questionnaire:
-        return jsonify(questionnaire.structure)
-    return jsonify({"error": "Questionnaire not found"}), 404
-
-
-@app.route('/submit_response', methods=['POST'])
-def submit_response():
-    data = request.form
-    questionnaire_id = data.get('questionnaire_id')
-    user_id = data.get('user_id')
-    company_id = data.get('company_id')  # Assuming the company_id is also provided in the request
-
-    answers = {key.replace('answer_', ''): value for key, value in data.items() if key.startswith('answer_')}
-    files = {key.replace('file_', ''): request.files[key] for key in request.files if key.startswith('file_')}
-
-    response = Response_psf(questionnaire_id=questionnaire_id, user_id=user_id, company_id=company_id, answers=answers)
-    db.session.add(response)
-    db.session.commit()
-
-    # Save files if necessary
-    for key, file in files.items():
-        file.save(f'/path/to/save/location/{file.filename}')
-
-    return jsonify({"message": "Response submitted successfully"})
-'''
-
-
 @app.route('/questionnaire_psf')
+@login_required
+@roles_required('Admin', 'Manager', 'Employee')
 def questionnaire_psf():
     return render_template('dynamic_questionnaire_psf.html')
 
 
 @app.route('/submit_response_psf', methods=['POST'])
+@login_required
+@roles_required('Admin', 'Manager', 'Employee')
 def submit_response_psf():
     data = request.form
     questionnaire_id = data.get('questionnaire_id')
@@ -4527,7 +4532,6 @@ def detailed_news(id):
 
 @app.route('/create_ticket', methods=['GET', 'POST'])
 @login_required
-
 @roles_required('Admin', 'Authority', 'Manager', 'Employee', 'Provider')
 def create_ticket():
     form = TicketForm()
@@ -4643,7 +4647,6 @@ def update_account():
 
 
 @app.route('/set_cookies', methods=['POST'])
-@login_required  # Ensure the user is logged in
 def set_cookies():
     response = make_response(redirect(url_for('index')))
     consent = request.form.get('consent')
@@ -4715,6 +4718,7 @@ def generate_event_instances(event):
 
 
 @app.route('/api/events')
+@login_required
 def get_events():
     try:
         start_date = request.args.get('start', default=None)
@@ -4959,17 +4963,17 @@ def update_event(event_id):
 
 
 @app.route('/calendar')
+@login_required
 def calendar():
     return render_template('calendar.html')
 
+
 @app.route('/cookie-settings')
-@login_required
 def cookie_settings():
     return render_template('cookie_settings.html')
 
 
 @app.route('/update_cookies', methods=['POST'])
-@login_required
 def update_cookies():
     response = make_response(redirect(url_for('cookie_settings')))
     analytics = 'true' if request.form.get('analytics') == 'true' else 'false'

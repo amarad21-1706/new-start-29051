@@ -229,7 +229,7 @@
                 "label": "Surveys and Questionnaires",
                 "url": "/open_admin_app_10",
                 "protected": true,
-                "allowed_roles": ["Admin", "Employee", "Manager"]
+                "allowed_roles": ["Admin", "Manager", "Employee", "Provider"]
             },
             "Cards One": {
                 "label": "My Actions",

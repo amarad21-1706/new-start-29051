@@ -1,33 +1,26 @@
+{% extends 'base_off.html' %}
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Logout</title>
-    <!-- Add your styling or link to a stylesheet if needed -->
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f4;
-            padding: 20px;
-            text-align: center;
-        }
+{% block title %}Logout{% endblock %}
 
-        h1 {
-            color: #333;
-        }
+{% block content %}
+    <div class="container mt-5 text-center">
+        <h1>Logout Successful</h1>
+        <p>You have been successfully logged out. You can now close this window. Thank you.</p>
+    </div>
+{% endblock %}
 
-        p {
-            color: #555;
-        }
-    </style>
-</head>
-<body>
-    <h1>Logout Successful</h1>
-    <p>You have been successfully logged out. Thank you.</p>
-    <a href="{{ url_for('login') }}" class="btn btn-primary">Home</a>
-</body>
-</html>
+{% block styles %}
+<style>
+    body {
+        text-align: center;
+    }
 
+    h1 {
+        color: #cccbb6;
+    }
+
+    p {
+        color: #cccbb6;
+    }
+</style>
+{% endblock %}

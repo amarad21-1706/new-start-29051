@@ -6,6 +6,78 @@
 <link href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-minicolors/2.3.6/jquery.minicolors.css">
+<style>
+    body {
+        background-color: #121212; /* Dark background */
+        color: #cccbb6; /* Light font color */
+    }
+
+    .form-control, .form-control:focus {
+        background-color: #333;
+        color: #cccbb6;
+        border-color: #555;
+    }
+
+    .form-check-input {
+        background-color: #7b7b7b;
+        border-color: #cccbb6;
+    }
+
+    .form-check-label {
+        color: #cccbb6;
+    }
+
+    /* Specific styles for flatpickr */
+    .flatpickr-calendar {
+        background-color: #7b7b7b;
+        color: #cccbb6;
+    }
+
+    .flatpickr-months {
+        background-color: #7b7b7b;
+        color: #cccbb6;
+    }
+
+    .flatpickr-weekdays {
+        background-color: #7b7b7b;
+        color: #cccbb6;
+    }
+
+    .flatpickr-days {
+        background-color: #7b7b7b;
+        color: #cccbb6;
+    }
+
+    .flatpickr-day {
+        background-color: #7b7b7b;
+        color: #cccbb6;
+    }
+
+    .flatpickr-day:hover, .flatpickr-day:focus {
+        background-color: #7b7b7b;
+        color: #ffffff;
+    }
+
+    .flatpickr-day.selected {
+        background-color: #7b7b7b;
+        color: #ffffff;
+    }
+
+    .flatpickr-time input {
+        background-color: #7b7b7b;
+        color: #cccbb6;
+    }
+
+    /* Specific styles for jquery-minicolors */
+    .minicolors-input {
+        background-color: #7b7b7b;
+        color: #cccbb6;
+    }
+
+    .minicolors-swatch {
+        border-color: #7b7b7b;
+    }
+</style>
 {% endblock %}
 
 {% block content %}

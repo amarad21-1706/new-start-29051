@@ -1,5 +1,32 @@
 {% extends "base.html" %}
 
+{% block head %}
+<style>
+    /* Ensure all input elements have proper contrast */
+    input[type="text"], input[type="file"], textarea {
+        background-color: #333; /* Dark background for input fields */
+        color: #cccbb6; /* Light font color */
+        border: 1px solid #555; /* Border color */
+    }
+    input[type="text"]::placeholder, textarea::placeholder {
+        color: #999; /* Placeholder text color */
+    }
+    button {
+        background-color: #444; /* Dark background for buttons */
+        color: #cccbb6; /* Light font color */
+        border: 1px solid #555; /* Border color */
+        margin: 5px; /* Space between buttons */
+    }
+    button:hover {
+        background-color: #555; /* Slightly lighter background on hover */
+        color: #ffffff; /* Ensure the font color remains light on hover */
+    }
+    #questionnaire {
+        margin-top: 20px;
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div id="questionnaire"></div>
 <div id="navigation-buttons">
@@ -122,7 +149,6 @@
             submitResponse(10); // Status ID for submitted
         });
 
-
         $('#home').click(function () {
             window.location.href = '/';
         });
@@ -162,7 +188,7 @@
             questionDiv.append(input, skipButton);
         }
 
-        $('#questionnaire').append(questionDiv);
+        $('#questionnaire').html(questionDiv); // Ensure only the current question is displayed
         if (currentQuestionIndex > 0) {
             $('#back').show();
         } else {
