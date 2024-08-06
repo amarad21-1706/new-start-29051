@@ -4990,12 +4990,14 @@ def update_cookies():
 
 
 @app.route('/products_page')
+@login_required
 def products_page():
     products = Product.query.all()
     return render_template('products.html', products=products)
 
 
 @app.route('/add_to_cart/<int:product_id>', methods=['POST'])
+@login_required
 def add_to_cart(product_id):
     print('add to cart 1')
     try:
@@ -5062,6 +5064,7 @@ def get_cart_items(user_id, company_id, role):
 
 
 @app.route('/cart')
+@login_required
 def cart():
     try:
         # Fetch user and company details from session
@@ -5103,6 +5106,7 @@ def cart():
 
 
 @app.route('/update_cart_item/<int:product_id>', methods=['POST'])
+@login_required
 def update_cart_item(product_id):
     try:
         quantity = int(request.form.get('quantity', 1))
@@ -5122,7 +5126,9 @@ def update_cart_item(product_id):
         flash('An error occurred while updating the cart.', 'error')
         return redirect(url_for('cart'))
 
+
 @app.route('/remove_from_cart/<int:product_id>', methods=['GET'])
+@login_required
 def remove_from_cart(product_id):
     try:
         user_id = current_user.id
@@ -5140,6 +5146,7 @@ def remove_from_cart(product_id):
         db.session.rollback()
         flash('An error occurred while removing the item from cart.', 'error')
         return redirect(url_for('cart'))
+
 
 @app.route('/checkout', methods=['GET', 'POST'])
 @login_required
@@ -5166,7 +5173,6 @@ def checkout():
         db.session.rollback()
         flash('An error occurred during checkout.', 'error')
         return redirect(url_for('cart'))
-
 
 
 @app.route('/checkout_success')
