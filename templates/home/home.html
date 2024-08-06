@@ -269,12 +269,6 @@
             object-position: center;
         }
 
-        .navbar-logo {
-            height: 50px;
-            position: absolute;
-            right: 20px;
-            top: 0;
-        }
         .carousel-item {
             display: none;
             position: relative;
@@ -430,9 +424,16 @@
             height: 100px;
         }
 
-        .calendar-icon img {
-            width: 50px;
+        .icons-container {
+            display: flex;
+            align-items: center;
+            margin-left: auto; /* Ensures the container aligns to the right */
+        }
+        .navbar-logo img, .calendar-icon img {
             height: 50px;
+        }
+        .calendar-icon {
+            margin-right: 20px; /* Adjust margin as needed for spacing */
         }
 
         .calendar-icon img.grayed {
@@ -540,9 +541,22 @@
                 {{ render_menu(main_menu_items, user_roles) }}
             </ul>
         </div>
-        <!-- Placing the logo to the right -->
-        <img src="{{ url_for('static', filename='ilm_logo_1.png') }}" alt="My Logo" class="navbar-logo">
+
+        <!-- Icons container -->
+        <div class="d-flex align-items-center ml-auto icons-container">
+            <!-- Calendar Icon -->
+            <div class="calendar-icon mr-2">
+                <a href="/calendar">
+                    <img src="{{ url_for('static', filename='icons/calendar-icon-2.png') }}" alt="Calendar Icon" class="{{ 'colored' if has_events else 'grayed' }}">
+                </a>
+            </div>
+            <!-- Logo Icon -->
+            <div class="navbar-logo">
+                <img src="{{ url_for('static', filename='ilm_logo_1.png') }}" alt="My Logo">
+            </div>
+        </div>
     </nav>
+
 
     <!-- Flash messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
@@ -761,17 +775,10 @@
                     {% else %}
                         <p>[...]</p>
                     {% endif %}
-                </div>
+            </div>
 
             </div>
-            <div class="col-md-3">
-                <!-- Calendar Icon -->
-                <div class="calendar-icon">
-                    <a href="/calendar">
-                        <img src="{{ url_for('static', filename='icons/calendar-icon-2.png') }}" alt="Calendar Icon" class="{{ 'colored' if has_events else 'grayed' }}">
-                    </a>
-                </div>
-            </div>
+
         </div>
     </div>
 
