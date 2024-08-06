@@ -31,6 +31,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from werkzeug.security import generate_password_hash, check_password_hash
 import bcrypt
 
+
 class CheckboxField(BooleanField):
     def process_formdata(self, valuelist):
         if valuelist:
@@ -121,7 +122,7 @@ class Users(db.Model, UserMixin):
     terms_accepted = db.Column(db.Boolean, nullable=False, default=False)
     accepted_terms_date = db.Column(db.DateTime, nullable=True)
 
-    roles = db.relationship('Role', secondary='user_roles', backref=db.backref('user', lazy='dynamic'),
+    roles = db.relationship('Role', secondary='user_roles', backref=db.backref('users', lazy='dynamic'),
                             primaryjoin='UserRoles.user_id == Users.id',
                             secondaryjoin='UserRoles.role_id == Role.id')
 
@@ -131,8 +132,8 @@ class Users(db.Model, UserMixin):
     #    s = Serializer(current_app.config['SECRET_KEY'], expires_sec)
     #    return s.dumps({'user_id': self.id}).decode('utf-8')
 
-    #user_roles_as_role = relationship('UserRoles', back_populates='user')
-    #user_roles = relationship('UserRoles', back_populates='user')
+    #user_roles_as_role = relationship('UserRoles', back_populates='users')
+    #user_roles = relationship('UserRoles', back_populates='users')
     #roles = relationship('Role', secondary='user_roles_as_role', back_populates='users')
 
 
@@ -1231,7 +1232,7 @@ class AuditLog(db.Model):
     # Relationships (optional, define as needed)
     base_data = relationship('BaseData', backref='audit_log')
     # company_id = relationship('Company', backref='audit_log')
-    # user_id = relationship('User', backref='audit_log')
+    # user_id = relationship('Users', backref='audit_log')
     # workflow_id = relationship('Workflow', backref='audit_log')
     # step_id = relationship('Step', backref='audit_log')
     def __repr__(self):
@@ -1403,3 +1404,23 @@ class Event(db.Model):
         }
 
 
+class Product(db.Model):
+    __tablename__ = 'product'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(64), nullable=False)
+    price = db.Column(db.Integer, nullable=False)  # Store price in cents to avoid floating point issues
+    product_type = db.Column(db.String(64), nullable=False, default='Application')
+
+
+class Cart(db.Model):
+    __tablename__ = 'cart'
+    id = db.Column(db.Integer, primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)
+    quantity = db.Column(db.Integer, nullable=False, default=1)
+    price = db.Column(db.Numeric(10, 2), nullable=False)  # Ensure the price field is properly defined
+
+    product = db.relationship('Product', backref=db.backref('cart', lazy=True))
+    user = db.relationship('Users', backref=db.backref('cart', lazy=True))
+    company = db.relationship('Company', backref=db.backref('cart', lazy=True))

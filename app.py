@@ -48,7 +48,7 @@ from models.user import (Users, UserRoles, Event, Role, Container, Questionnaire
         Interval, Subject,
         AuditLog, Post, Ticket, StepQuestionnaire,
         Workflow, Step, BaseData, Container, WorkflowSteps, WorkflowBaseData,
-         StepBaseData, Config,
+         StepBaseData, Config, Product, Cart,
          Application, PlanApplications, Plan, Users, UserPlans,  # Adjust based on actual imports
          Questionnaire_psf, Response_psf)
 
@@ -869,6 +869,10 @@ def login():
                 password = form.password.data
                 user = user_manager.authenticate_user(username, password)
                 if user:
+                    # Log out any existing user and clear the session
+                    logout_user()
+                    session.clear()
+
                     if not current_user.is_authenticated:
                         login_user(user)
                         flash('Login Successful')
@@ -924,6 +928,7 @@ def login():
     captcha_text, captcha_image = generate_captcha(300, 100, 5)
     session['captcha'] = captcha_text
     return render_template('access/login.html', form=form, captcha_image=captcha_image)
+
 
 
 @app.route('/left_menu', methods=['GET', 'POST'])
@@ -4982,6 +4987,158 @@ def update_cookies():
     current_app.logger.debug("Updated cookie preferences: Analytics - {}, Marketing - {}".format(analytics, marketing))
 
     return response
+
+
+@app.route('/products_page')
+def products_page():
+    products = Product.query.all()
+    return render_template('products.html', products=products)
+
+
+@app.route('/add_to_cart/<int:product_id>', methods=['POST'])
+def add_to_cart(product_id):
+    print('add to cart 1')
+    try:
+        quantity = int(request.form.get('quantity', 1))
+        print(f'Received quantity: {quantity}')
+        product_to_add = Product.query.get(product_id)
+        print('add to cart 2', product_to_add)
+        user_id = current_user.id
+        company_id = session.get('company_id')
+        print(f'user_id: {user_id}, company_id: {company_id}')
+
+        if product_to_add:
+            print('add to cart 3', product_to_add)
+            cart_item = Cart.query.filter_by(product_id=product_id, user_id=user_id, company_id=company_id).first()
+            if cart_item:
+                print('add to cart 4', cart_item)
+                cart_item.quantity += quantity
+            else:
+                print('add to cart 5', product_to_add)
+                new_cart_item = Cart(
+                    product_id=product_to_add.id,
+                    user_id=user_id,
+                    company_id=company_id,
+                    quantity=quantity,
+                    price=product_to_add.price
+                )
+                db.session.add(new_cart_item)
+            db.session.commit()
+            print('add to cart 6')
+            flash('Product added to cart successfully!', 'success')
+        else:
+            print('add to cart 7 no prod')
+            flash('Product not found.', 'error')
+        return redirect(url_for('products_page'))
+    except Exception as e:
+        print(f'add to cart 8 other errors: {e}')
+        db.session.rollback()
+        flash('An error occurred while adding to cart.', 'error')
+        return redirect(url_for('products_page'))
+
+def get_cart_items():
+    cart_items = session.get('cart', [])
+    product_ids = [item['product_id'] for item in cart_items]
+    products = Product.query.filter(Product.id.in_(product_ids)).all()
+
+    items = []
+    for item in cart_items:
+        product = next((p for p in products if p.id == item['product_id']), None)
+        if product:
+            items.append({
+                'id': product.id,
+                'name': product.name,
+                'price': product.price,
+                'quantity': item['quantity']
+            })
+    return items
+
+
+@app.route('/cart')
+def cart():
+    try:
+        cart_items = session.get('cart', [])
+        logging.debug(f"Cart items before filtering: {cart_items}")
+
+        company_id = session.get('company_id') if session.get('company_id') else -1
+        user_id = current_user.id
+        print('cart route', company_id, user_id)
+
+        if 'Manager' in current_user.roles:
+            filtered_cart_items = [item for item in cart_items if item['company_id'] == company_id]
+        else:
+            filtered_cart_items = [item for item in cart_items if item['user_id'] == user_id]
+
+        logging.debug(f"Filtered cart items: {filtered_cart_items}")
+
+        total_price = sum(item['price'] * item['quantity'] for item in filtered_cart_items)
+        return render_template('cart.html', cart=filtered_cart_items, total_price=total_price)
+    except Exception as e:
+        logging.error(f"Error fetching cart items: {e}")
+        return "An error occurred", 500
+
+
+@app.route('/update_cart_item/<int:product_id>', methods=['POST'])
+def update_cart_item(product_id):
+    try:
+        quantity = int(request.form.get('quantity', 1))
+        cart = session.get('cart', [])
+        for item in cart:
+            if item['id'] == product_id and item['user_id'] == current_user.id:
+                item['quantity'] = quantity
+                break
+        session['cart'] = cart
+        return redirect(url_for('cart'))
+    except Exception as e:
+        logging.error(f"Error updating cart item: {e}")
+        return "An error occurred", 500
+
+@app.route('/delete_cart_item/<int:product_id>', methods=['POST'])
+def delete_cart_item(product_id):
+    try:
+        cart = session.get('cart', [])
+        cart = [item for item in cart if not (item['id'] == product_id and item['user_id'] == current_user.id)]
+        session['cart'] = cart
+        return redirect(url_for('cart'))
+    except Exception as e:
+        logging.error(f"Error deleting cart item: {e}")
+        return "An error occurred", 500
+
+
+@app.route('/checkout', methods=['GET', 'POST'])
+@login_required
+def checkout():
+    try:
+        user_id = current_user.id
+        company_id = session.get('company_id')
+
+        if request.method == 'POST':
+            # Handle payment and order creation logic here
+
+            # For simplicity, let's just clear the cart after "checkout"
+            Cart.query.filter_by(user_id=user_id, company_id=company_id).delete()
+            db.session.commit()
+            flash('Checkout successful! Your order has been placed.', 'success')
+            return redirect(url_for('products_page'))
+
+        # For GET request, render the checkout page
+        cart_items = Cart.query.filter_by(user_id=user_id, company_id=company_id).all()
+        total_price = sum(item.price * item.quantity for item in cart_items)
+        return render_template('checkout.html', cart=cart_items, total_price=total_price)
+
+    except Exception as e:
+        db.session.rollback()
+        flash('An error occurred during checkout.', 'error')
+        return redirect(url_for('cart'))
+
+
+
+@app.route('/checkout_success')
+def checkout_success():
+    Cart.query.delete()
+    db.session.commit()
+    return render_template('checkout_success.html')
+
 
 if __name__ == '__main__':
     # Load menu items from JSON file

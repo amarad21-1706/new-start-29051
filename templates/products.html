@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Products
+{% endblock %}
+
+{% block content %}
+    <div class="container">
+        <h1>Products</h1>
+        <ul class="list-group">
+            {% for product in products %}
+                <li class="list-group-item">
+                    {{ product.name }} - ${{ product.price / 100 }}
+                    <form action="{{ url_for('add_to_cart', product_id=product.id) }}" method="POST" class="d-flex align-items-center">
+                        <input type="number" name="quantity" value="1" min="1" class="form-control mr-2" style="width: 80px;">
+                        <button type="submit" class="btn btn-primary">Add to Cart</button>
+                    </form>
+                </li>
+            {% endfor %}
+        </ul>
+        <a href="{{ url_for('cart') }}" class="btn btn-secondary mt-3">View Cart</a>
+    </div>
+{% endblock %}

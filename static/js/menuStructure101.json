@@ -830,6 +830,18 @@
                             "Guest"
                         ]
                     },
+                    "Products": {
+                        "label": "Products",
+                        "url": "/products_page",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin",
+                            "Employee",
+                            "Manager",
+                            "Authority",
+                            "Guest"
+                        ]
+                    },
                     "User Tickets": {
                         "label": "Tickets",
                         "url": "/create_ticket",

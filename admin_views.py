@@ -42,7 +42,7 @@ from models.user import (Users, UserRoles, Role, Table, Questionnaire, Question,
         QuestionnaireQuestions, BaseData, Plan, Application, PlanApplications,
         Answer, Company, Area, Subarea, AreaSubareas,
         QuestionnaireCompanies, CompanyUsers, Status, Lexic,
-        Interval, Subject,
+        Interval, Subject, Product, Cart,
         AuditLog, Post, Ticket, StepQuestionnaire,
         Workflow, Step, BaseData, BaseDataInline, WorkflowSteps, WorkflowBaseData, StepBaseData,
                          Container, Config, get_config_values)
@@ -50,15 +50,16 @@ from models.user import (Users, UserRoles, Role, Table, Questionnaire, Question,
 
 from wtforms.widgets import DateTimeInput
 from forms.forms import (LoginForm, ForgotPasswordForm, ResetPasswordForm101, RegistrationForm,
-                         QuestionnaireCompanyForm, CustomBaseDataForm,
-        QuestionnaireQuestionForm, WorkflowStepForm, WorkflowBaseDataForm,
-                         BaseDataWorkflowStepForm, BaseDataInlineModelForm,
-        UserRoleForm, CompanyUserForm, UserDocumentsForm, StepBaseDataInlineForm,
-        create_dynamic_form, CustomFileLoaderForm,
-        CustomSubjectAjaxLoader, BaseSurveyForm)
+                QuestionnaireCompanyForm, CustomBaseDataForm,
+                QuestionnaireQuestionForm, WorkflowStepForm, WorkflowBaseDataForm,
+                BaseDataWorkflowStepForm, BaseDataInlineModelForm,
+                UserRoleForm, CompanyUserForm, UserDocumentsForm, StepBaseDataInlineForm,
+                create_dynamic_form, CustomFileLoaderForm,
+                CustomSubjectAjaxLoader, BaseSurveyForm)
 
 from flask_admin.form import FileUploadField
 
+from wtforms import (SelectField, BooleanField, ValidationError, EmailField)
 from wtforms import (SelectField, BooleanField, ValidationError, EmailField)
 from config.config import Config, check_status, check_status_limited, check_status_extended
 
@@ -4445,6 +4446,7 @@ def create_admin_views(app, intervals):
         admin_app4.add_view(ContainerView(Container, db.session, name='Container', endpoint='container_view'))
         admin_app4.add_view(PlanView(Plan, db.session, name='Plans', endpoint='plan_view'))
         admin_app4.add_view(ApplicationView(Application, db.session, name='Applications', endpoint='application_view'))
+        admin_app4.add_view(ProductView(Product, db.session, name='Products', endpoint='product_view'))
 
 
         # TODO Associazione di 1->m da non consentire qui (can_create = False) , in quanto già fatta (con controllo IF EXISTS) altrove
@@ -4881,6 +4883,39 @@ class ApplicationForm(ModelView):
     edit_modal = True
 
 
+
+class ProductForm(ModelView):
+    # Override form fields
+    form_columns = [
+        'name',
+        'price',
+        'product_type'
+    ]
+
+    column_labels = {'name': 'Name', 'price': 'Product Price (in cents)',
+                     'product_type': 'Type (Application, Service etc.)',  }
+    # Override form field type for 'id'
+    form_overrides = {
+        'id': HiddenField
+    }
+
+    # Automatically hide the 'id' field in forms
+    form_widget_args = {
+        'id': {
+            'type': 'hidden'
+        }
+    }
+
+    # Additional configurations (optional)
+    column_exclude_list = ['id']
+    form_excluded_columns = ['id']
+    can_create = True
+    can_edit = True
+    can_delete = True
+    can_view_details = True
+    create_modal = True
+    edit_modal = True
+
 class ContainerForm(ModelView):
     # Override form fields
     form_columns = [
@@ -5046,6 +5081,11 @@ class PlanView(PlanForm):
 class ApplicationView(ApplicationForm):
     pass  # No customizations needed for
 
+class ProductView(ProductForm):
+    pass  # No customizations needed for now
+
+class ProductView(ProductForm):
+    pass  # No customizations needed for
 
 class QuestionnaireModelView(ModelView):
     form_columns = ['questionnaire_id', 'questionnaire_type', 'name', 'interval', 'deadline_date', 'status_id', 'headers']
