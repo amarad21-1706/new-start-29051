@@ -1,5 +1,23 @@
 {% extends 'base.html' %}
 {% block content %}
+<style>
+    body {
+        background-color: #333; /* example dark background */
+        color: #fff; /* light text color */
+    }
+    .table {
+        background-color: #444; /* dark background for the table */
+        color: #fff; /* light text color for the table */
+    }
+    .table th, .table td {
+        color: #fff; /* ensure table headers and cells have light text */
+    }
+    .btn-success {
+        background-color: #28a745;
+        border-color: #28a745;
+    }
+</style>
+
 <h2>All Tickets</h2>
 <table class="table table-striped">
     <thead>

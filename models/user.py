@@ -127,6 +127,7 @@ class Users(db.Model, UserMixin):
                             secondaryjoin='UserRoles.role_id == Role.id')
 
     user_plans = db.relationship('UserPlans', back_populates='user', uselist=False)
+    subscriptions = db.relationship('Subscription', back_populates='user')
 
     #def get_reset_token(self, expires_sec=1800):
     #    s = Serializer(current_app.config['SECRET_KEY'], expires_sec)
@@ -204,6 +205,7 @@ class UserRoles(db.Model):
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
     created_on = Column(DateTime, nullable=False)
     updated_on = Column(DateTime, nullable=True, onupdate=datetime.now)
+    end_of_registration = Column(DateTime, nullable=True)
     #user = relationship('Users', backref='user_roles')
     #role = relationship('Role', backref='user_roles')
 
@@ -1320,23 +1322,42 @@ class Response_psf(db.Model):
     file_path = db.Column(db.String(255))
 
 
-
 class Plan(db.Model):
     __tablename__ = 'plan'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True, nullable=False)
-    stripe_product_id = db.Column(db.String(128), nullable=False)
-    stripe_price_id = db.Column(db.String(128), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    billing_cycle = db.Column(db.String(50), nullable=False, default='monthly')  # e.g., 'monthly', 'yearly', 'one-off'
+    plan_products = db.relationship('PlanProducts', back_populates='plan')
     user_plans = db.relationship('UserPlans', back_populates='plan')
-    plan_applications = db.relationship('PlanApplications', back_populates='plan')
+    subscriptions = db.relationship('Subscription', back_populates='plan')
 
-class Application(db.Model):
-    __tablename__ = 'application'
+    # products = db.relationship('Product', secondary='plan_products', backref=db.backref('plan', lazy='dynamic'),
+    #                         primaryjoin='PlanProducts.plan_id == Plan.id',
+    #                         secondaryjoin='PlanProducts.product_id == Product.id')
+
+class Product(db.Model):
+    __tablename__ = 'product'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True, nullable=False)
-    path = db.Column(db.String(256), nullable=False)  # Path to the menu item or route
-    icon = db.Column(db.String(256), nullable=True)  # URL or path to the app icon
-    plan_applications = db.relationship('PlanApplications', back_populates='application')
+    description = db.Column(db.Text, nullable=True)
+    stripe_product_id = db.Column(db.String(128), nullable=False)
+    stripe_price_id = db.Column(db.String(128), nullable=False)
+    price = db.Column(db.Integer, nullable=False)
+    currency = db.Column(db.String(3), nullable=False, default='EUR')
+    path = db.Column(db.String(128), nullable=False)
+    icon = db.Column(db.String(128), nullable=True)
+    plan_products = db.relationship('PlanProducts', back_populates='product')
+
+class PlanProducts(db.Model):
+    __tablename__ = 'plan_products'
+    plan_id = db.Column(db.Integer, db.ForeignKey('plan.id'), primary_key=True)
+    product_id = db.Column(db.Integer, db.ForeignKey('product.id'), primary_key=True)
+    created_on = Column(DateTime, nullable=True)
+    updated_on = Column(DateTime, nullable=True, onupdate=datetime.now)
+    end_of_registration = Column(DateTime, nullable=True)
+    plan = db.relationship('Plan', back_populates='plan_products')
+    product = db.relationship('Product', back_populates='plan_products')
 
 class UserPlans(db.Model):
     __tablename__ = 'user_plans'
@@ -1350,15 +1371,6 @@ class UserPlans(db.Model):
 
     user = db.relationship('Users', back_populates='user_plans')
     plan = db.relationship('Plan', back_populates='user_plans')
-
-class PlanApplications(db.Model):
-    __tablename__ = 'plan_applications'
-    id = db.Column(db.Integer, primary_key=True)
-    plan_id = db.Column(db.Integer, db.ForeignKey('plan.id'), nullable=False)
-    application_id = db.Column(db.Integer, db.ForeignKey('application.id'), nullable=False)
-
-    plan = db.relationship('Plan', back_populates='plan_applications')
-    application = db.relationship('Application', back_populates='plan_applications')
 
 
 class Event(db.Model):
@@ -1404,13 +1416,6 @@ class Event(db.Model):
         }
 
 
-class Product(db.Model):
-    __tablename__ = 'product'
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(64), nullable=False)
-    price = db.Column(db.Integer, nullable=False)  # Store price in cents to avoid floating point issues
-    product_type = db.Column(db.String(64), nullable=False, default='Application')
-
 
 class Cart(db.Model):
     __tablename__ = 'cart'
@@ -1420,7 +1425,18 @@ class Cart(db.Model):
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)
     quantity = db.Column(db.Integer, nullable=False, default=1)
     price = db.Column(db.Numeric(10, 2), nullable=False)  # Ensure the price field is properly defined
-
+    currency = db.Column(db.String(3), nullable=False, default='EUR')
     product = db.relationship('Product', backref=db.backref('cart', lazy=True))
     user = db.relationship('Users', backref=db.backref('cart', lazy=True))
     company = db.relationship('Company', backref=db.backref('cart', lazy=True))
+
+
+class Subscription(db.Model):
+   id = db.Column(db.Integer, primary_key=True)
+   user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+   plan_id = db.Column(db.Integer, db.ForeignKey('plan.id'), nullable=False)
+   start_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+   end_date = db.Column(db.DateTime, nullable=True)
+   user = db.relationship('Users', back_populates='subscriptions')
+   plan = db.relationship('Plan', back_populates='subscriptions')
+

@@ -11,7 +11,7 @@ from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from config.config import Config
 from db import db
-from models.user import Users
+from models.user import Users #, Plan, Product
 from functools import wraps
 from password_reset import password_reset_bp  # Import the blueprint
 
@@ -102,6 +102,12 @@ def create_app(conf=None):
     )
 
     db.init_app(app)
+
+    '''
+    @app.before_first_request
+    def create_tables():
+        db.create_all()
+    '''
 
     login_manager = LoginManager()
     login_manager.init_app(app)

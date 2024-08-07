@@ -42,14 +42,14 @@ from workflow_manager import (add_transition_log, create_card,
 
 from app_defs import get_user_roles, create_message, generate_menu_tree
 from models.user import (Users, UserRoles, Event, Role, Container, Questionnaire, Question,
-        QuestionnaireQuestions, Application, PlanApplications,
+        QuestionnaireQuestions, PlanProducts,
         Answer, Company, Area, Subarea, AreaSubareas,
         QuestionnaireCompanies, CompanyUsers, Status, Lexic,
         Interval, Subject,
         AuditLog, Post, Ticket, StepQuestionnaire,
         Workflow, Step, BaseData, Container, WorkflowSteps, WorkflowBaseData,
          StepBaseData, Config, Product, Cart,
-         Application, PlanApplications, Plan, Users, UserPlans,  # Adjust based on actual imports
+         Plan, Users, UserPlans,  # Adjust based on actual imports
          Questionnaire_psf, Response_psf)
 
 # from master_password_reset import admin_reset_password, AdminResetPasswordForm
@@ -61,7 +61,7 @@ from forms.forms import (SignupForm, UpdateAccountForm, TicketForm, ResponseForm
                          BaseDataWorkflowStepForm,
         UserRoleForm, CompanyUserForm, UserDocumentsForm, StepBaseDataInlineForm,
         create_dynamic_form, CustomFileLoaderForm,
-        CustomSubjectAjaxLoader, BaseSurveyForm, AuditLogForm)
+        CustomSubjectAjaxLoader, BaseSurveyForm, AuditLogForm, PlanProductsForm)
 
 from flask_mail import Mail, Message
 from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as _
@@ -313,7 +313,9 @@ serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 with app.app_context():
     # db.create_all()
 
-    app.register_blueprint(admin_bp)
+    #app.register_blueprint(admin_bp)
+
+    app.register_blueprint(admin_bp, url_prefix='/admin')
 
     user_roles_blueprint = create_crud_blueprint(UserRoles, 'user_roles')
     app.register_blueprint(user_roles_blueprint, url_prefix='/model_user_roles')
@@ -355,48 +357,6 @@ def is_user_role(session, user_id, role_name):
     return role_name in user_roles
 
 
-'''
-class AnimatedGIFApp(App):
-    def build(self):
-        Window.size = (800, 800)
-        self.title = 'Starry Night Background'
-        layout = BoxLayout()
-        self.image = Image(source="static/images/starry_night.gif")
-        layout.add_widget(self.image)
-        Clock.schedule_interval(self.update, 1 / 10.0)  # Adjust the interval to match the GIF frame rate
-        return layout
-
-    def update(self, dt):
-        self.image.reload()
-     
-def role_required(required_role):
-    def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            # Check if the user has the required role
-            if 'user_roles' in session and any(role.lower() == required_role.lower() for role in session['user_roles']):
-                return func(*args, **kwargs)
-            else:
-                # If the user doesn't have the required role, abort with a 403 Forbidden error
-                abort(403)
-        return wrapper
-    return decorator
-
-
-def roles_required(*required_roles):
-    def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            # Check if the user has at least one of the required roles
-            if 'user_roles' in session and any(role.lower() in [r.lower() for r in session['user_roles']] for role in required_roles):
-                return func(*args, **kwargs)
-            else:
-                # If the user doesn't have any of the required roles, show a flash message and redirect to the previous page
-                flash("You do not have the necessary permissions to access this page.", "danger")
-                return redirect(request.referrer or url_for('index'))  # Redirect to the previous page or index if referrer is None
-        return wrapper
-    return decorator
-'''
 
 def generate_reset_token(email):
     serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
@@ -1578,6 +1538,68 @@ def attach_documents_to_workflow_step():
     return jsonify({'success_message': success_message, 'error_message': None})
 
 
+
+
+@app.route('/manage_plan_products', methods=['GET', 'POST'])
+@login_required
+@roles_required('Admin')
+def manage_plan_products():
+    form = PlanProductsForm()
+    message = None
+
+    try:
+        # Populate choices for plans and products
+        form.plan_id.choices = [(plan.id, plan.name) for plan in Plan.query.all()]
+        form.product_id.choices = [(product.id, product.name) for product in Product.query.all()]
+
+        if request.method == 'POST':
+            if form.validate_on_submit():
+                if form.cancel.data:
+                    # Handle cancel button
+                    return redirect(url_for('index'))
+                elif form.add.data:
+                    # Handle add button
+                    plan_id = form.plan_id.data
+                    product_id = form.product_id.data
+
+                    # Check if the plan-product association already exists
+                    existing_plan_product = PlanProducts.query.filter_by(plan_id=plan_id, product_id=product_id).first()
+
+                    if existing_plan_product:
+                        message = "Association plan-product already exists."
+                    else:
+                        # Add logic to associate the plan with the selected product
+                        new_association = PlanProducts(plan_id=plan_id, product_id=product_id)
+                        db.session.add(new_association)
+                        db.session.commit()
+                        # Set a success message
+                        message = "Association plan-product added successfully."
+
+                elif form.delete.data:
+                    # Handle delete button
+                    plan_id = form.plan_id.data
+                    product_id = form.product_id.data
+
+                    # Find and delete the plan-product association
+                    association_to_delete = PlanProducts.query.filter_by(plan_id=plan_id, product_id=product_id).first()
+
+                    if association_to_delete:
+                        db.session.delete(association_to_delete)
+                        db.session.commit()
+                        message = "Association plan-product deleted successfully."
+                    else:
+                        message = "Association plan-product not found."
+            else:
+                message = "Form validation failed. Please check your input."
+    except Exception as e:
+        # Log the error and set a message for the template
+        app.logger.error(f"Error managing plan products: {e}")
+        message = "An unexpected error occurred. Please try again later."
+
+    # Handle GET request or any case where form validation failed
+    return render_template('manage_plan_products.html', form=form, message=message)
+
+
 @app.route('/action_manage_dws_deadline', methods=['POST'])
 @login_required
 def manage_deadline():
@@ -2019,9 +2041,9 @@ def test_carousel():
 def mission():
     return render_template('home/mission.html')
 
-@app.route('/home/services',  methods=['GET', 'POST'])
-def services():
-    return render_template('home/services.html')
+@app.route('/home/products',  methods=['GET', 'POST'])
+def products():
+    return render_template('home/products.html')
 
 @app.route('/home/history',  methods=['GET', 'POST'])
 def history():
@@ -4996,7 +5018,9 @@ def update_cookies():
 @app.route('/products_page')
 @login_required
 def products_page():
+    print('products 1')
     products = Product.query.all()
+    print('products 2', products)
     return render_template('products.html', products=products)
 
 
@@ -5051,7 +5075,7 @@ def get_cart_items(user_id, company_id, role):
         cart_items = Cart.query.filter_by(user_id=user_id).all()
 
     product_ids = [item.product_id for item in cart_items]
-    products = Product.query.filter(Product.id.in_(product_ids)).all()
+    products = Product.query.filter(product.id.in_(product_ids)).all()
 
     items = []
     for item in cart_items:
@@ -5066,15 +5090,14 @@ def get_cart_items(user_id, company_id, role):
     return items
 
 
-
 @app.route('/cart')
 @login_required
 def cart():
     try:
         # Fetch user and company details from session
-        company_id = session.get('company_id') if session.get('company_id') else -1
+        company_id = session.get('company_id', -1)
         user_id = current_user.id
-        print('cart route', company_id, user_id)
+        logging.debug(f'Cart route accessed by user: {user_id}, company: {company_id}')
 
         # Determine the correct cart items based on user role
         if 'Manager' in [role.name for role in current_user.roles]:
@@ -5084,7 +5107,7 @@ def cart():
 
         logging.debug(f"Cart items from DB: {cart_items}")
 
-        # Prepare a dictionary to hold the product details
+        # Fetch product details for items in the cart
         product_ids = [item.product_id for item in cart_items]
         products = Product.query.filter(Product.id.in_(product_ids)).all()
         product_dict = {product.id: product for product in products}
@@ -5101,12 +5124,12 @@ def cart():
                     'quantity': item.quantity
                 })
 
+        # Calculate the total price of the cart items
         total_price = sum(item['price'] * item['quantity'] for item in filtered_cart_items)
         return render_template('cart.html', cart=filtered_cart_items, total_price=total_price)
     except Exception as e:
         logging.error(f"Error fetching cart items: {e}")
         return "An error occurred", 500
-
 
 
 @app.route('/update_cart_item/<int:product_id>', methods=['POST'])

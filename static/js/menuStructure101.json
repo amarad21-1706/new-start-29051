@@ -527,9 +527,17 @@
                                     "Admin"
                                 ]
                             },
-                            "Manage Apps": {
-                                "label": "Manage Apps",
-                                "url": "/admin/manage_apps",
+                            "Manage Plans": {
+                                "label": "Manage Plans",
+                                "url": "/admin/manage_plans",
+                                "protected": true,
+                                "allowed_roles": [
+                                    "Admin"
+                                ]
+                            },
+                            "Manage Products": {
+                                "label": "Manage Products",
+                                "url": "/admin/manage_products",
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"
@@ -603,9 +611,9 @@
                                     "Admin"
                                 ]
                             },
-                            "Assign Apps to Plans": {
-                                "label": "Associate Apps to Plans",
-                                "url": "/admin/associate_apps",
+                            "Assign Products to Plans": {
+                                "label": "Associate Products to Plans",
+                                "url": "/manage_plan_products",
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"

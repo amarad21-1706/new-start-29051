@@ -36,18 +36,36 @@ from flask_admin.contrib.sqla.ajax import QueryAjaxModelLoader
 from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as _
 # from werkzeug.security import generate_password_hash, check_password_hash
 
-class ManageAppForm(FlaskForm):
-    app_id = HiddenField()
-    name = StringField('Application Name', validators=[DataRequired()])
-    path = StringField('Application Path', validators=[DataRequired()])
-    icon = StringField('Application Icon (URL or internal path)', validators=[URL(require_tld=False)])
-    submit = SubmitField('Save Application')
 
-class AssociateAppsForm(FlaskForm):
-    plan_id = SelectField('Select Plan', coerce=int)
-    application_ids = SelectMultipleField('Select Applications', coerce=int)
-    hidden_tag = HiddenField()
-    submit = SubmitField('Associate')
+class ManagePlanForm(FlaskForm):
+    id = HiddenField()
+    name = StringField('Plan Name', validators=[DataRequired()])
+    description = TextAreaField('Description')
+    billing_cycle = SelectField('Billing Cycle', choices=[('none', 'None'), ('monthly', 'Monthly'), ('quarterly', 'Quarterly'), ('yearly', 'Yearly'), ('one-off', 'One-off')], validators=[DataRequired()])
+    submit = SubmitField('Save Plan')
+
+
+class ManageProductForm(FlaskForm):
+    id = HiddenField()
+    name = StringField('Product Name', validators=[DataRequired()])
+    description = TextAreaField('Description')
+    stripe_product_id = StringField('Stripe Product ID', validators=[DataRequired()])
+    stripe_price_id = StringField('Stripe Price ID', validators=[DataRequired()])
+    price = IntegerField('Price (in cents)', validators=[DataRequired()])
+    currency = StringField('Currency', validators=[DataRequired()])
+    path = StringField('Product Path', validators=[DataRequired()])
+    icon = StringField('Product Icon (URL or internal path)', validators=[URL(require_tld=False)])
+    submit = SubmitField('Save Product')
+
+
+class PlanProductsForm(FlaskForm):
+    id = HiddenField()
+    plan_id = SelectField('Plan', coerce=int, validators=[DataRequired()])
+    product_id = SelectField('Product', coerce=int, validators=[DataRequired()], choices=[], render_kw={'multiple': False})
+    add = SubmitField('Add')
+    delete = SubmitField('Delete')
+    cancel = SubmitField('Cancel')
+
 
 class UpdateAccountForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(min=2, max=80)])
@@ -561,55 +579,6 @@ class CustomFileLoaderForm(FlaskForm):
             uploaded_file.save(filepath)
             # Assuming file_path is an attribute of the form
             self.file_path.data = filepath
-
-
-'''
-Loading file_path dynamically:
-
-Yes, you can dynamically load the file path after the file is uploaded. 
-In your form, you can define a method to handle the file upload and store the file path. 
-This method can be called after the form is submitted and the file is uploaded.
-
-Here's an example of how you can modify your form to achieve this:
-
-```python
-import os
-from werkzeug.utils import secure_filename
-
-class CustomFileLoaderForm(FlaskForm):
-    # Your form fields and methods...
-
-    def save_file(self, upload_folder):
-        uploaded_file = self.file_upload.data
-        if uploaded_file:
-            filename = secure_filename(uploaded_file.filename)
-            filepath = os.path.join(upload_folder, filename)
-            uploaded_file.save(filepath)
-            # Assuming file_path is an attribute of the form
-            self.file_path.data = filepath
-```
-
-You would call this `save_file` method after the form is submitted and validated, typically in your route where you handle the form submission. For example:
-
-```python
-@app.route('/upload', methods=['GET', 'POST'])
-def upload_file():
-    form = CustomFileLoaderForm()
-    if form.validate_on_submit():
-        # Save the file
-        form.save_file(upload_folder)
-        # Other processing steps...
-        flash('File uploaded successfully!', 'success')
-        return redirect(url_for('index'))
-    return render_template('upload.html', form=form)
-```
-
-This way, the file path is dynamically loaded and stored in the form after the file is uploaded. 
-You can then access this file path attribute in your view function or wherever you need it. 
-
-Make sure to adjust the `upload_folder` variable to point to the directory where you want to store the uploaded files.
-
-'''
 
 class UserDocumentsForm(FlaskForm):
     document_selector = SelectField('Select Document', validators=[DataRequired()])

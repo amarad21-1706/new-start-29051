@@ -39,10 +39,10 @@ from config.config import (get_if_active, get_subarea_name, get_current_interval
 from config.custom_fields import CustomFileUploadField  # Import the custom field
 
 from models.user import (Users, UserRoles, Role, Table, Questionnaire, Question,
-        QuestionnaireQuestions, BaseData, Plan, Application, PlanApplications,
+        QuestionnaireQuestions, BaseData, Product, Plan, PlanProducts,
         Answer, Company, Area, Subarea, AreaSubareas,
         QuestionnaireCompanies, CompanyUsers, Status, Lexic,
-        Interval, Subject, Product, Cart,
+        Interval, Subject, Cart,
         AuditLog, Post, Ticket, StepQuestionnaire,
         Workflow, Step, BaseData, BaseDataInline, WorkflowSteps, WorkflowBaseData, StepBaseData,
                          Container, Config, get_config_values)
@@ -4445,9 +4445,7 @@ def create_admin_views(app, intervals):
         admin_app4.add_view(BaseDataView(BaseData, db.session, name='Database', endpoint='base_data_view'))
         admin_app4.add_view(ContainerView(Container, db.session, name='Container', endpoint='container_view'))
         admin_app4.add_view(PlanView(Plan, db.session, name='Plans', endpoint='plan_view'))
-        admin_app4.add_view(ApplicationView(Application, db.session, name='Applications', endpoint='application_view'))
         admin_app4.add_view(ProductView(Product, db.session, name='Products', endpoint='product_view'))
-
 
         # TODO Associazione di 1->m da non consentire qui (can_create = False) , in quanto già fatta (con controllo IF EXISTS) altrove
         # TODO ***** le risposte ai questionnari *** - answer - sono da STORE non in Answer, ma in BaseData (cu data_type='answer')!
@@ -4839,64 +4837,66 @@ class StepForm(ModelView):
                            'action': 'Description of Action Taken with this Step',
                            'order': 'Order of Step in Workflow',}
 
+
 class PlanForm(ModelView):
-    column_list = ('name', 'stripe_product_id', 'stripe_price_id', )
-    column_labels = {'name': 'Name', 'stripe_product_id': 'Stripe Product ID (see Stripe Dashboard)',
-                     'stripe_price_id': 'Stripe Price ID (see Stripe Dashboard)',  }
-    form_columns = column_list # ('name', 'description', 'action', 'order', 'next_step_id', )
-    column_exclude_list = ('id')  # Specify the columns you want to exclude
-    column_descriptions = {'name': 'Given Plan Name',
-                           'stripe_product_id': 'Stripe payment system product identifier',
-                           'stripe_price_id': 'Stripe payment system price identifier for the given product ID',
-                           }
-
-
-
-class ApplicationForm(ModelView):
-    # Override form fields
-    form_columns = [
-        'name',
-        'path',
-        'icon'
-    ]
-
-    # Override form field type for 'id'
-    form_overrides = {
-        'id': HiddenField
+    column_list = ('name', 'description', 'billing_cycle')
+    column_labels = {
+        'name': 'Name',
+        'description': 'Description',
+        'billing_cycle': 'Billing Cycle'
+    }
+    form_columns = ('name', 'description', 'billing_cycle')
+    column_exclude_list = ['id']
+    column_descriptions = {
+        'name': 'Given Plan Name',
+        'description': 'Description of the Plan',
+        'billing_cycle': 'Billing Cycle (one-off, monthly, quarterly, yearly)',
     }
 
-    # Automatically hide the 'id' field in forms
-    form_widget_args = {
-        'id': {
-            'type': 'hidden'
+    form_overrides = {
+        'billing_cycle': SelectField
+    }
+
+    form_args = {
+        'billing_cycle': {
+            'choices': [('one-off', 'One-off'), ('monthly', 'Monthly'), ('quarterly', 'Quarterly'),
+                        ('yearly', 'Yearly')],
+            'coerce': str
         }
     }
 
     # Additional configurations (optional)
-    column_exclude_list = ['id']
-    form_excluded_columns = ['id', 'plan_applications']
-    can_create = True
-    can_edit = True
-    can_delete = True
+    form_excluded_columns = ['id']
+    can_create = False
+    can_edit = False
+    can_delete = False
     can_view_details = True
     create_modal = True
     edit_modal = True
-
 
 
 class ProductForm(ModelView):
     # Override form fields
     form_columns = [
         'name',
+        'description',
+        'stripe_product_id',
+        'stripe_price_id',
         'price',
-        'product_type'
+        'currency',
+        'path',
+        'icon'
     ]
 
-    column_labels = {'name': 'Name', 'price': 'Product Price (in cents)',
-                     'product_type': 'Type (Application, Service etc.)',  }
-    # Override form field type for 'id'
-    form_overrides = {
-        'id': HiddenField
+    column_labels = {
+        'name': 'Name',
+        'description': 'Description',
+        'stripe_product_id': 'Stripe Product ID',
+        'stripe_price_id': 'Stripe Price ID',
+        'price': 'Product Price (in cents)',
+        'currency': 'Currency',
+        'path': 'Path (for applications only)',
+        'icon': 'Icon'
     }
 
     # Automatically hide the 'id' field in forms
@@ -4909,12 +4909,13 @@ class ProductForm(ModelView):
     # Additional configurations (optional)
     column_exclude_list = ['id']
     form_excluded_columns = ['id']
-    can_create = True
-    can_edit = True
-    can_delete = True
+    can_create = False
+    can_edit = False
+    can_delete = False
     can_view_details = True
     create_modal = True
     edit_modal = True
+
 
 class ContainerForm(ModelView):
     # Override form fields
@@ -5076,9 +5077,6 @@ class ContainerView(ContainerForm):
     pass  # No customizations needed for
 
 class PlanView(PlanForm):
-    pass  # No customizations needed for
-
-class ApplicationView(ApplicationForm):
     pass  # No customizations needed for
 
 class ProductView(ProductForm):
