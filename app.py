@@ -4403,9 +4403,13 @@ def subscriptions():
         user = Users.query.filter_by(email=email).first()
         logging.debug(f'User fetched: {user}')
 
-        if user:
+        if user and user.subscription_plan:
+            # Fetch the plan name based on the subscription_plan (which is the plan_id)
+            plan = Plan.query.filter_by(id=user.subscription_plan).first()
+            plan_name = plan.name if plan else 'Unknown Plan'
+
             subscription_info = {
-                'plan': user.subscription_plan,
+                'plan': plan_name,
                 'status': user.subscription_status,
                 'start_date': user.subscription_start_date,
                 'end_date': user.subscription_end_date
@@ -4438,8 +4442,6 @@ def subscriptions():
         return "An error occurred", 500
 
 
-from flask import flash, redirect, url_for
-
 
 @app.route('/subscribe', methods=['POST'])
 @login_required
@@ -4456,14 +4458,7 @@ def subscribe():
                                       product_id]
             logging.debug(f'Form validated. Plan: {plan_id}, Additional Products: {additional_product_ids}')
 
-            email = session.get('email')
             user_id = session.get('user_id')
-
-            if not email:
-                logging.error("User not logged in.")
-                flash("User not logged in.", "danger")
-                return redirect(url_for('subscriptions'))
-
             user = Users.query.filter_by(id=user_id).first()
 
             if not user:
@@ -4471,10 +4466,18 @@ def subscribe():
                 flash("User not found.", "danger")
                 return redirect(url_for('subscriptions'))
 
-            if plan_id not in [str(p.id) for p in Plan.query.all()]:
-                logging.error("Invalid subscription plan.")
-                flash("Invalid subscription plan.", "danger")
+            # Check if the user already has an active subscription to the selected plan
+            existing_subscription = Subscription.query.filter_by(user_id=user_id, plan_id=plan_id).first()
+            if existing_subscription and existing_subscription.end_date > datetime.utcnow():
+                flash("You are already subscribed to this plan.", "info")
                 return redirect(url_for('subscriptions'))
+
+            # Check if the user has already purchased any of the additional products
+            for product_id in additional_product_ids:
+                existing_purchase = UserPurchases.query.filter_by(user_id=user_id, product_id=product_id).first()
+                if existing_purchase:
+                    flash(f"You have already purchased the product with ID {product_id}.", "info")
+                    additional_product_ids.remove(product_id)
 
             # Create or update the subscription
             subscription = Subscription.query.filter_by(user_id=user_id).first()
@@ -4498,7 +4501,7 @@ def subscribe():
 
             logging.debug(f'Updated subscription for user: {user}')
             flash("Subscription updated successfully.", "success")
-            return redirect(url_for('subscriptions'))
+            return redirect(url_for('subscriptions'))  # Redirect to ensure updated subscription info is fetched
         else:
             logging.debug(f'Form validation failed: {form.errors}')
             logging.debug(f'Form data: {request.form}')
