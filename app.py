@@ -49,7 +49,7 @@ from models.user import (Users, UserRoles, Event, Role, Container, Questionnaire
         AuditLog, Post, Ticket, StepQuestionnaire,
         Workflow, Step, BaseData, Container, WorkflowSteps, WorkflowBaseData,
          StepBaseData, Config, Product, Cart,
-         Plan, Users, UserPlans,  # Adjust based on actual imports
+         Plan, Users, UserPlans, Subscription, # Adjust based on actual imports
          Questionnaire_psf, Response_psf)
 
 # from master_password_reset import admin_reset_password, AdminResetPasswordForm
@@ -4437,10 +4437,78 @@ def subscriptions():
         logging.error(f"Error in subscriptions route: {e}")
         return "An error occurred", 500
 
+
 @app.route('/subscribe', methods=['POST'])
 @login_required
 @roles_required('Manager', 'Employee')
 def subscribe():
+    try:
+        form = SubscriptionForm()
+        logging.debug(
+            f"Form data before validation: {form.plan_id.data}, additional_products: {request.form.getlist('additional_products')}")
+        if form.validate_on_submit():
+            plan_id = form.plan_id.data
+            additional_product_ids = [product_id for product_id in request.form.getlist('additional_products') if
+                                      product_id]
+            logging.debug(f'Form validated. Plan: {plan_id}, Additional Products: {additional_product_ids}')
+
+            email = session.get('email')
+            user_id = session.get('user_id')
+
+            if not email:
+                logging.error("User not logged in.")
+                return jsonify({"success": False, "message": "User not logged in."}), 400
+
+            user = Users.query.filter_by(id=user_id).first()
+
+            if not user:
+                logging.error("User not found.")
+                return jsonify({"success": False, "message": "User not found."}), 404
+
+            if plan_id not in [str(p.id) for p in Plan.query.all()]:
+                logging.error("Invalid subscription plan.")
+                return jsonify({"success": False, "message": "Invalid subscription plan."}), 400
+
+            # Create or update the subscription
+            subscription = Subscription.query.filter_by(user_id=user_id).first()
+            if not subscription:
+                subscription = Subscription(user_id=user_id, plan_id=plan_id, start_date=datetime.utcnow())
+                db.session.add(subscription)
+            else:
+                subscription.plan_id = plan_id
+                subscription.start_date = datetime.utcnow()
+                subscription.end_date = datetime.utcnow() + timedelta(days=30)  # Assuming 30 days for all plans
+
+            subscription.additional_products = ','.join(additional_product_ids)
+
+            try:
+                db.session.commit()
+            except Exception as e:
+                db.session.rollback()
+                logging.error(f"Error committing subscription to the database: {e}")
+                return jsonify({"success": False, "message": "An error occurred while updating the subscription."}), 500
+
+            logging.debug(f'Updated subscription for user: {user}')
+            return jsonify({"success": True, "message": "Subscription updated successfully."})
+        else:
+            logging.debug(f'Form validation failed: {form.errors}')
+            logging.debug(f'Form data: {request.form}')
+            logging.debug(f'CSRF token: {form.csrf_token._value()}')
+            print('Form validation failed:', form.errors)
+            print('Form data:', request.form)
+            print('CSRF token:', form.csrf_token._value())
+            return jsonify({"success": False, "message": "Invalid form submission"}), 400
+    except Exception as e:
+        logging.error(f"Unexpected error: {e}")
+        return jsonify({"success": False, "message": "An unexpected error occurred"}), 500
+
+
+
+# TODO less elegant than in Subscription
+@app.route('/subscribe_in_users', methods=['POST'])
+@login_required
+@roles_required('Manager', 'Employee')
+def subscribe_in_users():
     form = SubscriptionForm()
     print(f"Form data before validation: {form.plan_id.data}, additional_products: {request.form.getlist('additional_products')}")
     if form.validate_on_submit():

@@ -1465,11 +1465,14 @@ class Cart(db.Model):
 
 
 class Subscription(db.Model):
-   id = db.Column(db.Integer, primary_key=True)
-   user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-   plan_id = db.Column(db.Integer, db.ForeignKey('plan.id'), nullable=False)
-   start_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
-   end_date = db.Column(db.DateTime, nullable=True)
-   user = db.relationship('Users', back_populates='subscriptions')
-   plan = db.relationship('Plan', back_populates='subscriptions')
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    plan_id = db.Column(db.Integer, db.ForeignKey('plan.id'), nullable=False)
+    start_date = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    end_date = db.Column(db.DateTime, nullable=True)
+    user = db.relationship('Users', back_populates='subscriptions')
+    plan = db.relationship('Plan', back_populates='subscriptions')
+    additional_products = db.Column(db.String(500), nullable=True)  # Store product IDs as a comma-separated string
 
+    user = db.relationship('Users', back_populates='subscriptions')
+    plan = db.relationship('Plan', back_populates='subscriptions')
