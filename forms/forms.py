@@ -16,7 +16,7 @@ from wtforms.fields import ColorField  # Correct import
 
 
 from flask_wtf import FlaskForm
-from wtforms import StringField, DateTimeField, BooleanField, SubmitField, SelectField, TextAreaField
+from wtforms import StringField, DateTimeField, BooleanField, SubmitField, SelectField, TextAreaField, FieldList
 from wtforms.validators import DataRequired
 
 from flask_admin.form import rules
@@ -57,6 +57,16 @@ class ManageProductForm(FlaskForm):
     icon = StringField('Product Icon (URL or internal path)', validators=[URL(require_tld=False)])
     submit = SubmitField('Save Product')
 
+class AddPlanToCartForm(FlaskForm):
+    submit = SubmitField('Add to Cart')
+
+class UpdateCartItemForm(FlaskForm):
+    quantity = IntegerField('Quantity', validators=[DataRequired(), NumberRange(min=1)])
+    submit = SubmitField('Update')
+
+class AddProductToCartForm(FlaskForm):
+    quantity = IntegerField('Quantity', validators=[DataRequired(), NumberRange(min=1)])
+    submit = SubmitField('Add to Cart')
 
 class PlanProductsForm(FlaskForm):
     id = HiddenField()
@@ -66,6 +76,12 @@ class PlanProductsForm(FlaskForm):
     delete = SubmitField('Delete')
     cancel = SubmitField('Cancel')
 
+
+
+class SubscriptionForm(FlaskForm):
+    plan_id = HiddenField('Plan ID', validators=[DataRequired()])
+    additional_products = HiddenField('Additional Products')
+    submit = SubmitField('Subscribe')
 
 class UpdateAccountForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(min=2, max=80)])

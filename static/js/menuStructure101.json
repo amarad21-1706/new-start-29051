@@ -814,6 +814,17 @@
                             "Guest"
                         ]
                     },
+                    "Test": {
+                        "label": "Test",
+                        "url": "/test_form",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin",
+                            "Employee",
+                            "Manager",
+                            "Guest"
+                        ]
+                    },
                     "Products": {
                         "label": "Products",
                         "url": "/products_page",
@@ -821,8 +832,17 @@
                         "allowed_roles": [
                             "Admin",
                             "Employee",
-                            "Manager",
-                            "Guest"
+                            "Manager"
+                        ]
+                    },
+                    "Plans": {
+                        "label": "Plans",
+                        "url": "/plans_page",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin",
+                            "Employee",
+                            "Manager"
                         ]
                     },
                     "User Tickets": {

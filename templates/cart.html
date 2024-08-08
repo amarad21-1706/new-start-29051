@@ -22,6 +22,7 @@
                     <li class="list-group-item d-flex justify-content-between align-items-center">
                         {{ item.name }} - ${{ item.price / 100 }} x {{ item.quantity }}
                         <form action="{{ url_for('update_cart_item', product_id=item.product_id) }}" method="POST" class="d-flex align-items-center">
+                            {{ form.hidden_tag() }}
                             <input type="number" name="quantity" value="{{ item.quantity }}" min="1" class="form-control mr-2" style="width: 80px;">
                             <button type="submit" class="btn btn-primary">Update</button>
                         </form>

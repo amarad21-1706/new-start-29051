@@ -54,14 +54,15 @@ from models.user import (Users, UserRoles, Event, Role, Container, Questionnaire
 
 # from master_password_reset import admin_reset_password, AdminResetPasswordForm
 
-from forms.forms import (SignupForm, UpdateAccountForm, TicketForm, ResponseForm, LoginForm, ForgotPasswordForm,
+from forms.forms import (AddPlanToCartForm, SignupForm, UpdateAccountForm, TicketForm, ResponseForm, LoginForm, ForgotPasswordForm,
                          ResetPasswordForm101, RegistrationForm, EventForm,
                          QuestionnaireCompanyForm, CustomBaseDataForm,
         QuestionnaireQuestionForm, WorkflowStepForm, WorkflowBaseDataForm,
                          BaseDataWorkflowStepForm,
         UserRoleForm, CompanyUserForm, UserDocumentsForm, StepBaseDataInlineForm,
         create_dynamic_form, CustomFileLoaderForm,
-        CustomSubjectAjaxLoader, BaseSurveyForm, AuditLogForm, PlanProductsForm)
+        CustomSubjectAjaxLoader, BaseSurveyForm, AuditLogForm, PlanProductsForm,
+                         UpdateCartItemForm, AddProductToCartForm, SubscriptionForm)
 
 from flask_mail import Mail, Message
 from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as _
@@ -4282,28 +4283,6 @@ def get_questionnaire(id):
 # STRIPE
 # ======
 
-# Route to open F l a s k -Admin
-@app.route('/subscriptions')
-@login_required
-@roles_required('Manager', 'Employee')
-def subscriptions():
-    user = Users.query.filter_by(email=session.get('email')).first()
-    if user:
-        subscription_info = {
-            'plan': user.subscription_plan,
-            'status': user.subscription_status,
-            'start_date': user.subscription_start_date,
-            'end_date': user.subscription_end_date
-        }
-    else:
-        subscription_info = {
-            'plan': 'N/A',
-            'status': 'N/A',
-            'start_date': 'N/A',
-            'end_date': 'N/A'
-        }
-    return render_template('subscriptions.html', subscription_info=subscription_info)
-
 
 @app.route('/create-checkout-session', methods=['POST'])
 @login_required
@@ -4397,37 +4376,116 @@ def handle_checkout_session(session):
         flash(f'An error occurred: {str(e)}', 'error')
 
 
+# Set up logging
+logging.basicConfig(level=logging.DEBUG)
+
+@app.route('/test_form', methods=['GET', 'POST'])
+def test_form():
+    form = SubscriptionForm()
+    if request.method == 'POST':
+        print('Form submitted')
+        print('Form data:', request.form)
+        print('CSRF token:', form.csrf_token._value())
+        if form.validate_on_submit():
+            print('Form validated')
+        else:
+            print('Form validation failed:', form.errors)
+    return render_template('test_form.html', form=form)
+
+
+@app.route('/subscriptions')
+@login_required
+@roles_required('Manager', 'Employee')
+def subscriptions():
+    try:
+        email = session.get('email')
+        logging.debug(f'Session email: {email}')
+        user = Users.query.filter_by(email=email).first()
+        logging.debug(f'User fetched: {user}')
+
+        if user:
+            subscription_info = {
+                'plan': user.subscription_plan,
+                'status': user.subscription_status,
+                'start_date': user.subscription_start_date,
+                'end_date': user.subscription_end_date
+            }
+        else:
+            subscription_info = {
+                'plan': 'N/A',
+                'status': 'N/A',
+                'start_date': 'N/A',
+                'end_date': 'N/A'
+            }
+
+        logging.debug(f'Subscription info: {subscription_info}')
+
+        plans = Plan.query.all()
+        additional_products = Product.query.all()
+
+        # Add products to plans
+        for plan in plans:
+            plan.products = [pp.product for pp in plan.plan_products]
+            plan.product_ids = [pp.product_id for pp in plan.plan_products]
+
+        logging.debug(f'Plans fetched: {plans}')
+
+        form = SubscriptionForm()
+        return render_template('subscriptions.html', subscription_info=subscription_info, plans=plans,
+                               additional_products=additional_products, form=form)
+    except Exception as e:
+        logging.error(f"Error in subscriptions route: {e}")
+        return "An error occurred", 500
+
 @app.route('/subscribe', methods=['POST'])
 @login_required
 @roles_required('Manager', 'Employee')
 def subscribe():
-    data = request.get_json()
-    plan = data.get('plan')
-    email = session.get('email')
-    user_id = session.get('user_id')
+    form = SubscriptionForm()
+    print(f"Form data before validation: {form.plan_id.data}, additional_products: {request.form.getlist('additional_products')}")
+    if form.validate_on_submit():
+        plan_id = form.plan_id.data
+        additional_product_ids = request.form.getlist('additional_products')
+        logging.debug(f'Form validated. Plan: {plan_id}, Additional Products: {additional_product_ids}')
 
-    user = Users.query.filter_by(id=user_id).first()
+        email = session.get('email')
+        user_id = session.get('user_id')
 
-    if not email:
-        return jsonify({"success": False, "message": "User not logged in."}), 400
+        if not email:
+            return jsonify({"success": False, "message": "User not logged in."}), 400
 
-    user = Users.query.filter_by(email=email).first()
+        user = Users.query.filter_by(id=user_id).first()
 
-    if not user:
-        return jsonify({"success": False, "message": "User not found."}), 404
+        if not user:
+            return jsonify({"success": False, "message": "User not found."}), 404
 
-    if plan not in ['free', 'basic', 'premium']:
-        return jsonify({"success": False, "message": "Invalid subscription plan."}), 400
+        if plan_id not in [str(p.id) for p in Plan.query.all()]:
+            return jsonify({"success": False, "message": "Invalid subscription plan."}), 400
 
-    # Update user subscription details
-    user.subscription_plan = plan
-    user.subscription_status = 'active'
-    user.subscription_start_date = datetime.utcnow()
-    user.subscription_end_date = datetime.utcnow() + timedelta(days=30)  # For simplicity, assuming 30 days for all plans
+        # Update user subscription details
+        user.subscription_plan = plan_id
+        user.subscription_status = 'active'
+        user.subscription_start_date = datetime.utcnow()
+        user.subscription_end_date = datetime.utcnow() + timedelta(days=30)  # For simplicity, assuming 30 days for all plans
 
-    db.session.commit()
+        # Handle additional products (You can implement the logic to add these products to the user's subscription or cart)
+        for product_id in additional_product_ids:
+            # Add logic to associate the product with the user, e.g., adding to a cart or a subscription
+            pass
 
-    return jsonify({"success": True, "message": "Subscription updated successfully."})
+        db.session.commit()
+
+        return jsonify({"success": True, "message": "Subscription updated successfully."})
+    else:
+        logging.debug(f'Form validation failed: {form.errors}')
+        logging.debug(f'Form data: {request.form}')
+        logging.debug(f'CSRF token: {form.csrf_token._value()}')
+        print('Form validation failed:', form.errors)
+        print('Form data:', request.form)
+        print('CSRF token:', form.csrf_token._value())
+    return jsonify({"success": False, "message": "Invalid form submission"}), 400
+
+
 
 # END STRIPE
 
@@ -5045,10 +5103,27 @@ def update_cookies():
 @app.route('/products_page')
 @login_required
 def products_page():
-    print('products 1')
     products = Product.query.all()
-    print('products 2', products)
-    return render_template('products.html', products=products)
+    form = AddProductToCartForm()
+    return render_template('products.html', products=products, form=form)
+
+@app.route('/plans_page')
+@login_required
+def plans_page():
+    form = AddPlanToCartForm()
+    try:
+        plans = Plan.query.all()
+        return render_template('plans.html', plans=plans, form=form)
+    except Exception as e:
+        print(f"Error occurred: {e}")
+        return "An error occurred while fetching plans", 500
+
+@app.route('/add_plan_to_cart/<int:plan_id>', methods=['POST'])
+@login_required
+def add_plan_to_cart(plan_id):
+    # Logic to add the plan to the cart
+    flash('Plan added to cart successfully!', 'success')
+    return redirect(url_for('plans_page'))
 
 
 @app.route('/add_to_cart/<int:product_id>', methods=['POST'])
@@ -5153,7 +5228,10 @@ def cart():
 
         # Calculate the total price of the cart items
         total_price = sum(item['price'] * item['quantity'] for item in filtered_cart_items)
-        return render_template('cart.html', cart=filtered_cart_items, total_price=total_price)
+
+        form = UpdateCartItemForm()
+
+        return render_template('cart.html', cart=filtered_cart_items, total_price=total_price, form=form)
     except Exception as e:
         logging.error(f"Error fetching cart items: {e}")
         return "An error occurred", 500

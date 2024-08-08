@@ -1327,7 +1327,11 @@ class Plan(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True, nullable=False)
     description = db.Column(db.Text, nullable=True)
+    stripe_plan_id = db.Column(db.String(128), nullable=False)
+    stripe_price_id = db.Column(db.String(128), nullable=False)
+    price = db.Column(db.Integer, nullable=False)
     billing_cycle = db.Column(db.String(50), nullable=False, default='monthly')  # e.g., 'monthly', 'yearly', 'one-off'
+
     plan_products = db.relationship('PlanProducts', back_populates='plan')
     user_plans = db.relationship('UserPlans', back_populates='plan')
     subscriptions = db.relationship('Subscription', back_populates='plan')
@@ -1447,12 +1451,15 @@ class Cart(db.Model):
     __tablename__ = 'cart'
     id = db.Column(db.Integer, primary_key=True)
     product_id = db.Column(db.Integer, db.ForeignKey('product.id'), nullable=False)
+    # plan_id = db.Column(db.Integer, db.ForeignKey('plan.id'), nullable=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)
     quantity = db.Column(db.Integer, nullable=False, default=1)
     price = db.Column(db.Numeric(10, 2), nullable=False)  # Ensure the price field is properly defined
     currency = db.Column(db.String(3), nullable=False, default='EUR')
+
     product = db.relationship('Product', backref=db.backref('cart', lazy=True))
+    # plan = db.relationship('Plan', backref=db.backref('cart', lazy=True))
     user = db.relationship('Users', backref=db.backref('cart', lazy=True))
     company = db.relationship('Company', backref=db.backref('cart', lazy=True))
 
