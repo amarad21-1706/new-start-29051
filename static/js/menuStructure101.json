@@ -618,6 +618,14 @@
                                 "allowed_roles": [
                                     "Admin"
                                 ]
+                            },
+                            "Plans with Products": {
+                                "label": "Show Plans and Products",
+                                "url": "/plans_with_products",
+                                "protected": true,
+                                "allowed_roles": [
+                                    "Admin"
+                                ]
                             }
                         }
                     }

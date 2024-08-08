@@ -1336,6 +1336,13 @@ class Plan(db.Model):
     #                         primaryjoin='PlanProducts.plan_id == Plan.id',
     #                         secondaryjoin='PlanProducts.product_id == Product.id')
 
+    def __init__(self, name, description):
+        self.name = name
+        self.description = description
+
+    def __repr__(self):
+        return f"<Plan(id={self.id}, name={self.name})>"
+
 class Product(db.Model):
     __tablename__ = 'product'
     id = db.Column(db.Integer, primary_key=True)
@@ -1349,6 +1356,13 @@ class Product(db.Model):
     icon = db.Column(db.String(128), nullable=True)
     plan_products = db.relationship('PlanProducts', back_populates='product')
 
+    def __init__(self, name, description):
+        self.name = name
+        self.description = description
+
+    def __repr__(self):
+        return f"<Product(id={self.id}, name={self.name})>"
+
 class PlanProducts(db.Model):
     __tablename__ = 'plan_products'
     plan_id = db.Column(db.Integer, db.ForeignKey('plan.id'), primary_key=True)
@@ -1358,6 +1372,18 @@ class PlanProducts(db.Model):
     end_of_registration = Column(DateTime, nullable=True)
     plan = db.relationship('Plan', back_populates='plan_products')
     product = db.relationship('Product', back_populates='plan_products')
+
+    def __init__(self, plan_id, product_id, created_on=None, updated_on=None, end_of_registration=None):
+        self.plan_id = plan_id
+        self.product_id = product_id
+        self.created_on = created_on or datetime.utcnow()
+        self.updated_on = updated_on
+        self.end_of_registration = end_of_registration
+
+    def __repr__(self):
+        return f"<PlanProducts(plan_id={self.plan_id}, product_id={self.product_id})>"
+
+
 
 class UserPlans(db.Model):
     __tablename__ = 'user_plans'

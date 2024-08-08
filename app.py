@@ -1490,6 +1490,33 @@ def detach_documents_from_workflow_step():
         return jsonify({'success_message': None, 'error_message': error_message})
 
 
+@app.route('/plans_with_products')
+@login_required
+def plans_with_products():
+    plans = Plan.query.all()
+    plans_with_products = []
+
+    for plan in plans:
+        associated_products = PlanProducts.query.filter_by(plan_id=plan.id).all()
+        products_info = []
+
+        for ap in associated_products:
+            product = Product.query.get(ap.product_id)
+            products_info.append({
+                'product_id': product.id,
+                'name': product.name,
+                'description': product.description
+            })
+
+        plans_with_products.append({
+            'plan_id': plan.id,
+            'name': plan.name,
+            'description': plan.description,
+            'products': products_info
+        })
+
+    return render_template('plans_with_products.html', plans_with_products=plans_with_products)
+
 
 @app.route('/attach_documents_to_workflow_step', methods=['POST'])
 @login_required
