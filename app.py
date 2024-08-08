@@ -4438,14 +4438,18 @@ def subscriptions():
         return "An error occurred", 500
 
 
+from flask import flash, redirect, url_for
+
+
 @app.route('/subscribe', methods=['POST'])
 @login_required
 @roles_required('Manager', 'Employee')
 def subscribe():
+    form = SubscriptionForm()
+    logging.debug(
+        f"Form data before validation: {form.plan_id.data}, additional_products: {request.form.getlist('additional_products')}")
+
     try:
-        form = SubscriptionForm()
-        logging.debug(
-            f"Form data before validation: {form.plan_id.data}, additional_products: {request.form.getlist('additional_products')}")
         if form.validate_on_submit():
             plan_id = form.plan_id.data
             additional_product_ids = [product_id for product_id in request.form.getlist('additional_products') if
@@ -4457,17 +4461,20 @@ def subscribe():
 
             if not email:
                 logging.error("User not logged in.")
-                return jsonify({"success": False, "message": "User not logged in."}), 400
+                flash("User not logged in.", "danger")
+                return redirect(url_for('subscriptions'))
 
             user = Users.query.filter_by(id=user_id).first()
 
             if not user:
                 logging.error("User not found.")
-                return jsonify({"success": False, "message": "User not found."}), 404
+                flash("User not found.", "danger")
+                return redirect(url_for('subscriptions'))
 
             if plan_id not in [str(p.id) for p in Plan.query.all()]:
                 logging.error("Invalid subscription plan.")
-                return jsonify({"success": False, "message": "Invalid subscription plan."}), 400
+                flash("Invalid subscription plan.", "danger")
+                return redirect(url_for('subscriptions'))
 
             # Create or update the subscription
             subscription = Subscription.query.filter_by(user_id=user_id).first()
@@ -4486,21 +4493,22 @@ def subscribe():
             except Exception as e:
                 db.session.rollback()
                 logging.error(f"Error committing subscription to the database: {e}")
-                return jsonify({"success": False, "message": "An error occurred while updating the subscription."}), 500
+                flash("An error occurred while updating the subscription.", "danger")
+                return redirect(url_for('subscriptions'))
 
             logging.debug(f'Updated subscription for user: {user}')
-            return jsonify({"success": True, "message": "Subscription updated successfully."})
+            flash("Subscription updated successfully.", "success")
+            return redirect(url_for('subscriptions'))
         else:
             logging.debug(f'Form validation failed: {form.errors}')
             logging.debug(f'Form data: {request.form}')
             logging.debug(f'CSRF token: {form.csrf_token._value()}')
-            print('Form validation failed:', form.errors)
-            print('Form data:', request.form)
-            print('CSRF token:', form.csrf_token._value())
-            return jsonify({"success": False, "message": "Invalid form submission"}), 400
+            flash("Invalid form submission.", "danger")
+            return redirect(url_for('subscriptions'))
     except Exception as e:
         logging.error(f"Unexpected error: {e}")
-        return jsonify({"success": False, "message": "An unexpected error occurred"}), 500
+        flash("An unexpected error occurred.", "danger")
+        return redirect(url_for('subscriptions'))
 
 
 

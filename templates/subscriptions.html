@@ -22,6 +22,15 @@
     </div>
 
     <div class="subscription-plans">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="alert-container">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
         <form action="{{ url_for('subscribe') }}" method="POST" id="subscriptionForm">
             {{ form.hidden_tag() }}
             <input type="hidden" name="plan_id" id="plan_id">
