@@ -27,7 +27,7 @@
             },
             "Services": {
                 "label": "Services",
-                "url": "/home/services",
+                "url": "/home/products",
                 "protected": false,
                 "allowed_roles": [
                     "Admin",

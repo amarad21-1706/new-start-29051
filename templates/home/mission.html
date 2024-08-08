@@ -1,73 +1,75 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Our Mission</title>
-    <style>
-        body {
-            background-color: #001f3f; /* Dark navy blue background color */
-            color: #fff; /* Ice white font color */
-            font-family: 'Cambria', sans-serif;
-            margin: 0;
-            padding: 20px;
-        }
+{% extends 'base.html' %}
 
-        h1 {
-            color: #5cdb95; /* Light blue font color for headers */
-            font-size: 16px; /* Font size for headers */
-        }
+{% block title %}
+Our Mission
+{% endblock %}
 
-        p {
-            margin-bottom: 10px; /* Add some space between paragraphs */
-            font-size: 14px; /* Font size for paragraphs */
-        }
+{% block head %}
+<style>
+    body {
+        background-color: #001f3f; /* Dark navy blue background color */
+        color: #fff; /* Ice white font color */
+        font-family: 'Cambria', sans-serif;
+        margin: 0;
+        padding: 20px;
+    }
 
-        div {
-            color: #5cdb95; /* Light blue font color for the debug message */
-            font-size: 12px; /* Font size for the debug message */
-        }
+    h1 {
+        color: #fff3cd; /* Light blue font color for headers */
+        font-size: 16px; /* Font size for headers */
+    }
 
-        button {
-            background-color: #5cdb95; /* Light blue background color for buttons */
-            color: #001f3f; /* Dark navy blue font color for buttons */
-            padding: 10px 15px;
-            margin-right: 10px;
-            cursor: pointer;
-            border: none;
-            border-radius: 5px;
-            font-size: 16px; /* Font size for buttons */
-        }
+    p {
+        margin-bottom: 10px; /* Add some space between paragraphs */
+        font-size: 14px; /* Font size for paragraphs */
+    }
 
-        /* Add more styles as needed */
-    </style>
-</head>
-<body>
-    <h1>Our Mission</h1>
-    <p>This is what we are here for.</p>
-    <p>Self audit.</p>
-    <p>Compliance.</p>
+    div {
+        color: #33bbff; /* Light blue font color for the debug message */
+        font-size: 12px; /* Font size for the debug message */
+    }
 
-    <div>
-        <p>{{ debug_message }}</p>
-    </div>
+    button {
+        background-color: #fff3f3;  /* Light blue background color for buttons */
+        color: #001f3f; /* Dark navy blue font color for buttons */
+        padding: 10px 15px;
+        margin-right: 10px;
+        cursor: pointer;
+        border: none;
+        border-radius: 5px;
+        font-size: 16px; /* Font size for buttons */
+    }
 
-    <!-- Back Button -->
-    <button onclick="goBack()">Back</button>
+    /* Add more styles as needed */
+</style>
+{% endblock %}
 
-    <!-- Home Button -->
-    <button onclick="goHome()">Home</button>
+{% block content %}
+<h1>Our Mission</h1>
+<hr>
+<p>This is what we are here for.</p>
+<p>Self audit.</p>
+<p>Compliance.</p>
+<hr>
+<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Nam hendrerit nisi sed sollicitudin pellentesque. Nunc posuere purus rhoncus pulvinar aliquam. Ut aliquet tristique nisl vitae volutpat. Nulla aliquet porttitor venenatis. Donec a dui et dui fringilla consectetur id nec massa. Aliquam erat volutpat. Sed ut dui ut lacus dictum fermentum vel tincidunt neque. Sed sed lacinia lectus. Duis sit amet sodales felis. Duis nunc eros, mattis at dui ac, convallis semper risus. In adipiscing ultrices tellus, in suscipit massa vehicula eu.</p>
 
-    <script>
-        // Function to navigate back
-        function goBack() {
-            window.history.back();
-        }
 
-        // Function to navigate to the home page
-        function goHome() {
-            window.location.href = "{{ url_for('index') }}";  // Replace 'index' with the actual route for your home page
-        }
-    </script>
-</body>
-</html>
+<div>
+    <p>{{ debug_message }}</p>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Function to navigate back
+    function goBack() {
+        window.history.back();
+    }
+
+    // Function to navigate to the home page
+    function goHome() {
+        window.location.href = "{{ url_for('index') }}";  // Replace 'index' with the actual route for your home page
+    }
+</script>
+{% endblock %}

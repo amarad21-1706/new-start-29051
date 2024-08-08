@@ -2070,7 +2070,7 @@ def mission():
 
 @app.route('/home/products',  methods=['GET', 'POST'])
 def products():
-    return render_template('home/products.html')
+    return render_template('home/services.html')
 
 @app.route('/home/history',  methods=['GET', 'POST'])
 def history():

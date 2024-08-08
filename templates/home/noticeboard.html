@@ -1,74 +1,74 @@
-<!DOCTYPE html>
-<html lang="en">
+{% extends 'base.html' %}
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Noticeboard</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
-    <style>
-        .noticeboard-container {
-            margin-top: 20px;
-        }
+{% block title %}
+Noticeboard
+{% endblock %}
 
-        .message-card {
-            margin-bottom: 20px;
-        }
+{% block head %}
+<style>
+    .noticeboard-container {
+        margin-top: 20px;
+    }
 
-        .card-body {
-            display: flex;
-            align-items: center;
-        }
+    .message-card {
+        margin-bottom: 20px;
+    }
 
-        .message-content {
-            flex-grow: 1;
-            padding-left: 20px;
-        }
+    .card-body {
+        display: flex;
+        align-items: center;
+    }
 
-        .btn-group {
-            margin-top: 20px;
-        }
-    </style>
-</head>
+    .message-content {
+        flex-grow: 1;
+        padding-left: 20px;
+        color: #555;
+    }
 
-<body>
-    <div class="container noticeboard-container">
-        <h1 class="mb-4">Noticeboard</h1>
+    .btn-group {
+        margin-top: 20px;
+    }
+</style>
+{% endblock %}
 
-        {% with messages = get_flashed_messages(with_categories=true) %}
-            {% if messages %}
-                {% for category, message in messages %}
-                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                    </div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+{% block content %}
+<div class="container noticeboard-container">
+    <h1 class="mb-4">Noticeboard</h1>
 
-        <form method="POST" action="{{ url_for('noticeboard') }}">
-            {% for message in unmarked_messages %}
-                <div class="card message-card">
-                    <div class="card-body">
-                        <input type="checkbox" name="message_ids" value="{{ message.id }}">
-                        <div class="message-content">
-                            <h5 class="card-title">{{ message.title }}</h5>
-                            <p class="card-text">[{{ message.created_at }}] {{ message.body }}</p>
-                        </div>
-                    </div>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             {% endfor %}
+        {% endif %}
+    {% endwith %}
 
-            <div class="btn-group">
-                <button type="submit" class="btn btn-primary">Mark as Read</button>
-                <a href="{{ url_for('index') }}" class="btn btn-secondary">Home</a>
-                <a href="javascript:history.back()" class="btn btn-secondary">Back</a>
+    <form method="POST" action="{{ url_for('noticeboard') }}">
+        {% for message in unmarked_messages %}
+            <div class="card message-card">
+                <div class="card-body">
+                    <input type="checkbox" name="message_ids" value="{{ message.id }}">
+                    <div class="message-content">
+                        <h5 class="card-title">{{ message.title }}</h5>
+                        <p class="card-text">[{{ message.created_at }}] {{ message.body }}</p>
+                    </div>
+                </div>
             </div>
-        </form>
-    </div>
+        {% endfor %}
 
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-</body>
+        <div class="btn-group">
+            <button type="submit" class="btn btn-primary">Mark as Read</button>
+            <a href="{{ url_for('index') }}" class="btn btn-secondary">Home</a>
+            <a href="javascript:history.back()" class="btn btn-secondary">Back</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
 
-</html>
+{% block scripts %}
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+{% endblock %}
