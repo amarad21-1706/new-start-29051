@@ -4376,22 +4376,6 @@ def handle_checkout_session(session):
         flash(f'An error occurred: {str(e)}', 'error')
 
 
-# Set up logging
-logging.basicConfig(level=logging.DEBUG)
-
-@app.route('/test_form', methods=['GET', 'POST'])
-def test_form():
-    form = SubscriptionForm()
-    if request.method == 'POST':
-        print('Form submitted')
-        print('Form data:', request.form)
-        print('CSRF token:', form.csrf_token._value())
-        if form.validate_on_submit():
-            print('Form validated')
-        else:
-            print('Form validation failed:', form.errors)
-    return render_template('test_form.html', form=form)
-
 
 @app.route('/subscriptions')
 @login_required
@@ -4443,6 +4427,7 @@ def subscriptions():
 
 
 
+
 @app.route('/subscribe', methods=['POST'])
 @login_required
 @roles_required('Manager', 'Employee')
@@ -4466,11 +4451,15 @@ def subscribe():
                 flash("User not found.", "danger")
                 return redirect(url_for('subscriptions'))
 
+            logging.debug(f'User found: {user}')
+
             # Check if the user already has an active subscription to the selected plan
             existing_subscription = Subscription.query.filter_by(user_id=user_id, plan_id=plan_id).first()
             if existing_subscription and existing_subscription.end_date > datetime.utcnow():
                 flash("You are already subscribed to this plan.", "info")
                 return redirect(url_for('subscriptions'))
+
+            logging.debug(f'No existing active subscription for plan {plan_id}')
 
             # Check if the user has already purchased any of the additional products
             for product_id in additional_product_ids:
@@ -4479,20 +4468,25 @@ def subscribe():
                     flash(f"You have already purchased the product with ID {product_id}.", "info")
                     additional_product_ids.remove(product_id)
 
+            logging.debug(f'Additional products after filtering: {additional_product_ids}')
+
             # Create or update the subscription
             subscription = Subscription.query.filter_by(user_id=user_id).first()
             if not subscription:
                 subscription = Subscription(user_id=user_id, plan_id=plan_id, start_date=datetime.utcnow())
                 db.session.add(subscription)
+                logging.debug(f'New subscription created: {subscription}')
             else:
                 subscription.plan_id = plan_id
                 subscription.start_date = datetime.utcnow()
                 subscription.end_date = datetime.utcnow() + timedelta(days=30)  # Assuming 30 days for all plans
+                logging.debug(f'Existing subscription updated: {subscription}')
 
             subscription.additional_products = ','.join(additional_product_ids)
 
             try:
                 db.session.commit()
+                logging.debug(f'Subscription committed to the database: {subscription}')
             except Exception as e:
                 db.session.rollback()
                 logging.error(f"Error committing subscription to the database: {e}")
@@ -4505,7 +4499,6 @@ def subscribe():
         else:
             logging.debug(f'Form validation failed: {form.errors}')
             logging.debug(f'Form data: {request.form}')
-            logging.debug(f'CSRF token: {form.csrf_token._value()}')
             flash("Invalid form submission.", "danger")
             return redirect(url_for('subscriptions'))
     except Exception as e:

@@ -814,17 +814,6 @@
                             "Guest"
                         ]
                     },
-                    "Test": {
-                        "label": "Test",
-                        "url": "/test_form",
-                        "protected": true,
-                        "allowed_roles": [
-                            "Admin",
-                            "Employee",
-                            "Manager",
-                            "Guest"
-                        ]
-                    },
                     "Products": {
                         "label": "Products",
                         "url": "/products_page",
