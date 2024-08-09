@@ -4376,7 +4376,6 @@ def handle_checkout_session(session):
         flash(f'An error occurred: {str(e)}', 'error')
 
 
-
 @app.route('/subscriptions')
 @login_required
 @roles_required('Manager', 'Employee')
@@ -4387,17 +4386,23 @@ def subscriptions():
         user = Users.query.filter_by(email=email).first()
         logging.debug(f'User fetched: {user}')
 
-        if user and user.subscription_plan:
-            # Fetch the plan name based on the subscription_plan (which is the plan_id)
-            plan = Plan.query.filter_by(id=user.subscription_plan).first()
-            plan_name = plan.name if plan else 'Unknown Plan'
-
-            subscription_info = {
-                'plan': plan_name,
-                'status': user.subscription_status,
-                'start_date': user.subscription_start_date,
-                'end_date': user.subscription_end_date
-            }
+        if user:
+            subscription = Subscription.query.filter_by(user_id=user.id).first()
+            if subscription:
+                current_plan = Plan.query.filter_by(id=subscription.plan_id).first()
+                subscription_info = {
+                    'plan': current_plan.name if current_plan else 'N/A',
+                    'status': 'active' if subscription.end_date > datetime.utcnow() else 'inactive',
+                    'start_date': subscription.start_date,
+                    'end_date': subscription.end_date
+                }
+            else:
+                subscription_info = {
+                    'plan': 'N/A',
+                    'status': 'N/A',
+                    'start_date': 'N/A',
+                    'end_date': 'N/A'
+                }
         else:
             subscription_info = {
                 'plan': 'N/A',
@@ -4426,8 +4431,6 @@ def subscriptions():
         return "An error occurred", 500
 
 
-
-
 @app.route('/subscribe', methods=['POST'])
 @login_required
 @roles_required('Manager', 'Employee')
@@ -4438,7 +4441,13 @@ def subscribe():
 
     try:
         if form.validate_on_submit():
-            plan_id = form.plan_id.data
+            try:
+                plan_id = int(form.plan_id.data)
+            except ValueError:
+                logging.error("Invalid plan ID.")
+                flash("Invalid subscription plan.", "danger")
+                return redirect(url_for('subscriptions'))
+
             additional_product_ids = [product_id for product_id in request.form.getlist('additional_products') if
                                       product_id]
             logging.debug(f'Form validated. Plan: {plan_id}, Additional Products: {additional_product_ids}')
@@ -4463,7 +4472,8 @@ def subscribe():
 
             # Check if the user has already purchased any of the additional products
             for product_id in additional_product_ids:
-                existing_purchase = UserPurchases.query.filter_by(user_id=user_id, product_id=product_id).first()
+                existing_purchase = UserPlans.query.filter_by(user_id=user_id, plan_id=plan_id,
+                                                              product_id=product_id).first()
                 if existing_purchase:
                     flash(f"You have already purchased the product with ID {product_id}.", "info")
                     additional_product_ids.remove(product_id)
