@@ -192,7 +192,7 @@
                 "submenus": {
                     "Area 1a": {
                         "label": "Raccolta dati",
-                        "url": "/open_admin_app_1",
+                        "url": "/open_admin",
                         "protected": true,
                         "allowed_roles": [
                             "Admin", "Employee", "Manager"]
@@ -215,7 +215,7 @@
             },
             "Area di controllo 2": {
                 "label": "Area 2",
-                "url": "/open_admin_app_2",
+                "url": "/open_admin_2",
                 "protected": true,
                 "allowed_roles": ["Admin", "Employee", "Manager"]
             },
@@ -468,6 +468,14 @@
                     "Area 3 - test": {
                         "label": "Workflows Area",
                         "url": "/open_admin_3",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin"
+                        ]
+                    },
+                    "Subscriptions Dashboard": {
+                        "label": "Subscriptions Dashboard",
+                        "url": "/admin_dashboard",
                         "protected": true,
                         "allowed_roles": [
                             "Admin"

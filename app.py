@@ -4601,6 +4601,53 @@ def subscription_report():
 
 
 
+@app.route('/admin_dashboard')
+@login_required
+@roles_required('Admin')
+def admin_dashboard():
+    try:
+        role = session.get('user_roles')
+        user_id = session.get('user_id')
+        company_id = session.get('company_id')
+
+        if 'Admin' in role:
+            subscriptions = Subscription.query.all()
+
+        total_subscriptions = len(subscriptions)
+        active_users = len(set([sub.user_id for sub in subscriptions if sub.status == 'active']))
+        total_companies = len(set([sub.user.company_id for sub in subscriptions]))
+        active_plans = len(set([sub.plan_id for sub in subscriptions if sub.status == 'active']))
+
+        subscription_types = [plan.name for plan in Plan.query.all()]
+        subscription_counts = [Subscription.query.filter_by(plan_id=plan.id).count() for plan in Plan.query.all()]
+        company_names = [company.name for company in Company.query.all()]
+        company_subscription_counts = [
+            Subscription.query.join(Users).filter(Users.company_id == company.id).count() for company in Company.query.all()
+        ]
+
+        # Prepare additional product names for each subscription
+        for sub in subscriptions:
+            sub.additional_product_names = ', '.join(
+                [Product.query.get(int(product_id)).name for product_id in sub.additional_products.split(',')]
+            ) if sub.additional_products else 'None'
+
+        return render_template('admin_dashboard.html',
+                               total_subscriptions=total_subscriptions,
+                               active_users=active_users,
+                               total_companies=total_companies,
+                               active_plans=active_plans,
+                               subscription_types=subscription_types,
+                               subscription_counts=subscription_counts,
+                               company_names=company_names,
+                               company_subscription_counts=company_subscription_counts,
+                               subscriptions=subscriptions)
+    except Exception as e:
+        logging.error(f"Error in admin_dashboard route: {e}")
+        flash("An error occurred while generating the dashboard.", "danger")
+        return redirect(url_for('index'))
+
+
+
 @app.route('/questionnaire_psf')
 @login_required
 @roles_required('Admin', 'Manager', 'Employee')
