@@ -6,11 +6,11 @@
 
 {% block content %}
 <div class="container">
-    <h1>Choose Your Subscription Plan</h1>
+    <h2>Choose Your Subscription Plan</h2>
 
     <hr>
     <div class="current-subscription">
-        <h2>Current Subscription</h2>
+        <h3>Current Subscription</h3>
         <p><strong>Plan:</strong> {{ subscription_info.plan }}</p>
         <p><strong>Status:</strong> {{ subscription_info.status }}</p>
         <p><strong>Start Date:</strong> {{ subscription_info.start_date }}</p>
@@ -34,12 +34,12 @@
             <input type="hidden" name="plan_id" id="plan_id">
             {% for plan in plans %}
                 <div class="plan">
-                    <h2>{{ plan.name }}</h2>
+                    <h3>{{ plan.name }}</h3>
                     <p>${{ plan.price / 100 }} / month</p>
                     <p>{{ plan.description }}</p>
                     <input type="radio" name="selected_plan" value="{{ plan.id }}" onclick="setPlanId({{ plan.id }})"> Select {{ plan.name }}
                     <div class="associated-products">
-                        <h3>Products in {{ plan.name }}</h3>
+                        <h4>Products in {{ plan.name }}</h4>
                         <ul>
                             {% for product in plan.products %}
                                 <li>{{ product.name }} - ${{ product.price / 100 }}</li>
@@ -49,7 +49,7 @@
                         </ul>
                     </div>
                     <div class="additional-products">
-                        <h3>Select Additional Products</h3>
+                        <h4>Select Additional Products</h4>
                         <ul>
                             {% if additional_products %}
                                 {% for product in additional_products %}
