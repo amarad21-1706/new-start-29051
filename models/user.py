@@ -1473,6 +1473,7 @@ class Subscription(db.Model):
     user = db.relationship('Users', back_populates='subscriptions')
     plan = db.relationship('Plan', back_populates='subscriptions')
     additional_products = db.Column(db.String(500), nullable=True)  # Store product IDs as a comma-separated string
+    status = db.Column(db.String(20), nullable=False, default='active')
 
     user = db.relationship('Users', back_populates='subscriptions')
     plan = db.relationship('Plan', back_populates='subscriptions')

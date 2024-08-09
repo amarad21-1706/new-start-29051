@@ -4394,21 +4394,24 @@ def subscriptions():
                     'plan': current_plan.name if current_plan else 'N/A',
                     'status': 'active' if subscription.end_date > datetime.utcnow() else 'inactive',
                     'start_date': subscription.start_date,
-                    'end_date': subscription.end_date
+                    'end_date': subscription.end_date,
+                    'status': subscription.status,
                 }
             else:
                 subscription_info = {
                     'plan': 'N/A',
                     'status': 'N/A',
                     'start_date': 'N/A',
-                    'end_date': 'N/A'
+                    'end_date': 'N/A',
+                    'status': 'N/A'
                 }
         else:
             subscription_info = {
                 'plan': 'N/A',
                 'status': 'N/A',
                 'start_date': 'N/A',
-                'end_date': 'N/A'
+                'end_date': 'N/A',
+                'status': 'N/A'
             }
 
         logging.debug(f'Subscription info: {subscription_info}')
@@ -4483,13 +4486,14 @@ def subscribe():
             # Create or update the subscription
             subscription = Subscription.query.filter_by(user_id=user_id).first()
             if not subscription:
-                subscription = Subscription(user_id=user_id, plan_id=plan_id, start_date=datetime.utcnow())
+                subscription = Subscription(user_id=user_id, plan_id=plan_id, start_date=datetime.utcnow(), status='active')
                 db.session.add(subscription)
                 logging.debug(f'New subscription created: {subscription}')
             else:
                 subscription.plan_id = plan_id
                 subscription.start_date = datetime.utcnow()
                 subscription.end_date = datetime.utcnow() + timedelta(days=30)  # Assuming 30 days for all plans
+                subscription.status = 'active'
                 logging.debug(f'Existing subscription updated: {subscription}')
 
             subscription.additional_products = ','.join(additional_product_ids)
