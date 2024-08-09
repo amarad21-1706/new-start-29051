@@ -4386,25 +4386,38 @@ def subscriptions():
         user = Users.query.filter_by(email=email).first()
         logging.debug(f'User fetched: {user}')
 
-        subscription_info = {
-            'plan': 'N/A',
-            'status': 'N/A',
-            'start_date': 'N/A',
-            'end_date': 'N/A',
-            'status': 'N/A'
-        }
-
         if user:
-            current_subscription = Subscription.query.filter_by(user_id=user.id, status='active').first()
-            if current_subscription:
-                current_plan = Plan.query.filter_by(id=current_subscription.plan_id).first()
+            subscription = Subscription.query.filter_by(user_id=user.id,
+                                                        status='active').first()  # Fetch the active subscription
+            if subscription:
+                current_plan = Plan.query.filter_by(id=subscription.plan_id).first()
+                # If subscription.end_date is None, it's considered active
                 subscription_info = {
+                    'id': subscription.id,  # Add the subscription ID for reference in the template
                     'plan': current_plan.name if current_plan else 'N/A',
-                    'status': 'active',
-                    'start_date': current_subscription.start_date.strftime('%Y-%m-%d'),
-                    'end_date': current_subscription.end_date.strftime('%Y-%m-%d') if current_subscription.end_date else 'Ongoing',
-                    'status': current_subscription.status,
+                    'status': 'active' if subscription.end_date is None or subscription.end_date > datetime.utcnow() else 'inactive',
+                    'start_date': subscription.start_date,
+                    'end_date': subscription.end_date,
+                    'status': subscription.status,
                 }
+            else:
+                subscription_info = {
+                    'id': None,
+                    'plan': 'N/A',
+                    'status': 'N/A',
+                    'start_date': 'N/A',
+                    'end_date': 'N/A',
+                    'status': 'N/A'
+                }
+        else:
+            subscription_info = {
+                'id': None,
+                'plan': 'N/A',
+                'status': 'N/A',
+                'start_date': 'N/A',
+                'end_date': 'N/A',
+                'status': 'N/A'
+            }
 
         logging.debug(f'Subscription info: {subscription_info}')
 
@@ -4436,12 +4449,20 @@ def subscribe():
 
     try:
         if form.validate_on_submit():
-            plan_id = int(form.plan_id.data)
+            plan_id = form.plan_id.data
+            logging.debug(f"Plan ID after validation: {plan_id}")
 
+            if not plan_id:
+                logging.error("Plan ID is missing.")
+                flash("Please select a plan.", "danger")
+                return redirect(url_for('subscriptions'))
+
+            plan_id = int(plan_id)
             additional_product_ids = [product_id for product_id in request.form.getlist('additional_products') if product_id]
             logging.debug(f'Form validated. Plan: {plan_id}, Additional Products: {additional_product_ids}')
 
             user_id = session.get('user_id')
+            logging.debug(f'User ID: {user_id}')
             user = Users.query.filter_by(id=user_id).first()
 
             if not user:
@@ -4452,6 +4473,7 @@ def subscribe():
             # Mark previous subscriptions as inactive
             active_subscription = Subscription.query.filter_by(user_id=user_id, status='active').first()
             if active_subscription:
+                logging.debug(f"Terminating active subscription: {active_subscription.id}")
                 active_subscription.end_date = datetime.utcnow()
                 active_subscription.status = 'inactive'
                 db.session.add(active_subscription)
@@ -4468,6 +4490,7 @@ def subscribe():
 
             try:
                 db.session.commit()
+                logging.debug(f"Subscription created successfully: {new_subscription.id}")
                 flash("Subscription updated successfully.", "success")
             except Exception as e:
                 db.session.rollback()
@@ -4484,7 +4507,54 @@ def subscribe():
         flash("An unexpected error occurred.", "danger")
         return redirect(url_for('subscriptions'))
 
-# END STRIPE
+
+@app.route('/cancel_subscription', methods=['POST'])
+@login_required
+@roles_required('Manager', 'Employee')
+def cancel_subscription():
+    try:
+        subscription_id = request.form.get('subscription_id')
+        if not subscription_id:
+            flash("Subscription ID not provided.", "danger")
+            return redirect(url_for('subscriptions'))
+
+        subscription = Subscription.query.filter_by(id=subscription_id, status='active').first()
+
+        if not subscription:
+            flash("No active subscription found to cancel.", "warning")
+            return redirect(url_for('subscriptions'))
+
+        # Fetch the plan associated with the subscription
+        plan = Plan.query.get(subscription.plan_id)
+        if not plan:
+            flash("Subscription plan not found.", "danger")
+            return redirect(url_for('subscriptions'))
+
+        # Calculate end_date based on billing_cycle
+        if plan.billing_cycle == 'monthly':
+            subscription.end_date = datetime.utcnow() + timedelta(days=30)
+        elif plan.billing_cycle == 'quarterly':
+            subscription.end_date = datetime.utcnow() + timedelta(days=90)
+        elif plan.billing_cycle == 'yearly':
+            subscription.end_date = datetime.utcnow() + timedelta(days=365)
+        else:
+            subscription.end_date = datetime.utcnow() + timedelta(days=30)
+
+        subscription.status = 'canceled'
+
+        try:
+            db.session.commit()
+            flash("Subscription canceled successfully.", "success")
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Error committing subscription cancellation to the database: {e}")
+            flash("An error occurred while canceling the subscription.", "danger")
+
+        return redirect(url_for('subscriptions'))
+    except Exception as e:
+        logging.error(f"Unexpected error: {e}")
+        flash("An unexpected error occurred.", "danger")
+        return redirect(url_for('subscriptions'))
 
 
 @app.route('/questionnaire_psf')

@@ -9,12 +9,21 @@
     <h2>Choose Your Subscription Plan</h2>
 
     <hr>
-    <div class="current-subscription">
-        <h3>Current Subscription</h3>
+    <div class="current-subscription" style="color: #aaf0d1;"> <!-- Light green color for current subscription -->
+        <h2>Current Subscription</h2>
         <p><strong>Plan:</strong> {{ subscription_info.plan }}</p>
         <p><strong>Status:</strong> {{ subscription_info.status }}</p>
         <p><strong>Start Date:</strong> {{ subscription_info.start_date }}</p>
         <p><strong>End Date:</strong> {{ subscription_info.end_date }}</p>
+
+        <!-- Conditionally display Unsubscribe button if there's an active subscription -->
+        {% if subscription_info.status == 'active' %}
+            <form action="{{ url_for('cancel_subscription') }}" method="POST" style="margin-top: 10px;">
+                {{ form.hidden_tag() }} <!-- CSRF token -->
+                <input type="hidden" name="subscription_id" value="{{ subscription_info.id }}"> <!-- Subscription ID -->
+                <button type="submit" class="btn btn-danger">Unsubscribe</button>
+            </form>
+        {% endif %}
     </div>
     <hr>
 
@@ -29,53 +38,59 @@
             {% endif %}
         {% endwith %}
         <hr>
-        <form action="{{ url_for('subscribe') }}" method="POST" id="subscriptionForm">
-            {{ form.hidden_tag() }}
-            <input type="hidden" name="plan_id" id="plan_id">
-            {% for plan in plans %}
-                <div class="plan">
-                    <h3>{{ plan.name }}</h3>
-                    <p>${{ plan.price / 100 }} / month</p>
-                    <p>{{ plan.description }}</p>
-                    <input type="radio" name="selected_plan" value="{{ plan.id }}" onclick="setPlanId({{ plan.id }})"> Select {{ plan.name }}
-                    <div class="associated-products">
-                        <h4>Products in {{ plan.name }}</h4>
-                        <ul>
-                            {% for product in plan.products %}
-                                <li>{{ product.name }} - ${{ product.price / 100 }}</li>
-                            {% else %}
-                                <li>None</li>
-                            {% endfor %}
-                        </ul>
-                    </div>
-                    <div class="additional-products">
-                        <h4>Select Additional Products</h4>
-                        <ul>
-                            {% if additional_products %}
-                                {% for product in additional_products %}
-                                    {% if product.id not in plan.product_ids %}
-                                        <li>
-                                            <input type="checkbox" name="additional_products" value="{{ product.id }}">
-                                            {{ product.name }} - ${{ product.price / 100 }}
-                                        </li>
-                                    {% endif %}
+
+        <!-- Conditionally display Subscribe button if there's no active subscription -->
+        {% if subscription_info.status != 'active' %}
+            <form action="{{ url_for('subscribe') }}" method="POST" id="subscriptionForm">
+                {{ form.hidden_tag() }}
+                <input type="hidden" name="plan_id" id="plan_id">
+                {% for plan in plans %}
+                    <div class="plan">
+                        <h3>{{ plan.name }}</h3>
+                        <p>${{ plan.price / 100 }} / month</p>
+                        <p>{{ plan.description }}</p>
+                        <input type="radio" name="selected_plan" value="{{ plan.id }}" onclick="setPlanId({{ plan.id }})"> Select {{ plan.name }}
+                        <div class="associated-products">
+                            <h4>Products in {{ plan.name }}</h4>
+                            <ul>
+                                {% for product in plan.products %}
+                                    <li>{{ product.name }} - ${{ product.price / 100 }}</li>
+                                {% else %}
+                                    <li>None</li>
                                 {% endfor %}
-                            {% else %}
-                                <li>None</li>
-                            {% endif %}
-                        </ul>
+                            </ul>
+                        </div>
+                        <div class="additional-products">
+                            <h4>Select Additional Products</h4>
+                            <ul>
+                                {% if additional_products %}
+                                    {% for product in additional_products %}
+                                        {% if product.id not in plan.product_ids %}
+                                            <li>
+                                                <input type="checkbox" name="additional_products" value="{{ product.id }}">
+                                                {{ product.name }} - ${{ product.price / 100 }}
+                                            </li>
+                                        {% endif %}
+                                    {% endfor %}
+                                {% else %}
+                                    <li>None</li>
+                                {% endif %}
+                            </ul>
+                        </div>
                     </div>
-                </div>
-                <hr>
-            {% endfor %}
-            <button type="submit" class="btn btn-success">Subscribe</button>
-        </form>
+                    <hr>
+                {% endfor %}
+                <button type="submit" class="btn btn-success">Subscribe</button>
+            </form>
+        {% else %}
+            <p>You already have an active subscription. Please unsubscribe first to choose a new plan.</p>
+        {% endif %}
     </div>
 </div>
 
 <script>
-
     function setPlanId(planId) {
+        console.log('Plan ID set to:', planId); // Debugging
         document.getElementById('plan_id').value = planId;
     }
 
@@ -94,6 +109,5 @@
             return false;
         }
     });
-
 </script>
 {% endblock %}
