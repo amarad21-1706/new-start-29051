@@ -4386,33 +4386,25 @@ def subscriptions():
         user = Users.query.filter_by(email=email).first()
         logging.debug(f'User fetched: {user}')
 
+        subscription_info = {
+            'plan': 'N/A',
+            'status': 'N/A',
+            'start_date': 'N/A',
+            'end_date': 'N/A',
+            'status': 'N/A'
+        }
+
         if user:
-            subscription = Subscription.query.filter_by(user_id=user.id).first()
-            if subscription:
-                current_plan = Plan.query.filter_by(id=subscription.plan_id).first()
+            current_subscription = Subscription.query.filter_by(user_id=user.id, status='active').first()
+            if current_subscription:
+                current_plan = Plan.query.filter_by(id=current_subscription.plan_id).first()
                 subscription_info = {
                     'plan': current_plan.name if current_plan else 'N/A',
-                    'status': 'active' if subscription.end_date > datetime.utcnow() else 'inactive',
-                    'start_date': subscription.start_date,
-                    'end_date': subscription.end_date,
-                    'status': subscription.status,
+                    'status': 'active',
+                    'start_date': current_subscription.start_date.strftime('%Y-%m-%d'),
+                    'end_date': current_subscription.end_date.strftime('%Y-%m-%d') if current_subscription.end_date else 'Ongoing',
+                    'status': current_subscription.status,
                 }
-            else:
-                subscription_info = {
-                    'plan': 'N/A',
-                    'status': 'N/A',
-                    'start_date': 'N/A',
-                    'end_date': 'N/A',
-                    'status': 'N/A'
-                }
-        else:
-            subscription_info = {
-                'plan': 'N/A',
-                'status': 'N/A',
-                'start_date': 'N/A',
-                'end_date': 'N/A',
-                'status': 'N/A'
-            }
 
         logging.debug(f'Subscription info: {subscription_info}')
 
@@ -4434,25 +4426,19 @@ def subscriptions():
         return "An error occurred", 500
 
 
+
 @app.route('/subscribe', methods=['POST'])
 @login_required
 @roles_required('Manager', 'Employee')
 def subscribe():
     form = SubscriptionForm()
-    logging.debug(
-        f"Form data before validation: {form.plan_id.data}, additional_products: {request.form.getlist('additional_products')}")
+    logging.debug(f"Form data before validation: {form.plan_id.data}, additional_products: {request.form.getlist('additional_products')}")
 
     try:
         if form.validate_on_submit():
-            try:
-                plan_id = int(form.plan_id.data)
-            except ValueError:
-                logging.error("Invalid plan ID.")
-                flash("Invalid subscription plan.", "danger")
-                return redirect(url_for('subscriptions'))
+            plan_id = int(form.plan_id.data)
 
-            additional_product_ids = [product_id for product_id in request.form.getlist('additional_products') if
-                                      product_id]
+            additional_product_ids = [product_id for product_id in request.form.getlist('additional_products') if product_id]
             logging.debug(f'Form validated. Plan: {plan_id}, Additional Products: {additional_product_ids}')
 
             user_id = session.get('user_id')
@@ -4463,63 +4449,40 @@ def subscribe():
                 flash("User not found.", "danger")
                 return redirect(url_for('subscriptions'))
 
-            logging.debug(f'User found: {user}')
+            # Mark previous subscriptions as inactive
+            active_subscription = Subscription.query.filter_by(user_id=user_id, status='active').first()
+            if active_subscription:
+                active_subscription.end_date = datetime.utcnow()
+                active_subscription.status = 'inactive'
+                db.session.add(active_subscription)
 
-            # Check if the user already has an active subscription to the selected plan
-            existing_subscription = Subscription.query.filter_by(user_id=user_id, plan_id=plan_id).first()
-            if existing_subscription and existing_subscription.end_date > datetime.utcnow():
-                flash("You are already subscribed to this plan.", "info")
-                return redirect(url_for('subscriptions'))
-
-            logging.debug(f'No existing active subscription for plan {plan_id}')
-
-            # Check if the user has already purchased any of the additional products
-            for product_id in additional_product_ids:
-                existing_purchase = UserPlans.query.filter_by(user_id=user_id, plan_id=plan_id,
-                                                              product_id=product_id).first()
-                if existing_purchase:
-                    flash(f"You have already purchased the product with ID {product_id}.", "info")
-                    additional_product_ids.remove(product_id)
-
-            logging.debug(f'Additional products after filtering: {additional_product_ids}')
-
-            # Create or update the subscription
-            subscription = Subscription.query.filter_by(user_id=user_id).first()
-            if not subscription:
-                subscription = Subscription(user_id=user_id, plan_id=plan_id, start_date=datetime.utcnow(), status='active')
-                db.session.add(subscription)
-                logging.debug(f'New subscription created: {subscription}')
-            else:
-                subscription.plan_id = plan_id
-                subscription.start_date = datetime.utcnow()
-                subscription.end_date = datetime.utcnow() + timedelta(days=30)  # Assuming 30 days for all plans
-                subscription.status = 'active'
-                logging.debug(f'Existing subscription updated: {subscription}')
-
-            subscription.additional_products = ','.join(additional_product_ids)
+            # Create new subscription
+            new_subscription = Subscription(
+                user_id=user_id,
+                plan_id=plan_id,
+                start_date=datetime.utcnow(),
+                additional_products=','.join(additional_product_ids),
+                status='active'
+            )
+            db.session.add(new_subscription)
 
             try:
                 db.session.commit()
-                logging.debug(f'Subscription committed to the database: {subscription}')
+                flash("Subscription updated successfully.", "success")
             except Exception as e:
                 db.session.rollback()
                 logging.error(f"Error committing subscription to the database: {e}")
                 flash("An error occurred while updating the subscription.", "danger")
-                return redirect(url_for('subscriptions'))
 
-            logging.debug(f'Updated subscription for user: {user}')
-            flash("Subscription updated successfully.", "success")
-            return redirect(url_for('subscriptions'))  # Redirect to ensure updated subscription info is fetched
+            return redirect(url_for('subscriptions'))  # Ensure updated subscription info is fetched
         else:
             logging.debug(f'Form validation failed: {form.errors}')
-            logging.debug(f'Form data: {request.form}')
             flash("Invalid form submission.", "danger")
             return redirect(url_for('subscriptions'))
     except Exception as e:
         logging.error(f"Unexpected error: {e}")
         flash("An unexpected error occurred.", "danger")
         return redirect(url_for('subscriptions'))
-
 
 
 # TODO less elegant than in Subscription

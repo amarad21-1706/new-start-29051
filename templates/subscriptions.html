@@ -74,15 +74,26 @@
 </div>
 
 <script>
+
     function setPlanId(planId) {
         document.getElementById('plan_id').value = planId;
     }
+
+    document.querySelectorAll('input[name="selected_plan"]').forEach(radio => {
+        radio.addEventListener('change', function() {
+            setPlanId(this.value);
+        });
+    });
 
     document.getElementById('subscriptionForm').addEventListener('submit', function() {
         const selectedPlan = document.querySelector('input[name="selected_plan"]:checked');
         if (selectedPlan) {
             setPlanId(selectedPlan.value);
+        } else {
+            alert('Please select a plan before submitting.');
+            return false;
         }
     });
+
 </script>
 {% endblock %}
