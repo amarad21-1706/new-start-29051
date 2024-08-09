@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    Subscription Report
+{% endblock %}
+
+{% block content %}
+<div class="container" style="color: #f0f0f0;"> <!-- Set light font color for the entire container -->
+    <h2>Subscription Report</h2>
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="alert-container">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
+    <table class="table table-striped" style="color: #f0f0f0;"> <!-- Ensure table text is also light -->
+        <thead>
+            <tr>
+                <th>User</th>
+                <th>Plan</th>
+                <th>Start Date</th>
+                <th>End Date</th>
+                <th>Status</th>
+                <th>Additional Products</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for subscription in subscriptions %}
+            <tr style="background-color: {% if loop.index is odd %}#2a2a2a{% else %}#3a3a3a{% endif %};">
+            <tr style="color: {% if loop.index is odd %}#fafafa{% else %}#9797b7{% endif %};">
+                <td>{{ subscription.user.username }}</td>
+                <td>{{ subscription.plan.name }}</td>
+                <td>{{ subscription.start_date.strftime('%Y-%m-%d') }}</td>
+                <td>{{ subscription.end_date.strftime('%Y-%m-%d') if subscription.end_date else 'Ongoing' }}</td>
+                <td>{{ subscription.status }}</td>
+                <td>{{ subscription.additional_product_names }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

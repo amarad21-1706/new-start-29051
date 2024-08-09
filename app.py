@@ -4557,6 +4557,50 @@ def cancel_subscription():
         return redirect(url_for('subscriptions'))
 
 
+@app.route('/subscription_report')
+@login_required
+@roles_required('Admin', 'Manager', 'Employee')
+def subscription_report():
+    try:
+        user_id = current_user.id
+        user_roles = session.get('user_roles', [])
+        subscriptions_query = Subscription.query
+
+        # Admin can see all subscriptions
+        if 'Admin' in user_roles:
+            subscriptions = subscriptions_query.order_by(Subscription.start_date.desc()).all()
+
+        # Manager can see subscriptions related to their company
+        elif 'Manager' in user_roles:
+            company_id = session.get('company_id')
+            user_ids = [cu.user_id for cu in CompanyUsers.query.filter_by(company_id=company_id).all()]
+            subscriptions = subscriptions_query.filter(Subscription.user_id.in_(user_ids)).order_by(Subscription.start_date.desc()).all()
+
+        # Employee can only see their own subscriptions
+        elif 'Employee' in user_roles:
+            subscriptions = subscriptions_query.filter_by(user_id=user_id).order_by(Subscription.start_date.desc()).all()
+
+        else:
+            flash("You do not have permission to view this report.", "danger")
+            return redirect(url_for('index'))
+
+        # Fetch product names for additional products
+        for subscription in subscriptions:
+            if subscription.additional_products:
+                product_ids = map(int, subscription.additional_products.split(','))
+                products = Product.query.filter(Product.id.in_(product_ids)).all()
+                subscription.additional_product_names = ', '.join([product.name for product in products])
+            else:
+                subscription.additional_product_names = 'None'
+
+        return render_template('subscription_report.html', subscriptions=subscriptions)
+    except Exception as e:
+        logging.error(f"Error generating subscription report: {e}")
+        flash("An error occurred while generating the report.", "danger")
+        return redirect(url_for('index'))
+
+
+
 @app.route('/questionnaire_psf')
 @login_required
 @roles_required('Admin', 'Manager', 'Employee')

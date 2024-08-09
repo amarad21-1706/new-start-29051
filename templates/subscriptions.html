@@ -6,11 +6,11 @@
 
 {% block content %}
 <div class="container">
-    <h2>Choose Your Subscription Plan</h2>
+    <h3>Choose Your Subscription Plan</h3>
 
     <hr>
     <div class="current-subscription" style="color: #aaf0d1;"> <!-- Light green color for current subscription -->
-        <h2>Current Subscription</h2>
+        <h4>Current Subscription</h4>
         <p><strong>Plan:</strong> {{ subscription_info.plan }}</p>
         <p><strong>Status:</strong> {{ subscription_info.status }}</p>
         <p><strong>Start Date:</strong> {{ subscription_info.start_date }}</p>
@@ -46,12 +46,14 @@
                 <input type="hidden" name="plan_id" id="plan_id">
                 {% for plan in plans %}
                     <div class="plan">
-                        <h3>{{ plan.name }}</h3>
+                        <h4 style="background-color: #0b1e39; color: #ffffff; padding: 10px; border-radius: 5px;"> <!-- Dark blue background with white text -->
+                            {{ plan.name }}
+                        </h4>
                         <p>${{ plan.price / 100 }} / month</p>
                         <p>{{ plan.description }}</p>
                         <input type="radio" name="selected_plan" value="{{ plan.id }}" onclick="setPlanId({{ plan.id }})"> Select {{ plan.name }}
-                        <div class="associated-products">
-                            <h4>Products in {{ plan.name }}</h4>
+                        <div class="associated-products" style="margin-left: 20px;"> <!-- Indent to the right -->
+                            <h5>Products in {{ plan.name }}</h5>
                             <ul>
                                 {% for product in plan.products %}
                                     <li>{{ product.name }} - ${{ product.price / 100 }}</li>
@@ -60,13 +62,13 @@
                                 {% endfor %}
                             </ul>
                         </div>
-                        <div class="additional-products">
-                            <h4>Select Additional Products</h4>
+                        <div class="additional-products" style="margin-left: 20px;"> <!-- Indent to the right -->
+                            <h5>Select Additional Products</h5>
                             <ul>
                                 {% if additional_products %}
                                     {% for product in additional_products %}
                                         {% if product.id not in plan.product_ids %}
-                                            <li>
+                                            <li style="margin-left: 20px;"> <!-- Indent product details -->
                                                 <input type="checkbox" name="additional_products" value="{{ product.id }}">
                                                 {{ product.name }} - ${{ product.price / 100 }}
                                             </li>

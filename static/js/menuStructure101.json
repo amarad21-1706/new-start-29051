@@ -804,8 +804,19 @@
                         ]
                     },
                     "Subscriptions": {
-                        "label": "Subscriptions",
+                        "label": "Subscribe Plan",
                         "url": "/subscriptions",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin",
+                            "Employee",
+                            "Manager",
+                            "Guest"
+                        ]
+                    },
+                    "Subscriptions Report": {
+                        "label": "Subscriptions Report",
+                        "url": "/subscription_report",
                         "protected": true,
                         "allowed_roles": [
                             "Admin",
