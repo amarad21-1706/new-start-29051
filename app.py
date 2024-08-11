@@ -4671,40 +4671,50 @@ def process_aggregation_rule(aggregation_rule, data_list):
 
     return result
 
+def perform_data_aggregation(data_key, aggregation_rule, area_id, subarea_id, additional_info):
+    data = BaseData.query.filter_by(area_id=area_id, subarea_id=subarea_id).all()
 
-def perform_data_aggregation(data_key, aggregation_rule, area_id, subarea_id):
-    # Fetch data based on area_id and subarea_id
-    data_entries = BaseData.query.filter_by(area_id=area_id, subarea_id=subarea_id).all()
-
-    aggregated_data = {}
-
-    # Group data based on the keys defined in data_key
-    for entry in data_entries:
+    organized_data = {}
+    for entry in data:
         year = getattr(entry, data_key['year'])
-        interval_id = getattr(entry, data_key['interval_id'])
+        interval = getattr(entry, data_key['interval_id'])
         interval_ord = getattr(entry, data_key['interval_ord'])
 
-        if year not in aggregated_data:
-            aggregated_data[year] = {}
+        if year not in organized_data:
+            organized_data[year] = {}
 
-        if interval_ord not in aggregated_data[year]:
-            aggregated_data[year][interval_ord] = 0
+        if interval not in organized_data[year]:
+            organized_data[year][interval] = {}
 
-        # Aggregate the data according to the aggregation rule
-        for field in aggregation_rule['fields']:
-            aggregated_data[year][interval_ord] += getattr(entry, field)
+        # Handle components separately (fi2 and fi3)
+        for component in data_key['components']:
+            component_value = getattr(entry, component)
+            if component not in organized_data[year][interval]:
+                organized_data[year][interval][component] = 0
+            organized_data[year][interval][component] += component_value
 
-    # Prepare the data for visualization
-    labels = list(aggregated_data.keys())
-    values = [
-        sum(interval_data.values()) for interval_data in aggregated_data.values()
-    ]
-
-    return {
-        'labels': labels,
-        'values': values
+    # Convert the organized data into a format suitable for the chart
+    chart_data = {
+        'labels': [],  # List of years
+        'datasets': []
     }
 
+    component_labels = additional_info.get('data_labels', ['Component 1', 'Component 2'])
+
+    for interval in sorted({interval for year_data in organized_data.values() for interval in year_data}):
+        for idx, component in enumerate(data_key['components']):
+            dataset = {
+                'label': f"{component_labels[idx]} - Interval {interval}",
+                'data': [],
+                'backgroundColor': additional_info['color']
+            }
+            for year in sorted(organized_data.keys()):
+                if year not in chart_data['labels']:
+                    chart_data['labels'].append(year)
+                dataset['data'].append(organized_data[year][interval].get(component, 0))
+            chart_data['datasets'].append(dataset)
+
+    return chart_data
 
 
 
@@ -4714,40 +4724,42 @@ def perform_data_aggregation(data_key, aggregation_rule, area_id, subarea_id):
 @login_required
 @roles_required('Admin', 'Manager', 'Employee')
 def admin_dashboard(area_id, subarea_id):
+    print('admin dashboard 1')
     try:
-        # Fetch the relevant data mapping
+        print('admin dashboard 2')
+        logging.debug(f"Fetching data mapping for area_id={area_id} and subarea_id={subarea_id}")
         mapping = DataMapping.query.filter_by(area_id=area_id, subarea_id=subarea_id).first()
 
-        print('mapping', mapping)
+        print(f"Raw data_key: {mapping.data_key}")
+        print(f"Raw aggregation_rule: {mapping.aggregation_rule}")
+        print(f"Raw additional_info: {mapping.additional_info}")
+
         if not mapping:
             flash("No data mapping found for the specified area and subarea.", "danger")
             return redirect(url_for('index'))
 
-        print('dash 1')
-        # Check the types of the fields
-        print('Type of data_key:', type(mapping.data_key))
-        print('Type of aggregation_rule:', type(mapping.aggregation_rule))
-        print('Type of additional_info:', type(mapping.additional_info))
+        print('admin dashboard 3')
 
-        # Ensure that the fields are JSON strings before loading them
-        data_key = json.loads(mapping.data_key) if isinstance(mapping.data_key, str) else mapping.data_key
-        print('dash 2')
-        aggregation_rule = json.loads(mapping.aggregation_rule) if isinstance(mapping.aggregation_rule, str) else mapping.aggregation_rule
-        print('dash 3')
-        additional_info = json.loads(mapping.additional_info) if isinstance(mapping.additional_info, str) else mapping.additional_info
-        print('dash 4')
+        # Since the data is already a dict, we don't need to decode it
+        data_key = mapping.data_key
+        aggregation_rule = mapping.aggregation_rule
+        additional_info = mapping.additional_info
+
+        print('admin dashboard 4')
+        logging.debug(f"Mapping found: {mapping}")
 
         # Perform data aggregation based on the aggregation_rule
-        dashboard_data = perform_data_aggregation(data_key, aggregation_rule, area_id, subarea_id)
-        print('dash data', dashboard_data)
+        logging.debug(f"Performing data aggregation")
+        dashboard_data = perform_data_aggregation(data_key, aggregation_rule, area_id, subarea_id, additional_info)
+        print('admin dashboard 8')
+        logging.debug(f"Aggregated data: {dashboard_data}")
 
         # Convert the result back to JSON strings to pass to the template
-        dashboard_data_json = json.dumps(dashboard_data)  # Convert to JSON string
-        additional_info_json = json.dumps(additional_info)  # Convert to JSON string
+        logging.debug(f"Converting data to JSON strings")
+        dashboard_data_json = json.dumps(dashboard_data)
+        additional_info_json = json.dumps(additional_info)
 
-        print('dashboard_data_json', dashboard_data_json)
-        print('additional_info_json', additional_info_json)
-
+        print('admin dashboard 9')
         return render_template('admin_dashboard.html',
                                area_id=area_id,
                                subarea_id=subarea_id,
@@ -4758,6 +4770,8 @@ def admin_dashboard(area_id, subarea_id):
         logging.error(f"Error in admin_dashboard route: {e}")
         flash("An error occurred while generating the dashboard.", "danger")
         return redirect(url_for('index'))
+
+
 
 
 @app.route('/questionnaire_psf')

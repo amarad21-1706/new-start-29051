@@ -1,3 +1,4 @@
+
 {% extends 'base.html' %}
 
 {% block title %}
@@ -38,7 +39,7 @@
                     <td>{{ cell }}</td>
                     {% endfor %}
                 </tr>
-            {% endfor %}
+                {% endfor %}
             </tbody>
         </table>
     </div>
@@ -52,20 +53,13 @@
     var dashboardData = JSON.parse('{{ dashboard_data | safe }}');
     var additionalInfo = JSON.parse('{{ additional_info | safe }}');
 
-    console.log('dashboardData:', dashboardData);
-    console.log('additionalInfo:', additionalInfo);
-
     {% if representation_type == 'bar_chart' %}
     var ctx = document.getElementById('barChart').getContext('2d');
     var barChart = new Chart(ctx, {
         type: 'bar',
         data: {
             labels: dashboardData.labels,
-            datasets: [{
-                label: 'Data',
-                data: dashboardData.values,
-                backgroundColor: additionalInfo.color
-            }]
+            datasets: dashboardData.datasets
         },
         options: {
             scales: {
