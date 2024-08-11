@@ -4672,8 +4672,6 @@ def process_aggregation_rule(aggregation_rule, data_list):
     return result
 
 
-
-
 def perform_data_aggregation(data_key, aggregation_rule, area_id, subarea_id, additional_info):
     print("Performing data aggregation")
     data = BaseData.query.filter_by(area_id=area_id, subarea_id=subarea_id).all()
@@ -4711,6 +4709,8 @@ def perform_data_aggregation(data_key, aggregation_rule, area_id, subarea_id, ad
             else:
                 raise ValueError(f"Unknown aggregation operation: {aggregation_rule['operation']}")
 
+    print(f"Organized Data: {organized_data}")
+
     # Convert the organized data into a format suitable for the chart
     chart_data = {
         'labels': [],  # List of years
@@ -4735,6 +4735,7 @@ def perform_data_aggregation(data_key, aggregation_rule, area_id, subarea_id, ad
 
     print(f"Chart Data before returning: {chart_data}")
     return chart_data
+
 
 
 
@@ -4771,8 +4772,7 @@ def admin_dashboard(area_id, subarea_id):
         # Perform data aggregation based on the aggregation_rule
         logging.debug(f"Performing data aggregation")
         dashboard_data = perform_data_aggregation(data_key, aggregation_rule, area_id, subarea_id, additional_info)
-        print('admin dashboard 8')
-        logging.debug(f"Aggregated data: {dashboard_data}")
+        print(f"Chart Data before returning: {dashboard_data}")
 
         # Convert the result back to JSON strings to pass to the template
         logging.debug(f"Converting data to JSON strings")
@@ -4780,15 +4780,16 @@ def admin_dashboard(area_id, subarea_id):
         additional_info_json = json.dumps(additional_info)
 
         print('admin dashboard 9')
-        logging.debug(f"dashboard_data_json: {dashboard_data_json}")
-        logging.debug(f"additional_info_json: {additional_info_json}")
-
         return render_template('admin_dashboard.html',
                                area_id=area_id,
                                subarea_id=subarea_id,
                                dashboard_data=dashboard_data_json,
                                representation_type=mapping.representation_type,
                                additional_info=additional_info_json)
+    except ValueError as ve:
+        logging.error(f"ValueError in admin_dashboard route: {ve}")
+        flash(f"Value error occurred: {ve}", "danger")
+        return redirect(url_for('index'))
     except Exception as e:
         logging.error(f"Error in admin_dashboard route: {e}")
         flash("An error occurred while generating the dashboard.", "danger")
