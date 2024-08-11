@@ -10,6 +10,8 @@ from sqlalchemy.exc import IntegrityError
 
 admin_bp = Blueprint('admin', __name__)
 
+
+
 @admin_bp.route('/manage_products', methods=['GET', 'POST'])
 @login_required
 def admin_manage_products():

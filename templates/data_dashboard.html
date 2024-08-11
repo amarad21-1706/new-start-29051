@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    Subscription Dashboard
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Subscription Dashboard</h2>
+
+    <div class="row mt-5">
+        <div class="col-lg-12 mb-4">
+            <canvas id="subscriptionChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    var ctx = document.getElementById('subscriptionChart').getContext('2d');
+    var subscriptionChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: {{ chart_data['labels'] }},
+            datasets: [
+                {% for dataset in chart_data['datasets'] %}
+                {
+                    label: '{{ dataset['label'] }}',
+                    data: {{ dataset['data'] }},
+                    backgroundColor: '{{ dataset['backgroundColor'] }}'
+                },
+                {% endfor %}
+            ]
+        },
+        options: {
+            scales: {
+                x: {
+                    title: { display: true, text: 'Year' }
+                },
+                y: {
+                    title: { display: true, text: 'Total Value' }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

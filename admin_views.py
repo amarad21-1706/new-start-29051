@@ -4466,9 +4466,12 @@ def create_admin_views(app, intervals):
             DocumentUploadView(model=BaseData, session=db.session, name='Documents Upload', intervals=intervals, area_id=3,
                                 subarea_id=1, endpoint='upload_documenti_view'))
 
-
         # EOF app5
         # === = ==================================== === ====================================
+
+
+        # App 6 - dashboards
+
 
         # 10-th Flask-Admin instance
         # ===========================================================

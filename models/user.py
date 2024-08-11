@@ -1473,3 +1473,26 @@ class Subscription(db.Model):
 
     user = db.relationship('Users', back_populates='subscriptions')
     plan = db.relationship('Plan', back_populates='subscriptions')
+
+
+class DataMapping(db.Model):
+    __tablename__ = 'data_mapping'
+
+    id = db.Column(db.Integer, primary_key=True)
+    area_id = db.Column(db.Integer, nullable=False)
+    subarea_id = db.Column(db.Integer, nullable=False)
+    data_key = db.Column(JSONB, nullable=False)  # Storing data key as JSONB
+    aggregation_rule = db.Column(JSONB, nullable=False)  # Storing aggregation rules as JSONB
+    representation_type = db.Column(db.String(50), nullable=False)
+    additional_info = db.Column(JSONB, nullable=True)  # Optional additional info stored as JSONB
+
+    def __init__(self, area_id, subarea_id, data_key, aggregation_rule, representation_type, additional_info=None):
+        self.area_id = area_id
+        self.subarea_id = subarea_id
+        self.data_key = data_key
+        self.aggregation_rule = aggregation_rule
+        self.representation_type = representation_type
+        self.additional_info = additional_info
+
+    def __repr__(self):
+        return f"<DataMapping(area_id={self.area_id}, subarea_id={self.subarea_id}, representation_type={self.representation_type})>"

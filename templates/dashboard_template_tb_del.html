@@ -38,7 +38,7 @@
                     <td>{{ cell }}</td>
                     {% endfor %}
                 </tr>
-            {% endfor %}
+                {% endfor %}
             </tbody>
         </table>
     </div>
@@ -51,9 +51,6 @@
 <script>
     var dashboardData = JSON.parse('{{ dashboard_data | safe }}');
     var additionalInfo = JSON.parse('{{ additional_info | safe }}');
-
-    console.log('dashboardData:', dashboardData);
-    console.log('additionalInfo:', additionalInfo);
 
     {% if representation_type == 'bar_chart' %}
     var ctx = document.getElementById('barChart').getContext('2d');
@@ -110,5 +107,4 @@
     });
     {% endif %}
 </script>
-
 {% endblock %}

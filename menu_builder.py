@@ -3,6 +3,7 @@ from pathlib import Path
 import json
 from utils.utils import get_current_directory
 from jinja2.runtime import Undefined
+from config.config import generate_statistics_menu
 
 class MenuBuilder:
     def __init__(self, menu_data, allowed_roles=None):
@@ -25,8 +26,8 @@ class MenuBuilder:
                 if not isinstance(menu_item_data, dict):
                     continue
 
-                label = menu_item_data.get('label', None)  # Replace Undefined with None
-                url = menu_item_data.get('url', None)  # Replace Undefined with None
+                label = menu_item_data.get('label', None)
+                url = menu_item_data.get('url', None)
                 protected = menu_item_data.get('protected', False)
                 allowed_roles = menu_item_data.get('allowed_roles', [])
 
@@ -39,17 +40,17 @@ class MenuBuilder:
                     continue
 
                 # Check if the user has the required role to access this menu item
-                # INCLUDE IF ALLOWED = 'All'
                 if user_roles and not any(role in allowed_roles for role in user_roles):
-                    # print('on', label, url, 'role not in allowed roles? user roles are:', user_roles, 'vs:', any(role in allowed_roles for role in user_roles))
                     continue
 
                 # Recursively parse submenus
                 submenus = menu_item_data.get('submenus', {})
-                if not user_roles:
-                    user_roles = ['Guest']
-                if not allowed_roles:
-                    allowed_roles = ['Guest']
+
+                # Inject the dynamically generated Statistics menu
+                if label == "Statistics":
+                    dynamic_statistics_submenus = generate_statistics_menu()
+                    submenus.update(dynamic_statistics_submenus)
+
                 parsed_submenus = self.parse_menu_data(user_roles=user_roles,
                                                        is_authenticated=is_authenticated,
                                                        include_protected=include_protected,
@@ -72,10 +73,6 @@ class MenuBuilder:
                                                        include_protected=include_protected,
                                                        raw_menu_data=menu_item_data.get('submenus', {}))
 
-                if not user_roles:
-                    user_roles = ['Guest']
-                if not allowed_roles:
-                    allowed_roles = ['Guest']
                 menu_items.append({
                     'label': menu_item_data.get('label'),
                     'url': menu_item_data.get('url'),

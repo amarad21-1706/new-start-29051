@@ -7,7 +7,7 @@ from models.user import (Company, CompanyUsers, Users, Role, UserRoles,
                          Area, Subarea, AreaSubareas, Deadline, Interval,
                          QuestionnaireCompanies, Questionnaire, Question, QuestionnaireQuestions,
                          get_config_values, Workflow, Step, BaseData, WorkflowSteps,
-                         WorkflowBaseData, StepBaseData, Post, AuditLog)
+                         WorkflowBaseData, StepBaseData, Post, AuditLog, DataMapping)
 
 # from sqlalchemy import or_, and_, desc, func, null
 # import pandas as pd
@@ -47,6 +47,29 @@ def get_cet_time():
     cet_now = utc_now.astimezone(cet_timezone)
 
     return cet_now
+
+def generate_statistics_menu():
+    statistics_menu = {}
+
+    data_mappings = DataMapping.query.all()
+    if not data_mappings:
+        return statistics_menu  # Return an empty dictionary if no data is found
+
+    for mapping in data_mappings:
+        area_id = mapping.area_id
+        subarea_id = mapping.subarea_id
+        label = f"Area {area_id} - Subarea {subarea_id}"
+        url = f"/admin_dashboard/{area_id}/{subarea_id}"
+
+        statistics_menu[label] = {
+            "label": label,
+            "url": url,
+            "protected": True,
+            "allowed_roles": ["Admin", "Manager", "Employee"]
+        }
+
+    return statistics_menu
+
 
 class Config:
     def __init__(self):

@@ -47,7 +47,7 @@ from models.user import (Users, UserRoles, Event, Role, Container, Questionnaire
         QuestionnaireCompanies, CompanyUsers, Status, Lexic,
         Interval, Subject,
         AuditLog, Post, Ticket, StepQuestionnaire,
-        Workflow, Step, BaseData, Container, WorkflowSteps, WorkflowBaseData,
+        Workflow, Step, BaseData, DataMapping, Container, WorkflowSteps, WorkflowBaseData,
          StepBaseData, Config, Product, Cart,
          Plan, Users, UserPlans, Subscription, # Adjust based on actual imports
          Questionnaire_psf, Response_psf)
@@ -349,7 +349,7 @@ with open(Path(json_file_path), 'r') as file:
 # Create an instance of MenuBuilder
 menu_builder = MenuBuilder(main_menu_items, ["Guest"])
 parsed_menu_data = menu_builder.parse_menu_data(user_roles=["Guest"], is_authenticated=False, include_protected=False)
-
+print('parsed_menu_data', parsed_menu_data)
 
 def is_user_role(session, user_id, role_name):
     # Get user roles for the specified user ID
@@ -4600,52 +4600,164 @@ def subscription_report():
         return redirect(url_for('index'))
 
 
+# TODO more data_mapping us cases to be inserted here
 
-@app.route('/admin_dashboard')
+@app.route('/generate_dashboard')
 @login_required
-@roles_required('Admin')
-def admin_dashboard():
+def generate_dashboard():
+    area_id = 2
+    subarea_id = 11
+
+    # Fetch the mapping configuration
+    mapping = DataMapping.query.filter_by(area_id=area_id, subarea_id=subarea_id).first()
+
+    if not mapping:
+        return "No mapping found for this area and subarea.", 404
+
+    # Extract and parse the JSON fields from the mapping
+    data_key = json.loads(mapping.data_key)
+    aggregation_rule = json.loads(mapping.aggregation_rule)
+
+    # Fetch the relevant data based on year and interval conditions
+    data = BaseData.query.filter_by(
+        area_id=area_id,
+        subarea_id=subarea_id
+    ).all()
+
+    # Organize the data by year and interval
+    organized_data = {}
+    for entry in data:
+        year = entry.fi0  # Assuming fi0 is the year field
+        interval = entry.interval_ord
+        total_value = getattr(entry, data_key['total'])
+
+        if year not in organized_data:
+            organized_data[year] = {}
+        if interval not in organized_data[year]:
+            organized_data[year][interval] = 0
+
+        # Sum the components based on the aggregation rule
+        for field in data_key['components']:
+            organized_data[year][interval] += getattr(entry, field)
+
+    # Convert the organized data to a format suitable for the chart
+    chart_data = {
+        'labels': list(organized_data.keys()),  # Years
+        'datasets': []
+    }
+
+    # Prepare datasets
+    for interval in sorted({interval for year_data in organized_data.values() for interval in year_data}):
+        dataset = {
+            'label': f"Interval {interval}",
+            'data': [organized_data[year].get(interval, 0) for year in chart_data['labels']],
+            'backgroundColor': '#007bff'
+        }
+        chart_data['datasets'].append(dataset)
+
+    return render_template('dashboard.html', chart_data=chart_data)
+
+
+def process_aggregation_rule(aggregation_rule, data_list):
+    result = 0
+
+    # Process the aggregation rule
+    if aggregation_rule['operation'] == 'sum':
+        for data in data_list:
+            for field in aggregation_rule['fields']:
+                result += data[field]
+
+    # Add more logic for different operations if necessary
+
+    return result
+
+
+def perform_data_aggregation(data_key, aggregation_rule, area_id, subarea_id):
+    # Fetch data based on area_id and subarea_id
+    data_entries = BaseData.query.filter_by(area_id=area_id, subarea_id=subarea_id).all()
+
+    aggregated_data = {}
+
+    # Group data based on the keys defined in data_key
+    for entry in data_entries:
+        year = getattr(entry, data_key['year'])
+        interval_id = getattr(entry, data_key['interval_id'])
+        interval_ord = getattr(entry, data_key['interval_ord'])
+
+        if year not in aggregated_data:
+            aggregated_data[year] = {}
+
+        if interval_ord not in aggregated_data[year]:
+            aggregated_data[year][interval_ord] = 0
+
+        # Aggregate the data according to the aggregation rule
+        for field in aggregation_rule['fields']:
+            aggregated_data[year][interval_ord] += getattr(entry, field)
+
+    # Prepare the data for visualization
+    labels = list(aggregated_data.keys())
+    values = [
+        sum(interval_data.values()) for interval_data in aggregated_data.values()
+    ]
+
+    return {
+        'labels': labels,
+        'values': values
+    }
+
+
+
+
+# TODO this is a general purpose area-subarea dashboard generator, linked to admin_dashboard or dashboard_template template
+
+@app.route('/admin_dashboard/<int:area_id>/<int:subarea_id>')
+@login_required
+@roles_required('Admin', 'Manager', 'Employee')
+def admin_dashboard(area_id, subarea_id):
     try:
-        role = session.get('user_roles')
-        user_id = session.get('user_id')
-        company_id = session.get('company_id')
+        # Fetch the relevant data mapping
+        mapping = DataMapping.query.filter_by(area_id=area_id, subarea_id=subarea_id).first()
 
-        if 'Admin' in role:
-            subscriptions = Subscription.query.all()
+        print('mapping', mapping)
+        if not mapping:
+            flash("No data mapping found for the specified area and subarea.", "danger")
+            return redirect(url_for('index'))
 
-        total_subscriptions = len(subscriptions)
-        active_users = len(set([sub.user_id for sub in subscriptions if sub.status == 'active']))
-        total_companies = len(set([sub.user.company_id for sub in subscriptions]))
-        active_plans = len(set([sub.plan_id for sub in subscriptions if sub.status == 'active']))
+        print('dash 1')
+        # Check the types of the fields
+        print('Type of data_key:', type(mapping.data_key))
+        print('Type of aggregation_rule:', type(mapping.aggregation_rule))
+        print('Type of additional_info:', type(mapping.additional_info))
 
-        subscription_types = [plan.name for plan in Plan.query.all()]
-        subscription_counts = [Subscription.query.filter_by(plan_id=plan.id).count() for plan in Plan.query.all()]
-        company_names = [company.name for company in Company.query.all()]
-        company_subscription_counts = [
-            Subscription.query.join(Users).filter(Users.company_id == company.id).count() for company in Company.query.all()
-        ]
+        # Ensure that the fields are JSON strings before loading them
+        data_key = json.loads(mapping.data_key) if isinstance(mapping.data_key, str) else mapping.data_key
+        print('dash 2')
+        aggregation_rule = json.loads(mapping.aggregation_rule) if isinstance(mapping.aggregation_rule, str) else mapping.aggregation_rule
+        print('dash 3')
+        additional_info = json.loads(mapping.additional_info) if isinstance(mapping.additional_info, str) else mapping.additional_info
+        print('dash 4')
 
-        # Prepare additional product names for each subscription
-        for sub in subscriptions:
-            sub.additional_product_names = ', '.join(
-                [Product.query.get(int(product_id)).name for product_id in sub.additional_products.split(',')]
-            ) if sub.additional_products else 'None'
+        # Perform data aggregation based on the aggregation_rule
+        dashboard_data = perform_data_aggregation(data_key, aggregation_rule, area_id, subarea_id)
+        print('dash data', dashboard_data)
+
+        # Convert the result back to JSON strings to pass to the template
+        dashboard_data_json = json.dumps(dashboard_data)  # Convert to JSON string
+        additional_info_json = json.dumps(additional_info)  # Convert to JSON string
+
+        print('dashboard_data_json', dashboard_data_json)
+        print('additional_info_json', additional_info_json)
 
         return render_template('admin_dashboard.html',
-                               total_subscriptions=total_subscriptions,
-                               active_users=active_users,
-                               total_companies=total_companies,
-                               active_plans=active_plans,
-                               subscription_types=subscription_types,
-                               subscription_counts=subscription_counts,
-                               company_names=company_names,
-                               company_subscription_counts=company_subscription_counts,
-                               subscriptions=subscriptions)
+                               area_id=area_id,
+                               subarea_id=subarea_id,
+                               dashboard_data=dashboard_data_json,
+                               representation_type=mapping.representation_type,
+                               additional_info=additional_info_json)
     except Exception as e:
         logging.error(f"Error in admin_dashboard route: {e}")
         flash("An error occurred while generating the dashboard.", "danger")
         return redirect(url_for('index'))
-
 
 
 @app.route('/questionnaire_psf')
