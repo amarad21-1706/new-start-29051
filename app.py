@@ -4671,7 +4671,11 @@ def process_aggregation_rule(aggregation_rule, data_list):
 
     return result
 
+
+
+
 def perform_data_aggregation(data_key, aggregation_rule, area_id, subarea_id, additional_info):
+    print("Performing data aggregation")
     data = BaseData.query.filter_by(area_id=area_id, subarea_id=subarea_id).all()
 
     organized_data = {}
@@ -4686,12 +4690,26 @@ def perform_data_aggregation(data_key, aggregation_rule, area_id, subarea_id, ad
         if interval not in organized_data[year]:
             organized_data[year][interval] = {}
 
-        # Handle components separately (fi2 and fi3)
-        for component in data_key['components']:
-            component_value = getattr(entry, component)
-            if component not in organized_data[year][interval]:
-                organized_data[year][interval][component] = 0
-            organized_data[year][interval][component] += component_value
+        # Determine whether we are dealing with metrics or components
+        keys = data_key.get('components') or data_key.get('metrics')
+        if keys is None:
+            raise ValueError(f"Neither 'components' nor 'metrics' found in data_key: {data_key}")
+
+        print(f"Aggregating data for keys: {keys}")
+
+        # Handle metrics or components based on the aggregation rule
+        for key in keys:
+            component_value = getattr(entry, key)
+            if key not in organized_data[year][interval]:
+                organized_data[year][interval][key] = 0
+
+            # Apply the aggregation rule based on the operation
+            if aggregation_rule['operation'] == 'sum':
+                organized_data[year][interval][key] += component_value
+            elif aggregation_rule['operation'] == 'none':
+                organized_data[year][interval][key] = component_value  # No aggregation, use the value as is
+            else:
+                raise ValueError(f"Unknown aggregation operation: {aggregation_rule['operation']}")
 
     # Convert the organized data into a format suitable for the chart
     chart_data = {
@@ -4699,10 +4717,11 @@ def perform_data_aggregation(data_key, aggregation_rule, area_id, subarea_id, ad
         'datasets': []
     }
 
-    component_labels = additional_info.get('data_labels', ['Component 1', 'Component 2'])
+    # Use appropriate labels depending on whether we're using metrics or components
+    component_labels = additional_info.get('data_labels', keys)
 
     for interval in sorted({interval for year_data in organized_data.values() for interval in year_data}):
-        for idx, component in enumerate(data_key['components']):
+        for idx, key in enumerate(keys):
             dataset = {
                 'label': f"{component_labels[idx]} - Interval {interval}",
                 'data': [],
@@ -4711,9 +4730,10 @@ def perform_data_aggregation(data_key, aggregation_rule, area_id, subarea_id, ad
             for year in sorted(organized_data.keys()):
                 if year not in chart_data['labels']:
                     chart_data['labels'].append(year)
-                dataset['data'].append(organized_data[year][interval].get(component, 0))
+                dataset['data'].append(organized_data[year][interval].get(key, 0))
             chart_data['datasets'].append(dataset)
 
+    print(f"Chart Data before returning: {chart_data}")
     return chart_data
 
 
@@ -4760,6 +4780,9 @@ def admin_dashboard(area_id, subarea_id):
         additional_info_json = json.dumps(additional_info)
 
         print('admin dashboard 9')
+        logging.debug(f"dashboard_data_json: {dashboard_data_json}")
+        logging.debug(f"additional_info_json: {additional_info_json}")
+
         return render_template('admin_dashboard.html',
                                area_id=area_id,
                                subarea_id=subarea_id,
@@ -4770,8 +4793,6 @@ def admin_dashboard(area_id, subarea_id):
         logging.error(f"Error in admin_dashboard route: {e}")
         flash("An error occurred while generating the dashboard.", "danger")
         return redirect(url_for('index'))
-
-
 
 
 @app.route('/questionnaire_psf')
