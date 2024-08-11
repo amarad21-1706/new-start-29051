@@ -842,8 +842,8 @@ class BaseDataViewCommon(ModelView):
 
 class Tabella21_dataView(ModelView):
     create_template = 'admin/create_base_data.html'
-    subarea_id = 9  # Define subarea_id as a class attribute
     area_id = 2
+    subarea_id = 9  # Define subarea_id as a class attribute
 
     # Specify the fields to be edited inline using XEditableWidget
     column_editable_list = ['fi1', 'fi2', 'fc1']
@@ -1119,8 +1119,8 @@ class Tabella21_dataView(ModelView):
 
 class Tabella22_dataView(ModelView):
     create_template = 'admin/create_base_data.html'
-    subarea_id = 10  # Define subarea_id as a class attribute
     area_id = 2
+    subarea_id = 10  # Define subarea_id as a class attribute
 
     # Specify the fields to be edited inline using XEditableWidget
     column_editable_list = ['fi1', 'fi2', 'fc1']
@@ -1371,8 +1371,8 @@ class Tabella22_dataView(ModelView):
 
 class Tabella24_dataView(ModelView):
     create_template = 'admin/create_base_data.html'
-    subarea_id = 12  # Define subarea_id as a class attribute
     area_id = 2
+    subarea_id = 12  # Define subarea_id as a class attribute
 
     # Specify the fields to be edited inline using XEditableWidget
     column_editable_list = ['fc1']
@@ -1642,9 +1642,8 @@ class Tabella24_dataView(ModelView):
 class Tabella25_dataView(ModelView):
     create_template = 'admin/create_base_data.html'
     page_title = 'Secondo livello: Quote di mercato della IVI nel settore vendita del SMR'
-
-    subarea_id = 13  # Define subarea_id as a class attribute
     area_id = 2
+    subarea_id = 13  # Define subarea_id as a class attribute
 
     # Specify the fields to be edited inline using XEditableWidget
     column_editable_list = ['fc1']
@@ -2342,8 +2341,8 @@ class Tabella26_dataView(ModelView):
 
 class Tabella27_dataView(ModelView):
     create_template = 'admin/create_base_data.html'
-    subarea_id = 15  # Define subarea_id as a class attribute
     area_id = 2
+    subarea_id = 15  # Define subarea_id as a class attribute
 
     # Specify the fields to be edited inline using XEditableWidget
     column_editable_list = ['fc1']
@@ -2690,8 +2689,8 @@ class ContingenciesDataView(ModelView):
 
 class DocumentUploadView(BaseDataViewCommon):
     create_template = 'admin/area_1/create_base_data_8.html'
-    subarea_id = 1
     area_id = 3
+    subarea_id = 1
 
     column_list = ('fi0', 'interval_ord', 'subject', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
     form_columns = ('fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
@@ -2738,8 +2737,8 @@ class ContingenciesDataView222(BaseDataViewCommon):
 
 class AttiDataView(BaseDataView):
     create_template = 'admin/area_1/create_base_data_2.html'
-    subarea_id = 2
     area_id = 1
+    subarea_id = 2
 
     # Adjusted order of fields
     column_list = ('number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
@@ -2915,12 +2914,10 @@ class AttiDataView(BaseDataView):
         return form
 
 
-
-
 class ContenziosiDataView(BaseDataView):
     create_template = 'admin/area_1/create_base_data_4.html'
-    subarea_id = 4
     area_id = 1
+    subarea_id = 4
 
     # Adjusted order of fields
     column_list = ('number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
@@ -3100,8 +3097,8 @@ class ContenziosiDataView(BaseDataView):
 
 class IniziativeDsoAsDataView(BaseDataView):
     create_template = 'admin/area_1/create_base_data_8.html'
-    subarea_id = 6
     area_id = 1
+    subarea_id = 6
 
     # Adjusted order of fields
     column_list = ('number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
@@ -3281,8 +3278,8 @@ class IniziativeDsoAsDataView(BaseDataView):
 
 class IniziativeAsDsoDataView(BaseDataView):
     create_template = 'admin/area_1/create_base_data_7.html'
-    subarea_id = 7
     area_id = 1
+    subarea_id = 7
 
     # Adjusted order of fields
     column_list = ('number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
@@ -3461,8 +3458,8 @@ class IniziativeAsDsoDataView(BaseDataView):
 
 class IniziativeDsoDsoDataView(BaseDataView):
     create_template = 'admin/area_1/create_base_data_8.html'
-    subarea_id = 8
     area_id = 1
+    subarea_id = 8
 
     # Adjusted order of fields
     column_list = ('number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
@@ -3659,8 +3656,8 @@ def create_admin_views(app, intervals):
 
         class CustomFlussiDataView(ModelView):
             create_template = 'admin/area_1/create_base_data_1.html'
-            subarea_id = 1
             area_id = 1
+            subarea_id = 1
             inline_models = (BaseDataInlineModelForm(BaseDataInline),)
 
             def __init__(self, *args, **kwargs):
@@ -3984,8 +3981,8 @@ def create_admin_views(app, intervals):
         class CustomTabella23DataView(ModelView):
 
             create_template = 'admin/create_base_data.html'
-            subarea_id = 11  # Define subarea_id as a class attribute
             area_id = 2
+            subarea_id = 11  # Define subarea_id as a class attribute
 
             # Specify the fields to be edited inline using XEditableWidget
             column_editable_list = ['fc1']

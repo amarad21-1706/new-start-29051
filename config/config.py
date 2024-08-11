@@ -51,14 +51,15 @@ def get_cet_time():
 def generate_statistics_menu():
     statistics_menu = {}
 
-    data_mappings = DataMapping.query.all()
+    data_mappings = DataMapping.query.order_by(DataMapping.area_id, DataMapping.subarea_id).all()
+
     if not data_mappings:
         return statistics_menu  # Return an empty dictionary if no data is found
 
     for mapping in data_mappings:
         area_id = mapping.area_id
         subarea_id = mapping.subarea_id
-        label = f"Area {area_id} - Subarea {subarea_id}"
+        label = f"Area {area_id}/{subarea_id}"
         url = f"/admin_dashboard/{area_id}/{subarea_id}"
 
         statistics_menu[label] = {
