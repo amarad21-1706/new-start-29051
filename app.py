@@ -4731,6 +4731,50 @@ def perform_data_aggregation(data_key, aggregation_rule, area_id, subarea_id, ad
     return chart_data
 
 
+@app.route('/subscription_overview')
+@login_required
+@roles_required('Admin', 'Manager', 'Employee')
+def subscription_overview():
+    try:
+        role = session.get('user_roles')
+        user_id = session.get('user_id')
+        company_id = session.get('company_id')
+
+        if 'Admin' in role:
+            subscriptions = Subscription.query.all()
+
+        total_subscriptions = len(subscriptions)
+        active_users = len(set([sub.user_id for sub in subscriptions if sub.status == 'active']))
+        total_companies = len(set([sub.user.company_id for sub in subscriptions]))
+        active_plans = len(set([sub.plan_id for sub in subscriptions if sub.status == 'active']))
+
+        subscription_types = [plan.name for plan in Plan.query.all()]
+        subscription_counts = [Subscription.query.filter_by(plan_id=plan.id).count() for plan in Plan.query.all()]
+        company_names = [company.name for company in Company.query.all()]
+        company_subscription_counts = [
+            Subscription.query.join(Users).filter(Users.company_id == company.id).count() for company in Company.query.all()
+        ]
+
+        # Prepare additional product names for each subscription
+        for sub in subscriptions:
+            sub.additional_product_names = ', '.join(
+                [Product.query.get(int(product_id)).name for product_id in sub.additional_products.split(',')]
+            ) if sub.additional_products else 'None'
+
+        return render_template('subscription_overview.html',
+                               total_subscriptions=total_subscriptions,
+                               active_users=active_users,
+                               total_companies=total_companies,
+                               active_plans=active_plans,
+                               subscription_types=subscription_types,
+                               subscription_counts=subscription_counts,
+                               company_names=company_names,
+                               company_subscription_counts=company_subscription_counts,
+                               subscriptions=subscriptions)
+    except Exception as e:
+        logging.error(f"Error in subscription_overview route: {e}")
+        flash("An error occurred while generating the subscription overview.", "danger")
+        return redirect(url_for('index'))
 
 
 # TODO this is a general purpose area-subarea dashboard generator, linked to admin_dashboard or dashboard_template template

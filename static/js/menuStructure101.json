@@ -475,7 +475,7 @@
                     },
                     "Subscriptions Dashboard": {
                         "label": "Subscriptions Dashboard",
-                        "url": "/admin_dashboard",
+                        "url": "/subscription_overview",
                         "protected": true,
                         "allowed_roles": [
                             "Admin"

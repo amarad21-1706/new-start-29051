@@ -1,0 +1,126 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    Subscription Overview
+{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Subscription Overview</h2>
+
+    <!-- Summary Cards -->
+    <div class="row mt-4">
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card text-white bg-primary">
+                <div class="card-body">
+                    <h5 class="card-title">Total Subscriptions</h5>
+                    <p class="card-text">{{ total_subscriptions }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card text-white bg-success">
+                <div class="card-body">
+                    <h5 class="card-title">Active Users</h5>
+                    <p class="card-text">{{ active_users }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card text-white bg-info">
+                <div class="card-body">
+                    <h5 class="card-title">Companies</h5>
+                    <p class="card-text">{{ total_companies }}</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-3 col-md-6 mb-4">
+            <div class="card text-white bg-warning">
+                <div class="card-body">
+                    <h5 class="card-title">Active Plans</h5>
+                    <p class="card-text">{{ active_plans }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="row mt-5">
+        <div class="col-lg-6 mb-4">
+            <canvas id="subscriptionsByTypeChart"></canvas>
+        </div>
+        <div class="col-lg-6 mb-4">
+            <canvas id="subscriptionsByCompanyChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Tables Section -->
+    <div class="row mt-5">
+        <div class="col-lg-12">
+            <h4>Detailed Subscription List</h4>
+            <table class="table table-dark table-striped">
+                <thead>
+                    <tr>
+                        <th>User</th>
+                        <th>Company</th>
+                        <th>Plan</th>
+                        <th>Start Date</th>
+                        <th>Status</th>
+                        <th>Additional Products</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for subscription in subscriptions %}
+                    <tr>
+                        <td>{{ subscription.user.username }}</td>
+                        <td>{{ subscription.user.company.name }}</td>
+                        <td>{{ subscription.plan.name }}</td>
+                        <td>{{ subscription.start_date.strftime('%Y-%m-%d') }}</td>
+                        <td>{{ subscription.status }}</td>
+                        <td>{{ subscription.additional_product_names }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Subscriptions by Type
+    var ctx1 = document.getElementById('subscriptionsByTypeChart').getContext('2d');
+    var subscriptionsByTypeChart = new Chart(ctx1, {
+        type: 'doughnut',
+        data: {
+            labels: {{ subscription_types }},
+            datasets: [{
+                label: 'Subscriptions by Type',
+                data: {{ subscription_counts }},
+                backgroundColor: ['#007bff', '#28a745', '#ffc107', '#17a2b8']
+            }]
+        }
+    });
+
+    // Subscriptions by Company
+    var ctx2 = document.getElementById('subscriptionsByCompanyChart').getContext('2d');
+    var subscriptionsByCompanyChart = new Chart(ctx2, {
+        type: 'bar',
+        data: {
+            labels: {{ company_names }},
+            datasets: [{
+                label: 'Subscriptions by Company',
+                data: {{ company_subscription_counts }},
+                backgroundColor: '#007bff'
+            }]
+        },
+        options: {
+            scales: {
+                x: { title: { display: true, text: 'Companies' }},
+                y: { title: { display: true, text: 'Number of Subscriptions' }}
+            }
+        }
+    });
+</script>
+{% endblock %}
+ml>
