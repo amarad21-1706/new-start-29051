@@ -4673,8 +4673,9 @@ def process_aggregation_rule(aggregation_rule, data_list):
 
 
 def perform_data_aggregation(data_key, aggregation_rule, area_id, subarea_id, additional_info):
-    print("Performing data aggregation")
+    logging.debug(f"Starting data aggregation for area_id={area_id}, subarea_id={subarea_id}")
     data = BaseData.query.filter_by(area_id=area_id, subarea_id=subarea_id).all()
+    logging.debug(f"Fetched data: {data}")
 
     organized_data = {}
     for entry in data:
@@ -4688,28 +4689,21 @@ def perform_data_aggregation(data_key, aggregation_rule, area_id, subarea_id, ad
         if interval not in organized_data[year]:
             organized_data[year][interval] = {}
 
-        # Determine whether we are dealing with metrics or components
-        keys = data_key.get('components') or data_key.get('metrics')
-        if keys is None:
-            raise ValueError(f"Neither 'components' nor 'metrics' found in data_key: {data_key}")
+        # Handle 'none' operation or sum operation
+        if aggregation_rule['operation'] == 'none':
+            for component in data_key.get('metrics', []):
+                component_value = getattr(entry, component)
+                if component not in organized_data[year][interval]:
+                    organized_data[year][interval][component] = 0
+                organized_data[year][interval][component] = component_value  # Direct assignment for 'none' operation
+        else:
+            for component in aggregation_rule.get('fields', []):
+                component_value = getattr(entry, component)
+                if component not in organized_data[year][interval]:
+                    organized_data[year][interval][component] = 0
+                organized_data[year][interval][component] += component_value  # Summing for other operations
 
-        print(f"Aggregating data for keys: {keys}")
-
-        # Handle metrics or components based on the aggregation rule
-        for key in keys:
-            component_value = getattr(entry, key)
-            if key not in organized_data[year][interval]:
-                organized_data[year][interval][key] = 0
-
-            # Apply the aggregation rule based on the operation
-            if aggregation_rule['operation'] == 'sum':
-                organized_data[year][interval][key] += component_value
-            elif aggregation_rule['operation'] == 'none':
-                organized_data[year][interval][key] = component_value  # No aggregation, use the value as is
-            else:
-                raise ValueError(f"Unknown aggregation operation: {aggregation_rule['operation']}")
-
-    print(f"Organized Data: {organized_data}")
+    logging.debug(f"Organized Data: {organized_data}")
 
     # Convert the organized data into a format suitable for the chart
     chart_data = {
@@ -4717,23 +4711,23 @@ def perform_data_aggregation(data_key, aggregation_rule, area_id, subarea_id, ad
         'datasets': []
     }
 
-    # Use appropriate labels depending on whether we're using metrics or components
-    component_labels = additional_info.get('data_labels', keys)
+    component_labels = additional_info.get('data_labels', ['Component 1', 'Component 2'])
+    colors = additional_info.get('colors', ['#007bff', '#28a745'])  # Default colors
 
     for interval in sorted({interval for year_data in organized_data.values() for interval in year_data}):
-        for idx, key in enumerate(keys):
+        for idx, component in enumerate(data_key.get('metrics', aggregation_rule.get('fields', []))):
             dataset = {
                 'label': f"{component_labels[idx]} - Interval {interval}",
                 'data': [],
-                'backgroundColor': additional_info['color']
+                'backgroundColor': colors[idx % len(colors)]
             }
             for year in sorted(organized_data.keys()):
                 if year not in chart_data['labels']:
                     chart_data['labels'].append(year)
-                dataset['data'].append(organized_data[year][interval].get(key, 0))
+                dataset['data'].append(organized_data[year][interval].get(component, 0))
             chart_data['datasets'].append(dataset)
 
-    print(f"Chart Data before returning: {chart_data}")
+    logging.debug(f"Chart Data before returning: {chart_data}")
     return chart_data
 
 
