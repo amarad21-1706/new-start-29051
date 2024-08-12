@@ -349,7 +349,6 @@ with open(Path(json_file_path), 'r') as file:
 # Create an instance of MenuBuilder
 menu_builder = MenuBuilder(main_menu_items, ["Guest"])
 parsed_menu_data = menu_builder.parse_menu_data(user_roles=["Guest"], is_authenticated=False, include_protected=False)
-print('parsed_menu_data', parsed_menu_data)
 
 def is_user_role(session, user_id, role_name):
     # Get user roles for the specified user ID
@@ -4672,64 +4671,6 @@ def process_aggregation_rule(aggregation_rule, data_list):
     return result
 
 
-def perform_data_aggregation(data_key, aggregation_rule, area_id, subarea_id, additional_info):
-    logging.debug(f"Starting data aggregation for area_id={area_id}, subarea_id={subarea_id}")
-    data = BaseData.query.filter_by(area_id=area_id, subarea_id=subarea_id).all()
-    logging.debug(f"Fetched data: {data}")
-
-    organized_data = {}
-    for entry in data:
-        year = getattr(entry, data_key['year'])
-        interval = getattr(entry, data_key['interval_id'])
-        interval_ord = getattr(entry, data_key['interval_ord'])
-
-        if year not in organized_data:
-            organized_data[year] = {}
-
-        if interval not in organized_data[year]:
-            organized_data[year][interval] = {}
-
-        # Handle 'none' operation or sum operation
-        if aggregation_rule['operation'] == 'none':
-            for component in data_key.get('metrics', []):
-                component_value = getattr(entry, component)
-                if component not in organized_data[year][interval]:
-                    organized_data[year][interval][component] = 0
-                organized_data[year][interval][component] = component_value  # Direct assignment for 'none' operation
-        else:
-            for component in aggregation_rule.get('fields', []):
-                component_value = getattr(entry, component)
-                if component not in organized_data[year][interval]:
-                    organized_data[year][interval][component] = 0
-                organized_data[year][interval][component] += component_value  # Summing for other operations
-
-    logging.debug(f"Organized Data: {organized_data}")
-
-    # Convert the organized data into a format suitable for the chart
-    chart_data = {
-        'labels': [],  # List of years
-        'datasets': []
-    }
-
-    component_labels = additional_info.get('data_labels', ['Component 1', 'Component 2'])
-    colors = additional_info.get('colors', ['#007bff', '#28a745'])  # Default colors
-
-    for interval in sorted({interval for year_data in organized_data.values() for interval in year_data}):
-        for idx, component in enumerate(data_key.get('metrics', aggregation_rule.get('fields', []))):
-            dataset = {
-                'label': f"{component_labels[idx]} - Interval {interval}",
-                'data': [],
-                'backgroundColor': colors[idx % len(colors)]
-            }
-            for year in sorted(organized_data.keys()):
-                if year not in chart_data['labels']:
-                    chart_data['labels'].append(year)
-                dataset['data'].append(organized_data[year][interval].get(component, 0))
-            chart_data['datasets'].append(dataset)
-
-    logging.debug(f"Chart Data before returning: {chart_data}")
-    return chart_data
-
 
 @app.route('/subscription_overview')
 @login_required
@@ -4777,53 +4718,145 @@ def subscription_overview():
         return redirect(url_for('index'))
 
 
+def perform_data_aggregation(data_key, aggregation_rule, area_id, subarea_id, additional_info, company_id=None):
+    query = BaseData.query.filter_by(area_id=area_id, subarea_id=subarea_id)
+
+    # If company_id is provided, filter by it; otherwise, aggregate across all companies
+    if company_id is not None:
+        query = query.filter_by(company_id=company_id)
+
+    data = query.all()
+
+    organized_data = {}
+    for entry in data:
+        company = getattr(entry, data_key.get('company_id', 'company_id'))
+        year = str(getattr(entry, data_key['year']))  # Ensure year is a string for the labels
+        interval = getattr(entry, data_key['interval_id'])
+        interval_ord = getattr(entry, data_key['interval_ord'])
+
+        if company not in organized_data:
+            organized_data[company] = {}
+
+        if year not in organized_data[company]:
+            organized_data[company][year] = {}
+
+        if interval not in organized_data[company][year]:
+            organized_data[company][year][interval] = {}
+
+        # Handle components or metrics based on the operation type
+        if aggregation_rule['operation'] == 'sum':
+            for component in data_key['components']:
+                component_value = getattr(entry, component)
+                if component not in organized_data[company][year][interval]:
+                    organized_data[company][year][interval][component] = 0
+                organized_data[company][year][interval][component] += component_value
+        elif aggregation_rule['operation'] == 'none':
+            for metric in data_key['metrics']:
+                metric_value = getattr(entry, metric)
+                if metric not in organized_data[company][year][interval]:
+                    organized_data[company][year][interval][metric] = 0
+                organized_data[company][year][interval][metric] = metric_value  # Overwrite with the last value found
+
+    # Convert the organized data into a format suitable for the chart or table
+    chart_data_by_company = {}
+
+    component_labels = additional_info.get('data_labels', ['Component 1', 'Component 2'])
+
+    for company, company_data in organized_data.items():
+        if additional_info.get('representation_type') == 'table':
+            # Prepare table format data
+            headers = ['Year', 'Interval'] + component_labels
+            rows = []
+            for year, year_data in company_data.items():
+                for interval, interval_data in year_data.items():
+                    row = [year, interval]
+                    for idx, label in enumerate(component_labels):
+                        # Ensure you're matching the correct component/metric to the label
+                        row.append(interval_data.get(data_key['components'][idx] if 'components' in data_key else data_key['metrics'][idx], 0))
+                    rows.append(row)
+
+            chart_data_by_company[company] = {
+                'headers': headers,
+                'rows': rows
+            }
+        else:
+            # Prepare chart format data
+            chart_data = {
+                'labels': [],
+                'datasets': []
+            }
+            for interval in sorted({interval for year_data in company_data.values() for interval in year_data}):
+                if aggregation_rule['operation'] == 'sum':
+                    for idx, component in enumerate(data_key['components']):
+                        dataset = {
+                            'label': f"{component_labels[idx]} - Interval {interval}",
+                            'data': [],
+                            'backgroundColor': additional_info['colors'][idx] if 'colors' in additional_info else additional_info['color']
+                        }
+                        for year in sorted(company_data.keys()):
+                            if year not in chart_data['labels']:
+                                chart_data['labels'].append(year)
+                            dataset['data'].append(company_data[year][interval].get(component, 0))
+                        chart_data['datasets'].append(dataset)
+                elif aggregation_rule['operation'] == 'none':
+                    for idx, metric in enumerate(data_key['metrics']):
+                        dataset = {
+                            'label': f"{component_labels[idx]} - Interval {interval}",
+                            'data': [],
+                            'backgroundColor': additional_info['colors'][idx] if 'colors' in additional_info else additional_info['color']
+                        }
+                        for year in sorted(company_data.keys()):
+                            if year not in chart_data['labels']:
+                                chart_data['labels'].append(year)
+                            dataset['data'].append(company_data[year][interval].get(metric, 0))
+                        chart_data['datasets'].append(dataset)
+
+            chart_data_by_company[company] = chart_data
+
+    return chart_data_by_company
+
+
 # TODO this is a general purpose area-subarea dashboard generator, linked to admin_dashboard or dashboard_template template
 
 @app.route('/admin_dashboard/<int:area_id>/<int:subarea_id>')
 @login_required
 @roles_required('Admin', 'Manager', 'Employee')
 def admin_dashboard(area_id, subarea_id):
-    print('admin dashboard 1')
     try:
-        print('admin dashboard 2')
         logging.debug(f"Fetching data mapping for area_id={area_id} and subarea_id={subarea_id}")
         mapping = DataMapping.query.filter_by(area_id=area_id, subarea_id=subarea_id).first()
 
-        print(f"Raw data_key: {mapping.data_key}")
-        print(f"Raw aggregation_rule: {mapping.aggregation_rule}")
-        print(f"Raw additional_info: {mapping.additional_info}")
-
         if not mapping:
-            flash("No data mapping found for the specified area and subarea.", "danger")
+            flash("No data mapping found for this area and subarea.", "danger")
             return redirect(url_for('index'))
 
-        print('admin dashboard 3')
-
-        # Since the data is already a dict, we don't need to decode it
         data_key = mapping.data_key
-        aggregation_rule = mapping.aggregation_rule
-        additional_info = mapping.additional_info
+        aggregation_rule = mapping.aggregation_rule or {}  # Ensure it's a dictionary, even if None
+        additional_info = mapping.additional_info or {}  # Similarly ensure additional_info is a dictionary
 
-        print('admin dashboard 4')
         logging.debug(f"Mapping found: {mapping}")
 
         # Perform data aggregation based on the aggregation_rule
         logging.debug(f"Performing data aggregation")
         dashboard_data = perform_data_aggregation(data_key, aggregation_rule, area_id, subarea_id, additional_info)
-        print(f"Chart Data before returning: {dashboard_data}")
+        logging.debug(f"Data returned: {dashboard_data}")
 
-        # Convert the result back to JSON strings to pass to the template
-        logging.debug(f"Converting data to JSON strings")
         dashboard_data_json = json.dumps(dashboard_data)
+        aggregation_rule_json = json.dumps(aggregation_rule)
         additional_info_json = json.dumps(additional_info)
 
-        print('admin dashboard 9')
+        print("Dashboard Data JSON:", dashboard_data_json)  # Debugging output
+        print("Aggregation Rule JSON:", aggregation_rule_json)  # Debugging output
+        print("Additional Info JSON:", additional_info_json)  # Debugging output
+
         return render_template('admin_dashboard.html',
                                area_id=area_id,
                                subarea_id=subarea_id,
-                               dashboard_data=dashboard_data_json,
+                               dashboard_data=dashboard_data,
                                representation_type=mapping.representation_type,
-                               additional_info=additional_info_json)
+                               additional_info=additional_info,
+                               aggregation_rule=aggregation_rule,  # Pass the entire aggregation_rule to the template
+                               include_company=aggregation_rule.get('include_company', False))
     except ValueError as ve:
         logging.error(f"ValueError in admin_dashboard route: {ve}")
         flash(f"Value error occurred: {ve}", "danger")

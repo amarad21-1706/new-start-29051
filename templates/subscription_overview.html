@@ -87,9 +87,13 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
     // Subscriptions by Type
     var ctx1 = document.getElementById('subscriptionsByTypeChart').getContext('2d');
+    console.log("Subscription Types:", {{ subscription_types | tojson | safe }});
+    console.log("Subscription Counts:", {{ subscription_counts | tojson | safe }});
+
     var subscriptionsByTypeChart = new Chart(ctx1, {
         type: 'doughnut',
         data: {
@@ -104,6 +108,8 @@
 
     // Subscriptions by Company
     var ctx2 = document.getElementById('subscriptionsByCompanyChart').getContext('2d');
+    console.log("Subscription Counts:", {{ subscription_counts | tojson | safe }});
+
     var subscriptionsByCompanyChart = new Chart(ctx2, {
         type: 'bar',
         data: {

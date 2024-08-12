@@ -1,107 +1,253 @@
-
 {% extends 'base.html' %}
 
 {% block title %}
     Dashboard - Area {{ area_id }} - Subarea {{ subarea_id }}
 {% endblock %}
 
+<style>
+    .table-responsive .custom-table {
+        font-size: 16px !important; /* Ensure font size is applied */
+    }
+    .table-responsive .custom-table th,
+    .table-responsive .custom-table td {
+        color: #ffffff !important; /* Set text color to white */
+    }
+    .table-responsive .custom-table tbody tr:nth-of-type(odd) td {
+        background-color: #555555 !important; /* Dark gray background for odd rows */
+    }
+    .table-responsive .custom-table tbody tr:nth-of-type(even) td {
+        background-color: #333333 !important; /* Slightly darker gray background for even rows */
+    }
+</style>
+
 {% block content %}
 <div class="container mt-4">
     <h2>Dashboard for Area {{ area_id }}, Subarea {{ subarea_id }}</h2>
 
-    <!-- Visualization based on representation_type -->
-    {% if representation_type == 'bar_chart' %}
-    <div class="chart-container">
-        <canvas id="barChart"></canvas>
-    </div>
-    {% elif representation_type == 'pie_chart' %}
-    <div class="chart-container">
-        <canvas id="pieChart"></canvas>
-    </div>
-    {% elif representation_type == 'line_chart' %}
-    <div class="chart-container">
-        <canvas id="lineChart"></canvas>
-    </div>
-    {% elif representation_type == 'table' %}
-    <div class="table-responsive">
-        <table class="table table-striped">
-            <thead>
-                <tr>
-                    {% for header in dashboard_data.headers %}
-                    <th>{{ header }}</th>
-                    {% endfor %}
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in dashboard_data.rows %}
-                <tr>
-                    {% for cell in row %}
-                    <td>{{ cell }}</td>
-                    {% endfor %}
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-    </div>
+    {% if aggregation_rule.include_company %}
+        {% for company_id, company_data in dashboard_data.items() %}
+            <h3>Company ID: {{ company_id }}</h3>
+            <div>
+                <pre>{{ company_data | tojson | safe }}</pre> <!-- Debug output -->
+            </div>
+            {% if representation_type == 'table' %}
+                <div class="table-responsive">
+                    <table class="table custom-table" style="color: #ffffff; font-size: 16px; background-color: #333333;">
+                        <thead>
+                            <tr>
+                                <th>Year</th>
+                                {% for dataset in company_data.datasets %}
+                                    <th>{{ dataset.label }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for i in range(company_data.labels|length) %}
+                                <tr>
+                                    <td>{{ company_data.labels[i] }}</td>
+                                    {% for dataset in company_data.datasets %}
+                                        <td>{{ dataset.data[i] }}</td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% elif representation_type == 'bar_chart' %}
+                <div class="chart-container">
+                    <canvas id="barChart{{ company_id }}"></canvas>
+                </div>
+            {% elif representation_type == 'pie_chart' %}
+                <div class="chart-container">
+                    <canvas id="pieChart{{ company_id }}"></canvas>
+                </div>
+            {% elif representation_type == 'line_chart' %}
+                <div class="chart-container">
+                    <canvas id="lineChart{{ company_id }}"></canvas>
+                </div>
+            {% endif %}
+        {% endfor %}
     {% else %}
-    <p>No valid representation type found for this data.</p>
+        <div class="chart-container">
+            {% if representation_type == 'table' %}
+                <div class="table-responsive">
+                    <table class="table custom-table" style="color: #ffffff; font-size: 16px; background-color: #333333;">
+                        <thead>
+                            <tr>
+                                <th>Year</th>
+                                {% for dataset in dashboard_data.datasets %}
+                                    <th>{{ dataset.label }}</th>
+                                {% endfor %}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for i in range(dashboard_data.labels|length) %}
+                                <tr>
+                                    <td>{{ dashboard_data.labels[i] }}</td>
+                                    {% for dataset in dashboard_data.datasets %}
+                                        <td>{{ dataset.data[i] }}</td>
+                                    {% endfor %}
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% elif representation_type == 'bar_chart' %}
+                <canvas id="barChart"></canvas>
+            {% elif representation_type == 'pie_chart' %}
+                <canvas id="pieChart"></canvas>
+            {% elif representation_type == 'line_chart' %}
+                <canvas id="lineChart"></canvas>
+            {% endif %}
+        </div>
     {% endif %}
 </div>
-
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
 <script>
-    var dashboardData = JSON.parse('{{ dashboard_data | safe }}');
-    var additionalInfo = JSON.parse('{{ additional_info | safe }}');
+    var additionalInfo = {{ additional_info | safe }};
+    console.log(additionalInfo);
+    var dashboardData = {{ dashboard_data | safe }}; // Assuming `dashboard_data` is the result of `perform_data_aggregation`
 
-    {% if representation_type == 'bar_chart' %}
-    var ctx = document.getElementById('barChart').getContext('2d');
-    var barChart = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: dashboardData.labels,
-            datasets: dashboardData.datasets
-        },
-        options: {
-            scales: {
-                x: { title: { display: true, text: additionalInfo.x_axis }},
-                y: { title: { display: true, text: additionalInfo.y_axis }}
-            }
-        }
-    });
-
-    {% elif representation_type == 'pie_chart' %}
-    var ctx = document.getElementById('pieChart').getContext('2d');
-    var pieChart = new Chart(ctx, {
-        type: 'pie',
-        data: {
-            labels: {{ dashboard_data.labels }},
-            datasets: [{
-                label: 'Data',
-                data: {{ dashboard_data.values }},
-                backgroundColor: {{ additional_info.colors }}  // Example: list of colors
-            }]
-        }
-    });
-    {% elif representation_type == 'line_chart' %}
-    var ctx = document.getElementById('lineChart').getContext('2d');
-    var lineChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: {{ dashboard_data.labels }},
-            datasets: [{
-                label: 'Data',
-                data: {{ dashboard_data.values }},
-                borderColor: "{{ additional_info.color }}",
-                fill: false
-            }]
-        },
-        options: {
-            scales: {
-                x: { title: { display: true, text: '{{ additional_info.x_axis }}' }},
-                y: { title: { display: true, text: '{{ additional_info.y_axis }}' }}
-            }
-        }
-    });
+    {% if aggregation_rule.include_company %}
+        {% for company_id, company_data in dashboard_data.items() %}
+            {% if representation_type == 'bar_chart' %}
+                var ctx{{ company_id }} = document.getElementById('barChart{{ company_id }}').getContext('2d');
+                new Chart(ctx{{ company_id }}, {
+                    type: 'bar',
+                    data: {
+                        labels: {{ company_data.labels | safe }},
+                        datasets: {{ company_data.datasets | safe }}
+                    },
+                    options: {
+                        scales: {
+                            x: {
+                                title: { display: true, text: additionalInfo.x_axis, color: '#ffffff' }, // White X-axis title
+                                ticks: { color: '#ffffff' }, // White X-axis labels
+                                grid: { color: '#444444' } // Dark gray X-axis grid lines
+                            },
+                            y: {
+                                title: { display: true, text: additionalInfo.y_axis, color: '#ffffff' }, // White Y-axis title
+                                ticks: { color: '#ffffff' }, // White Y-axis labels
+                                grid: { color: '#444444' } // Dark gray Y-axis grid lines
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: '#ffffff'  // Set legend text color to white
+                                }
+                            }
+                        }
+                    }
+                });
+            {% elif representation_type == 'pie_chart' %}
+                var ctx{{ company_id }} = document.getElementById('pieChart{{ company_id }}').getContext('2d');
+                new Chart(ctx{{ company_id }}, {
+                    type: 'pie',
+                    data: {
+                        labels: {{ company_data.labels | safe }},
+                        datasets: [{
+                            label: 'Data',
+                            data: {{ company_data.datasets[0].data | safe }},
+                            backgroundColor: additionalInfo.colors
+                        }]
+                    }
+                });
+            {% elif representation_type == 'line_chart' %}
+                var ctx{{ company_id }} = document.getElementById('lineChart{{ company_id }}').getContext('2d');
+                new Chart(ctx{{ company_id }}, {
+                    type: 'line',
+                    data: {
+                        labels: {{ company_data.labels | safe }},
+                        datasets: [{
+                            label: {{ company_data.datasets[0].label | safe }},
+                            data: {{ company_data.datasets[0].data | safe }},
+                            borderColor: additionalInfo.color,
+                            fill: false
+                        }]
+                    },
+                    options: {
+                        scales: {
+                            x: {
+                                title: { display: true, text: additionalInfo.x_axis, color: '#ffffff' }
+                            },
+                            y: {
+                                title: { display: true, text: additionalInfo.y_axis, color: '#ffffff' }
+                            }
+                        },
+                        plugins: {
+                            legend: {
+                                labels: {
+                                    color: '#ffffff'  // Set legend text color to white
+                                }
+                            }
+                        }
+                    }
+                });
+            {% endif %}
+        {% endfor %}
+    {% else %}
+        {% if representation_type == 'bar_chart' %}
+            var ctx = document.getElementById('barChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: dashboardData,
+                options: {
+                    scales: {
+                        x: { title: { display: true, text: additionalInfo.x_axis, color: '#ffffff' } },
+                        y: { title: { display: true, text: additionalInfo.y_axis, color: '#ffffff' } }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#ffffff'  // Set legend text color to white
+                            }
+                        }
+                    }
+                }
+            });
+        {% elif representation_type == 'pie_chart' %}
+            var ctx = document.getElementById('pieChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: dashboardData.labels,
+                    datasets: [{
+                        label: 'Data',
+                        data: dashboardData.datasets[0].data,
+                        backgroundColor: additionalInfo.colors
+                    }]
+                }
+            });
+        {% elif representation_type == 'line_chart' %}
+            var ctx = document.getElementById('lineChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: dashboardData.labels,
+                    datasets: [{
+                        label: 'Data',
+                        data: dashboardData.datasets[0].data,
+                        borderColor: additionalInfo.color,
+                        fill: false
+                    }]
+                },
+                options: {
+                    scales: {
+                        x: { title: { display: true, text: additionalInfo.x_axis, color: '#ffffff' } },
+                        y: { title: { display: true, text: additionalInfo.y_axis, color: '#ffffff' } }
+                    },
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#ffffff'  // Set legend text color to white
+                            }
+                        }
+                    }
+                }
+            });
+        {% endif %}
     {% endif %}
 </script>
 
