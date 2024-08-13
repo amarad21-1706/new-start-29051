@@ -6,7 +6,7 @@
 
 <style>
     .table-responsive .custom-table {
-        font-size: 16px !important; /* Ensure font size is applied */
+        font-size: 14px !important; /* Ensure font size is applied */
     }
     .table-responsive .custom-table th,
     .table-responsive .custom-table td {
@@ -27,12 +27,10 @@
     {% if aggregation_rule.include_company %}
         {% for company_id, company_data in dashboard_data.items() %}
             <h3>Company ID: {{ company_id }}</h3>
-            <div>
-                <pre>{{ company_data | tojson | safe }}</pre> <!-- Debug output -->
-            </div>
+
             {% if representation_type == 'table' %}
                 <div class="table-responsive">
-                    <table class="table custom-table" style="color: #ffffff; font-size: 16px; background-color: #333333;">
+                    <table class="table custom-table" style="color: #ffffff; font-size: 14px; background-color: #333333;">
                         <thead>
                             <tr>
                                 <th>Year</th>
@@ -55,15 +53,24 @@
                 </div>
             {% elif representation_type == 'bar_chart' %}
                 <div class="chart-container">
-                    <canvas id="barChart{{ company_id }}"></canvas>
+                    <canvas id="barChart{{ company_id }}"
+                            width="{{ additional_info.chart_width }}"
+                            height="{{ additional_info.chart_height }}">
+                    </canvas>
                 </div>
             {% elif representation_type == 'pie_chart' %}
                 <div class="chart-container">
-                    <canvas id="pieChart{{ company_id }}"></canvas>
+                    <canvas id="pieChart{{ company_id }}"
+                            width="200"
+                            height="100">
+                    </canvas>
                 </div>
             {% elif representation_type == 'line_chart' %}
                 <div class="chart-container">
-                    <canvas id="lineChart{{ company_id }}"></canvas>
+                    <canvas id="lineChart{{ company_id }}"
+                            width="{{ additional_info.chart_width }}"
+                            height="{{ additional_info.chart_height }}">
+                    </canvas>
                 </div>
             {% endif %}
         {% endfor %}
@@ -93,11 +100,20 @@
                     </table>
                 </div>
             {% elif representation_type == 'bar_chart' %}
-                <canvas id="barChart"></canvas>
+                <canvas id="barChart"
+                        width="{{ additional_info.chart_width }}"
+                        height="{{ additional_info.chart_height }}">
+                </canvas>
             {% elif representation_type == 'pie_chart' %}
-                <canvas id="pieChart"></canvas>
+                <canvas id="pieChart"
+                        width="{{ additional_info.chart_width }}"
+                        height="{{ additional_info.chart_height }}">
+                </canvas>
             {% elif representation_type == 'line_chart' %}
-                <canvas id="lineChart"></canvas>
+                <canvas id="lineChart"
+                        width="{{ additional_info.chart_width }}"
+                        height="{{ additional_info.chart_height }}">
+                </canvas>
             {% endif %}
         </div>
     {% endif %}

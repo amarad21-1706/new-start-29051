@@ -183,6 +183,9 @@ class Users(db.Model, UserMixin):
     def __repr__(self):
         return f"{self.username} {self.last_name}"
 
+    created_contracts = db.relationship("Contract", back_populates="created_by_user")
+    status_changes = db.relationship("ContractStatusHistory", back_populates="changed_by_user")
+
 
 class Role(db.Model, RoleMixin):
     __tablename__ = 'role'
@@ -244,6 +247,7 @@ class Company(db.Model):
     def __repr__(self):
         return (f"{self.name}")
 
+    contract_parties = db.relationship("ContractParty", back_populates="company")
 
 
 class Employee(db.Model):
@@ -1496,3 +1500,130 @@ class DataMapping(db.Model):
 
     def __repr__(self):
         return f"<DataMapping(area_id={self.area_id}, subarea_id={self.subarea_id}, representation_type={self.representation_type})>"
+
+
+# CONTRACTS
+
+
+class Contract(db.Model):
+    __tablename__ = 'contract'
+
+    STATUS_CHOICES = ('Draft', 'Signed', 'Active', 'Expired', 'Terminated')
+
+    contract_id = db.Column(db.Integer, primary_key=True)
+    contract_name = db.Column(db.String(255), nullable=False, unique=True)
+    contract_type = db.Column(db.String(100))
+    contract_status = db.Column(Enum(*STATUS_CHOICES, name='contract_status'), nullable=False)
+    start_date = db.Column(db.Date)
+    end_date = db.Column(db.Date)
+    description = db.Column(db.Text)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
+    created_at = db.Column(db.TIMESTAMP, default=func.now())
+    updated_at = db.Column(db.TIMESTAMP, default=func.now(), onupdate=func.now())
+
+    created_by_user = db.relationship("Users", back_populates="created_contracts")
+
+    contract_parties = db.relationship("ContractParty", back_populates="contract")
+    contract_terms = db.relationship("ContractTerm", back_populates="contract")
+    contract_documents = db.relationship("ContractDocument", back_populates="contract")
+    contract_status_history = db.relationship("ContractStatusHistory", back_populates="contract")
+    contract_articles = db.relationship("ContractArticle", back_populates="contract")
+
+
+# 4. Party Table
+class Party(db.Model):
+    __tablename__ = 'party'
+
+    party_id = db.Column(db.Integer, primary_key=True)
+    party_name = db.Column(db.String(255), nullable=False)
+    party_type = db.Column(db.String(50), nullable=False)  # e.g., Individual, Organization
+    contact_information = db.Column(db.JSON)
+    created_at = db.Column(db.TIMESTAMP, default=func.now())
+    updated_at = db.Column(db.TIMESTAMP, default=func.now(), onupdate=func.now())
+
+    contract_parties = db.relationship("ContractParty", back_populates="party")
+
+
+# 5. ContractParty Table
+class ContractParty(db.Model):
+    __tablename__ = 'contract_party'
+
+    id = db.Column(db.Integer, primary_key=True)
+    contract_id = db.Column(db.Integer, db.ForeignKey('contract.contract_id', ondelete='CASCADE'))
+    party_id = db.Column(db.Integer, db.ForeignKey('party.party_id', ondelete='CASCADE'))
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id', ondelete='CASCADE'))
+    role = db.Column(db.String(100))  # e.g., Client, Vendor, Signatory
+    created_at = db.Column(db.TIMESTAMP, default=func.now())
+    updated_at = db.Column(db.TIMESTAMP, default=func.now(), onupdate=func.now())
+
+    contract = db.relationship("Contract", back_populates="contract_parties")
+    party = db.relationship("Party", back_populates="contract_parties")
+    company = db.relationship("Company", back_populates="contract_parties")
+
+
+# 6. ContractTerm Table
+class ContractTerm(db.Model):
+    __tablename__ = 'contract_term'
+
+    term_id = db.Column(db.Integer, primary_key=True)
+    contract_id = db.Column(db.Integer, db.ForeignKey('contract.contract_id', ondelete='CASCADE'))
+    term_title = db.Column(db.String(255))
+    term_description = db.Column(db.Text)
+    term_start_date = db.Column(db.Date)
+    term_end_date = db.Column(db.Date)
+    created_at = db.Column(db.TIMESTAMP, default=func.now())
+    updated_at = db.Column(db.TIMESTAMP, default=func.now(), onupdate=func.now())
+
+    contract = db.relationship("Contract", back_populates="contract_terms")
+
+
+# 7. ContractDocument Table
+class ContractDocument(db.Model):
+    __tablename__ = 'contract_document'
+
+    document_id = db.Column(db.Integer, primary_key=True)
+    contract_id = db.Column(db.Integer, db.ForeignKey('contract.contract_id', ondelete='CASCADE'))
+    document_name = db.Column(db.String(255))
+    document_type = db.Column(db.String(50))  # e.g., PDF, DOCX
+    document_url = db.Column(db.String(255))  # Assuming the document is stored in a file system or cloud storage
+    uploaded_at = db.Column(db.TIMESTAMP, default=func.now())
+    description = db.Column(db.Text)
+
+    contract = db.relationship("Contract", back_populates="contract_documents")
+
+
+# 8. ContractStatusHistory Table
+class ContractStatusHistory(db.Model):
+    __tablename__ = 'contract_status_history'
+
+    id = db.Column(db.Integer, primary_key=True)
+    contract_id = db.Column(db.Integer, db.ForeignKey('contract.contract_id', ondelete='CASCADE'))
+    old_status = db.Column(db.String(50))
+    new_status = db.Column(db.String(50))
+    changed_at = db.Column(db.TIMESTAMP, default=func.now())
+    changed_by = db.Column(db.Integer,
+                           db.ForeignKey('users.id', ondelete='SET NULL'))  # Link to the user who made the change
+
+    contract = db.relationship("Contract", back_populates="contract_status_history")
+    changed_by_user = db.relationship("Users", back_populates="status_changes")
+
+
+# 9. ContractArticle Table
+class ContractArticle(db.Model):
+    __tablename__ = 'contract_article'
+
+    article_id = db.Column(db.Integer, primary_key=True)
+    contract_id = db.Column(db.Integer, db.ForeignKey('contract.contract_id', ondelete='CASCADE'))
+    parent_article_id = db.Column(db.Integer, db.ForeignKey('contract_article.article_id', ondelete='CASCADE'),
+                                  nullable=True)  # Allow NULL values
+    article_title = db.Column(db.String(255), nullable=False)
+    article_body = db.Column(db.Text)
+    article_order = db.Column(db.Integer)
+    created_at = db.Column(db.TIMESTAMP, default=func.now())
+    updated_at = db.Column(db.TIMESTAMP, default=func.now(), onupdate=func.now())
+
+    contract = db.relationship("Contract", back_populates="contract_articles")
+    parent_article = db.relationship("ContractArticle", remote_side=[article_id],
+                                     backref=db.backref('sub_articles', cascade="all, delete-orphan"))
+
+# EO CONTRACTS

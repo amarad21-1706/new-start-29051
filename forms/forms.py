@@ -29,7 +29,10 @@ from datetime import datetime
 from wtforms_sqlalchemy.fields import QuerySelectField
 from models.user import (Users, Company, Event, Subject, Step, Workflow, StepBaseData, WorkflowSteps, BaseData, BaseDataInline,
                          Question, Questionnaire, QuestionnaireQuestions, Status, LegalDocument,
-                         Area, Subarea, Lexic, Workflow, Interval, Step)
+                         Area, Subarea, Lexic, Workflow, Interval, Step,
+                         Contract, ContractParty, ContractTerm, ContractDocument,
+                         ContractStatusHistory, ContractArticle, Party
+                         )
 from flask_admin.model.form import InlineFormAdmin
 from enum import Enum
 from flask_admin.contrib.sqla.ajax import QueryAjaxModelLoader
@@ -184,6 +187,88 @@ class BaseDataInlineModelForm(InlineFormAdmin):
         form_class.type = SelectField('Type', choices=subject_choices)
 
         return form_class
+
+
+
+class ContractArticleInlineModelForm(InlineFormAdmin):
+    form_columns = ['article_title', 'article_body', 'article_order', 'parent_article']
+    form_label = 'Contract Article'
+
+    form_extra_fields = {
+        'article_id': HiddenField('Article ID'),
+        'article_order': HiddenField('Order')
+    }
+
+    form_edit_rules = (
+        'article_id',
+        rules.FieldSet(
+            ('article_title', 'article_body', 'article_order', 'parent_article'),
+            'Contract Article Details'
+        )
+    )
+
+    def postprocess_form(self, form_class):
+        form_class.article_id = HiddenField()
+        form_class.article_order = HiddenField()
+
+        if hasattr(form_class, 'contract_id'):
+            contract_id = form_class.contract_id.data
+            parent_articles = db.session.query(ContractArticle).filter_by(contract_id=contract_id).order_by(
+                ContractArticle.article_order).all()
+        else:
+            parent_articles = []
+
+        parent_choices = [(str(article.article_id), f"{article.article_order} - {article.article_title}") for article in parent_articles]
+        parent_choices.insert(0, ('', 'No Parent'))  # Add 'No Parent' option
+
+        form_class.parent_article = SelectField('Parent Article', choices=parent_choices, default='', validators=[Optional()])
+
+        return form_class
+
+    def on_form_prefill(self, form, id):
+        if form.parent_article.data:
+            form.parent_article.data = str(form.parent_article.data.article_id)
+
+
+class ContractArticleInlineModelForm222(InlineFormAdmin):
+    form_columns = ['article_title', 'article_body', 'article_order', 'parent_article']
+    form_label = 'Contract Article'
+
+    form_extra_fields = {
+        'article_id': HiddenField('Article ID'),
+        'article_order': HiddenField('Order')
+    }
+
+    form_edit_rules = (
+        'article_id',
+        rules.FieldSet(
+            ('article_title', 'article_body', 'article_order', 'parent_article'),
+            'Contract Article Details'
+        )
+    )
+
+    def postprocess_form(self, form_class):
+        form_class.article_id = HiddenField()
+        form_class.article_order = HiddenField()
+
+        if hasattr(form_class, 'contract_id'):
+            contract_id = form_class.contract_id.data
+            parent_articles = db.session.query(ContractArticle).filter_by(contract_id=contract_id).order_by(
+                ContractArticle.article_order).all()
+        else:
+            parent_articles = []
+
+        parent_choices = [(None, 'No Parent')] + [
+            (str(article.article_id), f"{article.article_order} - {article.article_title}") for article in parent_articles]
+
+        form_class.parent_article = SelectField('Parent Article', choices=parent_choices, default=None,
+                                                validators=[Optional()])
+
+        return form_class
+
+    def on_form_prefill(self, form, id):
+        if form.parent_article.data:
+            form.parent_article.data = str(form.parent_article.data.article_id)
 
 
 class ForgotPasswordForm(FlaskForm):

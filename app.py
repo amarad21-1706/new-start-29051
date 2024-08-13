@@ -41,6 +41,7 @@ from workflow_manager import (add_transition_log, create_card,
                               create_model_card, deadline_approaching)
 
 from app_defs import get_user_roles, create_message, generate_menu_tree
+
 from models.user import (Users, UserRoles, Event, Role, Container, Questionnaire, Question,
         QuestionnaireQuestions, PlanProducts,
         Answer, Company, Area, Subarea, AreaSubareas,
@@ -50,7 +51,10 @@ from models.user import (Users, UserRoles, Event, Role, Container, Questionnaire
         Workflow, Step, BaseData, DataMapping, Container, WorkflowSteps, WorkflowBaseData,
          StepBaseData, Config, Product, Cart,
          Plan, Users, UserPlans, Subscription, # Adjust based on actual imports
-         Questionnaire_psf, Response_psf)
+         Questionnaire_psf, Response_psf,
+         Contract, ContractParty, ContractTerm, ContractDocument, ContractStatusHistory,
+         ContractArticle, Party
+         )
 
 # from master_password_reset import admin_reset_password, AdminResetPasswordForm
 
@@ -217,6 +221,55 @@ stripe.publishable_key = app.config['STRIPE_PUBLISHABLE_KEY']
 # app.add_url_rule('/admin_reset_password', 'admin_reset_password', admin_reset_password, methods=['GET', 'POST'])
 # print('url rule set')
 
+
+# TODO inactivate LOGGER LOGGING ETC
+# Create a custom logger
+'''
+logger = logging.getLogger()
+
+# Set the default logging level
+logger.setLevel(logging.DEBUG)
+
+# Create handlers
+console_handler = logging.StreamHandler()
+file_handler = logging.FileHandler('app.log')
+
+# Set level for handlers
+console_handler.setLevel(logging.INFO)
+file_handler.setLevel(logging.DEBUG)
+
+# Create formatters and add it to handlers
+console_format = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+file_format = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+
+console_handler.setFormatter(console_format)
+file_handler.setFormatter(file_format)
+
+# Add handlers to the logger
+logger.addHandler(console_handler)
+logger.addHandler(file_handler)
+
+# Test logging
+logger.info("Logging to both console and file is configured.")
+
+@app.route('/test_relationship')
+def test_relationship():
+    try:
+        contract = Contract.query.first()
+        articles = contract.contract_articles if contract else []
+        return f"Contract: {contract.contract_name}, Articles: {len(articles)}"
+    except Exception as e:
+        return str(e), 500
+
+@app.after_request
+def log_request_info(response):
+    logger.info('Headers: %s', request.headers)
+    logger.info('Body: %s', request.get_data())
+    logger.info('Response: %s', response.status)
+    return response
+'''
+
+
 @login_manager.user_loader
 def load_user(user_id):
     user = Users.query.get(int(user_id))
@@ -243,10 +296,11 @@ def initialize_app(app):
         return intervals
 
 intervals = initialize_app(app)
+print('intervals', intervals)
 
 # Initialize the admin views
-admin_app1, admin_app2, admin_app3, admin_app4, admin_app10 = create_admin_views(app, intervals)
-print('intervals', intervals)
+admin_app1, admin_app2, admin_app3, admin_app4, admin_app5, admin_app6, admin_app10 = create_admin_views(app, intervals)
+print('admin apps and views created')
 
 @app.route('/set_session')
 def set_session():
@@ -2340,7 +2394,8 @@ def dashboard_setup_companies_users():
     report_data = generate_company_user_report_data(db.session)
 
     # Render the template with the report data
-    return render_template('generic_report.html', title="User-Company Relationship Report", columns=["Company", "User", "Last Name"], rows=report_data)
+    return render_template('generic_report.html', title="User-Company Relationship Report",
+                           columns=["Company", "User", "Last Name"], rows=report_data)
 
 
 ''' 
@@ -4157,6 +4212,10 @@ def page_forbidden(error):
 
 @app.errorhandler(500)
 def internal_error(error):
+
+    logger.error('Server Error: %s', (exception))
+    logger.error('Request data: %s', request.data)
+
     return render_template('error_pages/500.html', message=str(error)), 500
 
 @app.route('/back')
@@ -4716,7 +4775,6 @@ def subscription_overview():
         logging.error(f"Error in subscription_overview route: {e}")
         flash("An error occurred while generating the subscription overview.", "danger")
         return redirect(url_for('index'))
-
 
 def perform_data_aggregation(data_key, aggregation_rule, area_id, subarea_id, additional_info, company_id=None):
     query = BaseData.query.filter_by(area_id=area_id, subarea_id=subarea_id)

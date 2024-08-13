@@ -32,9 +32,11 @@ from sqlalchemy import distinct
 from copy import deepcopy
 
 from sqlalchemy import text
+from sqlalchemy.orm.exc import NoResultFound
 
 from config.config import (get_if_active, get_subarea_name, get_current_interval, get_current_intervals,
-                           get_subarea_interval_type, create_audit_log, remove_duplicates, create_notification)
+                           get_subarea_interval_type, create_audit_log, remove_duplicates,
+                           create_notification)
 
 from config.custom_fields import CustomFileUploadField  # Import the custom field
 
@@ -42,17 +44,19 @@ from models.user import (Users, UserRoles, Role, Table, Questionnaire, Question,
         QuestionnaireQuestions, BaseData, Product, Plan, PlanProducts,
         Answer, Company, Area, Subarea, AreaSubareas,
         QuestionnaireCompanies, CompanyUsers, Status, Lexic,
-        Interval, Subject, Cart,
-        AuditLog, Post, Ticket, StepQuestionnaire,
+        Interval, Subject, Cart, AuditLog, Post, Ticket, StepQuestionnaire,
         Workflow, Step, BaseData, BaseDataInline, WorkflowSteps, WorkflowBaseData, StepBaseData,
-                         Container, Config, get_config_values)
-
+                         Container, Config,
+                         Contract, ContractParty, ContractTerm, ContractDocument,
+                         ContractStatusHistory, ContractArticle, Party,
+                         get_config_values)
 
 from wtforms.widgets import DateTimeInput
+
 from forms.forms import (LoginForm, ForgotPasswordForm, ResetPasswordForm101, RegistrationForm,
                 QuestionnaireCompanyForm, CustomBaseDataForm,
                 QuestionnaireQuestionForm, WorkflowStepForm, WorkflowBaseDataForm,
-                BaseDataWorkflowStepForm, BaseDataInlineModelForm,
+                BaseDataWorkflowStepForm, BaseDataInlineModelForm, ContractArticleInlineModelForm,
                 UserRoleForm, CompanyUserForm, UserDocumentsForm, StepBaseDataInlineForm,
                 create_dynamic_form, CustomFileLoaderForm,
                 CustomSubjectAjaxLoader, BaseSurveyForm)
@@ -61,7 +65,8 @@ from flask_admin.form import FileUploadField
 
 from wtforms import (SelectField, BooleanField, ValidationError, EmailField)
 from wtforms import (SelectField, BooleanField, ValidationError, EmailField)
-from config.config import Config, check_status, check_status_limited, check_status_extended
+from config.config import (Config, check_status, check_status_limited,
+                           check_status_extended)
 
 from flask_login import login_required, LoginManager
 
@@ -171,6 +176,140 @@ class CheckboxField(BooleanField):
             self.data = False
     def populate_obj(self, obj, name):
         setattr(obj, name, "Yes" if self.data else "No")  # Customize as per your model
+
+class SignedContractsView(ModelView):
+    column_list = ['contract_name', 'contract_status', 'created_by_user', 'start_date', 'end_date']
+
+    # Columns that can be edited (if editing were allowed)
+    form_columns = ['contract_name', 'contract_type', 'contract_status', 'start_date', 'end_date', 'description', 'created_by_user']
+
+    # Columns that can be filtered
+    column_filters = ['contract_status', 'start_date', 'end_date']
+
+    # Add search functionality
+    column_searchable_list = ['contract_name', 'description']
+
+    # Include inline articles
+    inline_models = [ContractArticleInlineModelForm(ContractArticle)]
+
+    def is_accessible(self):
+        return current_user.is_authenticated  # Customize your authentication
+
+    def get_query(self):
+        return super(SignedContractsView, self).get_query().filter(
+            Contract.contract_status.in_(['Signed', 'Active'])
+        )
+
+    def get_count_query(self):
+        return super(SignedContractsView, self).get_count_query().filter(
+            Contract.contract_status.in_(['Signed', 'Active'])
+        )
+
+    # Disable editing
+    def is_editable(self, obj=None):
+        return False
+
+    # Disable creating new entries
+    can_create = False
+
+    # Disable deleting entries
+    can_delete = False
+
+
+
+
+class DraftingContractsView(ModelView):
+    can_create = True
+    can_edit = True
+    can_delete = True
+    name = 'Drafting Contracts'
+
+    column_list = ['contract_name', 'contract_status', 'created_by_user', 'start_date', 'end_date']
+
+    form_columns = ['contract_name', 'contract_type', 'contract_status', 'start_date', 'end_date', 'description', 'created_by_user']
+
+    column_filters = ['contract_status', 'start_date', 'end_date']
+
+    column_searchable_list = ['contract_name', 'description']
+
+    inline_models = [ContractArticleInlineModelForm(ContractArticle)]
+
+    def is_accessible(self):
+        return current_user.is_authenticated
+
+    def get_query(self):
+        return super(DraftingContractsView, self).get_query().filter(Contract.contract_status.in_(['Draft', 'Drafting']))
+
+    def get_count_query(self):
+        return super(DraftingContractsView, self).get_count_query().filter(Contract.contract_status.in_(['Draft', 'Drafting']))
+
+    def on_model_change(self, form, model, is_created):
+        # Handle the parent_article field correctly
+        if hasattr(form, 'parent_article'):
+            parent_article_id = form.parent_article.data
+            if parent_article_id:
+                model.parent_article = db.session.query(ContractArticle).get(parent_article_id)
+            else:
+                model.parent_article = None
+
+        super(DraftingContractsView, self).on_model_change(form, model, is_created)
+
+
+
+class DraftingContractsView222(ModelView):
+    can_create = True  # Optionally disable creation
+    can_edit = True  # Optionally disable editing
+    can_delete = True  # Optionally disable deletion
+    name = 'Drafting Contracts'
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.class_name = self.__class__.__name__  # Store the class name
+
+    column_list = ['contract_name', 'contract_status', 'created_by_user', 'start_date', 'end_date']
+
+    # Columns that can be edited
+    form_columns = ['contract_name', 'contract_type', 'contract_status', 'start_date', 'end_date', 'description',
+                    'created_by_user']
+
+    # Columns that can be filtered
+    column_filters = ['contract_status', 'start_date', 'end_date']
+
+    # Add search functionality
+    column_searchable_list = ['contract_name', 'description']
+
+    # Include inline articles
+    inline_models = [ContractArticleInlineModelForm(ContractArticle)]
+
+    def is_accessible(self):
+        return current_user.is_authenticated  # Customize your authentication
+
+    def get_query(self):
+        return super(DraftingContractsView, self).get_query().filter(
+            Contract.contract_status.in_(['Draft', 'Drafting'])
+        )
+
+    def get_count_query(self):
+        return super(DraftingContractsView, self).get_count_query().filter(
+            Contract.contract_status.in_(['Draft', 'Drafting'])
+        )
+
+    def on_model_change(self, form, model, is_created):
+        # Check if the form contains a parent_article field
+        if hasattr(form, 'parent_article'):
+            parent_article_id = form.parent_article.data
+
+            # Convert the parent_article field from article_id string to a ContractArticle instance
+            if parent_article_id:
+                try:
+                    model.parent_article = db.session.query(ContractArticle).filter_by(article_id=parent_article_id).one()
+                except NoResultFound:
+                    model.parent_article = None
+            else:
+                model.parent_article = None
+
+        # Call the parent method to handle the rest of the model change process
+        super(DraftingContractsView, self).on_model_change(form, model, is_created)
 
 
 class DocumentsAssignedBaseDataView(ModelView):
@@ -4466,8 +4605,33 @@ def create_admin_views(app, intervals):
         # EOF app5
         # === = ==================================== === ====================================
 
+        # App 6 - contracts
 
-        # App 6 - dashboards
+        # Initialize Flask-Admin
+        admin_app6 = Admin(app,
+                           name='Contracts Management',
+                           url='/admin/contracts',
+                           template_mode='bootstrap4',
+                           endpoint='admin_contracts')
+
+        # Add views for each model
+        # (Use the custom view for contracts)
+        # Register the Signed Contracts view with a unique name and endpoint
+        admin_app6.add_view(
+            SignedContractsView(Contract, db.session, name="Signed & Active Contracts", endpoint="signed_contracts"))
+
+        # Register the Drafting Contracts view with a unique name and endpoint
+        admin_app6.add_view(
+            DraftingContractsView(Contract, db.session, name="Drafting Contracts", endpoint="drafting_contracts"))
+
+        # Add views for each model
+        admin_app6.add_view(ModelView(ContractParty, db.session, name='Contract Parties'))
+        admin_app6.add_view(ModelView(ContractTerm, db.session, name='Contract Terms'))
+        admin_app6.add_view(ModelView(ContractDocument, db.session, name='Contract Documents'))
+        admin_app6.add_view(ModelView(ContractStatusHistory, db.session, name='Contract Status History'))
+        admin_app6.add_view(ModelView(ContractArticle, db.session, name='Contract Articles', endpoint="contract_articles"))
+        # Optionally, you can add views for related models (e.g., Company, Party, User)
+        admin_app6.add_view(ModelView(Party, db.session, name='Parties'))
 
 
         # 10-th Flask-Admin instance
@@ -4507,7 +4671,7 @@ def create_admin_views(app, intervals):
         #                                endpoint='status_questionnaire_view'))
 
 
-    return admin_app1, admin_app2, admin_app3, admin_app4, admin_app10
+    return admin_app1, admin_app2, admin_app3, admin_app4, admin_app5, admin_app6, admin_app10
 
 
 class ContainerAdmin(ModelView):

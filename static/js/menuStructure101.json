@@ -284,6 +284,12 @@
                 "url": "/calendar",
                 "protected": true,
                 "allowed_roles": ["Admin", "Employee", "Manager", "Authority", "Provider"]
+            },
+            "Contracts": {
+                "label": "Contracts Management",
+                "url": "/admin/contracts",
+                "protected": true,
+                "allowed_roles": ["Admin", "Employee", "Manager", "Authority", "Provider"]
             }
         }
     },
@@ -468,6 +474,14 @@
                     "Area 3 - test": {
                         "label": "Workflows Area",
                         "url": "/open_admin_3",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin"
+                        ]
+                    },
+                    "Area 6 - test": {
+                        "label": "Workflows Area",
+                        "url": "/test_relationship",
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
