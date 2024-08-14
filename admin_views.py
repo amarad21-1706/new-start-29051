@@ -90,7 +90,6 @@ def check_record_exists(form, company_id):
     return query.first() is not None
 
 
-
 class BaseDataView(ModelView):
     can_view_details = True
     can_export = True
@@ -244,17 +243,15 @@ class DraftingContractsView(ModelView):
         return super(DraftingContractsView, self).get_count_query().filter(Contract.contract_status.in_(['Draft', 'Drafting']))
 
     def on_model_change(self, form, model, is_created):
-        # Handle the parent_article field correctly
-        if hasattr(form, 'parent_article'):
+        # Convert the parent_article field from string (article_id) to ContractArticle instance
+        if form.parent_article.data:
             parent_article_id = form.parent_article.data
-            if parent_article_id:
-                model.parent_article = db.session.query(ContractArticle).get(parent_article_id)
+            if parent_article_id:  # If a parent article is selected
+                model.parent_article = db.session.query(ContractArticle).get(int(parent_article_id))
             else:
-                model.parent_article = None
+                model.parent_article = None  # No parent article selected
 
         super(DraftingContractsView, self).on_model_change(form, model, is_created)
-
-
 
 class DraftingContractsView222(ModelView):
     can_create = True  # Optionally disable creation

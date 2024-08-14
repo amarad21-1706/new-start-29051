@@ -13,7 +13,7 @@ from wtforms import (DecimalField, StringField, BooleanField, FloatField, FileFi
                      )
 # Import ColorField
 from wtforms.fields import ColorField  # Correct import
-
+from wtforms import FieldList
 
 from flask_wtf import FlaskForm
 from wtforms import StringField, DateTimeField, BooleanField, SubmitField, SelectField, TextAreaField, FieldList
@@ -78,7 +78,6 @@ class PlanProductsForm(FlaskForm):
     add = SubmitField('Add')
     delete = SubmitField('Delete')
     cancel = SubmitField('Cancel')
-
 
 
 class SubscriptionForm(FlaskForm):
@@ -374,9 +373,6 @@ class StepBaseDataInlineForm(InlineFormAdmin):
             form.deadline_date.data = None
             form.auto_move.data = None
             form.open_action.data = None
-
-
-from wtforms import FieldList
 
 
 
