@@ -210,14 +210,24 @@ class SignedContractsView(ModelView):
 
     # Disable creating new entries
     can_create = False
-
     # Disable deleting entries
     can_delete = False
 
 
-
-
 class DraftingContractsView(ModelView):
+    can_create = True
+    can_edit = True
+    can_delete = True
+    name = 'Drafting Contracts'
+
+    column_list = ['contract_name', 'contract_status', 'created_by_user', 'start_date', 'end_date']
+    form_columns = ['contract_name', 'contract_type', 'contract_status', 'start_date', 'end_date', 'description', 'created_by_user']
+    column_filters = ['contract_status', 'start_date', 'end_date']
+    column_searchable_list = ['contract_name', 'description']
+    inline_models = [ContractArticleInlineModelForm(ContractArticle)]
+
+
+class DraftingContractsView333(ModelView):
     can_create = True
     can_edit = True
     can_delete = True
@@ -237,10 +247,10 @@ class DraftingContractsView(ModelView):
         return current_user.is_authenticated
 
     def get_query(self):
-        return super(DraftingContractsView, self).get_query().filter(Contract.contract_status.in_(['Draft', 'Drafting']))
+        return super(DraftingContractsView333, self).get_query().filter(Contract.contract_status.in_(['Draft', 'Drafting']))
 
     def get_count_query(self):
-        return super(DraftingContractsView, self).get_count_query().filter(Contract.contract_status.in_(['Draft', 'Drafting']))
+        return super(DraftingContractsView333, self).get_count_query().filter(Contract.contract_status.in_(['Draft', 'Drafting']))
 
     def on_model_change(self, form, model, is_created):
         # Convert the parent_article field from string (article_id) to ContractArticle instance
@@ -251,7 +261,8 @@ class DraftingContractsView(ModelView):
             else:
                 model.parent_article = None  # No parent article selected
 
-        super(DraftingContractsView, self).on_model_change(form, model, is_created)
+        super(DraftingContractsView333, self).on_model_change(form, model, is_created)
+
 
 class DraftingContractsView222(ModelView):
     can_create = True  # Optionally disable creation
@@ -282,12 +293,12 @@ class DraftingContractsView222(ModelView):
         return current_user.is_authenticated  # Customize your authentication
 
     def get_query(self):
-        return super(DraftingContractsView, self).get_query().filter(
+        return super(DraftingContractsView222, self).get_query().filter(
             Contract.contract_status.in_(['Draft', 'Drafting'])
         )
 
     def get_count_query(self):
-        return super(DraftingContractsView, self).get_count_query().filter(
+        return super(DraftingContractsView222, self).get_count_query().filter(
             Contract.contract_status.in_(['Draft', 'Drafting'])
         )
 
@@ -306,7 +317,7 @@ class DraftingContractsView222(ModelView):
                 model.parent_article = None
 
         # Call the parent method to handle the rest of the model change process
-        super(DraftingContractsView, self).on_model_change(form, model, is_created)
+        super(DraftingContractsView222, self).on_model_change(form, model, is_created)
 
 
 class DocumentsAssignedBaseDataView(ModelView):

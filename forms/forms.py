@@ -187,9 +187,21 @@ class BaseDataInlineModelForm(InlineFormAdmin):
 
         return form_class
 
-
-
 class ContractArticleInlineModelForm(InlineFormAdmin):
+    form_columns = ['article_title', 'article_body', 'article_order']
+    form_label = 'Contract Article'
+
+    def on_model_change(self, form, model, is_created):
+        # Ensure article_order is set to 0 if not provided
+        if form.article_order.data == '':
+            model.article_order = 0
+        else:
+            model.article_order = int(form.article_order.data)
+
+        super(ContractArticleInlineModelForm, self).on_model_change(form, model, is_created)
+
+
+class ContractArticleInlineModelForm222(InlineFormAdmin):
     form_columns = ['article_title', 'article_body', 'article_order', 'parent_article']
     form_label = 'Contract Article'
 
@@ -229,7 +241,7 @@ class ContractArticleInlineModelForm(InlineFormAdmin):
             form.parent_article.data = str(form.parent_article.data.article_id)
 
 
-class ContractArticleInlineModelForm222(InlineFormAdmin):
+class ContractArticleInlineModelForm333(InlineFormAdmin):
     form_columns = ['article_title', 'article_body', 'article_order', 'parent_article']
     form_label = 'Contract Article'
 

@@ -1613,7 +1613,6 @@ class ContractArticle(db.Model):
 
     article_id = db.Column(db.Integer, primary_key=True)
     contract_id = db.Column(db.Integer, db.ForeignKey('contract.contract_id', ondelete='CASCADE'))
-    parent_article_id = db.Column(db.Integer, db.ForeignKey('contract_article.article_id', ondelete='CASCADE'), nullable=True)
     article_title = db.Column(db.String(255), nullable=False)
     article_body = db.Column(db.Text)
     article_order = db.Column(db.Integer)
@@ -1621,4 +1620,3 @@ class ContractArticle(db.Model):
     updated_at = db.Column(db.TIMESTAMP, default=func.now(), onupdate=func.now())
 
     contract = db.relationship("Contract", back_populates="contract_articles")
-    parent_article = db.relationship("ContractArticle", remote_side=[article_id], backref=db.backref('sub_articles', cascade="all, delete-orphan"))
