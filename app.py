@@ -5746,22 +5746,6 @@ def checkout_success():
     return render_template('checkout_success.html')
 
 
-@app.route('/test/articles/<int:contract_id>')
-def test_articles_route(contract_id):
-    print(f"Querying articles for contract ID: {contract_id}")
-    articles = db.session.query(ContractArticle).filter_by(contract_id=contract_id).all()
-    print(f"Articles found: {articles}")
-
-    if not articles:
-        return f"No articles found for contract ID {contract_id}", 404
-
-    article_links = []
-    for article in articles:
-        article_links.append(f"<li>Article ID: {article.article_id}, Title: {article.article_title}</li>")
-
-    return f"<ul>{''.join(article_links)}</ul>"
-
-
 
 if __name__ == '__main__':
     # Load menu items from JSON file

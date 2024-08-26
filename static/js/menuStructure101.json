@@ -290,12 +290,6 @@
                 "url": "/admin/contracts",
                 "protected": true,
                 "allowed_roles": ["Admin", "Employee", "Manager", "Authority", "Provider"]
-            },
-            "Contracts-test": {
-                "label": "Contracts Test",
-                "url": "/test/articles",
-                "protected": true,
-                "allowed_roles": ["Admin", "Employee", "Manager", "Authority", "Provider"]
             }
         }
     },

@@ -1630,3 +1630,7 @@ class ContractArticle(db.Model):
     updated_at = db.Column(db.TIMESTAMP, default=func.now(), onupdate=func.now())
 
     contract = db.relationship("Contract", back_populates="contract_articles")
+
+    @property
+    def contract_display_name(self):
+        return self.contract.contract_name if self.contract else 'No Contract'

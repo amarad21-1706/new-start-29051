@@ -217,9 +217,35 @@ class SignedContractsView(ModelView):
 from flask_admin.model.template import macro
 import traceback
 
+from wtforms import StringField
+from flask_admin.form import rules
+
 
 class ContractArticleAdmin(ModelView):
-    column_filters = ['contract_id']
+    # Specify the columns to be displayed in the list view
+    column_list = ['article_title', 'article_body', 'contract_id']
+
+    # Specify the fields to be shown in the form
+    form_columns = ['article_title', 'article_body', 'article_order', 'created_at', 'updated_at']
+
+    # Use column_formatters to format the contract name display
+    column_formatters = {
+        'contract_id': lambda v, c, m, p: m.contract.contract_name if m.contract else None
+    }
+
+    def scaffold_form(self):
+        form_class = super(ContractArticleAdmin, self).scaffold_form()
+
+        # Add contract_name field as a read-only field
+        form_class.contract_name = StringField('Contract Name', render_kw={'readonly': True})
+
+        return form_class
+
+    def on_form_prefill(self, form, id):
+        # Prefill the contract_name field with the actual name from the Contract model
+        contract_article = self.get_one(id)
+        form.contract_name.data = contract_article.contract.contract_name if contract_article.contract else None
+
 
 
 class DraftingContractsView(ModelView):
