@@ -70,7 +70,7 @@ from config.config import (Config, check_status, check_status_limited,
 
 from flask_login import login_required, LoginManager
 
-from flask import flash, redirect, url_for
+from flask import flash, redirect, url_for, Markup
 from flask_admin.contrib.sqla import ModelView
 from sqlalchemy.exc import IntegrityError
 import uuid
@@ -214,20 +214,97 @@ class SignedContractsView(ModelView):
     can_delete = False
 
 
+from flask_admin.model.template import macro
+import traceback
+
+
+class ContractArticleAdmin(ModelView):
+    column_filters = ['contract_id']
+
+
 class DraftingContractsView(ModelView):
     can_create = True
     can_edit = True
     can_delete = True
     name = 'Drafting Contracts'
 
-    column_list = ['contract_name', 'contract_status', 'created_by_user', 'start_date', 'end_date']
+    column_list = ['contract_id', 'contract_name', 'contract_status', 'created_by_user', 'start_date', 'end_date', 'view_articles']
+
+    form_columns = ['contract_id', 'contract_name', 'contract_type', 'contract_status', 'start_date', 'end_date', 'description', 'created_by_user']
+
+    column_filters = ['contract_id', 'contract_status', 'start_date', 'end_date']
+    column_searchable_list = ['contract_id', 'contract_name', 'description']
+
+
+class DraftingContractsView777(ModelView):
+    can_create = True
+    can_edit = True
+    can_delete = True
+    name = 'Drafting Contracts'
+
+    column_list = ['contract_name', 'contract_status', 'created_by_user', 'start_date', 'end_date', 'view_articles_link']
+
     form_columns = ['contract_name', 'contract_type', 'contract_status', 'start_date', 'end_date', 'description', 'created_by_user']
+
     column_filters = ['contract_status', 'start_date', 'end_date']
     column_searchable_list = ['contract_name', 'description']
-    inline_models = [ContractArticleInlineModelForm(ContractArticle)]
 
 
-class DraftingContractsView333(ModelView):
+
+class DraftingContractsView555(ModelView):
+    can_create = True
+    can_edit = True
+    can_delete = True
+    name = 'Drafting Contracts'
+
+    column_list = ['contract_name', 'contract_status', 'created_by_user', 'start_date', 'end_date', 'view_articles_link']
+
+    form_columns = ['contract_name', 'contract_type', 'contract_status', 'start_date', 'end_date', 'description', 'created_by_user']
+
+    column_filters = ['contract_status', 'start_date', 'end_date']
+    column_searchable_list = ['contract_name', 'description']
+
+    # Ensure Flask-Admin uses the property
+    column_formatters = {
+        'view_articles_link': lambda v, c, m, p: m.view_articles_link
+    }
+
+
+
+class DraftingContractsView444(ModelView):
+
+    can_create = True
+    can_edit = True
+    can_delete = True
+    name = 'Drafting Contracts'
+
+    column_list = ['contract_name', 'contract_status', 'created_by_user', 'start_date', 'end_date', 'view_articles']
+
+    form_columns = ['contract_name', 'contract_type', 'contract_status', 'start_date', 'end_date', 'description', 'created_by_user']
+
+    column_filters = ['contract_status', 'start_date', 'end_date']
+    column_searchable_list = ['contract_name', 'description']
+
+    def view_articles(self, obj):
+        print(f"view_articles called for contract_id: {obj.contract_id}")
+        return "Test Link"
+
+
+class ContractArticleView(ModelView):
+    can_create = True
+    can_edit = True
+    can_delete = True
+    name = 'Contract Articles'
+
+    column_list = ['contract.contract_name', 'article_title', 'article_order']
+    form_columns = ['contract', 'article_title', 'article_body', 'article_order']
+
+    column_filters = ['contract.contract_name', 'article_order']
+    column_searchable_list = ['article_title', 'article_body']
+
+
+
+class DraftingContracts_View333(ModelView):
     can_create = True
     can_edit = True
     can_delete = True
@@ -247,10 +324,10 @@ class DraftingContractsView333(ModelView):
         return current_user.is_authenticated
 
     def get_query(self):
-        return super(DraftingContractsView333, self).get_query().filter(Contract.contract_status.in_(['Draft', 'Drafting']))
+        return super(DraftingContracts_View333, self).get_query().filter(Contract.contract_status.in_(['Draft', 'Drafting']))
 
     def get_count_query(self):
-        return super(DraftingContractsView333, self).get_count_query().filter(Contract.contract_status.in_(['Draft', 'Drafting']))
+        return super(DraftingContracts_View333, self).get_count_query().filter(Contract.contract_status.in_(['Draft', 'Drafting']))
 
     def on_model_change(self, form, model, is_created):
         # Convert the parent_article field from string (article_id) to ContractArticle instance
@@ -261,10 +338,10 @@ class DraftingContractsView333(ModelView):
             else:
                 model.parent_article = None  # No parent article selected
 
-        super(DraftingContractsView333, self).on_model_change(form, model, is_created)
+        super(DraftingContracts_View333, self).on_model_change(form, model, is_created)
 
 
-class DraftingContractsView222(ModelView):
+class DraftingContracts_View222(ModelView):
     can_create = True  # Optionally disable creation
     can_edit = True  # Optionally disable editing
     can_delete = True  # Optionally disable deletion
@@ -293,12 +370,12 @@ class DraftingContractsView222(ModelView):
         return current_user.is_authenticated  # Customize your authentication
 
     def get_query(self):
-        return super(DraftingContractsView222, self).get_query().filter(
+        return super(DraftingContracts_View222, self).get_query().filter(
             Contract.contract_status.in_(['Draft', 'Drafting'])
         )
 
     def get_count_query(self):
-        return super(DraftingContractsView222, self).get_count_query().filter(
+        return super(DraftingContracts_View222, self).get_count_query().filter(
             Contract.contract_status.in_(['Draft', 'Drafting'])
         )
 
@@ -317,7 +394,7 @@ class DraftingContractsView222(ModelView):
                 model.parent_article = None
 
         # Call the parent method to handle the rest of the model change process
-        super(DraftingContractsView222, self).on_model_change(form, model, is_created)
+        super(DraftingContracts_View222, self).on_model_change(form, model, is_created)
 
 
 class DocumentsAssignedBaseDataView(ModelView):
@@ -4631,13 +4708,16 @@ def create_admin_views(app, intervals):
         # Register the Drafting Contracts view with a unique name and endpoint
         admin_app6.add_view(
             DraftingContractsView(Contract, db.session, name="Drafting Contracts", endpoint="drafting_contracts"))
+        admin_app6.add_view(
+            ContractArticleAdmin(ContractArticle, db.session, name='Contract Articles', endpoint="contract_articles"))
+
+        print("ContractArticle view added to Flask-Admin with endpoint 'contract_articles'")
 
         # Add views for each model
         admin_app6.add_view(ModelView(ContractParty, db.session, name='Contract Parties'))
         admin_app6.add_view(ModelView(ContractTerm, db.session, name='Contract Terms'))
         admin_app6.add_view(ModelView(ContractDocument, db.session, name='Contract Documents'))
         admin_app6.add_view(ModelView(ContractStatusHistory, db.session, name='Contract Status History'))
-        admin_app6.add_view(ModelView(ContractArticle, db.session, name='Contract Articles', endpoint="contract_articles"))
         # Optionally, you can add views for related models (e.g., Company, Party, User)
         admin_app6.add_view(ModelView(Party, db.session, name='Parties'))
 

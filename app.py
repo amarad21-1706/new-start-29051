@@ -18,8 +18,7 @@ from sqlalchemy.exc import OperationalError
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.exceptions import HTTPException
 from db import db
-from flask import g, make_response
-from flask import flash
+from flask import Flask, render_template, redirect, url_for, request, g, make_response, flash, Markup
 import datetime
 from dateutil import rrule
 from flask_wtf import FlaskForm
@@ -30,7 +29,6 @@ from flask_session import Session
 from wtforms import SubmitField
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired
 
-from flask import Flask, render_template, flash, redirect, url_for, request
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
 from flask_mail import Mail, Message
@@ -57,7 +55,7 @@ from models.user import (Users, UserRoles, Event, Role, Container, Questionnaire
          )
 
 # from master_password_reset import admin_reset_password, AdminResetPasswordForm
-
+from admin_views import DraftingContractsView
 from forms.forms import (AddPlanToCartForm, SignupForm, UpdateAccountForm, TicketForm, ResponseForm, LoginForm, ForgotPasswordForm,
                          ResetPasswordForm101, RegistrationForm, EventForm,
                          QuestionnaireCompanyForm, CustomBaseDataForm,
@@ -216,6 +214,7 @@ login_manager = LoginManager(app)
 
 stripe.api_key = app.config['STRIPE_API_KEY']
 stripe.publishable_key = app.config['STRIPE_PUBLISHABLE_KEY']
+
 
 # Register the password reset route
 # app.add_url_rule('/admin_reset_password', 'admin_reset_password', admin_reset_password, methods=['GET', 'POST'])
@@ -4210,6 +4209,8 @@ def page_forbidden(error):
     return render_template('error_pages/403.html'), 404
 
 
+# TODO To be reactivated 29aug2024
+
 @app.errorhandler(500)
 def internal_error(error):
 
@@ -4217,6 +4218,8 @@ def internal_error(error):
     logger.error('Request data: %s', request.data)
 
     return render_template('error_pages/500.html', message=str(error)), 500
+
+
 
 @app.route('/back')
 def back():
@@ -4283,12 +4286,6 @@ def handle_exception(e):
     else:
         raise e  # Raise the exception in debug mode for detailed traceback
 
-
-'''
-@app.errorhandler(500)
-def internal_error(error):
-    return render_template('error.html', message=str(error)), 500
-'''
 
 
 @app.route('/chart_form', methods=['GET', 'POST'])
@@ -5747,6 +5744,23 @@ def checkout_success():
     Cart.query.delete()
     db.session.commit()
     return render_template('checkout_success.html')
+
+
+@app.route('/test/articles/<int:contract_id>')
+def test_articles_route(contract_id):
+    print(f"Querying articles for contract ID: {contract_id}")
+    articles = db.session.query(ContractArticle).filter_by(contract_id=contract_id).all()
+    print(f"Articles found: {articles}")
+
+    if not articles:
+        return f"No articles found for contract ID {contract_id}", 404
+
+    article_links = []
+    for article in articles:
+        article_links.append(f"<li>Article ID: {article.article_id}, Title: {article.article_title}</li>")
+
+    return f"<ul>{''.join(article_links)}</ul>"
+
 
 
 if __name__ == '__main__':

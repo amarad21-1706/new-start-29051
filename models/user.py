@@ -1,5 +1,7 @@
 import json
 from db import db
+from flask import Markup
+
 from flask_bcrypt import generate_password_hash, check_password_hash
 from flask_security import RoleMixin, UserMixin
 from sqlalchemy import (Column, Integer, String, DateTime, ForeignKey,
@@ -9,6 +11,7 @@ from wtforms.widgets import DateTimeInput
 from wtforms.validators import DataRequired, Regexp, EqualTo, Email, Length
 
 from sqlalchemy import or_, and_, Enum, event
+from sqlalchemy.ext.hybrid import hybrid_property
 
 from sqlalchemy.orm import object_session, validates
 from sqlalchemy.orm import sessionmaker
@@ -1529,6 +1532,13 @@ class Contract(db.Model):
     contract_status_history = db.relationship("ContractStatusHistory", back_populates="contract")
     contract_articles = db.relationship("ContractArticle", back_populates="contract")
 
+    @hybrid_property
+    def view_articles(self):
+        if self.contract_articles:
+            url = f'/admin/contracts/contract_articles/?flt0_0={self.contract_id}'
+            return Markup(f'<a href="{url}">View Articles</a>')
+        else:
+            return Markup('No Articles')
 
 # 4. Party Table
 class Party(db.Model):
