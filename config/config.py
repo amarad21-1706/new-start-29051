@@ -117,7 +117,7 @@ class Config:
         self.MAX_RECURSION_DEPTH = 1000
         self.TEMPLATES_AUTO_RELOAD = True
         self.SQLALCHEMY_COMMIT_ON_TEARDOWN = True
-        self.PERMANENT_SESSION_LIFETIME = timedelta(minutes=60)  # Set session to expire in 5 minutes
+        self.PERMANENT_SESSION_LIFETIME = timedelta(minutes=60)  # Set session to expire in n minutes
         self.SEND_FILE_MAX_AGE_DEFAULT = 0  # Disable caching for development
 
         self.SESSION_TYPE = 'filesystem'
@@ -509,8 +509,6 @@ def get_current_interval(interval):
         return f'{quadrimester} {now.year}'
     else:
         raise ValueError(f"Unsupported interval: {interval}")
-
-from datetime import datetime, timedelta
 
 from datetime import datetime, timedelta
 

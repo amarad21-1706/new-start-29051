@@ -890,7 +890,11 @@ def login():
                     session.clear()
 
                     if not current_user.is_authenticated:
-                        login_user(user)
+                        # login_user(user) # no 'remember' set up
+                        # login_user(user, remember=False) # no long term cookies
+                        remember = 'remember' in request.form # user defined set up
+                        login_user(user, remember=remember)
+                        print('user logged in, remember me =', remember)
                         flash('Login Successful')
                         cet_time = get_cet_time()
                         try:

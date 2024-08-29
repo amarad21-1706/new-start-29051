@@ -286,7 +286,7 @@
                 "allowed_roles": ["Admin", "Employee", "Manager", "Authority", "Provider"]
             },
             "Contracts": {
-                "label": "Contracts Management",
+                "label": "Contract Management",
                 "url": "/admin/contracts",
                 "protected": true,
                 "allowed_roles": ["Admin", "Employee", "Manager", "Authority", "Provider"]
