@@ -9,7 +9,7 @@ import stripe
 
 import logging
 from logging import FileHandler, Formatter
-from flask_wtf.csrf import CSRFProtect
+from flask_wtf.csrf import CSRFProtect, generate_csrf, validate_csrf
 from sqlalchemy import or_, and_, desc, func, not_, null, exists, extract, select
 
 from sqlalchemy.orm import sessionmaker
@@ -69,7 +69,7 @@ from forms.forms import (AddPlanToCartForm, SignupForm, UpdateAccountForm, Ticke
 from flask_mail import Mail, Message
 from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as _
 
-from app_factory import create_app, roles_required, subscription_required
+from app_factory import create_app, roles_required, subscription_required, csrf
 
 from config.config import (get_current_intervals,
         generate_company_questionnaire_report_data, generate_area_subarea_report_data,
@@ -179,7 +179,6 @@ app = create_app()
 # Setup Mail
 mail = Mail(app)
 print('mail server active')
-
 
 app.json_encoder = CustomJSONEncoder
 print('JSON decoder on')
@@ -829,7 +828,7 @@ def reset_password(token):
         user.set_password(form.password.data)  # Use a secure password hashing method
         user.user_2fa_secret = None  # Invalidate the token after reset
         db.session.commit()
-        flash('Your password has been reset successfully!', 'success')
+        flash('Your password has been reset successfully.', 'success')
         return redirect(url_for('login'))
     return render_template('access/reset_password.html', form=form, token=token)
 
@@ -844,7 +843,7 @@ def send_email___():
                   recipients=["astridel.radulescu1@gmail.com"])
     msg.body = "This is a test email sent from my App using Postfix."
     mail.send(msg)
-    return "Email sent successfully!"
+    return "Email sent successfully."
 
 
 @app.route("/send_email")
@@ -862,7 +861,7 @@ def send_email():
     # send_simple_message(api_key, domain, sender, recipient, subject, text)
     send_simple_message333()
     # Set flash message
-    flash('Mail sent successfully', 'success')
+    flash('Mail sent successfully.', 'success')
     return redirect(url_for('index'))  # Redirect to your home page
 
 
@@ -2095,7 +2094,7 @@ def create_step():
         try:
             db.session.add(new_step)
             db.session.commit()
-            return "Step created successfully!"
+            return "Step created successfully."
         except Exception as e:
             db.session.rollback()
             # logging.error(f'Error creating step: {e}')
@@ -5741,6 +5740,54 @@ def checkout():
         db.session.rollback()
         flash('An error occurred during checkout.', 'error')
         return redirect(url_for('cart'))
+
+
+@app.route('/create_article', methods=['POST'])
+def create_article():
+    try:
+        # Get data from the form
+        contract_id = request.form.get('contract_id')
+        article_title = request.form.get('article_title')
+        article_body = request.form.get('article_body')
+        csrf_token = request.form.get('csrf_token')  # CSRF token for security
+
+        # Check if all required fields are present
+        if not contract_id or not article_title or not article_body:
+            flash("All fields are required.", "danger")
+            return redirect(request.referrer)
+
+        # Validate CSRF token
+        # Validate CSRF token
+        print('validating csrf')
+        try:
+            validate_csrf(csrf_token)
+        except Exception as e:
+            flash("CSRF token is invalid or missing.", "danger")
+            print(f"Error validating CSRF token: {str(e)}")
+            return redirect(request.referrer)
+
+        print('nearly there 1')
+        # Create a new ContractArticle instance
+        new_article = ContractArticle(
+            contract_id=contract_id,
+            article_title=article_title,
+            article_body=article_body,
+            created_at=func.now(),
+            updated_at=func.now()
+        )
+
+        # Add to the session and commit to the database
+        print('nearly there 2')
+        db.session.add(new_article)
+        db.session.commit()
+
+        flash("Article created successfully.", "success")
+        return redirect(url_for('drafting_contracts.index_view'))  # Corrected endpoint name
+
+    except Exception as e:
+        # Handle any errors
+        flash(f"An error occurred (01): {str(e)}", "danger")
+        return redirect(request.referrer)
 
 
 @app.route('/checkout_success')

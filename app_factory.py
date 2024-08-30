@@ -14,6 +14,9 @@ from db import db
 from models.user import Users #, Plan, Product
 from functools import wraps
 from password_reset import password_reset_bp  # Import the blueprint
+from admin_views import DraftingContractsView
+
+csrf = CSRFProtect()  # Define csrf globally
 
 def my_locale_selector():
     return 'en_EN'  # Example for French
@@ -61,8 +64,6 @@ def subscription_required(f):
 
     return decorated_function
 
-
-
 def create_app(conf=None):
     if conf is None:
         conf = Config()
@@ -86,13 +87,9 @@ def create_app(conf=None):
         app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
         app.config['WTF_CSRF_ENABLED'] = True
 
-    csrf = CSRFProtect(app)
+    # csrf = CSRFProtect(app) # already defined globally
     mail = Mail(app)
     CORS(app)
-
-    # TODO debug ON/OFF
-    # app.config['DEBUG'] = True
-    # app.config['TESTING'] = True
 
     limiter = Limiter(
         get_remote_address,
@@ -102,12 +99,6 @@ def create_app(conf=None):
     )
 
     db.init_app(app)
-
-    '''
-    @app.before_first_request
-    def create_tables():
-        db.create_all()
-    '''
 
     login_manager = LoginManager()
     login_manager.init_app(app)

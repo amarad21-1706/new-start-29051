@@ -10,9 +10,9 @@ from wtforms.fields import StringField, TextAreaField, DateTimeField, SelectFiel
 from wtforms.validators import InputRequired, DataRequired, Length, Email, EqualTo
 from flask_admin.form import Select2Widget, rules
 from flask_admin.contrib.sqla import ModelView
-
 from wtforms.validators import Email, InputRequired, NumberRange
-
+from sqlalchemy.ext.hybrid import hybrid_property
+from flask_wtf.csrf import CSRFProtect, generate_csrf
 from flask_admin.model.widgets import XEditableWidget
 from wtforms.fields import DateField
 from flask_admin import BaseView
@@ -224,21 +224,13 @@ class SignedContractsView(ModelView):
     can_delete = False
 
 
-class ContractNameField(StringField):
-    def __init__(self, label='', validators=None, contract=None, **kwargs):
-        super(ContractNameField, self).__init__(label, validators=validators, **kwargs)
-        self.contract = contract
-
-    def _value(self):
-
-        print('value 1', self.contract)
-        if self.contract:
-            return Markup(self.contract.contract_name)
-        else:
-            return ''
-
-
 class ContractArticleAdmin(ModelView):
+    can_edit = True
+    can_delete =True
+    can_create = False
+    can_export = True
+    can_view_details = True
+    can_set_page_size = True
     # Specify the columns to be displayed in the list view
     column_list = ['article_title', 'article_body', 'contract_id', 'contract_name']
 
@@ -250,9 +242,36 @@ class ContractArticleAdmin(ModelView):
     # Specify the fields to be shown in the form
     form_columns = ['article_title', 'article_body', 'article_order', 'created_at', 'updated_at']
 
-    def scaffold_form(self):
+    # Override the query to filter by contract_id if it is provided in the URL
+    def get_query(self):
+        query = super(ContractArticleAdmin, self).get_query()
 
-        print('scaffold 1')
+        # Get contract_id from the URL parameters
+        contract_id = request.args.get('contract_id')
+
+        if contract_id:
+            try:
+                query = query.filter(ContractArticle.contract_id == int(contract_id))
+            except Exception as e:
+                print(f"Error filtering query: {str(e)}")
+
+        return query
+
+    def get_count_query(self):
+        count_query = super(ContractArticleAdmin, self).get_count_query()
+
+        # Get contract_id from the URL parameters
+        contract_id = request.args.get('contract_id')
+
+        if contract_id:
+            try:
+                count_query = count_query.filter(ContractArticle.contract_id == int(contract_id))
+            except Exception as e:
+                print(f"Error filtering count query: {str(e)}")
+
+        return count_query
+
+    def scaffold_form(self):
         form_class = super(ContractArticleAdmin, self).scaffold_form()
 
         # Add contract_name field as a read-only field
@@ -261,14 +280,10 @@ class ContractArticleAdmin(ModelView):
         return form_class
 
     def create_form(self, obj=None):
-        print('create 1')
         form = super(ContractArticleAdmin, self).create_form(obj)
-        print('create 2')
         # Prefill contract_id and contract_name if provided via URL parameter
         contract_id = request.args.get('contract_id')
-        print('create 3')
         if contract_id:
-            print('create 4')
             contract = db.session.query(Contract).get(contract_id)
             if contract:
                 form.contract_name.data = contract.contract_name  # Show contract name
@@ -276,8 +291,6 @@ class ContractArticleAdmin(ModelView):
         return form
 
     def edit_form(self, obj=None):
-
-        print('edit 1')
         form = super(ContractArticleAdmin, self).edit_form(obj)
 
         # Prefill contract_name field during edit
@@ -291,7 +304,6 @@ class ContractArticleAdmin(ModelView):
         Ensure the contract_id is set correctly when creating a new article.
         """
         # When creating a new article, set contract_id if available in the URL
-        print('change 1')
         if is_created:  # Only handle logic if creating a new article
             # Use the existing get_create_url to construct the URL with contract_id
             url = self.get_create_url()  # Call get_create_url method
@@ -299,19 +311,14 @@ class ContractArticleAdmin(ModelView):
                 # Handle missing contract_id (e.g., display an error message)
                 flash("Contract ID is required for creating a new article.")
                 return
-
             return redirect(url)  # Redirect to the constructed URL
-
         super(ContractArticleAdmin, self).on_model_change(form, model, is_created)
 
     def get_create_url(self):
         """
         Override the get_create_url method to include the contract_id in the URL when creating a new article.
         """
-        print('get_create 1')
         contract_id = request.args.get('contract_id')
-
-        print('get_create 2', contract_id)
         if contract_id:
             return url_for('.create_view', contract_id=contract_id)
         return url_for('.create_view')
@@ -320,17 +327,10 @@ class ContractArticleAdmin(ModelView):
         """
         Handle redirection for the 'create' action to ensure the correct URL.
         """
-        print('handle 1')
         if name == 'create_view' and 'contract_id' not in request.args:
-
-            print('handle 2')
             # Check if contract_id is in the query parameters
             contract_id = request.args.get('contract_id')
-
-            print('handle 3', contract_id)
             if contract_id:
-
-                print('handle 4')
                 # Redirect to the create view with the correct contract_id
                 return redirect(url_for('.create_view', contract_id=contract_id))
             else:
@@ -339,375 +339,106 @@ class ContractArticleAdmin(ModelView):
 
 
 
-class ContractArticleAdmin8883(ModelView):
-    # Specify the columns to be displayed in the list view
-    column_list = ['article_title', 'article_body', 'contract_id', 'contract_display_name']
-
-    # Use column_formatters to format the contract name display
-    column_formatters = {
-        'contract_display_name': lambda v, c, m, p: m.contract.contract_name if m.contract else None
-    }
-
-    # Specify the fields to be shown in the form
-    form_columns = ['contract_display_name', 'article_title', 'article_body', 'article_order', 'created_at', 'updated_at']
-
-    # Make fields read-only during editing
-    form_edit_rules = (
-        'contract_display_name',  # Display contract name as read-only
-        'article_title',
-        'article_body',
-        'article_order',
-        rules.Header('Timestamps'),
-        'created_at',
-        'updated_at',
-    )
-
-    # Add 'contract_display_name' as an extra field
-    form_extra_fields = {
-        'contract_display_name': StringField('Contract Name', render_kw={'readonly': True}),
-    }
-
-    def create_form(self, obj=None):
-        form = super(ContractArticleAdmin, self).create_form(obj)
-
-        # Prefill contract_id and contract_name if provided via URL parameter
-        contract_id = request.args.get('contract_id')
-        if contract_id:
-            contract = db.session.query(Contract).get(contract_id)
-            if contract:
-                form.contract_display_name.data = contract.contract_name  # Show contract name
-
-        return form
-
-    def edit_form(self, obj=None):
-        form = super(ContractArticleAdmin, self).edit_form(obj)
-
-        # Prefill contract_name when editing
-        if obj and obj.contract:
-            form.contract_display_name.data = obj.contract.contract_name
-
-        return form
-
-    def on_form_prefill(self, form, id):
-        # Prefill contract_name when editing or viewing
-        contract_article = self.get_one(id)
-        if contract_article and contract_article.contract:
-            form.contract_display_name.data = contract_article.contract.contract_name
-
-    def on_model_change(self, form, model, is_created):
-        # Remove the line trying to set a property
-        super(ContractArticleAdmin, self).on_model_change(form, model, is_created)
-
-
-
-class ContractArticleAdmin8882(ModelView):
-    # Specify the columns to be displayed in the list view
-    column_list = ['article_title', 'article_body', 'contract_id', 'contract_display_name']
-
-    # Use column_formatters to format the contract name display
-    column_formatters = {
-        'contract_display_name': lambda v, c, m, p: m.contract.contract_name if m.contract else None
-    }
-
-    # Specify the fields to be shown in the form
-    form_columns = ['contract_display_name', 'article_title', 'article_body', 'article_order', 'created_at', 'updated_at']
-
-    # Make fields read-only during editing
-    form_edit_rules = (
-        'contract_display_name',  # Display contract name as read-only
-        'article_title',
-        'article_body',
-        'article_order',
-        rules.Header('Timestamps'),
-        'created_at',
-        'updated_at',
-    )
-
-    form_extra_fields = {
-        'contract_display_name': StringField('Contract Name', render_kw={'readonly': True}),
-    }
-
-    def create_form(self, obj=None):
-        form = super(ContractArticleAdmin, self).create_form(obj)
-
-        # Prefill contract_id and contract_name if provided via URL parameter
-        contract_id = request.args.get('contract_id')
-        if contract_id:
-            contract = db.session.query(Contract).get(contract_id)
-            if contract:
-                form.contract_display_name.data = contract.contract_name  # Show contract name
-                form.contract_id.data = contract_id  # Set the contract_id in the form
-
-        return form
-
-    def edit_form(self, obj=None):
-        form = super(ContractArticleAdmin, self).edit_form(obj)
-
-        # Prefill contract_name when editing
-        if obj and obj.contract:
-            form.contract_display_name.data = obj.contract.contract_name
-
-        return form
-
-    def on_model_change(self, form, model, is_created):
-        # Ensure the contract_id is set correctly
-        if 'contract_id' in form.data:
-            model.contract_id = form.contract_id.data
-
-        super(ContractArticleAdmin, self).on_model_change(form, model, is_created)
-
-class ContractArticleAdmin8881(ModelView):
-    # Specify the columns to be displayed in the list view
-    column_list = ['article_title', 'article_body', 'contract_id']
-
-    # Specify the fields to be shown in the form
-    form_columns = ['article_title', 'article_body', 'article_order', 'created_at', 'updated_at']
-
-    # Use column_formatters to format the contract name display
-    column_formatters = {
-        'contract_id': lambda v, c, m, p: m.contract.contract_name if m.contract else None
-    }
-
-    def scaffold_form(self):
-        form_class = super(ContractArticleAdmin, self).scaffold_form()
-
-        # Add contract_display_name as a read-only field in the form (but don't add it to form_columns)
-        form_class.contract_display_name = StringField('Contract Name', render_kw={'readonly': True})
-
-        return form_class
-
-    def on_form_prefill(self, form, id):
-        # Prefill the contract_display_name field with the actual name from the Contract model
-        contract_article = self.get_one(id)
-        if contract_article and contract_article.contract:
-            form.contract_display_name.data = contract_article.contract.contract_name
-
-    def create_form(self, obj=None):
-        form = super(ContractArticleAdmin, self).create_form(obj)
-
-        # Prefill contract_id if it's provided via a URL parameter
-        contract_id = request.args.get('contract_id')
-        if contract_id:
-            contract = db.session.query(Contract).get(contract_id)
-            if contract:
-                form.contract_display_name.data = contract.contract_name
-                form.contract_id.data = contract_id  # Set the contract_id in the form
-
-        return form
-
-    def on_model_change(self, form, model, is_created):
-        # Ensure the contract_id is set correctly
-        if 'contract_id' in form.data:
-            model.contract_id = form.contract_id.data
-
-        super(ContractArticleAdmin, self).on_model_change(form, model, is_created)
-
-class ContractArticleAdmin888(ModelView):
-    # Specify the columns to be displayed in the list view
-    column_list = ['article_title', 'article_body', 'contract_id']
-
-    # Specify the fields to be shown in the form
-    form_columns = ['contract_name', 'article_title', 'article_body', 'article_order', 'created_at', 'updated_at']
-
-    # Use column_formatters to format the contract name display
-    column_formatters = {
-        'contract_id': lambda v, c, m, p: m.contract.contract_name if m.contract else None
-    }
-
-    def scaffold_form(self):
-        form_class = super(ContractArticleAdmin, self).scaffold_form()
-
-        # Add contract_name field as a read-only field
-        form_class.contract_name = StringField('Contract Name', render_kw={'readonly': True})
-
-        return form_class
-
-    def on_form_prefill(self, form, id):
-        # Prefill the contract_name field with the actual name from the Contract model
-        contract_article = self.get_one(id)
-        form.contract_name.data = contract_article.contract.contract_name if contract_article.contract else None
-
-    def create_form(self, obj=None):
-        form = super(ContractArticleAdmin, self).create_form(obj)
-
-        # Prefill contract_id if it's provided via a URL parameter
-        contract_id = request.args.get('contract_id')
-        if contract_id:
-            contract = db.session.query(Contract).get(contract_id)
-            if contract:
-                form.contract_name.data = contract.contract_name
-                form.contract_id.data = contract_id  # Set the contract_id in the form
-
-        return form
-
-    def on_model_change(self, form, model, is_created):
-        # Ensure the contract_id is set correctly
-        if 'contract_id' in form.data:
-            model.contract_id = form.contract_id.data
-
-        super(ContractArticleAdmin, self).on_model_change(form, model, is_created)
-
-
-
 class DraftingContractsView(ModelView):
-    can_create = True
-    can_edit = True
-    can_delete = True
-    name = 'Drafting Contracts'
+    can_view_details = True
+    # Configure the columns to display in the list view
+    column_list = ['contract_name', 'contract_status', 'view_articles', 'create_article']
 
-    column_list = ['contract_id', 'contract_name', 'contract_status', 'created_by_user', 'start_date', 'end_date', 'view_articles']
-
-    form_columns = ['contract_id', 'contract_name', 'contract_type', 'contract_status', 'start_date', 'end_date', 'description', 'created_by_user']
-
-    column_filters = ['contract_id', 'contract_status', 'start_date', 'end_date']
-    column_searchable_list = ['contract_id', 'contract_name', 'description']
-
-
-class DraftingContractsView777(ModelView):
-    can_create = True
-    can_edit = True
-    can_delete = True
-    name = 'Drafting Contracts'
-
-    column_list = ['contract_name', 'contract_status', 'created_by_user', 'start_date', 'end_date', 'view_articles_link']
-
-    form_columns = ['contract_name', 'contract_type', 'contract_status', 'start_date', 'end_date', 'description', 'created_by_user']
-
-    column_filters = ['contract_status', 'start_date', 'end_date']
-    column_searchable_list = ['contract_name', 'description']
-
-
-
-class DraftingContractsView555(ModelView):
-    can_create = True
-    can_edit = True
-    can_delete = True
-    name = 'Drafting Contracts'
-
-    column_list = ['contract_name', 'contract_status', 'created_by_user', 'start_date', 'end_date', 'view_articles_link']
-
-    form_columns = ['contract_name', 'contract_type', 'contract_status', 'start_date', 'end_date', 'description', 'created_by_user']
-
-    column_filters = ['contract_status', 'start_date', 'end_date']
-    column_searchable_list = ['contract_name', 'description']
-
-    # Ensure Flask-Admin uses the property
-    column_formatters = {
-        'view_articles_link': lambda v, c, m, p: m.view_articles_link
+    # Override the form field to make 'contract_type' a select box
+    form_overrides = {
+        'contract_type': SelectField
     }
 
+    # Define the choices for the select field
+    form_args = {
+        'contract_type': {
+            'choices': [
+                ('fornitura servizi', 'Fornitura Servizi'),
+                ('fornitura prodotti', 'Fornitura Prodotti'),
+                ('compravendita', 'Compravendita'),
+                ('altro', 'Altro')
+            ]
+        }
+    }
 
+    # Formatter for the 'view_articles' and 'create_article' columns
+    column_formatters = {
+        'view_articles': lambda v, c, m, p: DraftingContractsView.view_articles_link(m),
+        'create_article': lambda v, c, m, p: DraftingContractsView.create_article_button(m)
+    }
 
-class DraftingContractsView444(ModelView):
+    # Static method to create the "View Articles" link
+    @staticmethod
+    def view_articles_link(obj):
+        print(f"Generating view articles link for: {obj}")
+        if obj.contract_articles:
+            # Pass the specific contract_id as a query parameter
+            url = url_for('contract_articles.index_view', contract_id=obj.contract_id)
+            return Markup(f'<a href="{url}">View Articles</a>')
+        else:
+            return Markup('No Articles')
 
-    can_create = True
-    can_edit = True
-    can_delete = True
-    name = 'Drafting Contracts'
+    # Static method to create the "Create Article" button
+    @staticmethod
+    def create_article_button(obj):
+        csrf_token = generate_csrf()  # Generate a fresh CSRF token each time
 
-    column_list = ['contract_name', 'contract_status', 'created_by_user', 'start_date', 'end_date', 'view_articles']
+        # Button that triggers the modal
+        modal_trigger = f'''
+            <button type="button" class="btn btn-success" data-toggle="modal" data-target="#createArticleModal_{obj.contract_id}">
+                Create Article
+            </button>
+            <!-- Modal -->
+            <div class="modal fade" id="createArticleModal_{obj.contract_id}" tabindex="-1" role="dialog" aria-labelledby="createArticleModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-lg" role="document"> <!-- Add modal-lg for large modal -->
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="createArticleModalLabel">Create New Article for Contract: {obj.contract_name}</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <form action="{url_for('create_article')}" method="POST">
+                                <input type="hidden" name="csrf_token" value="{csrf_token}">
+                                <input type="hidden" name="contract_id" value="{obj.contract_id}">
+                                <div class="form-group">
+                                    <label for="article_title">Article Title</label>
+                                    <input type="text" class="form-control" id="article_title" name="article_title" required>
+                                </div>
+                                <div class="form-group">
+                                    <label for="article_body">Article Body</label>
+                                    <textarea class="form-control" id="article_body" name="article_body" rows="3" required></textarea>
+                                </div>
+                                <button type="submit" class="btn btn-primary">Save Article</button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        '''
+        return Markup(modal_trigger)
 
-    form_columns = ['contract_name', 'contract_type', 'contract_status', 'start_date', 'end_date', 'description', 'created_by_user']
+    # Other methods...
 
-    column_filters = ['contract_status', 'start_date', 'end_date']
-    column_searchable_list = ['contract_name', 'description']
+    # Other configurations...
 
-    def view_articles(self, obj):
-        print(f"view_articles called for contract_id: {obj.contract_id}")
-        return "Test Link"
+    def scaffold_form(self):
+        form_class = super(DraftingContractsView, self).scaffold_form()
+        return form_class
 
-
-class DraftingContracts_View333(ModelView):
-    can_create = True
-    can_edit = True
-    can_delete = True
-    name = 'Drafting Contracts'
-
-    column_list = ['contract_name', 'contract_status', 'created_by_user', 'start_date', 'end_date']
-
-    form_columns = ['contract_name', 'contract_type', 'contract_status', 'start_date', 'end_date', 'description', 'created_by_user']
-
-    column_filters = ['contract_status', 'start_date', 'end_date']
-
-    column_searchable_list = ['contract_name', 'description']
-
-    inline_models = [ContractArticleInlineModelForm(ContractArticle)]
-
-    def is_accessible(self):
-        return current_user.is_authenticated
-
-    def get_query(self):
-        return super(DraftingContracts_View333, self).get_query().filter(Contract.contract_status.in_(['Draft', 'Drafting']))
-
-    def get_count_query(self):
-        return super(DraftingContracts_View333, self).get_count_query().filter(Contract.contract_status.in_(['Draft', 'Drafting']))
-
-    def on_model_change(self, form, model, is_created):
-        # Convert the parent_article field from string (article_id) to ContractArticle instance
-        if form.parent_article.data:
-            parent_article_id = form.parent_article.data
-            if parent_article_id:  # If a parent article is selected
-                model.parent_article = db.session.query(ContractArticle).get(int(parent_article_id))
-            else:
-                model.parent_article = None  # No parent article selected
-
-        super(DraftingContracts_View333, self).on_model_change(form, model, is_created)
-
-
-class DraftingContracts_View222(ModelView):
-    can_create = True  # Optionally disable creation
-    can_edit = True  # Optionally disable editing
-    can_delete = True  # Optionally disable deletion
-    name = 'Drafting Contracts'
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.class_name = self.__class__.__name__  # Store the class name
-
-    column_list = ['contract_name', 'contract_status', 'created_by_user', 'start_date', 'end_date']
-
-    # Columns that can be edited
-    form_columns = ['contract_name', 'contract_type', 'contract_status', 'start_date', 'end_date', 'description',
-                    'created_by_user']
-
-    # Columns that can be filtered
-    column_filters = ['contract_status', 'start_date', 'end_date']
-
-    # Add search functionality
-    column_searchable_list = ['contract_name', 'description']
-
-    # Include inline articles
-    inline_models = [ContractArticleInlineModelForm(ContractArticle)]
-
-    def is_accessible(self):
-        return current_user.is_authenticated  # Customize your authentication
-
-    def get_query(self):
-        return super(DraftingContracts_View222, self).get_query().filter(
-            Contract.contract_status.in_(['Draft', 'Drafting'])
-        )
-
-    def get_count_query(self):
-        return super(DraftingContracts_View222, self).get_count_query().filter(
-            Contract.contract_status.in_(['Draft', 'Drafting'])
-        )
+    def create_form(self, obj=None):
+        form = super(DraftingContractsView, self).create_form(obj)
+        return form
 
     def on_model_change(self, form, model, is_created):
-        # Check if the form contains a parent_article field
-        if hasattr(form, 'parent_article'):
-            parent_article_id = form.parent_article.data
+        # No need to handle contract_id manually for a new contract creation
+        super(DraftingContractsView, self).on_model_change(form, model, is_created)
 
-            # Convert the parent_article field from article_id string to a ContractArticle instance
-            if parent_article_id:
-                try:
-                    model.parent_article = db.session.query(ContractArticle).filter_by(article_id=parent_article_id).one()
-                except NoResultFound:
-                    model.parent_article = None
-            else:
-                model.parent_article = None
+    def _handle_view(self, name, **kwargs):
+        # Remove contract_id check from create_view handling
+        return super(DraftingContractsView, self)._handle_view(name, **kwargs)
 
-        # Call the parent method to handle the rest of the model change process
-        super(DraftingContracts_View222, self).on_model_change(form, model, is_created)
 
 
 class DocumentsAssignedBaseDataView(ModelView):
@@ -5287,7 +5018,6 @@ class StatusForm(ModelView):
 
 class LexicForm(ModelView):
     pass  # No custom form needed for Lexic
-
 
 
 class UsersView(ModelView):
