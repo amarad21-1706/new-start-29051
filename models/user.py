@@ -136,6 +136,8 @@ class Users(db.Model, UserMixin):
     #user_roles = relationship('UserRoles', back_populates='users')
     #roles = relationship('Role', secondary='user_roles_as_role', back_populates='users')
 
+    # Relationship to team memberships
+    team_memberships = relationship('TeamMembership', back_populates='user')
 
     # Add constructor to set the primary key
     def __init__(self, **kwargs):
@@ -1532,6 +1534,9 @@ class Contract(db.Model):
     contract_status_history = db.relationship("ContractStatusHistory", back_populates="contract")
     contract_articles = db.relationship("ContractArticle", back_populates="contract")
 
+    # Relationship to teams through ContractTeam association model
+    contract_teams = relationship('ContractTeam', back_populates='contract')
+
     @hybrid_property
     def view_articles(self):
         if self.contract_articles:
@@ -1634,3 +1639,58 @@ class ContractArticle(db.Model):
     @property
     def contract_display_name(self):
         return self.contract.contract_name if self.contract else 'No Contract'
+
+
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, func
+from sqlalchemy.orm import relationship
+from db import db  # Your SQLAlchemy instance
+
+
+# Team model
+class Team(db.Model):
+    __tablename__ = 'team'
+
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(255), unique=True, nullable=False)
+    description = db.Column(db.String(255), nullable=True)
+
+    # Relationship to team memberships
+    memberships = relationship('TeamMembership', back_populates='team', cascade='all, delete-orphan')
+
+    # Relationship to contracts through ContractTeam association model
+    contract_teams = relationship('ContractTeam', back_populates='team')
+
+
+# TeamMembership model
+class TeamMembership(db.Model):
+    __tablename__ = 'team_membership'
+
+    team_id = db.Column(db.Integer, db.ForeignKey('team.id', ondelete='CASCADE'), primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'),
+                        primary_key=True)  # Assuming 'users' is your user table
+    role = db.Column(db.String(50), nullable=True)  # Role within the team
+    joined_at = db.Column(db.DateTime, default=func.now())
+
+    # Define relationships
+    team = relationship('Team', back_populates='memberships')
+    user = relationship('Users', back_populates='team_memberships')  # Assuming 'Users' model is defined
+
+
+# Update the Users model
+
+# Define the ContractTeam model class for many-to-many relationship between Contract and Team
+class ContractTeam(db.Model):
+    __tablename__ = 'contract_team'
+
+    # Define the columns for the association table
+    contract_id = db.Column(db.Integer, db.ForeignKey('contract.contract_id', ondelete='CASCADE'), primary_key=True)
+    team_id = db.Column(db.Integer, db.ForeignKey('team.id', ondelete='CASCADE'), primary_key=True)
+
+    # Optional additional fields
+    created_at = db.Column(db.DateTime, default=func.now())
+    updated_at = db.Column(db.DateTime, default=func.now(), onupdate=func.now())
+    role = db.Column(db.String(50), nullable=True)  # Example field: role of the team in the contract
+
+    # Define relationships
+    contract = relationship('Contract', back_populates='contract_teams')
+    team = relationship('Team', back_populates='contract_teams')
