@@ -1651,14 +1651,17 @@ class Team(db.Model):
     __tablename__ = 'team'
 
     id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(255), unique=True, nullable=False)
-    description = db.Column(db.String(255), nullable=True)
+    name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.String(255))
+
+    def __repr__(self):
+        return f"<Team {self.name}>"
 
     # Relationship to team memberships
     memberships = relationship('TeamMembership', back_populates='team', cascade='all, delete-orphan')
 
-    # Relationship to contracts through ContractTeam association model
-    contract_teams = relationship('ContractTeam', back_populates='team')
+    # Define a relationship with ContractTeam
+    contract_teams = db.relationship('ContractTeam', back_populates='team', cascade='all, delete-orphan')
 
 
 # TeamMembership model
@@ -1668,7 +1671,10 @@ class TeamMembership(db.Model):
     team_id = db.Column(db.Integer, db.ForeignKey('team.id', ondelete='CASCADE'), primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'),
                         primary_key=True)  # Assuming 'users' is your user table
+
     role = db.Column(db.String(50), nullable=True)  # Role within the team
+    access_level = db.Column(db.String(50), nullable=True)  # Access level for the member
+
     joined_at = db.Column(db.DateTime, default=func.now())
 
     # Define relationships

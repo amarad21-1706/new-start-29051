@@ -40,6 +40,12 @@ from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as
 # from werkzeug.security import generate_password_hash, check_password_hash
 
 
+
+class TeamForm(FlaskForm):
+    team_name = StringField('Team Name', validators=[DataRequired()])
+    description = StringField('Description')
+    submit = SubmitField('Create Team')
+
 class ManagePlanForm(FlaskForm):
     id = HiddenField()
     name = StringField('Plan Name', validators=[DataRequired()])

@@ -40,27 +40,28 @@ from workflow_manager import (add_transition_log, create_card,
 
 from app_defs import get_user_roles, create_message, generate_menu_tree
 
-from models.user import (Users, UserRoles, Event, Role, Container, Questionnaire, Question,
-        QuestionnaireQuestions, PlanProducts,
+from models.user import (Users, UserRoles, Event, Role, Questionnaire, Question,
+        QuestionnaireQuestions,
         Answer, Company, Area, Subarea, AreaSubareas,
         QuestionnaireCompanies, CompanyUsers, Status, Lexic,
         Interval, Subject,
-        AuditLog, Post, Ticket, StepQuestionnaire,
+        Container, AuditLog, Post, Ticket, StepQuestionnaire,
         Workflow, Step, BaseData, DataMapping, Container, WorkflowSteps, WorkflowBaseData,
          StepBaseData, Config, Product, Cart,
-         Plan, Users, UserPlans, Subscription, # Adjust based on actual imports
+         Plan, PlanProducts, UserPlans, Subscription, # Adjust based on actual imports
          Questionnaire_psf, Response_psf,
          Contract, ContractParty, ContractTerm, ContractDocument, ContractStatusHistory,
-         ContractArticle, Party
+            ContractArticle, Party,
+         Team, TeamMembership, ContractTeam
          )
 
 # from master_password_reset import admin_reset_password, AdminResetPasswordForm
 from admin_views import DraftingContractsView
 from forms.forms import (AddPlanToCartForm, SignupForm, UpdateAccountForm, TicketForm, ResponseForm, LoginForm, ForgotPasswordForm,
-                         ResetPasswordForm101, RegistrationForm, EventForm,
-                         QuestionnaireCompanyForm, CustomBaseDataForm,
+         ResetPasswordForm101, RegistrationForm, EventForm,
+         QuestionnaireCompanyForm, CustomBaseDataForm,
         QuestionnaireQuestionForm, WorkflowStepForm, WorkflowBaseDataForm,
-                         BaseDataWorkflowStepForm,
+         BaseDataWorkflowStepForm,
         UserRoleForm, CompanyUserForm, UserDocumentsForm, StepBaseDataInlineForm,
         create_dynamic_form, CustomFileLoaderForm,
         CustomSubjectAjaxLoader, BaseSurveyForm, AuditLogForm, PlanProductsForm,
@@ -80,6 +81,8 @@ from config.config import (get_current_intervals,
         generate_questionnaire_question_report_data, generate_workflow_step_report_data,
         generate_workflow_document_report_data, generate_document_step_report_data, get_cet_time)
 
+#from contract_routes import user_has_access_to_contract
+
 from mail_service import send_simple_message, send_simple_message333
 from wtforms import Form
 
@@ -91,6 +94,7 @@ from flask_cors import CORS
 from modules.chart_service import ChartService
 
 from modules.admin_routes import admin_bp
+from contract_routes import team_bp
 
 from flask import flash, current_app, get_flashed_messages
 # from flask_admin.exceptions import ValidationError
@@ -220,7 +224,7 @@ stripe.publishable_key = app.config['STRIPE_PUBLISHABLE_KEY']
 # print('url rule set')
 
 
-# TODO inactivate LOGGER LOGGING ETC
+# TODO (in)activate LOGGER LOGGING ETC
 # Create a custom logger
 '''
 logger = logging.getLogger()
@@ -369,6 +373,8 @@ with app.app_context():
     #app.register_blueprint(admin_bp)
 
     app.register_blueprint(admin_bp, url_prefix='/admin')
+    app.register_blueprint(team_bp, url_prefix='/team')  # Adjust the url_prefix as needed
+    print('Team bluperint registered')
 
     user_roles_blueprint = create_crud_blueprint(UserRoles, 'user_roles')
     app.register_blueprint(user_roles_blueprint, url_prefix='/model_user_roles')
@@ -5788,6 +5794,7 @@ def create_article():
         # Handle any errors
         flash(f"An error occurred (01): {str(e)}", "danger")
         return redirect(request.referrer)
+
 
 
 @app.route('/checkout_success')

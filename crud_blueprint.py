@@ -366,18 +366,6 @@ def create_crud_blueprint(model, model_name):
             add_form=True,
         )
 
-        '''
-        return render_template(
-            'crud_add_template.html',
-            field_labels=field_labels,
-            field_names=field_names,
-            paginated_items=paginated_items,
-            items_for_current_page=paginated_items.items,
-            model=model,
-            model_name=model_name,
-            add_form=True,
-        )
-        '''
 
     @blueprint.route('/<string:model_name>/<int:item_id>/update', methods=['GET', 'POST'])
     def update(model_name, item_id):

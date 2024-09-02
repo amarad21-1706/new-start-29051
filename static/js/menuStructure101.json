@@ -570,6 +570,30 @@
                                 "url": "/calendar",
                                 "protected": true,
                                 "allowed_roles": ["Admin"]
+                            },
+                            "Contract-Management": {
+                                "label": "Contract Management",
+                                "url": "/team",
+                                "protected": true,
+                                "allowed_roles": ["Admin"],
+                                "submenus": {
+                                    "Create Team": {
+                                        "label": "Create Team",
+                                        "url": "/team/create_team",
+                                        "protected": true,
+                                        "allowed_roles": [
+                                            "Admin"
+                                        ]
+                                    },
+                                    "View Teams": {
+                                        "label": "View Teams",
+                                        "url": "/team/view_teams",
+                                        "protected": true,
+                                        "allowed_roles": [
+                                            "Admin"
+                                        ]
+                                    }
+                                }
                             }
                         }
                     },
