@@ -60,11 +60,6 @@ def edit_team(team_id):
             csrf_token = request.form.get('csrf_token')
             print(f"Received CSRF token: {csrf_token}")
 
-            # Validate the CSRF token
-            if not csrf_token or not validate_csrf(csrf_token):
-                flash("CSRF token is invalid or missing.", "danger")
-                return redirect(url_for('team.edit_team', team_id=team_id))
-
             # Get the form data
             team_name = request.form.get('team_name')
             description = request.form.get('description')
@@ -95,11 +90,6 @@ def delete_team(team_id):
         # Fetch the CSRF token from the request form
         csrf_token = request.form.get('csrf_token')
         print(f"Received CSRF token: {csrf_token}")
-
-        # Validate the CSRF token
-        if not csrf_token or not validate_csrf(csrf_token):
-            flash("CSRF token is invalid or missing.", "danger")
-            return redirect(url_for('team.view_teams'))
 
         # Fetch the team to be deleted
         team = Team.query.get_or_404(team_id)
@@ -146,7 +136,6 @@ def view_teams():
         return redirect(url_for('team.create_team'))
 
 
-
 @team_bp.route('/add_member/<int:team_id>', methods=['GET', 'POST'])
 def add_member(team_id):
     try:
@@ -162,6 +151,12 @@ def add_member(team_id):
 
             if not user_id or not role:
                 flash('Both User ID and Role are required to add a member.', 'danger')
+                return redirect(url_for('team.add_member', team_id=team_id))
+
+            # Check if the user is already a member of the team
+            existing_member = TeamMembership.query.filter_by(user_id=user_id, team_id=team_id).first()
+            if existing_member:
+                flash('This user is already a member of the team.', 'info')
                 return redirect(url_for('team.add_member', team_id=team_id))
 
             # Add new team member
@@ -187,16 +182,12 @@ def add_member(team_id):
         return redirect(url_for('team.view_teams'))
 
 
+
 @team_bp.route('/delete_member/<int:team_id>/<int:user_id>', methods=['POST'])
 def delete_member(team_id, user_id):
     try:
         # Fetch the CSRF token from the form
         csrf_token = request.form.get('csrf_token')
-
-        # Validate CSRF token
-        if not validate_csrf(csrf_token):
-            flash("Invalid CSRF token.", "danger")
-            return redirect(url_for('team.view_teams'))
 
         # Retrieve team and member details
         team = Team.query.get_or_404(team_id)
@@ -227,11 +218,6 @@ def assign_contract(team_id):
             # Fetch the CSRF token from the request form
             csrf_token = request.form.get('csrf_token')
             print(f"Received CSRF token: {csrf_token}")
-
-            # Validate the CSRF token
-            if not csrf_token or not validate_csrf(csrf_token):
-                flash("Invalid CSRF token. Please try again.", "danger")
-                return redirect(url_for('team.assign_contract', team_id=team_id))
 
             # Process the form submission for assigning the contract...
             contract_id = request.form.get('contract_id')
