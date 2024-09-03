@@ -10,6 +10,8 @@ from app_factory import csrf  # Import the CSRF object from your app setup
 from functools import wraps
 from flask import session  # Import session to manage CSRF token
 
+import datetime
+from datetime import datetime
 from models.user import (Users, UserRoles, Role, Company,
          Plan, UserPlans, Subscription, # Adjust based on actual imports
          Contract, ContractParty, ContractTerm, ContractDocument, ContractStatusHistory,
@@ -49,17 +51,12 @@ def create_team():
     return render_template('create_team.html', form=form)
 
 
-
 @team_bp.route('/edit_team/<int:team_id>', methods=['GET', 'POST'])
 def edit_team(team_id):
     team = Team.query.get_or_404(team_id)  # Get the team by ID or return 404 if not found
 
     if request.method == 'POST':
         try:
-            # Fetch the CSRF token from the request form
-            csrf_token = request.form.get('csrf_token')
-            print(f"Received CSRF token: {csrf_token}")
-
             # Get the form data
             team_name = request.form.get('team_name')
             description = request.form.get('description')
@@ -69,10 +66,11 @@ def edit_team(team_id):
             # Update the team's attributes
             team.name = team_name
             team.description = description
+            team.updated_at = datetime.utcnow()  # Update the timestamp
             db.session.commit()
 
             flash('Team updated successfully!', 'success')
-            return redirect(url_for('team.view_teams'))
+            return redirect(url_for('team.view_teams'))  # Redirect to view_teams after successful update
 
         except Exception as e:
             print(f"An error occurred: {str(e)}")
@@ -110,24 +108,18 @@ def delete_team(team_id):
 @team_bp.route('/view_teams', methods=['GET'])
 def view_teams():
     try:
-        # Fetch all teams
-        teams = Team.query.all()
+        # Fetch all teams sorted by last modified date (descending order)
+        teams = Team.query.order_by(Team.updated_at.desc()).all()
 
         # Map teams to their contracts and members
         team_contracts = {team.id: [ct.contract for ct in team.contract_teams] for team in teams}
         team_members = {team.id: [tm.user for tm in team.memberships] for team in teams}
 
-        # Generate CSRF token
-        csrf_token = generate_csrf()
-        print(f"csrf_token being passed to template: {csrf_token}")
-
-        # Pass the csrf_token to the template
         return render_template(
             'view_teams.html',
             teams=teams,
             team_contracts=team_contracts,
-            team_members=team_members,
-            csrf_token=csrf_token  # Pass CSRF token to the template
+            team_members=team_members
         )
 
     except Exception as e:
@@ -146,7 +138,6 @@ def add_member(team_id):
             role = request.form.get('role')
             access_level = request.form.get('access_level')
 
-            # Debugging print statements
             print(f"Received user_id: {user_id}, role: {role}, access_level: {access_level} for team_id: {team_id}")
 
             if not user_id or not role:
@@ -162,6 +153,9 @@ def add_member(team_id):
             # Add new team member
             new_member = TeamMembership(user_id=user_id, team_id=team_id, role=role, access_level=access_level)
             db.session.add(new_member)
+
+            # Update the team's updated_at field
+            team.updated_at = datetime.utcnow()
             db.session.commit()
 
             flash('Member added successfully!', 'success')
@@ -169,11 +163,7 @@ def add_member(team_id):
 
         # For GET request, render the template to add a member
         users = Users.query.all()
-
-        # Generate CSRF token
         csrf_token = generate_csrf()
-        print(f"csrf_token being passed to template: {csrf_token}")
-
         return render_template('add_member.html', team=team, users=users, csrf_token=csrf_token)
 
     except Exception as e:
@@ -182,13 +172,9 @@ def add_member(team_id):
         return redirect(url_for('team.view_teams'))
 
 
-
 @team_bp.route('/delete_member/<int:team_id>/<int:user_id>', methods=['POST'])
 def delete_member(team_id, user_id):
     try:
-        # Fetch the CSRF token from the form
-        csrf_token = request.form.get('csrf_token')
-
         # Retrieve team and member details
         team = Team.query.get_or_404(team_id)
         member = TeamMembership.query.filter_by(team_id=team_id, user_id=user_id).first()
@@ -199,6 +185,9 @@ def delete_member(team_id, user_id):
 
         # Remove the member
         db.session.delete(member)
+
+        # Update the team's updated_at field
+        team.updated_at = datetime.utcnow()
         db.session.commit()
 
         flash('Member deleted successfully!', 'success')
@@ -209,20 +198,12 @@ def delete_member(team_id, user_id):
         flash('An error occurred while deleting the member. Please try again.', 'danger')
         return redirect(url_for('team.view_teams'))
 
-
 @team_bp.route('/assign_contract/<int:team_id>', methods=['GET', 'POST'])
 def assign_contract(team_id):
     try:
         team = Team.query.get_or_404(team_id)
         if request.method == 'POST':
-            # Fetch the CSRF token from the request form
-            csrf_token = request.form.get('csrf_token')
-            print(f"Received CSRF token: {csrf_token}")
-
-            # Process the form submission for assigning the contract...
             contract_id = request.form.get('contract_id')
-
-            # Debugging print statements
             print(f"Received contract_id: {contract_id} for team_id: {team_id}")
 
             if not contract_id:
@@ -238,14 +219,17 @@ def assign_contract(team_id):
             # Create a new assignment of the contract to the team
             contract_team = ContractTeam(team_id=team_id, contract_id=contract_id)
             db.session.add(contract_team)
+
+            # Update the team's updated_at field
+            team.updated_at = datetime.utcnow()
             db.session.commit()
 
             flash('Contract assigned successfully!', 'success')
             return redirect(url_for('team.view_teams'))
 
-        # For GET request, generate CSRF token and render the form
-        csrf_token = generate_csrf()
+        # For GET request, render the form
         contracts = Contract.query.all()
+        csrf_token = generate_csrf()
         return render_template('assign_contract.html', team=team, contracts=contracts, csrf_token=csrf_token)
 
     except Exception as e:
