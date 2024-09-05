@@ -5,20 +5,15 @@ from utils.utils import get_current_directory
 from jinja2.runtime import Undefined
 from config.config import generate_statistics_menu
 
-
 class MenuBuilder:
     def __init__(self, menu_data, allowed_roles=None):
         self.menu_data = menu_data
         self.allowed_roles = allowed_roles or []
+        pass
 
     def generate_menu(self, user_roles=None, is_authenticated=False, include_protected=False):
-        # If the user is not authenticated, assume "Guest" role
-        if not is_authenticated:
-            user_roles = user_roles or ['Guest']
-
-        # Generate the menu items based on the user's roles and authentication status
         menu_items = self.parse_menu_data(user_roles=user_roles, is_authenticated=is_authenticated, include_protected=include_protected)
-        return menu_items
+        return menu_items #self.parse_menu_data(user_roles=user_roles, is_authenticated=is_authenticated, include_protected=include_protected, menu_items=self.menu_data)
 
     def parse_menu_data(self, user_roles=None, is_authenticated=False, include_protected=False, raw_menu_data=None):
         if raw_menu_data is None:
@@ -31,65 +26,52 @@ class MenuBuilder:
                 if not isinstance(menu_item_data, dict):
                     continue
 
-                label = menu_item_data.get('label')
-                url = menu_item_data.get('url')
+                label = menu_item_data.get('label', None)
+                url = menu_item_data.get('url', None)
                 protected = menu_item_data.get('protected', False)
                 allowed_roles = menu_item_data.get('allowed_roles', [])
 
-                # Debugging output to trace the values
-                print(f"Processing menu item: {label}, URL: {url}, Protected: {protected}, Allowed Roles: {allowed_roles}, User Roles: {user_roles}, Is Authenticated: {is_authenticated}")
-
-                # Skip menu items without proper attributes
-                if any(value is None for value in (label, url)):
-                    print(f"Skipping menu item due to missing attributes: {label}, {url}")
+                # Skip undefined values during serialization
+                if any(value is Undefined for value in (label, url, protected, allowed_roles)):
                     continue
 
                 # Check if the menu item is protected and the user is not authenticated
-                if protected and not is_authenticated and not include_protected:
-                    print(f"Skipping protected item as user is not authenticated: {label}")
+                if protected and not is_authenticated and include_protected:
                     continue
 
-                # Check if the user has any of the required roles to access this menu item
-                # Allow "Guest" role items for unauthenticated users
+                # Check if the user has the required role to access this menu item
                 if user_roles and not any(role in allowed_roles for role in user_roles):
-                    print(f"Skipping item due to missing required roles: {label}")
                     continue
 
                 # Recursively parse submenus
                 submenus = menu_item_data.get('submenus', {})
 
+                # Inject the dynamically generated Statistics menu
                 if label == "Statistics":
                     dynamic_statistics_submenus = generate_statistics_menu()
                     submenus.update(dynamic_statistics_submenus)
 
-                parsed_submenus = self.parse_menu_data(
-                    user_roles=user_roles,
-                    is_authenticated=is_authenticated,
-                    include_protected=include_protected,
-                    raw_menu_data=submenus
-                )
+                parsed_submenus = self.parse_menu_data(user_roles=user_roles,
+                                                       is_authenticated=is_authenticated,
+                                                       include_protected=include_protected,
+                                                       raw_menu_data=submenus)
 
-                # Only add the menu item if it has allowed submenus or itself is allowed
-                if parsed_submenus or not submenus:
-                    menu_items.append({
-                        'label': label,
-                        'url': url,
-                        'protected': protected,
-                        'allowed_roles': allowed_roles,
-                        'user_roles': user_roles,
-                        'submenus': parsed_submenus
-                    })
-
+                menu_items.append({
+                    'label': label,
+                    'url': url,
+                    'protected': protected,
+                    'allowed_roles': allowed_roles,
+                    'user_roles': user_roles,
+                    'submenus': parsed_submenus
+                })
             return menu_items
 
         elif isinstance(raw_menu_data, list):  # Handle the case where submenus is a list
             for menu_item_data in raw_menu_data:
-                parsed_submenus = self.parse_menu_data(
-                    user_roles=user_roles,
-                    is_authenticated=is_authenticated,
-                    include_protected=include_protected,
-                    raw_menu_data=menu_item_data.get('submenus', {})
-                )
+                parsed_submenus = self.parse_menu_data(user_roles=user_roles,
+                                                       is_authenticated=is_authenticated,
+                                                       include_protected=include_protected,
+                                                       raw_menu_data=menu_item_data.get('submenus', {}))
 
                 menu_items.append({
                     'label': menu_item_data.get('label'),
@@ -102,8 +84,8 @@ class MenuBuilder:
 
             return menu_items
         else:
+            print('return raw menu data 1', raw_menu_data)
             return raw_menu_data
-
 
 
 if __name__ == '__main__':
