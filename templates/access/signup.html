@@ -277,6 +277,14 @@
                 </label>
             </div>
 
+            <!-- Privacy Policy -->
+            <div class="form-group terms full-width text-center">
+                <input type="checkbox" id="privacy_policy_accepted" name="privacy_policy_accepted" required>
+                <label class="form-label" for="privacy_policy_accepted">
+                    I agree with the <a href="{{ url_for('privacy_policy') }}" target="_blank">Privacy Policy</a>
+                </label>
+            </div>
+
             <!-- Sign Up Button -->
             <div class="form-group text-center">
                 <button type="submit">Sign Up</button>

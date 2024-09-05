@@ -2032,57 +2032,115 @@ def get_countries():
 @app.route('/access/signup', methods=['GET', 'POST'])
 def signup():
     form = SignupForm()
-    if request.method == 'POST':
-        if form.validate_on_submit():
-            new_user = Users(
-                username=form.username.data,
-                email=form.email.data,
-                title=form.title.data,
-                first_name=form.first_name.data,
-                mid_name=form.mid_name.data,
-                last_name=form.last_name.data,
-                country=form.country.data,
-                region=form.region.data,
-                province=form.province.data,
-                zip_code=form.zip_code.data,
-                city=form.city.data,
-                street=form.street.data,
-                address=form.address.data,
-                address1=form.address1.data,
-                phone_prefix=form.phone_prefix.data,
-                mobile_phone=form.mobile_phone.data,
-                work_phone=form.work_phone.data,
-                tax_code=form.tax_code.data,
-                terms_accepted=form.terms_accepted.data,
-                created_on=datetime.utcnow(),
-                updated_on=datetime.utcnow(),
-                user_2fa_secret=pyotp.random_base32()  # Generate the 2FA secret
-            )
 
-            new_user.set_password(form.password.data)
+    print('Request method:', request.method)
+
+    if request.method == 'POST':
+        print('Form submitted, checking validation...')
+
+        if form.validate_on_submit():
+            print('Form validation successful.')
+
+            # Print form field data for debugging
+            print(f"Username: {form.username.data}")
+            print(f"Email: {form.email.data}")
+            print(f"Title: {form.title.data}")
+            print(f"First Name: {form.first_name.data}")
+            print(f"Middle Name: {form.mid_name.data}")
+            print(f"Last Name: {form.last_name.data}")
+            print(f"Country: {form.country.data}")
+            print(f"Region: {form.region.data}")
+            print(f"Province: {form.province.data}")
+            print(f"Zip Code: {form.zip_code.data}")
+            print(f"City: {form.city.data}")
+            print(f"Street: {form.street.data}")
+            print(f"Address: {form.address.data}")
+            print(f"Address1: {form.address1.data}")
+            print(f"Phone Prefix: {form.phone_prefix.data}")
+            print(f"Mobile Phone: {form.mobile_phone.data}")
+            print(f"Work Phone: {form.work_phone.data}")
+            print(f"Tax Code: {form.tax_code.data}")
+            print(f"Terms Accepted: {form.terms_accepted.data}")
+            print(f"Privacy Policy Accepted: {form.privacy_policy_accepted.data}")
+
+            # Check if the user has accepted the terms of use
+            if not form.terms_accepted.data:
+                print('Terms not accepted.')
+                flash('You must agree with the Terms and conditions to sign up.', 'error')
+                return render_template('access/signup.html', title='Sign Up', form=form)
+
+            # Check if the user has accepted the privacy policy
+            if not form.privacy_policy_accepted.data:
+                print('Privacy policy not accepted.')
+                flash('You must agree with the Privacy Policy to sign up.', 'error')
+                return render_template('access/signup.html', title='Sign Up', form=form)
+
+
             try:
+                print('Creating new user...')
+                new_user = Users(
+                    username=form.username.data,
+                    email=form.email.data,
+                    title=form.title.data,
+                    first_name=form.first_name.data,
+                    mid_name=form.mid_name.data,
+                    last_name=form.last_name.data,
+                    country=form.country.data,
+                    region=form.region.data,
+                    province=form.province.data,
+                    zip_code=form.zip_code.data,
+                    city=form.city.data,
+                    street=form.street.data,
+                    address=form.address.data,
+                    address1=form.address1.data,
+                    phone_prefix=form.phone_prefix.data,
+                    mobile_phone=form.mobile_phone.data,
+                    work_phone=form.work_phone.data,
+                    tax_code=form.tax_code.data,
+                    terms_accepted=form.terms_accepted.data,
+                    privacy_policy_accepted=form.privacy_policy_accepted.data,
+                    accepted_terms_date=datetime.utcnow(),
+                    created_on=datetime.utcnow(),
+                    updated_on=datetime.utcnow(),
+                    user_2fa_secret=pyotp.random_base32()  # Generate the 2FA secret
+                )
+
+                print(f"New user data: {new_user}")
+
+                print('Setting password for new user...')
+                new_user.set_password(form.password.data)
+
+                print('Attempting to add new user to database...')
                 db.session.add(new_user)
 
+                print('Attempting to commit new user to the database...')
                 db.session.commit()
+                print('User added to database successfully.')
 
                 flash('Your account has been created! You can now log in.', 'success')
                 return redirect(url_for('login'))
+
             except Exception as e:
+                print('Error occurred while committing to the database.')
                 db.session.rollback()
                 logging.error(f"Error committing to the database: {e}")
                 logging.error(traceback.format_exc())
                 flash('An error occurred during signup', 'error')
         else:
+            print('Form validation failed.')
             flash('Form validation failed. Please check your input.', 'error')
 
+    print('Rendering signup form...')
     return render_template('access/signup.html', title='Sign Up', form=form)
 
 
-@app.route('/terms-of-use')
-@login_required
+@app.route('/home/terms_of_use')
 def terms_of_use():
     return render_template('home/terms_of_use.html')
 
+@app.route('/home/privacy_policy', methods=['GET', 'POST'])
+def privacy_policy():
+    return render_template('home/privacy_policy.html')
 
 
 @app.route('/create_step', methods=['GET', 'POST'])
@@ -2115,10 +2173,6 @@ def create_step():
 def contact_us():
     return render_template('home/contact.html')
 
-
-@app.route('/home/privacy_policy',  methods=['GET', 'POST'])
-def privacy_policy():
-    return render_template('home/privacy_policy.html')
 
 
 @app.route('/test_carousel',  methods=['GET', 'POST'])

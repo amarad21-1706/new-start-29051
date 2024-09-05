@@ -755,6 +755,19 @@
                     "Provider",
                     "Guest"
                 ]
+            },
+            "Terms": {
+                "label": "Terms of Use",
+                "url": "/home/terms_of_use",
+                "protected": false,
+                "allowed_roles": [
+                    "Admin",
+                    "Employee",
+                    "Manager",
+                    "Authority",
+                    "Provider",
+                    "Guest"
+                ]
             }
         }
     },

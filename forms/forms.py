@@ -417,6 +417,7 @@ class SignupForm(FlaskForm):
     work_phone = StringField('Work Phone')
     tax_code = StringField('Tax Code')
     terms_accepted = BooleanField('I accept the Terms of Use', validators=[DataRequired()])
+    privacy_policy_accepted = BooleanField('I accept the Privacy Policy', validators=[DataRequired()])
 
     submit = SubmitField('Sign Up')
 

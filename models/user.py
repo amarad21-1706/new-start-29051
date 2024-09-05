@@ -119,6 +119,7 @@ class Users(db.Model, UserMixin):
     analytics = db.Column(db.Boolean, default=False)
     marketing = db.Column(db.Boolean, default=False)
     terms_accepted = db.Column(db.Boolean, nullable=False, default=False)
+    privacy_policy_accepted = db.Column(db.Boolean, nullable=False, default=False)
     accepted_terms_date = db.Column(db.DateTime, nullable=True)
 
     roles = db.relationship('Role', secondary='user_roles', backref=db.backref('users', lazy='dynamic'),
