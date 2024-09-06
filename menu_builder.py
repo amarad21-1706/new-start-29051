@@ -6,6 +6,7 @@ from jinja2.runtime import Undefined
 from config.config import generate_statistics_menu
 
 
+
 class MenuBuilder:
     def __init__(self, menu_data, allowed_roles=None):
         self.menu_data = menu_data
@@ -44,13 +45,12 @@ class MenuBuilder:
                     print(f"Skipping menu item due to missing attributes: {label}, {url}")
                     continue
 
-                # Check if the menu item is protected and the user is not authenticated
-                if protected and not is_authenticated and not include_protected:
+                # Skip protected menu items if user is not authenticated and the item is protected
+                if protected and not is_authenticated:
                     print(f"Skipping protected item as user is not authenticated: {label}")
                     continue
 
-                # Check if the user has any of the required roles to access this menu item
-                # Allow "Guest" role items for unauthenticated users
+                # Check if the authenticated user has the required role to access the menu item
                 if user_roles and not any(role in allowed_roles for role in user_roles):
                     print(f"Skipping item due to missing required roles: {label}")
                     continue
@@ -103,7 +103,6 @@ class MenuBuilder:
             return menu_items
         else:
             return raw_menu_data
-
 
 
 if __name__ == '__main__':
