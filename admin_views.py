@@ -230,6 +230,9 @@ class SignedContractsView(ModelView):
     # Include inline articles
     inline_models = [ContractArticleInlineModelForm(ContractArticle)]
 
+    def inaccessible_callback(self, name, **kwargs):
+        return redirect(url_for('login', next=request.url))
+
     def is_accessible(self):
         return current_user.is_authenticated  # Customize your authentication
 
@@ -4766,11 +4769,13 @@ def create_admin_views(app, intervals):
         # App 6 - contracts
 
         # Initialize Flask-Admin
-        admin_app6 = Admin(app,
-                           name='Contracts Management',
-                           url='/admin/contracts',
-                           template_mode='bootstrap4',
-                           endpoint='admin_contracts')
+        admin_app6 = Admin(
+            app,
+            name='Contracts Management',
+            url='/admin/contracts',
+            template_mode='bootstrap4',
+            endpoint='admin_contracts',
+        )
 
         # Add views for each model
         # (Use the custom view for contracts)

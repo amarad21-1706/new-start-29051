@@ -135,6 +135,10 @@ class Config:
         self.CACHE_REDIS_URL = 'redis://localhost:6379/0'
         self.CACHE_DEFAULT_TIMEOUT = 300
 
+        self.SESSION_COOKIE_SECURE = True
+        self.SESSION_COOKIE_HTTPONLY = True
+        self.SESSION_COOKIE_SAMESITE = 'Lax'
+
         # CAPTCHA
         # selfRECAPTCHA_PUBLIC_KEY = some_keys['recaptcha_public_key']
         # selfRECAPTCHA_PRIVATE_KEY = some_keys['recaptcha_private_key']

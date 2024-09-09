@@ -336,6 +336,7 @@ def before_request():
             session['is_authenticated'] = True
             g.current_user = current_user
             session.permanent = True
+            app.permanent_session_lifetime = timedelta(days=7)  # Example: 7 days session timeout
         else:
             # Default to 'Guest' for unauthenticated users
             session['roles'] = ['Guest']
@@ -5763,7 +5764,6 @@ def create_article():
         return redirect(request.referrer)
 
 
-
 @app.route('/checkout_success')
 def checkout_success():
     Cart.query.delete()
@@ -5779,6 +5779,7 @@ if __name__ == '__main__':
     with open(Path(json_file_path), 'r') as file:
         main_menu_items = json.load(file)
 
+    '''
     # Create a MenuBuilder instance for the "Guest" role
     guest_menu_builder = MenuBuilder(main_menu_items, ["guest"])
     guest_menu_data = guest_menu_builder.parse_menu_data(user_roles=["guest"],
@@ -5789,6 +5790,7 @@ if __name__ == '__main__':
         "is_authenticated": False,
         "public_menu": guest_menu_data
     }
+    '''
 
     port = int(os.environ.get('PORT', 5000))
 
