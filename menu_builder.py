@@ -4,7 +4,7 @@ import json
 from utils.utils import get_current_directory
 from jinja2.runtime import Undefined
 from config.config import generate_statistics_menu
-
+from flask import g, current_app
 
 
 class MenuBuilder:
@@ -17,6 +17,7 @@ class MenuBuilder:
         if not is_authenticated:
             user_roles = user_roles or ['Guest']
 
+        print('Rappel is auth: maybe I should use g. here?', is_authenticated, g.user.is_authenticated)
         # Generate the menu items based on the user's roles and authentication status
         menu_items = self.parse_menu_data(user_roles=user_roles, is_authenticated=is_authenticated, include_protected=include_protected)
         return menu_items

@@ -1053,6 +1053,7 @@ def index():
     # Determine if the cookie banner should be shown
     show_cookie_banner = 'Admin' not in user_roles and cookies_accepted == 'false'
 
+    print('Menu again')
     # Create MenuBuilder with user roles
     menu_builder = MenuBuilder(main_menu_items, allowed_roles=user_roles)
     # Generate menu for the current user
