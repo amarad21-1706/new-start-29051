@@ -279,6 +279,7 @@ def load_user(user_id):
         session['user_roles'] = [role.name for role in user.roles] if user.roles else []
     return user
 
+
 def initialize_app(app):
     with app.app_context():
 
@@ -345,7 +346,6 @@ def before_request():
         logging.error(f"Error in before_request: {str(e)}")
         raise e
     pass
-
 
 
 bcrypt = Bcrypt(app)
@@ -567,6 +567,20 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
             allowed_roles = list(intersection) if intersection else ["Guest"]
 
             menu_builder_instance = MenuBuilder(main_menu_items, allowed_roles=allowed_roles)
+
+            print('bring g. here')
+
+            # Check if g.user is set and if the user is authenticated
+            if hasattr(g, 'user') and g.user:
+                # User is authenticated, set roles and status accordingly
+                user_roles = [role.name for role in g.user.roles] if g.user.roles else ['Guest']
+                is_authenticated = g.user.is_authenticated
+            # else:
+            #     # If g.user is not available, default to Guest
+            #     user_roles = user_roles or ['Guest']
+            #     is_authenticated = False
+
+            print('*** is authenticated ***', is_authenticated)
 
             if limited_menu:
                 menu_data = menu_builder_instance.parse_menu_data(user_roles=user_roles,
@@ -1042,7 +1056,19 @@ def index():
     # Create MenuBuilder with user roles
     menu_builder = MenuBuilder(main_menu_items, allowed_roles=user_roles)
     # Generate menu for the current user
-    generated_menu = menu_builder.generate_menu(user_roles=user_roles, is_authenticated=True, include_protected=False)
+
+    # Check if g.user is set and if the user is authenticated
+    if hasattr(g, 'user') and g.user:
+        # User is authenticated, set roles and status accordingly
+        user_roles = [role.name for role in g.user.roles] if g.user.roles else ['Guest']
+        is_authenticated = g.user.is_authenticated
+    else:
+        # If g.user is not available, default to Guest
+        user_roles = user_roles or ['Guest']
+        is_authenticated = False
+
+    print('*** is authenticated ***', is_authenticated)
+    generated_menu = menu_builder.generate_menu(user_roles=user_roles, is_authenticated=is_authenticated, include_protected=False)
 
     # Check if the user has events
     try:
