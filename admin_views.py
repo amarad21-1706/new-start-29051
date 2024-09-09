@@ -85,7 +85,36 @@ from flask_admin.contrib.sqla import ModelView
 from sqlalchemy.exc import IntegrityError
 import uuid
 
+from flask_admin import Admin, AdminIndexView, expose
+from flask_login import current_user
+from flask import session
+
 config = Config()
+
+
+# Custom Admin Index View to manage session roles
+from flask_admin import Admin, AdminIndexView, expose
+from flask_login import current_user
+from flask import session
+
+# Custom Admin Index View to manage session roles
+'''
+class MyAdminIndexView(AdminIndexView):
+    @expose('/')
+    def index(self):
+        # Refresh session or set necessary variables
+        if current_user.is_authenticated:
+            session['roles'] = [role.name for role in current_user.roles] if current_user.roles else ['Guest']
+            session['is_authenticated'] = True
+        else:
+            session['roles'] = ['Guest']
+            session['is_authenticated'] = False
+        session.modified = True
+        return super(MyAdminIndexView, self).index()
+
+# Ensure the AdminIndexView has a unique name and endpoint
+index_view = MyAdminIndexView(name='contracts_admin_index')  # Add a unique name for the index view
+'''
 
 def check_record_exists(form, company_id):
     # Assuming form fields map to model fields

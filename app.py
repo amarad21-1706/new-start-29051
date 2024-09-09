@@ -325,19 +325,27 @@ def check_internet():
     except (requests.ConnectionError, requests.Timeout) as exception:
         return False
 
+
 @app.before_request
 def before_request():
     try:
         if current_user.is_authenticated:
             session['session_workflows'] = get_session_workflows(db.session, current_user)
-            # print('session w', session['session_workflows'])
+            print('session w', session['session_workflows'])
+            session['roles'] = [role.name for role in current_user.roles] if current_user.roles else ['Guest']
+            session['is_authenticated'] = True
             g.current_user = current_user
             session.permanent = True
-            session.modified = True
+        else:
+            # Default to 'Guest' for unauthenticated users
+            session['roles'] = ['Guest']
+            session['is_authenticated'] = False
+        session.modified = True
     except Exception as e:
         logging.error(f"Error in before_request: {str(e)}")
         raise e
     pass
+
 
 
 bcrypt = Bcrypt(app)
