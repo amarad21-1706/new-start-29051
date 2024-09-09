@@ -513,8 +513,9 @@
             {% set role_initials = {'Admin': 'A', 'Authority': 'T', 'Manager': 'M', 'Employee': 'E', 'Provider': 'P', 'Guest': 'G'} %}
             {% set role_initial = 'G' %} <!-- Default to Guest if no roles are found -->
             {% for role in user_roles %}
-                {% if role in role_initials and role_initial == 'G' %}
+                {% if role in role_initials %}
                     {% set role_initial = role_initials[role] %}
+                    {% break %} <!-- Stop at the first matching role -->
                 {% endif %}
             {% endfor %}
 

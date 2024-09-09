@@ -413,38 +413,26 @@ def clear_session_on_startup():
     session['user_roles'] = ['Guest']
     print(f"Session state after clearing: {session}")
 
-
 @app.before_request
 def before_request():
     try:
-        # Explicitly log out any authenticated user to reset state
-        if current_user.is_authenticated:
-            print('Logging out user to reset session state.')
-            logout_user()
-
         # Check if the user is authenticated using Flask-Login
         if current_user.is_authenticated:
-            print('User is still authenticated after logout_user(), this should not happen.')
-        else:
-            print('User is not authenticated.')
-
-        # If authenticated, update session workflows and set global context
-        if current_user.is_authenticated:
+            # If authenticated, update session workflows and set global context
             session['session_workflows'] = get_session_workflows(db.session, current_user)
             g.current_user = current_user
             session['is_authenticated'] = True
-            session['user_roles'] = session.get('user_roles', [])
-            session.permanent = True
+            session['user_roles'] = session.get('user_roles', [])  # Preserve user roles from session
+            session.permanent = True  # Keep session alive as long as the browser is open
             print('Authenticated session initialized - True')
         else:
-            print('Clearing session on first request.')
-            session.clear()
+            # For non-authenticated users, ensure session state is set correctly
+            print('Guest session initialized')
             session['is_authenticated'] = False
             session['user_roles'] = ['Guest']
-            print('Guest session initialized')
 
         print(f"Session state: {session}")  # Debugging line
-        session.modified = True
+        session.modified = True  # Ensure changes are saved
     except Exception as e:
         logging.error(f"Error in before_request: {str(e)}")
         raise e
@@ -1701,117 +1689,202 @@ def custom_roles_required(*roles):
         return wrapper
     return decorator
 
-'''
+
+
+@app.route('/left_menu', methods=['GET', 'POST'])
+# TODO left_menu.html of home.html?
+#@generate_route_and_menu('/home', allowed_roles=["Employee"], template='home/left_menu.html')
+@generate_route_and_menu('/home', allowed_roles=["Employee"], template='home/home.html')
+def left_menu():
+
+    allowed_roles = ["Employee", "Manager", "Authority", "Admin", "Provider"]
+
+    # Fetch role IDs
+    role_ids = []
+    for role_name in user_roles:
+        role = Role.query.filter_by(name=role_name).first()
+        if role:
+            role_ids.append(role.id)
+
+    # Fetch containers based on role IDs
+    containers = []
+    if role_ids:
+        try:
+            containers = Container.query.filter(
+                Container.role_id.in_(role_ids)
+            ).order_by(Container.page.desc()).all()
+
+            # Iterate over the containers and print the 'container' field
+            for container in containers:
+                print('container:', container.page, container.content_type, container.content)
+        except Exception as e:
+            app.logger.error(f"Error fetching containers: {e}")
+            containers = []
+
+    # Check if the lists intersect
+    intersection = set(user_roles) & set(allowed_roles)
+
+    left_menu_items = []
+    if intersection:
+        left_menu_items = get_left_menu_items(list(intersection))
+
+    # Check for unread notices
+    unread_notices_count = 0
+    if is_authenticated:
+        unread_notices_count = Post.query.filter_by(user_id=current_user.id, marked_as_read=False).count()
+
+    additional_data = {
+        "username": username,
+        "is_authenticated": is_authenticated,
+        "user_roles": user_roles,
+        "unread_notices_count": unread_notices_count,
+        "main_menu_items": None,
+        "admin_menu_data": None,
+        "authority_menu_data": None,
+        "manager_menu_data": None,
+        "employee_menu_data": None,
+        "guest_menu_data": None,
+        "allowed_roles": allowed_roles,
+        "limited_menu": None,  # Assuming limited_menu is defined elsewhere
+        "left_menu_items": left_menu_items,
+        "containers": containers,
+    }
+
+    return render_template('home/home.html', **additional_data)
+
+
 @app.route('/')
-# @generate_route_and_menu('/', allowed_roles=["Guest"], template='home/home.html', limited_menu=True)
+@generate_route_and_menu('/', allowed_roles=["Guest"], template='home/home.html', limited_menu=True)
 def index():
+    user_id = session.get('user_id')
+    user_roles = session.get('user_roles', [])
+    analytics = request.cookies.get('analytics', 'false')
+    marketing = request.cookies.get('marketing', 'false')
+    cookies_accepted = request.cookies.get('cookies_accepted', 'false')
+
+    # Determine if the cookie banner should be shown
+    show_cookie_banner = 'Admin' not in user_roles and cookies_accepted == 'false'
+
+    # Create MenuBuilder with user roles
+    menu_builder = MenuBuilder(main_menu_items, allowed_roles=user_roles)
+    # Generate menu for the current user
+    generated_menu = menu_builder.generate_menu(user_roles=user_roles, is_authenticated=True)
+
+    # Check if the user has events
     try:
-        print('index 0')
-        user_id = session.get('user_id')
-        print('index 1')
-        user_roles = session.get('user_roles', [])
-        print('index 2')
-
-        # Generate the menu using MenuBuilder
-        menu_builder = MenuBuilder(main_menu_items, allowed_roles=user_roles)
-        generated_menu = menu_builder.generate_menu(user_roles=user_roles, is_authenticated=False)
-        print(f"Full Generated Menu: {generated_menu}")  # This should be here
-
-        # Additional logic and rendering
-        return render_template('home/home.html', generated_menu=generated_menu)
+        if user_id:
+            events = Event.query.filter_by(user_id=user_id).count()
+            has_events = events > 0
+        else:
+            has_events = False
     except Exception as e:
-        import traceback
-        print(f"Error in index route: {e}")
-        print(traceback.format_exc())  # Print full stack trace
-        return "An error occurred", 500
+        app.logger.error(f"Error checking for events: {e}")
+        has_events = False
 
-'''
+    return render_template('home/home.html',
+                           analytics=analytics, marketing=marketing,
+                           generated_menu=generated_menu,
+                           show_cookie_banner=show_cookie_banner,
+                           has_events=has_events)
 
-@app.route('/')
-def index():
-    print('index 0')
+
+@app.route('/admin')
+@generate_route_and_menu('/admin', allowed_roles=["Admin"], template='home/home.html')
+def admin_page():
+    print("***ADMIN PAGE***")
+    pass
+
+
+@app.route('/authority')
+@generate_route_and_menu('/authority', allowed_roles=["Authority"], template='home/home.html')
+def authority_page():
+    pass
+
+
+@app.route('/manager')
+@generate_route_and_menu('/manager', allowed_roles=["Manager"], template='home/home.html')
+def manager_page():
+    pass
+
+
+@app.route('/employee')
+@generate_route_and_menu('/home', allowed_roles=["Employee"], template='home/home.html')
+def employee_page():
+
+    #session['user_roles'] = [role.name for role in users.roles] if users.roles else []
+    left_menu = get_left_menu_items(["Employee"])
     try:
-        print('index 1')
-
-        # Determine user roles and authentication status
-        user_roles = session.get('user_roles', ['Guest'])
-        is_authenticated = session.get('is_authenticated', False)
-
-        username = current_user.username if is_authenticated else "Guest"
-        print('index 2')
-
-        # Fetch unread notices count
-        unread_notices_count = 0
-        admin_tickets_count = 0
-        open_tickets_count = 0
-
-        if is_authenticated:
-            # Calculate unread notices and tickets count
-            unread_notices_count = Post.query.filter_by(user_id=current_user.id, marked_as_read=False).count()
-            if 'Admin' in user_roles:
-                admin_tickets_count = Ticket.query.filter_by(status_id=2, marked_as_read=False).count()
-            else:
-                open_tickets_count = Ticket.query.filter_by(user_id=current_user.id, status_id=2, marked_as_read=False).count()
-
-        # Fetch containers for the user roles
-        role_ids = [role.id for role in Role.query.filter(Role.name.in_(user_roles)).all()]
-        containers = Container.query.filter(Container.role_id.in_(role_ids)).order_by(Container.container_order).all() if role_ids else []
-
-        # Generate the main menu using MenuBuilder
-        menu_builder = MenuBuilder(main_menu_items, allowed_roles=user_roles)
-        generated_menu = menu_builder.generate_menu(user_roles=user_roles, is_authenticated=is_authenticated)
-        print('Generated menu:', generated_menu)
-
-        # Fetch cards or other dynamic content as needed
-        company_id = session.get('company_id')
-        card_data = get_cards(company_id)
-
-        # Handle cookie consent logic
-        cookies_accepted = 'true' if is_authenticated and current_user.cookies_accepted else 'false'
-        show_cookie_banner = 'Admin' not in user_roles and cookies_accepted == 'false'
-
-        # Additional data to pass to the template
         additional_data = {
-            "username": username,
-            "is_authenticated": is_authenticated,
-            "user_roles": user_roles,
-            "unread_notices_count": unread_notices_count,
-            "admin_tickets_count": admin_tickets_count,
-            "open_tickets_count": open_tickets_count,
-            "main_menu_items": generated_menu,
-            "containers": containers,
-            "cards": card_data,
-            "show_cookie_banner": show_cookie_banner
+            'left_menu_items': left_menu,
+            'user_roles': session.get('user_roles', []),
+            'allowed_roles': ["Manager", "Employee", "Admin"],
         }
-
         return render_template('home/home.html', **additional_data)
 
     except Exception as e:
-        import traceback
-        print(f"Error in index route: {e}")
-        print(traceback.format_exc())  # Print full stack trace
-        return "An error occurred", 500
+        #app.logger.error(str(e))
+        return render_template('error.html')
 
 
-def get_left_menu_items(role, area=None):
+@app.route('/guest')
+@generate_route_and_menu('/index', allowed_roles=["Guest"], template='home/home.html')
+def guest_page():
+
+    # app.logger.debug("Home route accessed")
+    is_authenticated = current_user.is_autenticated
+    # Render the home page with 'Guest' menu
+    additional_data = {
+        "username": "Guest",
+        "is_authenticated": is_authenticated,
+        "main_menu_items": guest_menu_data,
+        "admin_menu_data": guest_menu_data,
+        "authority_menu_data": guest_menu_data,
+        "manager_menu_data": guest_menu_data,
+        "employee_menu_data": guest_menu_data,
+        "guest_menu_data": guest_menu_data,
+        "user_roles": ["Guest"],
+        "allowed_roles": ["Guest"]
+    }
+    pass
+
+
+def get_left_menu_items(role):
     # Load the left menu structure from the JSON file
-    if area:
-        json_file_path = get_current_directory() + f'/static/js/left_menu_structure_{area}.json'
-    else:
-        json_file_path = get_current_directory() + '/static/js/left_menu_structure.json'
-
+    json_file_path = get_current_directory() + '/static/js/left_menu_structure.json'
     with open(Path(json_file_path), 'r') as file:
         left_menu_items = json.load(file)
 
-    # Default to 'Guest' if role is not provided
-    if not role:
+    if not role or len(role) == 0:
         role = ['Guest']
 
-    # Create MenuBuilder instance
+    # Create a MenuBuilder instance for the "Guest" role
     left_menu_builder = MenuBuilder(left_menu_items, role)
-    left_menu_data = left_menu_builder.parse_menu_data(user_roles=role, is_authenticated=True)
+    print('parse 3.2')
+    left_menu_items = left_menu_builder.parse_menu_data(user_roles=role, is_authenticated=True)
+    # Pass the "Guest" menu data to the template
+    return left_menu_items
 
-    return left_menu_data
+
+def get_left_menu_items_limited(role, area):
+    # Load the left menu structure from the JSON file
+
+    if area:
+        json_file_path = get_current_directory() + '/static/js/left_menu_structure_' + area + '.json'
+        with open(Path(json_file_path), 'r') as file:
+            left_menu_items = json.load(file)
+    else:
+        json_file_path = get_current_directory() + '/static/js/left_menu_structure.json'
+        with open(Path(json_file_path), 'r') as file:
+            left_menu_items = json.load(file)
+
+    if not role or len(role) == 0:
+        role = ['Guest']
+
+    # Create a MenuBuilder instance for the "Guest" role
+    left_menu_builder = MenuBuilder(left_menu_items, role)
+    print('parse 4')
+    left_menu_items = left_menu_builder.parse_menu_data(user_roles=role, is_authenticated=True)
+    return left_menu_items
 
 
 
@@ -4225,6 +4298,13 @@ def internal_error(error):
 def back():
     # Add any logic you need before redirecting, if necessary
     return redirect(url_for('home'))  # Assuming 'home' is the route for your home page
+
+
+@app.route('/')
+def home():
+
+    # app.logger.debug("Home route accessed")
+    return render_template('index.html')  # Render your home page template
 
 
 @app.route('/noticeboard', methods=['GET', 'POST'])

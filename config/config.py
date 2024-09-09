@@ -167,6 +167,11 @@ class Config:
         #self.SESSION_COOKIE_HTTPONLY = True
         #self.SESSION_COOKIE_SECURE = True  # Only set to True if using HTTPS
 
+        self.SESSION_COOKIE_SECURE = True  # Use True if HTTPS is enabled
+        self.SESSION_COOKIE_HTTPONLY = True
+        self.SESSION_COOKIE_SAMESITE = 'Lax'
+        self.REMEMBER_COOKIE_DURATION = timedelta(seconds=0) # Adjust duration as needed
+
         # Emailing
         '''
         self.MAIL_SERVER = 'localhost'

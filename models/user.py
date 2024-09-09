@@ -164,16 +164,25 @@ class Users(db.Model, UserMixin):
         # Otherwise, assume it's bcrypt
         return bcrypt.checkpw(password.encode('utf-8'), self.password_hash.encode('utf-8'))
 
+
+    @property
+    def is_authenticated(self):
+        # This should return True if the user is authenticated, else False
+        return True
+
+    @property
     def is_active(self):
-        # Implement the logic to check if the user is active
-        return True  # Modify this based on your requirements
+        # This should return True if the user account is active, else False
+        return True
+
+    @property
+    def is_anonymous(self):
+        # This should return False as anonymous users are not allowed
+        return False
 
     def get_id(self):
-        # Implement the logic to get the user's ID
-        return str(self.id)  # Modify this based on your requirements
-
-    def is_authenticated(self):
-        return True  # Modify based on your authentication logic
+        # Return the unique identifier of the user (usually the primary key)
+        return str(self.id)
 
     @classmethod
     def get_user_by_id(cls, user_id):
@@ -181,7 +190,7 @@ class Users(db.Model, UserMixin):
 
     def is_admin(self):
         # Check if the user has an admin role
-        return 'admin' in [role.name for role in self.roles]
+        return 'Admin' in [role.name for role in self.roles]
 
     def has_role(self, role_name):
         return any(role.name == role_name for role in self.roles)

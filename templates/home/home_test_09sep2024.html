@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Home</title>
+</head>
+<body>
+    <h1>Hello World!</h1>
+    <ul>
+    {% for item in generated_menu %}
+        <li>{{ item.label }} - <a href="{{ item.url }}">{{ item.url }}</a></li>
+        {% if item.submenus %}
+            <ul>
+            {% for submenu in item.submenus %}
+                <li>{{ submenu.label }} - <a href="{{ submenu.url }}">{{ submenu.url }}</a></li>
+            {% endfor %}
+            </ul>
+        {% endif %}
+    {% endfor %}
+    </ul>
+</body>
+</html>
