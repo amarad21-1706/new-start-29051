@@ -10,7 +10,7 @@ from config.config import generate_statistics_menu
 class MenuBuilder:
     def __init__(self, menu_data, allowed_roles=None):
         self.menu_data = menu_data
-        self.allowed_roles = allowed_roles or []
+        self.allowed_roles = allowed_roles or ['Guest']
 
     def generate_menu(self, user_roles=None, is_authenticated=False, include_protected=False):
         # If the user is not authenticated, assume "Guest" role
@@ -26,6 +26,8 @@ class MenuBuilder:
             raw_menu_data = self.menu_data
 
         menu_items = []
+
+        user_roles = user_roles or ['Guest']
 
         if isinstance(raw_menu_data, dict):
             for menu_item_name, menu_item_data in raw_menu_data.items():

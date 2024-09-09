@@ -404,16 +404,11 @@ with open(Path(json_file_path), 'r') as file:
     main_menu_items = json.load(file)
 
 
-# Create an instance of MenuBuilder
-menu_builder = MenuBuilder(main_menu_items, ["Guest"])
-parsed_menu_data = menu_builder.parse_menu_data(user_roles=["Guest"], is_authenticated=False, include_protected=False)
-
 def is_user_role(session, user_id, role_name):
     # Get user roles for the specified user ID
     user_roles = get_user_roles(session, user_id)
     # Check if the specified role name (in lowercase) is in the user's roles
     return role_name in user_roles
-
 
 
 def generate_reset_token(email):
@@ -2033,48 +2028,17 @@ def get_countries():
 def signup():
     form = SignupForm()
 
-    print('Request method:', request.method)
-
     if request.method == 'POST':
-        print('Form submitted, checking validation...')
-
         if form.validate_on_submit():
-            print('Form validation successful.')
-
-            # Print form field data for debugging
-            print(f"Username: {form.username.data}")
-            print(f"Email: {form.email.data}")
-            print(f"Title: {form.title.data}")
-            print(f"First Name: {form.first_name.data}")
-            print(f"Middle Name: {form.mid_name.data}")
-            print(f"Last Name: {form.last_name.data}")
-            print(f"Country: {form.country.data}")
-            print(f"Region: {form.region.data}")
-            print(f"Province: {form.province.data}")
-            print(f"Zip Code: {form.zip_code.data}")
-            print(f"City: {form.city.data}")
-            print(f"Street: {form.street.data}")
-            print(f"Address: {form.address.data}")
-            print(f"Address1: {form.address1.data}")
-            print(f"Phone Prefix: {form.phone_prefix.data}")
-            print(f"Mobile Phone: {form.mobile_phone.data}")
-            print(f"Work Phone: {form.work_phone.data}")
-            print(f"Tax Code: {form.tax_code.data}")
-            print(f"Terms Accepted: {form.terms_accepted.data}")
-            print(f"Privacy Policy Accepted: {form.privacy_policy_accepted.data}")
-
             # Check if the user has accepted the terms of use
             if not form.terms_accepted.data:
-                print('Terms not accepted.')
                 flash('You must agree with the Terms and conditions to sign up.', 'error')
                 return render_template('access/signup.html', title='Sign Up', form=form)
 
             # Check if the user has accepted the privacy policy
             if not form.privacy_policy_accepted.data:
-                print('Privacy policy not accepted.')
                 flash('You must agree with the Privacy Policy to sign up.', 'error')
                 return render_template('access/signup.html', title='Sign Up', form=form)
-
 
             try:
                 print('Creating new user...')
@@ -2105,32 +2069,22 @@ def signup():
                     user_2fa_secret=pyotp.random_base32()  # Generate the 2FA secret
                 )
 
-                print(f"New user data: {new_user}")
-
-                print('Setting password for new user...')
                 new_user.set_password(form.password.data)
 
-                print('Attempting to add new user to database...')
                 db.session.add(new_user)
-
-                print('Attempting to commit new user to the database...')
                 db.session.commit()
-                print('User added to database successfully.')
 
                 flash('Your account has been created! You can now log in.', 'success')
                 return redirect(url_for('login'))
 
             except Exception as e:
-                print('Error occurred while committing to the database.')
                 db.session.rollback()
                 logging.error(f"Error committing to the database: {e}")
                 logging.error(traceback.format_exc())
                 flash('An error occurred during signup', 'error')
         else:
-            print('Form validation failed.')
             flash('Form validation failed. Please check your input.', 'error')
 
-    print('Rendering signup form...')
     return render_template('access/signup.html', title='Sign Up', form=form)
 
 
@@ -2559,8 +2513,6 @@ def dashboard_setup_step_base_data():
         data[file_path_index] = f"{file_name}{file_extension}"
 
         report_data.append(data)
-        # Print the modified data
-        #print(data)
 
     # Render the template with the report data
     return render_template('generic_report.html',
@@ -2598,21 +2550,15 @@ def dashboard_company_audit_progression():
                 filtered_records.append(record)
         return filtered_records
 
-    print('step 0', time_scope)
-
     sorted_values_raw = get_pd_report_from_base_data_wtq(engine)
-    print('step 1', sorted_values_raw)
     # Example usage to filter 'current' records
     sorted_values = filter_records_by_time_qualifier(sorted_values_raw, time_scope)
 
     if is_user_role(session, current_user.id, 'Admin'):
-        print('admin')
         company_id = None  # will list all companies' cards
     else:
         company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-        print('non-admin', company_id)
 
-    print('values', sorted_values)
     html_cards = generate_html_cards_progression_with_progress_bars_in_short(sorted_values, time_scope or {}, session,
                                                                        company_id)
 
@@ -2685,14 +2631,11 @@ def company_overview_current222():
                     filtered_records.append(record)
             return filtered_records
 
-        print('step 0 - filtered records', filtered_records, time_scope)
         sorted_values_raw = get_pd_report_from_base_data_wtq(engine)
 
-        print('step 1 - raw records', sorted_values_raw, time_scope)
         # Example usage to filter 'current' records
         sorted_values = filter_records_by_time_qualifier(sorted_values_raw, time_scope)
 
-        print('step 2 - sorted records', sorted_values, time_scope)
         if is_user_role(session, current_user.id, 'Admin'):
             company_id = None  # will list all companies' cards
         else:
@@ -2769,14 +2712,10 @@ def company_overview_historical222():
         # Initialize filtered_records to avoid referencing before assignment
         filtered_records = []
 
-        print('step 0 - filtered records', filtered_records, time_scope)
-
         sorted_values_raw = get_pd_report_from_base_data_wtq(engine)
-        print('step 1 - sorted values raw', sorted_values_raw)
 
         # Example usage to filter 'current' records
         sorted_values = filter_records_by_time_qualifier(sorted_values_raw, time_scope)
-        print('step 2 - sorted values', sorted_values)
 
         if is_user_role(db.session, current_user.id, 'Admin'):
             company_id = None  # will list all companies' cards
@@ -2786,10 +2725,8 @@ def company_overview_historical222():
                 company_id = company_user.company_id
             else:
                 company_id = None
-            print('step 3 - company id', company_id)
 
         html_cards = generate_html_cards_progression_with_progress_bars111(sorted_values, time_scope, db.session, company_id)
-        print('step 4 - html cards generated')
 
         # Write HTML code to a file
         with open('report_cards1.html', 'w') as f:
@@ -3170,11 +3107,8 @@ def add_records_bws():
             step_id=step_id
         ).first()
 
-        if existing_record:
-            print('Record already exists for base_data_id:', base_data_id,
-                  ', workflow_id:', workflow_id,
-                  ', step_id:', step_id)
-        else:
+        # Only proceed if the record does not exist
+        if not existing_record:
             # Create a new record if essential values are present
             if base_data_id and workflow_id and step_id:
                 new_record = StepBaseData(
@@ -3185,8 +3119,7 @@ def add_records_bws():
                     hidden_data=hidden_data,
                     auto_move=auto_move,
                     start_date=datetime.now(),
-                    deadline_date = None
-
+                    deadline_date=None
                 )
 
                 if auto_move:
@@ -3198,8 +3131,6 @@ def add_records_bws():
                     db.session.commit()
                 except IntegrityError:
                     db.session.rollback()
-                    print('IntegrityError: Duplicate record detected for base_data_id:',
-                          base_data_id, ', workflow_id:', workflow_id, ', step_id:', step_id)
             else:
                 null_keys = [key for key, value in parsed_data.items() if value == 'n.a.']
 
@@ -3253,9 +3184,6 @@ def delete_records_bws():
             # Delete the record if it exists
             db.session.delete(existing_record)
             db.session.commit()
-            print('Record deleted for base_data_id:', base_data_id,
-                  ', workflow_id:', workflow_id,
-                  ', step_id:', step_id)
             records_deleted += 1
         else:
             print('Record not found for base_data_id:', base_data_id,
@@ -3967,7 +3895,6 @@ def handle_post_submission(form, company_id, user_id, questionnaire_id, answers_
 
 def serialize_answers(form_data):
     answers = {}
-    print('serialize answers, form_data:', form_data)
     for key in form_data.keys():
         # Extract width data, assuming it's submitted as part of the form data
         width_key = key + '_width'  # Assuming width data is submitted with a key suffix '_width'
@@ -4963,10 +4890,6 @@ def admin_dashboard(area_id, subarea_id):
         aggregation_rule_json = json.dumps(aggregation_rule)
         additional_info_json = json.dumps(additional_info)
 
-        print("Dashboard Data JSON:", dashboard_data_json)  # Debugging output
-        print("Aggregation Rule JSON:", aggregation_rule_json)  # Debugging output
-        print("Additional Info JSON:", additional_info_json)  # Debugging output
-
         return render_template('admin_dashboard.html',
                                area_id=area_id,
                                subarea_id=subarea_id,
@@ -5398,9 +5321,7 @@ def add_event():
             else:
                 app.logger.info(f"Form validation succeeded: {form.data}")
 
-        print('validation check')
         if form.validate_on_submit():
-            print('valid!')
             app.logger.info(f"Form validated: {form.data}")
             app.logger.info(f"Start: {form.start.data}, End: {form.end.data}, Recurrence End: {form.recurrence_end.data}")
 
@@ -5440,15 +5361,12 @@ def add_event():
                             company_id=company_id,
                         )
 
-                        print('added branch 1')
+
                         db.session.add(new_event)
                 else:
-                    print('added branch 2')
                     db.session.add(event)
 
                 db.session.commit()
-
-                print('committed')
                 flash('Event added successfully!', 'success')
                 app.logger.info('Event added successfully!')
                 return redirect(url_for('calendar'))
@@ -5624,24 +5542,17 @@ def add_plan_to_cart(plan_id):
 @app.route('/add_to_cart/<int:product_id>', methods=['POST'])
 @login_required
 def add_to_cart(product_id):
-    print('add to cart 1')
     try:
         quantity = int(request.form.get('quantity', 1))
-        print(f'Received quantity: {quantity}')
         product_to_add = Product.query.get(product_id)
-        print('add to cart 2', product_to_add)
         user_id = current_user.id
         company_id = session.get('company_id')
-        print(f'user_id: {user_id}, company_id: {company_id}')
 
         if product_to_add:
-            print('add to cart 3', product_to_add)
             cart_item = Cart.query.filter_by(product_id=product_id, user_id=user_id, company_id=company_id).first()
             if cart_item:
-                print('add to cart 4', cart_item)
                 cart_item.quantity += quantity
             else:
-                print('add to cart 5', product_to_add)
                 new_cart_item = Cart(
                     product_id=product_to_add.id,
                     user_id=user_id,
@@ -5651,21 +5562,17 @@ def add_to_cart(product_id):
                 )
                 db.session.add(new_cart_item)
             db.session.commit()
-            print('added to cart (', product_to_add.id, ')')
             flash('Product added to cart successfully!', 'success')
         else:
-            print('add to cart 7 no prod')
             flash('Product not found.', 'error')
         return redirect(url_for('products_page'))
     except Exception as e:
-        print(f'add to cart 8 other errors: {e}')
         db.session.rollback()
         flash('An error occurred while adding to cart.', 'error')
         return redirect(url_for('products_page'))
 
 
 def get_cart_items(user_id, company_id, role):
-    print('getting items')
     if 'Manager' in role:
         cart_items = Cart.query.filter_by(company_id=company_id).all()
     else:
@@ -5826,7 +5733,6 @@ def create_article():
             print(f"Error validating CSRF token: {str(e)}")
             return redirect(request.referrer)
 
-        print('nearly there 1')
         # Create a new ContractArticle instance
         new_article = ContractArticle(
             contract_id=contract_id,
@@ -5837,7 +5743,6 @@ def create_article():
         )
 
         # Add to the session and commit to the database
-        print('nearly there 2')
         db.session.add(new_article)
         db.session.commit()
 

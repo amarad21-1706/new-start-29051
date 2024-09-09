@@ -23,7 +23,9 @@ class UserManager:
                 print('checked ok', user)
                 session['user_id'] = user.id
                 session['username'] = user.username
-                session['roles'] = [role.name for role in user.roles]
+                # Assume user.roles is a list of user roles
+                session['roles'] = [role.name for role in user.roles] if user.roles else ['Guest']
+
                 session['email'] = user.email
                 print('roles', session['roles'])
                 return user
