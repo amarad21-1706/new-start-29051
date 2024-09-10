@@ -675,6 +675,64 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
     return decorator
 
 
+
+@app.route('/cookie-settings')
+def cookie_settings():
+    return render_template('cookie_settings.html')
+
+
+@app.route('/update_cookies', methods=['POST'])
+def update_cookies():
+    response = make_response(redirect(url_for('cookie_settings')))
+    analytics = 'true' if request.form.get('analytics') == 'true' else 'false'
+    marketing = 'true' if request.form.get('marketing') == 'true' else 'false'
+
+    response.set_cookie('analytics', analytics, max_age=60 * 60 * 24 * 30)  # 30 days
+    response.set_cookie('marketing', marketing, max_age=60 * 60 * 24 * 30)
+
+    # Update the user's cookie preferences in the database if necessary
+    user = Users.query.get(current_user.id)
+    user.analytics = analytics == 'true'
+    user.marketing = marketing == 'true'
+    db.session.commit()
+
+    current_app.logger.debug("Updated cookie preferences: Analytics - {}, Marketing - {}".format(analytics, marketing))
+
+    return response
+
+
+
+@app.route('/set_cookies', methods=['POST'])
+def set_cookies():
+    response = make_response(redirect(url_for('index')))
+    consent = request.form.get('consent')
+
+    if consent == 'allow_all':
+        response.set_cookie('analytics', 'true', max_age=60 * 60 * 24 * 30)  # 30 days
+        response.set_cookie('marketing', 'true', max_age=60 * 60 * 24 * 30)
+    elif consent == 'reject_all':
+        response.set_cookie('analytics', 'false', max_age=60 * 60 * 24 * 30)
+        response.set_cookie('marketing', 'false', max_age=60 * 60 * 24 * 30)
+    elif consent == 'customize':
+        analytics = request.form.get('analytics', 'false')
+        marketing = request.form.get('marketing', 'false')
+        response.set_cookie('analytics', analytics, max_age=60 * 60 * 24 * 30)
+        response.set_cookie('marketing', marketing, max_age=60 * 60 * 24 * 30)
+
+    # Set a cookie to indicate that the user has made a choice regarding cookies
+    response.set_cookie('cookies_accepted', 'true', max_age=60 * 60 * 24 * 30)
+
+    # Update the user's cookies_accepted field in the database
+    if current_user.is_authenticated:
+        user = Users.query.get(current_user.id)
+        user.cookies_accepted = True
+        db.session.commit()
+
+    current_app.logger.debug("Set cookies accepted to true in both cookie and database")
+
+    return response
+
+
 def redirect_based_on_role(user):
     if user.has_role('Admin'):
         return redirect(url_for('admin_page'))
@@ -1064,11 +1122,7 @@ def index():
 
     # Check if the user has events
     try:
-        if user_id:
-            events = Event.query.filter_by(user_id=user_id).count()
-            has_events = events > 0
-        else:
-            has_events = False
+        has_events = Event.query.filter_by(user_id=user_id).count() > 0 if user_id else False
     except Exception as e:
         app.logger.error(f"Error checking for events: {e}")
         has_events = False
@@ -1078,7 +1132,6 @@ def index():
                            generated_menu=generated_menu,
                            show_cookie_banner=show_cookie_banner,
                            has_events=has_events)
-
 
 
 @app.route('/access/logout', methods=['GET'])
@@ -5197,38 +5250,6 @@ def update_account():
     return render_template('account.html', title='Account', form=form)
 
 
-@app.route('/set_cookies', methods=['POST'])
-def set_cookies():
-    response = make_response(redirect(url_for('index')))
-    consent = request.form.get('consent')
-
-    if consent == 'allow_all':
-        response.set_cookie('analytics', 'true', max_age=60 * 60 * 24 * 30)  # 30 days
-        response.set_cookie('marketing', 'true', max_age=60 * 60 * 24 * 30)
-    elif consent == 'reject_all':
-        response.set_cookie('analytics', 'false', max_age=60 * 60 * 24 * 30)
-        response.set_cookie('marketing', 'false', max_age=60 * 60 * 24 * 30)
-    elif consent == 'customize':
-        analytics = request.form.get('analytics', 'false')
-        marketing = request.form.get('marketing', 'false')
-        response.set_cookie('analytics', analytics, max_age=60 * 60 * 24 * 30)
-        response.set_cookie('marketing', marketing, max_age=60 * 60 * 24 * 30)
-
-    # Set a cookie to indicate that the user has made a choice regarding cookies
-    response.set_cookie('cookies_accepted', 'true', max_age=60 * 60 * 24 * 30)
-
-    # Update the user's cookies_accepted field in the database
-    if current_user.is_authenticated:
-        user = Users.query.get(current_user.id)
-        user.cookies_accepted = True
-        db.session.commit()
-
-    current_app.logger.debug("Set cookies accepted to true in both cookie and database")
-
-    return response
-
-
-
 def generate_event_instances(event):
     instances = []
     if event.recurrence and event.recurrence_end:
@@ -5512,31 +5533,6 @@ def update_event(event_id):
 @login_required
 def calendar():
     return render_template('calendar.html')
-
-
-@app.route('/cookie-settings')
-def cookie_settings():
-    return render_template('cookie_settings.html')
-
-
-@app.route('/update_cookies', methods=['POST'])
-def update_cookies():
-    response = make_response(redirect(url_for('cookie_settings')))
-    analytics = 'true' if request.form.get('analytics') == 'true' else 'false'
-    marketing = 'true' if request.form.get('marketing') == 'true' else 'false'
-
-    response.set_cookie('analytics', analytics, max_age=60 * 60 * 24 * 30)  # 30 days
-    response.set_cookie('marketing', marketing, max_age=60 * 60 * 24 * 30)
-
-    # Update the user's cookie preferences in the database if necessary
-    user = Users.query.get(current_user.id)
-    user.analytics = analytics == 'true'
-    user.marketing = marketing == 'true'
-    db.session.commit()
-
-    current_app.logger.debug("Updated cookie preferences: Analytics - {}, Marketing - {}".format(analytics, marketing))
-
-    return response
 
 
 @app.route('/products_page')
