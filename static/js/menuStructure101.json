@@ -1,6 +1,6 @@
 {
     "Home": {
-        "label": "L11 Home",
+        "label": "Home",
         "url": "/home",
         "protected": false,
         "allowed_roles": [

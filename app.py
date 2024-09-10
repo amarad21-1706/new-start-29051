@@ -303,7 +303,6 @@ print('intervals', intervals)
 
 # Initialize the admin views
 admin_app1, admin_app2, admin_app3, admin_app4, admin_app5, admin_app6, admin_app10 = create_admin_views(app, intervals)
-print('admin apps and views created')
 
 @app.route('/set_session')
 def set_session():
@@ -332,7 +331,7 @@ def before_request():
     try:
         if current_user.is_authenticated:
             session['session_workflows'] = get_session_workflows(db.session, current_user)
-            print('session w', session['session_workflows'])
+
             session['roles'] = [role.name for role in current_user.roles] if current_user.roles else ['Guest']
             session['is_authenticated'] = True
             g.current_user = current_user
@@ -342,6 +341,8 @@ def before_request():
             session['roles'] = ['Guest']
             session['is_authenticated'] = False
         session.modified = True
+        # print('session roles and authentication', session['roles'], session['is_authenticated'])
+
     except Exception as e:
         logging.error(f"Error in before_request: {str(e)}")
         raise e
@@ -382,7 +383,6 @@ with app.app_context():
 
     app.register_blueprint(admin_bp, url_prefix='/admin')
     app.register_blueprint(team_bp, url_prefix='/team')  # Adjust the url_prefix as needed
-    print('Team bluperint registered')
 
     user_roles_blueprint = create_crud_blueprint(UserRoles, 'user_roles')
     app.register_blueprint(user_roles_blueprint, url_prefix='/model_user_roles')
@@ -568,8 +568,6 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
 
             menu_builder_instance = MenuBuilder(main_menu_items, allowed_roles=allowed_roles)
 
-            print('bring g. here')
-
             # Check if g.user is set and if the user is authenticated
             if hasattr(g, 'user') and g.user:
                 # User is authenticated, set roles and status accordingly
@@ -579,16 +577,12 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
             #     # If g.user is not available, default to Guest
             #     user_roles = user_roles or ['Guest']
             #     is_authenticated = False
-
-            print('*** is authenticated ***', is_authenticated)
-
             if limited_menu:
                 menu_data = menu_builder_instance.parse_menu_data(user_roles=user_roles,
-                                                                  is_authenticated=False, include_protected=False)
+                                                                  is_authenticated=is_authenticated, include_protected=False)
             else:
                 menu_data = menu_builder_instance.parse_menu_data(user_roles=user_roles,
                                                                   is_authenticated=is_authenticated, include_protected=include_protected)
-
             buttons = []
             admin_url = url_for('open_admin.index')
             admin_2_url = url_for('open_admin_2.index')
@@ -916,7 +910,6 @@ def login():
                         # login_user(user, remember=False) # no long term cookies
                         remember = 'remember' in request.form # user defined set up
                         login_user(user, remember=remember)
-                        print('user logged in, remember me =', remember)
                         flash('Login Successful')
                         cet_time = get_cet_time()
                         try:
@@ -1053,7 +1046,6 @@ def index():
     # Determine if the cookie banner should be shown
     show_cookie_banner = 'Admin' not in user_roles and cookies_accepted == 'false'
 
-    print('Menu again')
     # Create MenuBuilder with user roles
     menu_builder = MenuBuilder(main_menu_items, allowed_roles=user_roles)
     # Generate menu for the current user
@@ -1068,7 +1060,6 @@ def index():
         user_roles = user_roles or ['Guest']
         is_authenticated = False
 
-    print('*** is authenticated ***', is_authenticated)
     generated_menu = menu_builder.generate_menu(user_roles=user_roles, is_authenticated=is_authenticated, include_protected=False)
 
     # Check if the user has events
@@ -2076,7 +2067,6 @@ def signup():
                 return render_template('access/signup.html', title='Sign Up', form=form)
 
             try:
-                print('Creating new user...')
                 new_user = Users(
                     username=form.username.data,
                     email=form.email.data,
@@ -2860,6 +2850,7 @@ def site_map():
         menu_structure = json.load(file)
 
     # Generate the menu tree
+
     menu_tree = generate_menu_tree(menu_structure)
 
     # Pass the menu_tree to the template
@@ -5759,8 +5750,6 @@ def create_article():
             return redirect(request.referrer)
 
         # Validate CSRF token
-        # Validate CSRF token
-        print('validating csrf')
         try:
             validate_csrf(csrf_token)
         except Exception as e:
