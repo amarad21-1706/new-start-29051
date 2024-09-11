@@ -490,22 +490,35 @@
     {% macro render_menu(menu_items, user_roles, level=1) %}
         {% for menu_item in menu_items %}
             {% if menu_item_allowed(menu_item, user_roles) %}
-                <li class="nav-item{% if menu_item.submenus %} has-submenu{% endif %}">
-                    <a class="nav-link" href="{{ menu_item.url }}">
-                        {{ menu_item.label }}
+                <!-- Only render menu items that are not widgets -->
+                {% if not menu_item.get('widget', {}).get('display', False) %}
+                    <li class="nav-item{% if menu_item.submenus %} has-submenu{% endif %}">
+                        <a class="nav-link" href="{{ menu_item.url }}">
+                            {{ menu_item.label }}
+                            {% if menu_item.submenus %}
+                                <span class="submenu-indicator"></span>
+                            {% endif %}
+                        </a>
                         {% if menu_item.submenus %}
-                            <span class="submenu-indicator"></span>
+                            <ul class="submenu">
+                                {{ render_menu(menu_item.submenus, user_roles, level+1) }}
+                            </ul>
                         {% endif %}
-                    </a>
-                    {% if menu_item.submenus %}
-                        <ul class="submenu">
-                            {{ render_menu(menu_item.submenus, user_roles, level+1) }}
-                        </ul>
-                    {% endif %}
-                </li>
+                    </li>
+                {% endif %}
             {% endif %}
         {% endfor %}
     {% endmacro %}
+
+    <!-- Debugging Output -->
+    <div>
+        <pre>Widgets to Display:</pre>
+        <ul>
+            {% for widget in widgets_to_display %}
+                <li>{{ widget.label }}</li>
+            {% endfor %}
+        </ul>
+    </div>
 
     <!-- Greeting message -->
     <div id="greeting-section" class="gray-text">

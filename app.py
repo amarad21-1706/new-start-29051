@@ -462,7 +462,7 @@ def get_documents_query(session, current_user):
 
 def create_company_folder222(company_id, subfolder):
     try:
-        base_path = '/path/to/company/folders'
+        base_path = '/path/to/company/folders' # TODO to be adapted...
         company_folder_path = os.path.join(base_path, str(company_id), str(subfolder))
         os.makedirs(company_folder_path, exist_ok=True)
         #logging.info(f'Created folder: {company_folder_path}')
@@ -470,6 +470,7 @@ def create_company_folder222(company_id, subfolder):
         #logging.error(f'Error creating company folder: {e}')
         #raise
         pass
+
 
 def create_company_folder(company_id, subfolder):
     """
@@ -546,6 +547,34 @@ def menu_item_allowed(menu_item, user_roles):
     # Example: Check if the user has the required role to access the menu_item
     # WHEN the phrase on the right was present, the landing page was empty A.R. 15Feb2024
     return True #menu_item['allowed_roles'] and any(role in user_roles for role in menu_item['allowed_roles'])
+
+def process_menu_items(menu_items):
+    menu_to_display = []
+    widgets_to_display = []
+
+    # Iterate through each menu item
+    for key, item in menu_items.items():
+        # Check if the item itself has a widget that should be displayed as a widget
+        if 'widget' in item and item['widget'].get('display', False):
+            print('Widget to display:', key, item)
+            widgets_to_display.append(item)
+        else:
+            # If not a widget, consider it a menu item to display
+            menu_to_display.append(item)
+
+        # Process submenus (if any)
+        submenus = item.get('submenus', {})
+        for subkey, submenu in submenus.items():
+            # Check if the submenu has a widget and should be displayed as a widget
+            if 'widget' in submenu and submenu['widget'].get('display', False):
+                print('Submenu widget to display:', subkey, submenu)
+                widgets_to_display.append(submenu)
+            else:
+                # If not a widget, consider it a submenu item to display
+                menu_to_display.append(submenu)
+
+    return menu_to_display, widgets_to_display
+
 
 def generate_route_and_menu(route, allowed_roles, template, include_protected=False, limited_menu=False):
     def decorator(func):
@@ -638,12 +667,15 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
             #current_app.logger.debug(f"User Roles: {user_roles}")
             #current_app.logger.debug(f"Show Cookie Banner: {show_cookie_banner}")
             #current_app.logger.debug(f"Cookies Accepted: {cookies_accepted}")
+            menu_to_display, widgets_to_display = process_menu_items(main_menu_items)
 
             additional_data = {
                 "username": username,
                 "company_name": company_name,
                 "is_authenticated": is_authenticated,
                 "main_menu_items": menu_data,
+                "menu_to_display": menu_to_display,
+                "widgets_to_display": widgets_to_display,
                 "admin_menu_data": None,
                 "authority_menu_data": None,
                 "manager_menu_data": None,

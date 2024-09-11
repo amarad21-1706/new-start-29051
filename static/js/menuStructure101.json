@@ -28,7 +28,12 @@
                     "Guest"
                 ],
                 "widget": {
-                    "display": false
+                    "display": true,
+                    "type": "button",
+                    "style": "btn-warning",
+                    "color": "#ff8800",
+                    "icon": "icon-contracts",
+                    "size": "large"
                 }
             },
             "Services": {
@@ -44,7 +49,12 @@
                     "Guest"
                 ],
                 "widget": {
-                    "display": false
+                    "display": true,
+                    "type": "button",
+                    "style": "btn-warning",
+                    "color": "#ff8800",
+                    "icon": "icon-contracts",
+                    "size": "large"
                 }
             },
             "History": {
@@ -247,7 +257,12 @@
                 "protected": true,
                 "allowed_roles": ["Admin", "Employee", "Manager"],
                 "widget": {
-                    "display": false
+                    "display": true,
+                    "type": "form",
+                    "fields": ["field1", "field2"],
+                    "submit_url": "/area_di_controllo_1",
+                    "style": "form-style",
+                    "size": "medium"
                 },
                 "submenus": {
                     "Area 1a": {
