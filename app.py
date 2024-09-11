@@ -190,11 +190,10 @@ print('JSON decoder on')
 #cache = Cache(app)
 # Choose one geocoder based on your preference:
 # geocoder = geocoder.geocoder  # Original implementation
-geocoder = OpenCageGeocode('aad0f13ea1af46c6b89153e6b7bd7928')  # Using OpenCageGeocode
-GEONAMES_USERNAME = 'amarad21'
-
+geocoder = os.getenv('OPENCAGE_GEOCODE')
+GEONAMES_USERNAME = os.getenv('GEONAMES_USERNAME')
+NOMINATIM_URL = os.getenv('NOMINATIM_URL')
 cache = TTLCache(maxsize=100, ttl=86400)  # Adjust cache size and TTL as needed
-NOMINATIM_URL = "https://nominatim.openstreetmap.org/search"
 
 print('geo-names on')
 # Create a cache with a TTL of 600 seconds and a max size of 100 items
