@@ -510,16 +510,6 @@
         {% endfor %}
     {% endmacro %}
 
-    <!-- Debugging Output -->
-    <div>
-        <pre>Widgets to Display:</pre>
-        <ul>
-            {% for widget in widgets_to_display %}
-                <li>{{ widget.label }}</li>
-            {% endfor %}
-        </ul>
-    </div>
-
     <!-- Greeting message -->
     <div id="greeting-section" class="gray-text">
         <!-- Display personalized greeting if the user is authenticated -->
@@ -551,25 +541,32 @@
         <div class="collapse navbar-collapse" id="navbarNav">
             <!-- Main menu -->
             <ul class="navbar-nav main-menu">
-                {{ render_menu(main_menu_items, user_roles) }}
+                <!-- Render only the items in menu_to_display -->
+                {% for item in menu_to_display %}
+                    <li class="nav-item{% if item.submenus %} has-submenu{% endif %}">
+                        <a class="nav-link" href="{{ item.url }}">{{ item.label }}</a>
+                        {% if item.submenus %}
+                            <ul class="submenu">
+                                {% for submenu in item.submenus %}
+                                    <li><a href="{{ submenu.url }}">{{ submenu.label }}</a></li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </li>
+                {% endfor %}
             </ul>
-        </div>
-
-        <!-- Icons container -->
-        <div class="d-flex align-items-center ml-auto icons-container">
-            <!-- Calendar Icon -->
-            <div class="calendar-icon mr-2">
-                <a href="/calendar">
-                    <img src="{{ url_for('static', filename='icons/calendar-icon-2.png') }}" alt="Calendar Icon" class="{{ 'colored' if has_events else 'grayed' }}">
-                </a>
-            </div>
-            <!-- Logo Icon -->
-            <div class="navbar-logo">
-                <img src="{{ url_for('static', filename='ilm_logo_1.png') }}" alt="My Logo">
-            </div>
         </div>
     </nav>
 
+    <!-- Debugging Output -->
+    <div>
+        <pre>Widgets to Display:</pre>
+        <ul>
+            {% for widget in widgets_to_display %}
+                <li>{{ widget.label }}</li>
+            {% endfor %}
+        </ul>
+    </div>
 
     <!-- Flash messages -->
     {% with messages = get_flashed_messages(with_categories=true) %}
