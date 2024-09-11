@@ -11,6 +11,9 @@
             "ServiceProvider",
             "Guest"
         ],
+        "widget": {
+            "display": false
+        },
         "submenus": {
             "About us": {
                 "label": "About us",
@@ -23,7 +26,10 @@
                     "Manager",
                     "ServiceProvider",
                     "Guest"
-                ]
+                ],
+                "widget": {
+                    "display": false
+                }
             },
             "Services": {
                 "label": "Services",
@@ -36,7 +42,10 @@
                     "Manager",
                     "ServiceProvider",
                     "Guest"
-                ]
+                ],
+                "widget": {
+                    "display": false
+                }
             },
             "History": {
                 "label": "History",
@@ -49,7 +58,10 @@
                     "Manager",
                     "ServiceProvider",
                     "Guest"
-                ]
+                ],
+                "widget": {
+                    "display": false
+                }
             },
             "Mission": {
                 "label": "Mission",
@@ -62,7 +74,10 @@
                     "Manager",
                     "ServiceProvider",
                     "Guest"
-                ]
+                ],
+                "widget": {
+                    "display": false
+                }
             },
             "Site map": {
                 "label": "Site map",
@@ -75,7 +90,10 @@
                     "Manager",
                     "ServiceProvider",
                     "Guest"
-                ]
+                ],
+                "widget": {
+                    "display": false
+                }
             }
         }
     },
@@ -88,6 +106,9 @@
             "Employee",
             "Manager"
         ],
+        "widget": {
+            "display": false
+        },
         "submenus": {
             "Current": {
                 "label": "Open Actions",
@@ -97,7 +118,10 @@
                     "Admin",
                     "Employee",
                     "Manager"
-                ]
+                ],
+                "widget": {
+                    "display": false
+                }
             },
             "History": {
                 "label": "Historic Data",
@@ -107,7 +131,10 @@
                     "Admin",
                     "Employee",
                     "Manager"
-                ]
+                ],
+                "widget": {
+                    "display": false
+                }
             },
             "Overview": {
                 "label": "Overview",
@@ -117,7 +144,10 @@
                     "Admin",
                     "Employee",
                     "Manager"
-                ]
+                ],
+                "widget": {
+                    "display": false
+                }
             },
             "Audit": {
                 "label": "Audit",
@@ -127,54 +157,78 @@
                     "Admin",
                     "Employee",
                     "Manager"
-                ]
+                ],
+                "widget": {
+                    "display": false
+                }
             },
             "Controls": {
                 "label": "Authority Controls",
                 "url": "/dashboard/company/dashboard_controls",
                 "protected": true,
-                "allowed_roles": ["Admin", "Employee", "Manager"]
+                "allowed_roles": ["Admin", "Employee", "Manager"],
+                "widget": {
+                    "display": false
+                }
             },
             "Remediation": {
                 "label": "Remediation",
                 "url": "/dashboard/company/dashboard_remediation",
                 "protected": true,
                 "allowed_roles": [
-                    "Admin", "Employee", "Manager"]
+                    "Admin", "Employee", "Manager"],
+                "widget": {
+                    "display": false
+                }
             },
             "Compliance": {
                 "label": "Compliance",
                 "url": "/dashboard/company/dashboard_compliance",
                 "protected": true,
                 "allowed_roles": [
-                    "Admin", "Employee", "Manager"]
+                    "Admin", "Employee", "Manager"],
+                "widget": {
+                    "display": false
+                }
             },
             "Proceedings": {
                 "label": "Proceedings",
                 "url": "/dashboard/company/dashboard_proceedings",
                 "protected": true,
                 "allowed_roles": [
-                    "Admin", "Employee", "Manager"]
+                    "Admin", "Employee", "Manager"],
+                "widget": {
+                    "display": false
+                }
             },
             "Deadlines": {
                 "label": "Deadlines",
                 "url": "/deadlines_1",
                 "protected": true,
-                "allowed_roles": ["Admin", "Employee", "Manager"]
+                "allowed_roles": ["Admin", "Employee", "Manager"],
+                "widget": {
+                    "display": false
+                }
             },
             "Control areas - workflow": {
                 "label": "Control areas - workflow",
                 "url": "/dashboard/left_menu_route",
                 "protected": true,
                 "allowed_roles": [
-                    "Admin", "Employee", "Manager"]
+                    "Admin", "Employee", "Manager"],
+                "widget": {
+                    "display": false
+                }
             },
             "Charts and Views 1": {
                 "label": "Control areas - Charts",
                 "url": "/chart_form",
                 "protected": true,
                 "allowed_roles": [
-                    "Admin", "Authority"]
+                    "Admin", "Authority"],
+                "widget": {
+                    "display": false
+                }
             }
         }
     },
@@ -183,33 +237,48 @@
         "url": "/reserved",
         "protected": false,
         "allowed_roles": ["Admin", "Authority", "Employee", "Manager"],
+        "widget": {
+            "display": false
+        },
         "submenus": {
             "Area di controllo 1": {
                 "label": "Area 1",
                 "url": "/area_di_controllo_1",
                 "protected": true,
                 "allowed_roles": ["Admin", "Employee", "Manager"],
+                "widget": {
+                    "display": false
+                },
                 "submenus": {
                     "Area 1a": {
                         "label": "Raccolta dati",
                         "url": "/open_admin",
                         "protected": true,
                         "allowed_roles": [
-                            "Admin", "Employee", "Manager"]
+                            "Admin", "Employee", "Manager"],
+                        "widget": {
+                            "display": false
+                        }
                     },
                     "Area 1b": {
                         "label": "Contingencies - PSF",
                         "url": "/redirect_to_survey/1",
                         "protected": true,
                         "allowed_roles": [
-                            "Admin", "Employee", "Manager"]
+                            "Admin", "Employee", "Manager"],
+                        "widget": {
+                            "display": false
+                        }
                     },
                     "Area 1c": {
                         "label": "Check list",
                         "url": "/questionnaire_psf",
                         "protected": true,
                         "allowed_roles": [
-                            "Admin", "Employee", "Manager"]
+                            "Admin", "Employee", "Manager"],
+                        "widget": {
+                            "display": false
+                        }
                     }
                 }
             },
@@ -217,79 +286,115 @@
                 "label": "Area 2",
                 "url": "/open_admin_2",
                 "protected": true,
-                "allowed_roles": ["Admin", "Employee", "Manager"]
+                "allowed_roles": ["Admin", "Employee", "Manager"],
+                "widget": {
+                    "display": false
+                }
             },
             "Area di controllo 3": {
                 "label": "Area 3",
                 "url": "/open_admin_5",
                 "protected": true,
-                "allowed_roles": ["Admin", "Employee", "Manager"]
+                "allowed_roles": ["Admin", "Employee", "Manager"],
+                "widget": {
+                    "display": false
+                }
             },
             "Area di controllo 10": {
                 "label": "Surveys and Questionnaires",
                 "url": "/open_admin_app_10",
                 "protected": true,
-                "allowed_roles": ["Admin", "Manager", "Employee", "Provider"]
+                "allowed_roles": ["Admin", "Manager", "Employee", "Provider"],
+                "widget": {
+                    "display": false
+                }
             },
             "Cards One": {
                 "label": "My Actions",
                 "url": "/show_cards",
                 "protected": true,
-                "allowed_roles": ["Admin", "Authority", "Employee", "Manager"]
+                "allowed_roles": ["Admin", "Authority", "Employee", "Manager"],
+                "widget": {
+                    "display": false
+                }
             },
             "Compliance": {
                 "label": "Auditing",
                 "url": "/dashboard/authority/dashboard_a3",
                 "protected": true,
                 "allowed_roles": [
-                    "Admin", "Authority"]
+                    "Admin", "Authority"],
+                "widget": {
+                    "display": false
+                }
             },
             "Controls": {
                 "label": "Controls",
                 "url": "/dashboard/authority/dashboard_a3",
                 "protected": true,
                 "allowed_roles": [
-                    "Admin", "Authority"]
+                    "Admin", "Authority"],
+                "widget": {
+                    "display": false
+                }
             },
             "Disciplinary": {
                 "label": "Disciplinary Actions",
                 "url": "/dashboard/authority/dashboard_a3",
                 "protected": true,
                 "allowed_roles": [
-                    "Admin", "Authority"]
+                    "Admin", "Authority"],
+                "widget": {
+                    "display": false
+                }
             },
             "Remediation": {
                 "label": "Remediation",
                 "url": "/dashboard/authority/dashboard_a3",
                 "protected": true,
                 "allowed_roles": [
-                    "Admin", "Authority"]
+                    "Admin", "Authority"],
+                "widget": {
+                    "display": false
+                }
             },
             "Statistics": {
                 "label": "Statistics",
                 "url": "/dashboard/authority/dashboard_a3",
                 "protected": true,
                 "allowed_roles": [
-                    "Admin", "Authority"]
+                    "Admin", "Authority"],
+                "widget": {
+                    "display": false
+                }
             },
             "Regulation": {
                 "label": "Regulation",
                 "url": "/dashboard/authority/dashboard_a3",
                 "protected": true,
                 "allowed_roles": [
-                    "Admin", "Authority"]
+                    "Admin", "Authority"],
+                "widget": {
+                    "display": false
+                }
             },
             "Calendar-Events": {
                 "label": "Calendar",
                 "url": "/calendar",
                 "protected": true,
-                "allowed_roles": ["Admin", "Employee", "Manager", "Authority", "Provider"]
+                "allowed_roles": ["Admin", "Employee", "Manager", "Authority", "Provider"],
+                "widget": {
+                    "display": false
+                }
             },
             "Contracts": {
                 "label": "Contract Management",
                 "url": "/admin/contracts",
                 "protected": true,
-                "allowed_roles": ["Admin", "Employee", "Manager", "Authority", "Provider"]
+                "allowed_roles": ["Admin", "Employee", "Manager", "Authority", "Provider"],
+                "widget": {
+                    "display": false
+                }
             }
         }
     },
@@ -300,6 +405,9 @@
         "allowed_roles": [
             "Admin"
         ],
+        "widget": {
+            "display": false
+        },
         "submenus": {
             "System Setup": {
                 "label": "System Setup",
@@ -308,6 +416,9 @@
                 "allowed_roles": [
                     "Admin"
                 ],
+                "widget": {
+                    "display": false
+                },
                 "submenus": {
                     "CompanyUsers": {
                         "label": "Companies and Users Report",
@@ -315,7 +426,10 @@
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
                     "UserRoles": {
                         "label": "Users and Roles",
@@ -323,7 +437,10 @@
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
                     "AreasSubareas": {
                         "label": "Control Areas and Subareas",
@@ -331,7 +448,10 @@
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
                     "CompanyQuestionnaires": {
                         "label": "Questionnaires and Companies",
@@ -339,7 +459,10 @@
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
                     "QuestionnaireQuestions": {
                         "label": "Questionnaires Structure",
@@ -347,7 +470,10 @@
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
                     "WorkflowSteps": {
                         "label": "Workflows Structure",
@@ -355,7 +481,10 @@
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
                     "WorkflowDocuments": {
                         "label": "Documents in Workflows",
@@ -363,7 +492,10 @@
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
                     "DocumentStatus": {
                         "label": "Status of Document Processing",
@@ -371,7 +503,10 @@
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
                     "DocumentViewer": {
                         "label": "Document Viewer",
@@ -379,7 +514,10 @@
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     }
                 }
             },
@@ -390,6 +528,9 @@
                 "allowed_roles": [
                     "Admin"
                 ],
+                "widget": {
+                    "display": false
+                },
                 "submenus": {
                     "Activity": {
                         "label": "Activity Log",
@@ -397,7 +538,10 @@
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
                     "Audit": {
                         "label": "Audit",
@@ -405,7 +549,10 @@
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
                     "Status": {
                         "label": "Current Status",
@@ -413,7 +560,10 @@
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
                     "Service": {
                         "label": "Email",
@@ -421,7 +571,10 @@
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
                     "Controls": {
                         "label": "Authority Controls",
@@ -429,7 +582,10 @@
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
                     "Remediation": {
                         "label": "Remediation",
@@ -437,7 +593,10 @@
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
                     "Compliance": {
                         "label": "Compliance",
@@ -445,7 +604,10 @@
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
                     "Proceedings": {
                         "label": "Proceedings",
@@ -453,7 +615,10 @@
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
                     "Deadlines": {
                         "label": "Deadlines",
@@ -461,7 +626,10 @@
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
                     "Area 2 - test": {
                         "label": "Area 2",
@@ -469,7 +637,10 @@
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
                     "Area 3 - test": {
                         "label": "Workflows Area",
@@ -477,7 +648,10 @@
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
                     "Area 6 - test": {
                         "label": "Workflows Area",
@@ -485,7 +659,10 @@
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
                     "Subscriptions Dashboard": {
                         "label": "Subscriptions Dashboard",
@@ -493,7 +670,10 @@
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     }
                 }
             },
@@ -502,12 +682,18 @@
                 "url": "/dashboard/ILM/settings",
                 "protected": true,
                 "allowed_roles": ["Admin"],
+                "widget": {
+                    "display": false
+                },
                 "submenus": {
                     "Basic": {
                         "label": "Basic Entities, Lists and Collections",
                         "url": "/dashboard/ILM/settings_basic",
                         "protected": true,
                         "allowed_roles": ["Admin"],
+                        "widget": {
+                            "display": false
+                        },
                         "submenus": {
                             "Manage Companies": {
                                 "label": "Main Setup",
@@ -515,7 +701,10 @@
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"
-                                ]
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
                             },
                             "Manage Documents": {
                                 "label": "Documents",
@@ -523,7 +712,10 @@
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"
-                                ]
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
                             },
                             "Manage News": {
                                 "label": "News",
@@ -531,7 +723,10 @@
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"
-                                ]
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
                             },
                             "Password Reset": {
                                 "label": "Reset User Password",
@@ -539,7 +734,10 @@
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"
-                                ]
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
                             },
                             "Admin Tickets": {
                                 "label": "Manage Tickets",
@@ -547,7 +745,10 @@
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"
-                                ]
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
                             },
                             "Manage Plans": {
                                 "label": "Manage Plans",
@@ -555,7 +756,10 @@
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"
-                                ]
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
                             },
                             "Manage Products": {
                                 "label": "Manage Products",
@@ -563,19 +767,28 @@
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"
-                                ]
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
                             },
                             "Calendar-2": {
                                 "label": "Agenda",
                                 "url": "/calendar",
                                 "protected": true,
-                                "allowed_roles": ["Admin"]
+                                "allowed_roles": ["Admin"],
+                                "widget": {
+                                    "display": false
+                                }
                             },
                             "Contract-Management": {
                                 "label": "Contract Management",
                                 "url": "/team",
                                 "protected": true,
                                 "allowed_roles": ["Admin"],
+                                "widget": {
+                                    "display": false
+                                },
                                 "submenus": {
                                     "Create Team": {
                                         "label": "Create Team",
@@ -583,7 +796,10 @@
                                         "protected": true,
                                         "allowed_roles": [
                                             "Admin"
-                                        ]
+                                        ],
+                                        "widget": {
+                                            "display": false
+                                        }
                                     },
                                     "View Teams": {
                                         "label": "View Teams",
@@ -591,7 +807,10 @@
                                         "protected": true,
                                         "allowed_roles": [
                                             "Admin"
-                                        ]
+                                        ],
+                                        "widget": {
+                                            "display": false
+                                        }
                                     }
                                 }
                             }
@@ -602,12 +821,18 @@
                         "url": "/dashboard/ILM/settings_relational",
                         "protected": true,
                         "allowed_roles": ["Admin"],
+                        "widget": {
+                            "display": false
+                        },
                         "submenus": {
                             "Manage Association of users to companies": {
                                 "label": "Associate users to companies",
                                 "url": "/manage_company_users",
                                 "protected": true,
-                                "allowed_roles": ["Admin"]
+                                "allowed_roles": ["Admin"],
+                                "widget": {
+                                    "display": false
+                                }
                             },
                             "Manage Association of roles to users": {
                                 "label": "Associate roles to user",
@@ -615,7 +840,10 @@
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"
-                                ]
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
                             },
                             "Assign Questions to Questionnaires": {
                                 "label": "Attach questions to questionnaire",
@@ -623,7 +851,10 @@
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"
-                                ]
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
                             },
                             "Assign Questionnaires to Companies": {
                                 "label": "Assign questionnaire to company",
@@ -631,7 +862,10 @@
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"
-                                ]
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
                             },
                             "Assign Steps to Workflows": {
                                 "label": "Assign steps (phases) to workflow",
@@ -639,7 +873,10 @@
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"
-                                ]
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
                             },
                             "Assign Documents to Workflows": {
                                 "label": "Assign documents to workflow",
@@ -647,7 +884,10 @@
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"
-                                ]
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
                             },
                             "Assign Documents to Steps": {
                                 "label": "Documents-workflow-steps management",
@@ -655,7 +895,10 @@
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"
-                                ]
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
                             },
                             "Assign Products to Plans": {
                                 "label": "Associate Products to Plans",
@@ -663,7 +906,10 @@
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"
-                                ]
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
                             },
                             "Plans with Products": {
                                 "label": "Show Plans and Products",
@@ -671,7 +917,10 @@
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"
-                                ]
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
                             }
                         }
                     }
@@ -690,6 +939,9 @@
             "Authority",
             "Provider"
         ],
+        "widget": {
+            "display": false
+        },
         "submenus": {
             "Blog": {
                 "label": "Blog",
@@ -701,7 +953,10 @@
                     "Manager",
                     "Authority",
                     "Provider"
-                ]
+                ],
+                "widget": {
+                    "display": false
+                }
             },
             "News": {
                 "label": "News",
@@ -713,7 +968,10 @@
                     "Manager",
                     "Authority",
                     "Provider"
-                ]
+                ],
+                "widget": {
+                    "display": false
+                }
             }
         }
     },
@@ -729,6 +987,9 @@
             "Provider",
             "Guest"
         ],
+        "widget": {
+            "display": false
+        },
         "submenus": {
             "Mail": {
                 "label": "Contact Us",
@@ -741,7 +1002,10 @@
                     "Authority",
                     "Provider",
                     "Guest"
-                ]
+                ],
+                "widget": {
+                    "display": false
+                }
             },
             "Privacy": {
                 "label": "Privacy Policy",
@@ -754,7 +1018,10 @@
                     "Authority",
                     "Provider",
                     "Guest"
-                ]
+                ],
+                "widget": {
+                    "display": false
+                }
             },
             "Terms": {
                 "label": "Terms of Use",
@@ -767,7 +1034,10 @@
                     "Authority",
                     "Provider",
                     "Guest"
-                ]
+                ],
+                "widget": {
+                    "display": false
+                }
             }
         }
     },
@@ -783,6 +1053,9 @@
             "Provider",
             "Guest"
         ],
+        "widget": {
+            "display": false
+        },
         "submenus": {
             "Login": {
                 "label": "Login",
@@ -795,7 +1068,10 @@
                     "Authority",
                     "Provider",
                     "Guest"
-                ]
+                ],
+                "widget": {
+                    "display": false
+                }
             },
             "Signup": {
                 "label": "Signup",
@@ -808,7 +1084,10 @@
                     "Authority",
                     "Provider",
                     "Guest"
-                ]
+                ],
+                "widget": {
+                    "display": false
+                }
             },
             "Logout": {
                 "label": "Logout",
@@ -821,7 +1100,10 @@
                     "Authority",
                     "Provider",
                     "Guest"
-                ]
+                ],
+                "widget": {
+                    "display": false
+                }
             },
             "myAccount": {
                 "label": "My Account",
@@ -835,6 +1117,9 @@
                     "Provider",
                     "Guest"
                 ],
+                "widget": {
+                    "display": false
+                },
                 "submenus": {
                     "Change Password": {
                         "label": "Change Password",
@@ -847,7 +1132,10 @@
                             "Authority",
                             "Provider",
                             "Guest"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
                     "Personal Data": {
                         "label": "My Account",
@@ -860,7 +1148,10 @@
                             "Provider",
                             "Authority",
                             "Guest"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
                     "Subscriptions": {
                         "label": "Subscribe Plan",
@@ -871,7 +1162,10 @@
                             "Employee",
                             "Manager",
                             "Guest"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
                     "Subscriptions Report": {
                         "label": "Subscriptions Report",
@@ -882,7 +1176,10 @@
                             "Employee",
                             "Manager",
                             "Guest"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
                     "Products": {
                         "label": "Products",
@@ -892,7 +1189,10 @@
                             "Admin",
                             "Employee",
                             "Manager"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
                     "Plans": {
                         "label": "Plans",
@@ -902,7 +1202,10 @@
                             "Admin",
                             "Employee",
                             "Manager"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
                     "User Tickets": {
                         "label": "Tickets",
@@ -915,6 +1218,9 @@
                             "Provider",
                             "Guest"
                         ],
+                        "widget": {
+                            "display": false
+                        },
                         "submenus": {
                             "Create ticket": {
                                 "label": "Create",
@@ -926,7 +1232,10 @@
                                     "Authority",
                                     "Provider",
                                     "Guest"
-                                ]
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
                             },
                             "View tickets": {
                                 "label": "View",
@@ -938,7 +1247,10 @@
                                     "Authority",
                                     "Provider",
                                     "Guest"
-                                ]
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
                             }
                         }
                     }
