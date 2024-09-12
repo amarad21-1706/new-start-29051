@@ -510,16 +510,6 @@
         {% endfor %}
     {% endmacro %}
 
-    <!-- Debugging Output -->
-    <div>
-        <pre>Widgets to Display:</pre>
-        <ul>
-            {% for widget in widgets_to_display %}
-                <li>{{ widget.label }}</li>
-            {% endfor %}
-        </ul>
-    </div>
-
     <!-- Greeting message -->
     <div id="greeting-section" class="gray-text">
         <!-- Display personalized greeting if the user is authenticated -->
@@ -600,11 +590,97 @@
         {% endif %}
     {% endwith %}
 
+
     <div class="container mt-4 general-content">
         <div class="row">
             <div class="col-md-9">
-                <h1>ILM - piattaforma digitale</h1>
-                <p>This is the general home page content - to be customized as needed (v.1.3.1).</p>
+                <h2>D.E.R.E. - Digital Environment for Regulated Energy Sector</h2>
+                <h3>Energy going Digital</h3>
+
+                <!-- Render Widgets Section -->
+                <div class="container mt-4">
+                    <div class="row">
+
+                        {% for widget in widgets_to_display %}
+                            <div class="col-md-4 mb-4">
+                                {% set widget_type = widget.widget.get('type', 'button') if widget.widget else 'button' %}
+                                {% set display = widget.widget.get('display', False) if widget.widget else False %}
+
+                                {% if display %}
+                                    {% if widget_type == 'button' %}
+                                        <!-- Button Widget: Set default color and font if attributes are missing -->
+                                        {% set button_style = widget.widget.get('style', 'btn-light') %}
+                                        {% set button_size = widget.widget.get('size', '') %}
+                                        {% set button_color = widget.widget.get('color', '#ADD8E6') %}
+                                        {% set button_font_color = widget.widget.get('font_color', 'dark') %}
+                                        <a href="{{ widget.url }}" class="btn {{ button_style }} {{ button_size }}" style="background-color: {{ button_color }}; color: {{ button_font_color }};">
+                                            <i class="{{ widget.widget.icon }}"></i> {{ widget.label }}
+                                        </a>
+
+                                    {% elif widget_type == 'form' %}
+                                        <!-- Form Widget -->
+                                        <form action="{{ widget.widget.submit_url }}" method="post" class="{{ widget.widget.style }}">
+                                            {% for field in widget.widget.fields %}
+                                                <input type="text" name="{{ field }}" placeholder="{{ field }}">
+                                            {% endfor %}
+                                            <button type="submit">Submit</button>
+                                        </form>
+
+                                    {% elif widget_type == 'chart' %}
+                                        <!-- Chart Widget -->
+                                        <div class="chart-widget" style="background-color: {{ widget.widget.get('background_color', '#FFFFFF') }};">
+                                            <h5>{{ widget.label }}</h5>
+                                            <img src="{{ widget.widget.chart_url }}" alt="{{ widget.label }} Chart" style="width: 100%;">
+                                        </div>
+
+                                    {% elif widget_type == 'icon' %}
+                                        <!-- Icon Widget -->
+                                        <div class="icon-widget" style="font-size: {{ widget.widget.get('size', '24px') }}; color: {{ widget.widget.get('color', '#333') }};">
+                                            <i class="{{ widget.widget.icon }}"></i> {{ widget.label }}
+                                        </div>
+
+                                    {% elif widget_type == 'image' %}
+                                        <!-- Image Widget -->
+                                        <div class="image-widget">
+                                            <a href="{{ widget.url }}">
+                                                <img src="{{ widget.widget.image_url }}" alt="{{ widget.label }}" style="width: 100%; object-fit: cover;">
+                                            </a>
+                                        </div>
+
+                                    {% elif widget_type == 'text' %}
+                                        <!-- Text Widget -->
+                                        <div class="text-widget" style="color: {{ widget.widget.get('color', '#333') }}; font-size: {{ widget.widget.get('font_size', '16px') }};">
+                                            {{ widget.widget.content }}
+                                        </div>
+
+                                    {% elif widget_type == 'video' %}
+                                        <!-- Video Widget -->
+                                        <div class="video-widget">
+                                            <video controls width="100%">
+                                                <source src="{{ widget.widget.video_url }}" type="video/mp4">
+                                                Your browser does not support the video tag.
+                                            </video>
+                                        </div>
+
+                                    {% elif widget_type == 'link' %}
+                                        <!-- Link Widget -->
+                                        <div class="link-widget">
+                                            <a href="{{ widget.widget.url }}" target="_blank" style="color: {{ widget.widget.get('color', '#007BFF') }};">
+                                                {{ widget.label }}
+                                            </a>
+                                        </div>
+
+                                    {% else %}
+                                        <!-- Default Case for Unsupported Widget Types -->
+                                        <p>Unsupported widget type: {{ widget_type }}</p>
+
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+
+                    </div>
+                </div>
 
                 {% if unread_notices_count > 0 %}
                     <a href="/noticeboard">

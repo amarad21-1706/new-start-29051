@@ -159,58 +159,6 @@
                     "display": false
                 }
             },
-            "Audit": {
-                "label": "Audit",
-                "url": "/dashboard/company/dashboard_audit",
-                "protected": true,
-                "allowed_roles": [
-                    "Admin",
-                    "Employee",
-                    "Manager"
-                ],
-                "widget": {
-                    "display": false
-                }
-            },
-            "Controls": {
-                "label": "Authority Controls",
-                "url": "/dashboard/company/dashboard_controls",
-                "protected": true,
-                "allowed_roles": ["Admin", "Employee", "Manager"],
-                "widget": {
-                    "display": false
-                }
-            },
-            "Remediation": {
-                "label": "Remediation",
-                "url": "/dashboard/company/dashboard_remediation",
-                "protected": true,
-                "allowed_roles": [
-                    "Admin", "Employee", "Manager"],
-                "widget": {
-                    "display": false
-                }
-            },
-            "Compliance": {
-                "label": "Compliance",
-                "url": "/dashboard/company/dashboard_compliance",
-                "protected": true,
-                "allowed_roles": [
-                    "Admin", "Employee", "Manager"],
-                "widget": {
-                    "display": false
-                }
-            },
-            "Proceedings": {
-                "label": "Proceedings",
-                "url": "/dashboard/company/dashboard_proceedings",
-                "protected": true,
-                "allowed_roles": [
-                    "Admin", "Employee", "Manager"],
-                "widget": {
-                    "display": false
-                }
-            },
             "Deadlines": {
                 "label": "Deadlines",
                 "url": "/deadlines_1",
@@ -257,11 +205,10 @@
                 "protected": true,
                 "allowed_roles": ["Admin", "Employee", "Manager"],
                 "widget": {
-                    "display": true,
-                    "type": "form",
-                    "fields": ["field1", "field2"],
+                    "display": false,
+                    "type": "button",
                     "submit_url": "/area_di_controllo_1",
-                    "style": "form-style",
+                    "style": "btn-info",
                     "size": "medium"
                 },
                 "submenus": {
@@ -272,7 +219,11 @@
                         "allowed_roles": [
                             "Admin", "Employee", "Manager"],
                         "widget": {
-                            "display": false
+                            "display": true,
+                            "type": "button",
+                            "submit_url": "/open_admin",
+                            "style": "btn-neutral",
+                            "size": "medium"
                         }
                     },
                     "Area 1b": {
@@ -303,7 +254,11 @@
                 "protected": true,
                 "allowed_roles": ["Admin", "Employee", "Manager"],
                 "widget": {
-                    "display": false
+                    "display": true,
+                    "type": "button",
+                    "submit_url": "/open_admin_2",
+                    "style": "btn-secondary",
+                    "size": "medium"
                 }
             },
             "Area di controllo 3": {
@@ -408,7 +363,11 @@
                 "protected": true,
                 "allowed_roles": ["Admin", "Employee", "Manager", "Authority", "Provider"],
                 "widget": {
-                    "display": false
+                    "display": true,
+                    "type": "button",
+                    "submit_url": "/admin/contracts",
+                    "style": "btn-neutral",
+                    "size": "medium"
                 }
             }
         }
@@ -955,7 +914,7 @@
             "Provider"
         ],
         "widget": {
-            "display": false
+            "display": true
         },
         "submenus": {
             "Blog": {
@@ -1019,7 +978,7 @@
                     "Guest"
                 ],
                 "widget": {
-                    "display": false
+                    "display": true
                 }
             },
             "Privacy": {
