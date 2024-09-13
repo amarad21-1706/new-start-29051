@@ -93,8 +93,8 @@ from flask_login import login_user, current_user
 from flask_cors import CORS
 from modules.chart_service import ChartService
 
-from modules.admin_routes import admin_bp
-from contract_routes import team_bp
+from team_routes import team_bp
+from contract_routes import contract_bp
 
 from flask import flash, current_app, get_flashed_messages
 # from flask_admin.exceptions import ValidationError
@@ -380,7 +380,8 @@ with app.app_context():
 
     #app.register_blueprint(admin_bp)
 
-    app.register_blueprint(admin_bp, url_prefix='/admin')
+    # Register the blueprint
+    app.register_blueprint(contract_bp)
     app.register_blueprint(team_bp, url_prefix='/team')  # Adjust the url_prefix as needed
 
     user_roles_blueprint = create_crud_blueprint(UserRoles, 'user_roles')

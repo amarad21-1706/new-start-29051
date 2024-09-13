@@ -23,18 +23,6 @@ from db import db
 
 # Define the blueprint
 team_bp = Blueprint('team', __name__)
-# Define the blueprint with the desired URL prefix
-contract_bp = Blueprint('contract', __name__, url_prefix='/contracts')
-
-
-@contract_bp.route('/test')
-def test_route():
-    return "Admin Blueprint is Working!"
-
-@contract_bp.route('/')
-def contract_route():
-    return "Contract Blueprint is Working!"
-
 
 @team_bp.route('/create_team', methods=['GET', 'POST'])
 def create_team():
@@ -279,50 +267,6 @@ def user_has_access_to_contract(user_id, contract_id, required_access_level='vie
            if required_access_level == 'view' or contract_team.access_level == required_access_level:
                return True
    return False
-
-
-@contract_bp.route('/create_article', methods=['POST'])
-def create_article():
-    try:
-        # Get data from the form
-        contract_id = request.form.get('contract_id')
-        article_title = request.form.get('article_title')
-        article_body = request.form.get('article_body')
-        csrf_token = request.form.get('csrf_token')  # CSRF token for security
-
-        # Check if all required fields are present
-        if not contract_id or not article_title or not article_body:
-            flash("All fields are required.", "danger")
-            return redirect(request.referrer)
-
-        # Validate CSRF token
-        try:
-            validate_csrf(csrf_token)
-        except Exception as e:
-            flash("CSRF token is invalid or missing.", "danger")
-            print(f"Error validating CSRF token: {str(e)}")
-            return redirect(request.referrer)
-
-        # Create a new ContractArticle instance
-        new_article = ContractArticle(
-            contract_id=contract_id,
-            article_title=article_title,
-            article_body=article_body,
-            created_at=func.now(),
-            updated_at=func.now()
-        )
-
-        # Add to the session and commit to the database
-        db.session.add(new_article)
-        db.session.commit()
-
-        flash("Article created successfully.", "success")
-        return redirect(url_for('drafting_contracts.index_view'))  # Corrected endpoint name
-
-    except Exception as e:
-        # Handle any errors
-        flash(f"An error occurred (01): {str(e)}", "danger")
-        return redirect(request.referrer)
 
 
 

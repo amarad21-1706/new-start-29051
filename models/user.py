@@ -34,6 +34,7 @@ from sqlalchemy.dialects.postgresql import JSONB
 from werkzeug.security import generate_password_hash, check_password_hash
 import bcrypt
 
+# Add an event listener to set 'article_id' before inserting
 
 class CheckboxField(BooleanField):
     def process_formdata(self, valuelist):
@@ -1509,8 +1510,6 @@ class DataMapping(db.Model):
 
 
 # CONTRACTS
-
-
 class Contract(db.Model):
     __tablename__ = 'contract'
 
@@ -1627,7 +1626,12 @@ class ContractStatusHistory(db.Model):
 class ContractArticle(db.Model):
     __tablename__ = 'contract_article'
 
-    article_id = db.Column(db.Integer, primary_key=True)
+    # Add 'id' as the primary key
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+
+    # 'article_id' is nullable but defaults to 'id' if not provided
+    article_id = db.Column(db.Integer, nullable=True)
+
     contract_id = db.Column(db.Integer, db.ForeignKey('contract.contract_id', ondelete='CASCADE'))
     article_title = db.Column(db.String(255), nullable=False)
     article_body = db.Column(db.Text)
@@ -1641,6 +1645,15 @@ class ContractArticle(db.Model):
     def contract_display_name(self):
         return self.contract.contract_name if self.contract else 'No Contract'
 
+    # Set article_id to id if it's None
+    @staticmethod
+    def before_insert(mapper, connection, target):
+        if target.article_id is None:
+            target.article_id = target.id
+
+
+
+event.listen(ContractArticle, 'before_insert', ContractArticle.before_insert)
 
 from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, func
 from sqlalchemy.orm import relationship
