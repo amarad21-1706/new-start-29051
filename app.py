@@ -5825,6 +5825,8 @@ def checkout():
 
 
 @app.route('/create_article', methods=['POST'])
+@login_required
+# TODO team membership required
 def create_article():
     try:
         # Get data from the form
@@ -5869,13 +5871,12 @@ def create_article():
 
 
 @app.route('/checklist', methods=['GET', 'POST'])
+@login_required
 def checklist():
     user_email = session.get('user_email')
     if not user_email:
-        print('non-existent user', user_email)
         return redirect(url_for('index'))  # Redirect to login or signup
 
-    print('existent user?', user_email, 'role', session['user_roles'])
     checklist = get_checklist_status(user_email)
 
     if checklist is None:
@@ -6038,6 +6039,7 @@ def subscribe_service():
 
 
 @app.route('/opt_plan', methods=['POST'])
+@login_required
 def opt_plan():
 
     print('role', session['user_roles'])
@@ -6059,59 +6061,6 @@ def opt_plan():
         flash(f"An error occurred while subscribing to the plan: {e}", "danger")
         return redirect(url_for('checklist'))
 
-
-def get_checklist_status333(user_email):
-    user = Users.query.filter_by(email=user_email).first()
-
-    if not user:
-        return None  # Return None if the user does not exist in the system
-
-    # Determine if the user has any roles assigned
-    role_assigned = UserRoles.query.filter_by(user_id=user.id).first() is not None
-
-    # Determine if the user is associated with any company
-    company_assigned = CompanyUsers.query.filter_by(user_id=user.id).first() is not None
-
-    # Check if a company assignment request ticket has already been created
-    try:
-        assignment_requested = Ticket.query.filter(
-            Ticket.user_id == user.id,
-            Ticket.description.ilike('%Please assign me as%')
-        ).first() is not None
-        print('assignment_requested ok')
-    except Exception as e:
-        print('assignment_requested ko')
-        print(f"Error checking for assignment ticket: {e}")
-        assignment_requested = False
-
-    # Check if a role request ticket has already been created
-    try:
-        role_requested = Ticket.query.filter(
-            Ticket.user_id == user.id,
-            Ticket.description.ilike('%Request role assignment%')
-        ).first() is not None
-        print('role_requested ok')
-    except Exception as e:
-        print('role_requested ko')
-        print(f"Error checking for role request ticket: {e}")
-        role_requested = False
-
-    # Check if the user has any active subscriptions
-    service_subscribed = Subscription.query.filter_by(user_id=user.id, status='active').first() is not None
-    # Check if the user has opted for any plans
-    plan_opted = UserPlans.query.filter_by(user_id=user.id, status='active').first() is not None
-    print('plan', plan_opted)
-
-    return {
-        'user_exists': True,
-        'agreement_signed': user.agreement_signed,
-        'role_assigned': role_assigned,
-        'company_assigned': company_assigned,
-        'assignment_requested': assignment_requested,
-        'role_requested': role_requested,
-        'service_subscribed': service_subscribed,
-        'plan_opted': plan_opted
-    }
 
 
 def get_checklist_status(user_email):
