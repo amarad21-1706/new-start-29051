@@ -34,6 +34,10 @@ from sqlalchemy.dialects.postgresql import JSONB
 from werkzeug.security import generate_password_hash, check_password_hash
 import bcrypt
 
+from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, func
+from sqlalchemy.orm import relationship
+from db import db  # Your SQLAlchemy instance
+
 # Add an event listener to set 'article_id' before inserting
 
 class CheckboxField(BooleanField):
@@ -122,6 +126,8 @@ class Users(db.Model, UserMixin):
     terms_accepted = db.Column(db.Boolean, nullable=False, default=False)
     privacy_policy_accepted = db.Column(db.Boolean, nullable=False, default=False)
     accepted_terms_date = db.Column(db.DateTime, nullable=True)
+    agreement_signed = db.Column(db.Boolean, default=False)
+    agreement_signed_date = db.Column(db.DateTime, nullable=True)
 
     roles = db.relationship('Role', secondary='user_roles', backref=db.backref('users', lazy='dynamic'),
                             primaryjoin='UserRoles.user_id == Users.id',
@@ -1652,12 +1658,7 @@ class ContractArticle(db.Model):
             target.article_id = target.id
 
 
-
 event.listen(ContractArticle, 'before_insert', ContractArticle.before_insert)
-
-from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, func
-from sqlalchemy.orm import relationship
-from db import db  # Your SQLAlchemy instance
 
 
 # Team model

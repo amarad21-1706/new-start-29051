@@ -8,7 +8,7 @@
             "Authority",
             "Employee",
             "Manager",
-            "ServiceProvider",
+            "Provider",
             "Guest"
         ],
         "widget": {
@@ -24,7 +24,7 @@
                     "Authority",
                     "Employee",
                     "Manager",
-                    "ServiceProvider",
+                    "Provider",
                     "Guest"
                 ],
                 "widget": {
@@ -45,7 +45,7 @@
                     "Authority",
                     "Employee",
                     "Manager",
-                    "ServiceProvider",
+                    "Provider",
                     "Guest"
                 ],
                 "widget": {
@@ -66,7 +66,7 @@
                     "Authority",
                     "Employee",
                     "Manager",
-                    "ServiceProvider",
+                    "Provider",
                     "Guest"
                 ],
                 "widget": {
@@ -82,7 +82,7 @@
                     "Authority",
                     "Employee",
                     "Manager",
-                    "ServiceProvider",
+                    "Provider",
                     "Guest"
                 ],
                 "widget": {
@@ -98,7 +98,7 @@
                     "Authority",
                     "Employee",
                     "Manager",
-                    "ServiceProvider",
+                    "Provider",
                     "Guest"
                 ],
                 "widget": {
@@ -1109,6 +1109,22 @@
                         ],
                         "widget": {
                             "display": false
+                        }
+                    },
+                    "Registration Status": {
+                        "label": "Registration Status",
+                        "url": "/checklist",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin",
+                            "Employee",
+                            "Manager",
+                            "Authority",
+                            "Provider",
+                            "Guest"
+                        ],
+                        "widget": {
+                            "display": true
                         }
                     },
                     "Personal Data": {

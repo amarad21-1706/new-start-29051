@@ -225,12 +225,11 @@ stripe.publishable_key = app.config['STRIPE_PUBLISHABLE_KEY']
 
 # TODO (in)activate LOGGER LOGGING ETC
 # Create a custom logger
-'''
 logger = logging.getLogger()
-
 # Set the default logging level
 logger.setLevel(logging.DEBUG)
 
+'''
 # Create handlers
 console_handler = logging.StreamHandler()
 file_handler = logging.FileHandler('app.log')
@@ -252,6 +251,7 @@ logger.addHandler(file_handler)
 
 # Test logging
 logger.info("Logging to both console and file is configured.")
+'''
 
 @app.route('/test_relationship')
 def test_relationship():
@@ -268,7 +268,7 @@ def log_request_info(response):
     logger.info('Body: %s', request.get_data())
     logger.info('Response: %s', response.status)
     return response
-'''
+
 
 
 @login_manager.user_loader
@@ -314,12 +314,13 @@ def get_session():
     value = session.get('key')
     return f'Session value: {value}'
 
-
+# TODO use it for the landing page
 def check_internet():
     url = "https://www.google.com"
     timeout = 10
     try:
         response = requests.get(url, timeout=timeout)
+        print('Internet', response)
         return True
     except (requests.ConnectionError, requests.Timeout) as exception:
         return False
@@ -333,12 +334,16 @@ def before_request():
 
             session['roles'] = [role.name for role in current_user.roles] if current_user.roles else ['Guest']
             session['is_authenticated'] = True
+            # Set the user email in the session
+            session['user_email'] = current_user.email
             g.current_user = current_user
             session.permanent = True
         else:
             # Default to 'Guest' for unauthenticated users
             session['roles'] = ['Guest']
             session['is_authenticated'] = False
+            # Set the user email in the session
+            session['user_email'] = None # right?
         session.modified = True
         # print('session roles and authentication', session['roles'], session['is_authenticated'])
 
@@ -549,7 +554,7 @@ def menu_item_allowed(menu_item, user_roles):
     # WHEN the phrase on the right was present, the landing page was empty A.R. 15Feb2024
     return True #menu_item['allowed_roles'] and any(role in user_roles for role in menu_item['allowed_roles'])
 
-def process_menu_items(menu_items):
+def process_menu_items222(menu_items, is_authenticated, user_roles):
     menus_to_display = []
     widgets_to_display = []
 
@@ -557,7 +562,6 @@ def process_menu_items(menu_items):
     for key, item in menu_items.items():
         # Check if the item itself has a widget that should be displayed as a widget
         if 'widget' in item and item['widget'].get('display', False):
-            print('Widget to display:', key)
             widgets_to_display.append(item)
         else:
             # If not a widget, consider it a menu item to display
@@ -573,6 +577,43 @@ def process_menu_items(menu_items):
             else:
                 # If not a widget, consider it a submenu item to display
                 menus_to_display.append(submenu)
+
+    return menus_to_display, widgets_to_display
+
+
+def process_menu_items(menu_items, is_authenticated, user_roles):
+    menus_to_display = []
+    widgets_to_display = []
+    if not user_roles:
+        user_roles = ['Guest']
+
+    def recursive_process(items):
+        # Iterate through each menu item
+        for key, item in items.items():
+            # Check if the item itself has a widget that should be displayed as a widget
+            if 'widget' in item and item['widget'].get('display', False):
+                allowed_roles = item.get('allowed_roles', [])
+                # Find the intersection between user_roles and allowed_roles
+                intersection = set(user_roles).intersection(allowed_roles)
+
+                print('Widget to display:', key, is_authenticated, user_roles, allowed_roles, 'Intersection:',
+                      intersection)
+
+                if intersection:
+                    widgets_to_display.append(item)
+                else:
+                    menus_to_display.append(item)
+            else:
+                # If not a widget, consider it a menu item to display
+                menus_to_display.append(item)
+
+            # Process submenus recursively (if any)
+            submenus = item.get('submenus', {})
+            if submenus:
+                recursive_process(submenus)
+
+    # Start processing from the top-level menu items
+    recursive_process(menu_items)
 
     return menus_to_display, widgets_to_display
 
@@ -668,7 +709,7 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
             #current_app.logger.debug(f"User Roles: {user_roles}")
             #current_app.logger.debug(f"Show Cookie Banner: {show_cookie_banner}")
             #current_app.logger.debug(f"Cookies Accepted: {cookies_accepted}")
-            menus_to_display, widgets_to_display = process_menu_items(main_menu_items)
+            menus_to_display, widgets_to_display = process_menu_items(main_menu_items, is_authenticated, user_roles)
 
             additional_data = {
                 "username": username,
@@ -1462,6 +1503,23 @@ def open_admin_app_4():
     return redirect(url_for('open_admin_4.index'))
 
 
+@app.route('/open_admin_app_5')
+@login_required
+@roles_required('Admin')
+# Define the index route
+def open_admin_app_5():
+    user_id = current_user.id
+    return redirect(url_for('open_admin_5.index'))
+
+
+@app.route('/open_admin_app_6')
+@login_required
+@roles_required('Admin', 'Manager', 'Employee')
+# Define the index route
+def open_admin_app_6():
+    user_id = current_user.id
+    return redirect(url_for('open_admin_6.index'))
+
 '''
 
 @login_required
@@ -1678,8 +1736,6 @@ def attach_documents_to_workflow_step():
 
     # Pass the messages to the template
     return jsonify({'success_message': success_message, 'error_message': None})
-
-
 
 
 @app.route('/manage_plan_products', methods=['GET', 'POST'])
@@ -4547,8 +4603,9 @@ def subscriptions():
 @login_required
 @roles_required('Manager', 'Employee')
 def subscribe():
+    print('entering subscribe route')
     form = SubscriptionForm()
-    logging.debug(f"Form data before validation: {form.plan_id.data}, additional_products: {request.form.getlist('additional_products')}")
+    # logging.debug(f"Form data before validation: {form.plan_id.data}, additional_products: {request.form.getlist('additional_products')}")
 
     try:
         if form.validate_on_submit():
@@ -5810,6 +5867,300 @@ def create_article():
         flash(f"An error occurred (01): {str(e)}", "danger")
         return redirect(request.referrer)
 
+
+@app.route('/checklist', methods=['GET', 'POST'])
+def checklist():
+    user_email = session.get('user_email')
+    if not user_email:
+        print('non-existent user', user_email)
+        return redirect(url_for('index'))  # Redirect to login or signup
+
+    print('existent user?', user_email, 'role', session['user_roles'])
+    checklist = get_checklist_status(user_email)
+
+    if checklist is None:
+        return "User not found", 404  # Handle user not found
+
+    print('checklist', checklist)
+    return render_template('registration_checklist.html', checklist=checklist)
+
+
+# Routes to handle actions such as signing agreement, requesting role, etc.
+@app.route('/sign_agreement', methods=['GET', 'POST'])
+@login_required
+def sign_agreement():
+    print('Entering agreement signoff')
+
+    user_email = session.get('user_email')
+    if not user_email:
+        print('User email not found in session')
+        flash("User not logged in.", "danger")
+        return redirect(url_for('index'))
+
+    user = Users.query.filter_by(email=user_email).first()
+    if not user:
+        print('User not found in database')
+        flash("User not found in the system.", "danger")
+        return redirect(url_for('index'))
+
+    # Fetch the contract using contract_name
+    contract = Contract.query.filter_by(contract_name="D.E.R.E. Membership Agreement").first()
+
+    if not contract:
+        print('Contract not found')
+        flash("The membership agreement could not be found. Please contact support.", "danger")
+        return redirect(url_for('checklist'))
+
+    # Ensure the contract has a contract_id attribute
+    if not hasattr(contract, 'contract_id'):
+        print('Contract object does not have a contract_id attribute')
+        flash("Contract object is invalid. Please contact support.", "danger")
+        return redirect(url_for('checklist'))
+
+    if request.method == 'POST':
+        print('Handling POST request')
+        try:
+            if 'agree' in request.form:
+                print('Agreement checkbox is checked')
+                user.agreement_signed = True
+                user.agreement_signed_date = datetime.utcnow()  # Record the date of agreement
+                db.session.commit()
+                flash("You have successfully signed the agreement.", "success")
+                return redirect(url_for('checklist'))
+            else:
+                print('Agreement checkbox not checked')
+                flash("You must accept the agreement to proceed.", "danger")
+                return redirect(url_for('sign_agreement'))
+        except Exception as e:
+            print(f'Error occurred while signing the agreement: {e}')
+            flash("An error occurred while signing the agreement. Please try again.", "danger")
+            return redirect(url_for('sign_agreement'))
+
+    print('Handling GET request')
+    # Handle GET request to display the agreement
+    try:
+        articles = ContractArticle.query.filter_by(contract_id=contract.contract_id).order_by(
+            ContractArticle.article_order).all()
+        print(f'Articles found: {articles}')  # Debugging output
+        if not articles:
+            print('No articles found for the contract')
+            flash("No articles found for the agreement. Please contact support.", "danger")
+            return redirect(url_for('checklist'))
+
+        return render_template('sign_agreement.html', contract=contract, articles=articles)
+    except Exception as e:
+        print(f'Error occurred while fetching articles: {e}')
+        flash("An error occurred while fetching the agreement articles.", "danger")
+        return redirect(url_for('checklist'))
+
+
+@app.route('/request_role', methods=['POST'])
+@login_required
+def request_role():
+    try:
+        # Fetch the subject ID for "Support"
+        support_subject = Subject.query.filter_by(name='Support').first()
+
+        if not support_subject:
+            flash('Support subject not found. Please contact the admin.', 'danger')
+            return redirect(url_for('checklist'))
+
+        subject_id = support_subject.id  # Assign the correct subject ID for "Support"
+
+        # Automatically create a ticket for role assignment
+        new_ticket = Ticket(
+            user_id=current_user.id,
+            subject_id=subject_id,
+            description="Request role assignment",
+            status_id=2,  # Default status "Open"
+            created_at=datetime.utcnow(),
+            marked_as_read=False,
+            lifespan='one-off'
+        )
+        db.session.add(new_ticket)
+        db.session.commit()
+        flash('Role request submitted successfully under Support!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error submitting role request: {e}", "danger")
+
+    return redirect(url_for('checklist'))
+
+
+@app.route('/request_company', methods=['POST'])
+@login_required
+def request_company():
+    # Get the user's role and company information
+    user_role = current_user.roles[0].name if current_user.roles else 'Employee'  # Default to 'Employee' if no roles
+    company_name = current_user.company if current_user.company else 'Unknown Company'
+
+    # Construct the automatic ticket content
+    ticket_description = f"Please assign me as {user_role} of {company_name}"
+
+    # Automatically create a ticket
+    new_ticket = Ticket(
+        user_id=current_user.id,
+        subject_id=1,  # Assuming '1' is the ID for a generic 'Request' subject or create one specifically for this
+        description=ticket_description,
+        status_id=2  # Default status "Open"
+    )
+
+    db.session.add(new_ticket)
+    db.session.commit()
+
+    flash('Your request for company assignment has been submitted successfully!')
+
+    return redirect(url_for('checklist'))
+
+
+@app.route('/subscribe_service', methods=['POST'])
+@login_required
+# @roles_required('Manager', 'Employee', 'Authority', 'Provider', 'Guest', '')
+def subscribe_service():
+    print('role', session['user_roles'])
+
+    # Check if the user has signed the agreement
+    if not session['user_roles']:
+        flash("You must apply for and be granted membership to access our services.", "danger")
+        return redirect(url_for('checklist'))
+
+    # Check if the user has signed the agreement
+    if not current_user.agreement_signed:
+        flash("You must sign the agreement before subscribing to services.", "danger")
+        return redirect(url_for('checklist'))
+
+    try:
+        # If the agreement is signed, proceed to the subscribe function
+        return redirect(url_for('subscribe'))
+    except Exception as e:
+        flash(f"An error occurred while subscribing to the service: {e}", "danger")
+        return redirect(url_for('checklist'))
+
+
+@app.route('/opt_plan', methods=['POST'])
+def opt_plan():
+
+    print('role', session['user_roles'])
+
+    # Check if the user has signed the agreement
+    if not session['user_roles']:
+        flash("You must apply for and be granted membership to access our plans.", "danger")
+        return redirect(url_for('checklist'))
+
+    # Check if the user has signed the agreement
+    if not current_user.agreement_signed:
+        flash("You must sign the agreement before subscribing to plans.", "danger")
+        return redirect(url_for('checklist'))
+
+    try:
+        # If the agreement is signed, proceed to the subscribe function
+        return redirect(url_for('subscriptions'))
+    except Exception as e:
+        flash(f"An error occurred while subscribing to the plan: {e}", "danger")
+        return redirect(url_for('checklist'))
+
+
+def get_checklist_status333(user_email):
+    user = Users.query.filter_by(email=user_email).first()
+
+    if not user:
+        return None  # Return None if the user does not exist in the system
+
+    # Determine if the user has any roles assigned
+    role_assigned = UserRoles.query.filter_by(user_id=user.id).first() is not None
+
+    # Determine if the user is associated with any company
+    company_assigned = CompanyUsers.query.filter_by(user_id=user.id).first() is not None
+
+    # Check if a company assignment request ticket has already been created
+    try:
+        assignment_requested = Ticket.query.filter(
+            Ticket.user_id == user.id,
+            Ticket.description.ilike('%Please assign me as%')
+        ).first() is not None
+        print('assignment_requested ok')
+    except Exception as e:
+        print('assignment_requested ko')
+        print(f"Error checking for assignment ticket: {e}")
+        assignment_requested = False
+
+    # Check if a role request ticket has already been created
+    try:
+        role_requested = Ticket.query.filter(
+            Ticket.user_id == user.id,
+            Ticket.description.ilike('%Request role assignment%')
+        ).first() is not None
+        print('role_requested ok')
+    except Exception as e:
+        print('role_requested ko')
+        print(f"Error checking for role request ticket: {e}")
+        role_requested = False
+
+    # Check if the user has any active subscriptions
+    service_subscribed = Subscription.query.filter_by(user_id=user.id, status='active').first() is not None
+    # Check if the user has opted for any plans
+    plan_opted = UserPlans.query.filter_by(user_id=user.id, status='active').first() is not None
+    print('plan', plan_opted)
+
+    return {
+        'user_exists': True,
+        'agreement_signed': user.agreement_signed,
+        'role_assigned': role_assigned,
+        'company_assigned': company_assigned,
+        'assignment_requested': assignment_requested,
+        'role_requested': role_requested,
+        'service_subscribed': service_subscribed,
+        'plan_opted': plan_opted
+    }
+
+
+def get_checklist_status(user_email):
+    user = Users.query.filter_by(email=user_email).first()
+    if not user:
+        return None  # User doesn't exist in the system
+
+    # Determine if the user has an active subscription
+    active_subscriptions = Subscription.query.filter_by(user_id=user.id, status='active').all()
+
+    # Get the names of the plans from the active subscriptions
+    if active_subscriptions:
+        plan_names = ', '.join([subscription.plan.name for subscription in active_subscriptions])
+        plan_opted = True
+    else:
+        plan_names = None
+        plan_opted = False
+
+    # Determine if the user has any roles assigned
+    role_assigned = UserRoles.query.filter_by(user_id=user.id).first() is not None
+
+    # Determine if the user is associated with any company
+    company_assigned = CompanyUsers.query.filter_by(user_id=user.id).first() is not None
+
+    service_subscribed = any(active_subscriptions)  # Service subscribed is true if any subscription exists
+
+    # Check for assignment requested ticket
+    assignment_requested = Ticket.query.filter(
+        Ticket.user_id == user.id,
+        Ticket.description.ilike('%Please assign me as%')
+    ).first() is not None
+
+    role_requested = Ticket.query.filter(
+        Ticket.user_id == user.id,
+        Ticket.description.ilike('%Request role assignment%')
+    ).first() is not None
+
+    return {
+        'user_exists': True,
+        'agreement_signed': user.agreement_signed,
+        'agreement_signed_date': user.agreement_signed_date,
+        'role_assigned': role_assigned,
+        'company_assigned': company_assigned,
+        'service_subscribed': service_subscribed,
+        'plan_opted': plan_opted,
+        'plan_names': plan_names,  # Plan names if any subscription exists
+        'assignment_requested': assignment_requested,
+        'role_requested': role_requested
+    }
 
 
 @app.route('/checkout_success')
