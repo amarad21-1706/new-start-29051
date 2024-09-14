@@ -1,0 +1,77 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Registration Checklist</title>
+</head>
+<body>
+    <h1>Registration Progress</h1>
+    <table border="1">
+        <tr>
+            <th>Step</th>
+            <th>Status</th>
+            <th>Action</th>
+        </tr>
+        <tr>
+            <td>1. User Exists in Database</td>
+            <td>{{ '✔' if checklist['user_exists'] else '❌' }}</td>
+            <td>N/A</td>
+        </tr>
+        <tr>
+            <td>2. Agreement Signed</td>
+            <td>{{ '✔' if checklist['agreement_signed'] else '❌' }}</td>
+            <td>
+                {% if not checklist['agreement_signed'] %}
+                    <form method="post" action="{{ url_for('sign_agreement') }}">
+                        <button type="submit">Sign Agreement</button>
+                    </form>
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <td>3. Role Assigned</td>
+            <td>{{ '✔' if checklist['role_assigned'] else '❌' }}</td>
+            <td>
+                {% if not checklist['role_assigned'] %}
+                    <form method="post" action="{{ url_for('request_role') }}">
+                        <button type="submit">Request Role</button>
+                    </form>
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <td>4. Company Assigned</td>
+            <td>{{ '✔' if checklist['company_assigned'] else '❌' }}</td>
+            <td>
+                {% if not checklist['company_assigned'] %}
+                    <form method="post" action="{{ url_for('request_company') }}">
+                        <button type="submit">Request Company Assignment</button>
+                    </form>
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <td>5. Service Subscribed</td>
+            <td>{{ '✔' if checklist['service_subscribed'] else '❌' }}</td>
+            <td>
+                {% if not checklist['service_subscribed'] %}
+                    <form method="post" action="{{ url_for('subscribe_service') }}">
+                        <button type="submit">Subscribe to Service</button>
+                    </form>
+                {% endif %}
+            </td>
+        </tr>
+        <tr>
+            <td>6. Plan Opted</td>
+            <td>{{ '✔' if checklist['plan_opted'] else '❌' }}</td>
+            <td>
+                {% if not checklist['plan_opted'] %}
+                    <form method="post" action="{{ url_for('opt_plan') }}">
+                        <button type="submit">Opt for Plan</button>
+                    </form>
+                {% endif %}
+            </td>
+        </tr>
+    </table>
+</body>
+</html>
