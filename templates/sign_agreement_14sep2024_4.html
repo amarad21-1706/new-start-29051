@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+
+{% block title %}
+Sign Agreement
+{% endblock %}
+
+{% block content %}
+<h2>{{ contract.contract_name }}</h2>
+
+{% if contract %}
+    <div class="contract-content">
+        {% for article in articles %}
+            <h3>{{ article.article_order }}. {{ article.article_title }}</h3>
+            <p>{{ article.article_body }}</p>
+        {% endfor %}
+    </div>
+
+    <form method="post" action="{{ url_for('sign_agreement') }}">
+        {{ csrf_token }}
+        <div>
+            <input type="checkbox" id="agree" name="agree" required>
+            <label for="agree">I have read and accept the terms of the agreement.</label>
+        </div>
+        <button type="submit" class="btn btn-primary">Sign Agreement</button>
+    </form>
+{% else %}
+    <p>Contract not found. Please contact support.</p>
+{% endif %}
+
+{% endblock %}
