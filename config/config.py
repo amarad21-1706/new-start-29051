@@ -17,6 +17,7 @@ from models.user import (Company, CompanyUsers, Users, Role, UserRoles,
 from dateutil.relativedelta import relativedelta
 
 import pandas as pd
+from flask_admin import Admin
 
 from flask_login import current_user
 import json
@@ -1349,8 +1350,532 @@ def get_areas_with_subareas(session):
 
     return areas_with_subareas
 
+def get_admin_view_endpoints(admin_instance):
+    # Initialize an empty dictionary to store endpoints and view names
+    endpoints = {}
+
+    # Iterate over all views in the admin instance
+    for view in admin_instance._views:
+        print(f"Processing view: {view}")  # Debug print to check each view
+        # Extract the endpoint and the class name of the view
+        endpoints[view.endpoint] = view.__class__.__name__
+
+    print(endpoints)
+    return endpoints
+
+
+
 
 def generate_html_cards_progression_with_progress_bars111(sorted_values, current_time_qualifier, session, company_id=None):
+    html_code = ""
+
+    from app_defs import admin_app1, admin_app2, admin_app3, admin_app4, admin_app5, admin_app6, admin_app10
+    # Create a dictionary to map names to admin instances
+    admin_instances = {
+        'admin_app1': admin_app1,
+        'admin_app2': admin_app2,
+        'admin_app3': admin_app3,
+        'admin_app4': admin_app4,
+        'admin_app5': admin_app5,
+        'admin_app6': admin_app6,
+        'admin_app10': admin_app10
+    }
+
+    areas_with_subareas = get_areas_with_subareas(session)
+
+    # If current_time_qualifier is None, set it to an empty dictionary
+    current_time_qualifier = current_time_qualifier or {}
+
+    # If company_id is None, get all companies
+    companies = session.query(Company).all() if company_id is None else [session.query(Company).get(company_id)]
+
+    # Loop through each company
+    for company in companies:
+        # Get company name and ID
+        company_name = company.name
+        company_id = company.id
+
+        # Initialize counter for cards in the row
+        cards_in_row = 0
+
+        # Start the row for the current company
+        html_code += "<div class='row'>"
+
+        # Loop through each area with its subareas
+        for area, subareas in areas_with_subareas:
+            # Filter sorted_values to include only items for the current area, company, and time qualifier
+            filtered_values_area = [item for item in sorted_values if
+                                    item['area_id'] == area.id and
+                                    item['time_qualifier'] == current_time_qualifier and
+                                    item['company_id'] == company_id]
+
+            # Initialize dictionary to store record counts for subareas
+            subarea_record_counts = {subarea.id: 0 for subarea in subareas}
+
+            # Update record counts for subareas with non-zero counts
+            last_fi0 = None
+            last_interval_ord = None
+
+            for item in filtered_values_area:
+                subarea_id = item.get('subarea_id')
+                if subarea_id is not None and subarea_id in subarea_record_counts:
+                    subarea_record_counts[subarea_id] += 1
+                else:
+                    print(f"Subarea ID {subarea_id} not found or invalid.")
+
+                # Store the last fi0 and interval_ord before the loop ends
+                last_fi0 = item.get('fi0', '')
+                last_interval_ord = item.get('interval_ord', '')
+
+            # Start card body using the stored last values
+            html_code += f"<div class='col-md-4'>"  # Bootstrap column to contain the card
+            html_code += f"<div class='card' style='width: 22rem;'>"
+            html_code += f"<div class='card-header'><h5 class='card-title' style='font-size: 1rem;'><a href='/open_admin_app_{area.id}'>\
+            {company_name} - {area.name}</a> - {last_fi0} / {last_interval_ord}</h5></div>"
+
+            html_code += "<div class='card-body'>"
+            html_code += "<table class='table table-sm'>"
+            html_code += "<thead><tr><th style='font-size: 0.8rem;'>Subarea</th><th style='font-size: 0.8rem;'>Records</th></tr></thead>"
+            html_code += "<tbody>"
+
+            try:
+                admin_view_name = f"admin_app{area.id}"
+                print(admin_view_name)
+
+                # Use the dictionary to get the actual Admin instance
+                admin_instance = admin_instances.get(admin_view_name)
+
+                if admin_instance is None:
+                    print(f"No Admin instance found for: {admin_view_name}")
+                    continue
+
+                # Check if the admin_instance is actually an Admin instance
+                if not isinstance(admin_instance, Admin):
+                    print("Provided instance is not a Flask-Admin instance.")
+                    continue
+                else:
+                    print(f"Admin instance: {admin_instance} is an Admin instance")
+                    print(admin_view_name)
+                    # Fetch admin view endpoints
+                    admin_view_endpoints = get_admin_view_endpoints(admin_instance)
+                    print('admin_view_endpoints', admin_view_endpoints)
+
+                    # Convert endpoints to a list to preserve order
+                    endpoint_list = list(admin_view_endpoints.keys())
+            except Exception as e:
+                print(f"An error occurred: {e}")
+                continue
+
+            # Display subarea details
+            for index, subarea in enumerate(subareas):
+                subarea_description = get_subarea_description(subarea.id)
+                record_count = subarea_record_counts.get(subarea.id, 0)
+                # Add different background color for rows with zero records
+                row_style = ""
+                if record_count == 0:
+                    row_style = "background-color: #ffccaa;"  # Light orange
+                elif record_count > 2:
+                    row_style = "background-color: #add8e6;"  # Light blue
+
+                default_endpoint="/"
+                try:
+                    # Use the index to find the correct endpoint from the endpoint list
+                    endpoint = f"{endpoint_list[index + 1]}/" if index < len(endpoint_list) else default_endpoint
+                    print('*** endpoint is ***', endpoint, 'index', index, 'len', len(endpoint_list))
+                except:
+                    # Use the index to find the correct endpoint from the endpoint list
+                    endpoint = default_endpoint
+                    print('*** endpoint is ***', endpoint, 'index', index)
+
+                link_text = f"/open_admin_{area.id}/{endpoint}"
+
+                # Create the link dynamically, with exception(s)
+                # ===========# ===========# ===========# ===========# ===========# ===========
+                if area.id == 1 and index == 4: # eccezione SETTLEMENT FISICO
+                    print('SETTLEMENT FISICO')
+                    link_text = "/show_survey/1"
+                # ===========# ===========# ===========# ===========# ===========# ===========
+
+                # record_link = f"<a href='/open_admin_{area.id}/{endpoint}'>{record_count}</a>"
+                record_link = f"<a href='{link_text}'>{record_count}</a>"
+
+                html_code += f"<tr style='{row_style}'><td style='font-size: 0.8rem;'>\
+                {subarea_description}</td><td style='font-size: 0.8rem; text-align: center;'>{record_link}</td></tr>"
+
+            # End table body and card body
+            html_code += "</tbody>"
+            html_code += "</table>"
+            html_code += "</div>"
+
+            # Calculate progress based on the total number of subareas
+            total_subareas_with_records = sum(1 for count in subarea_record_counts.values() if count > 0)
+            divisor = len(subareas) if len(subareas) > 0 else 1
+            percentage = (total_subareas_with_records / divisor) * 100
+            percentage = min(percentage, 100)
+
+            # Create a progress bar based on the calculated percentage
+            progress_bar = f"<a href='/open_admin_app_{area.id}'>\
+               <div class='progress' style='font-size: 10px;'>" \
+               f"<div class='progress-bar' role='progressbar' style='width: {percentage}%;\
+               ' aria-valuenow='{percentage}' aria-valuemin='0' aria-valuemax='100'>\
+               {percentage:.2f}%</div></div></a>"
+
+            # Card footer with the progress bar
+            html_code += f"<div class='card-footer'>{progress_bar}</div>"
+
+            # Close the card
+            html_code += "</div>"
+            html_code += "</div>"  # Close Bootstrap column
+
+            # Increment the counter for cards in the row
+            cards_in_row += 1
+
+            # If three cards are already in the row, close the row and start a new one
+            if cards_in_row == 3:
+                html_code += "</div>"  # Close the row
+                html_code += "<div class='row'>"  # Start a new row
+                cards_in_row = 0
+
+        # Close the row for the current company
+        html_code += "</div>"
+
+    return html_code
+
+
+
+
+def generate_html_cards_progression_with_progress_bars111555(sorted_values, current_time_qualifier, session, company_id=None):
+    html_code = ""
+
+    from app_defs import admin_app1, admin_app2, admin_app3, admin_app4, admin_app5, admin_app6, admin_app10
+    # Create a dictionary to map names to admin instances
+    admin_instances = {
+        'admin_app1': admin_app1,
+        'admin_app2': admin_app2,
+        'admin_app3': admin_app3,
+        'admin_app4': admin_app4,
+        'admin_app5': admin_app5,
+        'admin_app6': admin_app6,
+        'admin_app10': admin_app10
+    }
+
+    areas_with_subareas = get_areas_with_subareas(session)
+
+    # If current_time_qualifier is None, set it to an empty dictionary
+    current_time_qualifier = current_time_qualifier or {}
+
+    # If company_id is None, get all companies
+    companies = session.query(Company).all() if company_id is None else [session.query(Company).get(company_id)]
+
+    # Loop through each company
+    for company in companies:
+        # Get company name and ID
+        company_name = company.name
+        company_id = company.id
+
+        # Initialize counter for cards in the row
+        cards_in_row = 0
+
+        # Start the row for the current company
+        html_code += "<div class='row'>"
+
+        # Loop through each area with its subareas
+        for area, subareas in areas_with_subareas:
+            # Filter sorted_values to include only items for the current area, company, and time qualifier
+            filtered_values_area = [item for item in sorted_values if
+                                    item['area_id'] == area.id and
+                                    item['time_qualifier'] == current_time_qualifier and
+                                    item['company_id'] == company_id]
+
+            # Initialize dictionary to store record counts for subareas
+            subarea_record_counts = {subarea.id: 0 for subarea in subareas}
+
+            # Update record counts for subareas with non-zero counts
+            last_fi0 = None
+            last_interval_ord = None
+
+            for item in filtered_values_area:
+                subarea_id = item.get('subarea_id')
+                if subarea_id is not None and subarea_id in subarea_record_counts:
+                    subarea_record_counts[subarea_id] += 1
+                else:
+                    print(f"Subarea ID {subarea_id} not found or invalid.")
+
+                # Store the last fi0 and interval_ord before the loop ends
+                last_fi0 = item.get('fi0', '')
+                last_interval_ord = item.get('interval_ord', '')
+
+            # Start card body using the stored last values
+            html_code += f"<div class='col-md-4'>"  # Bootstrap column to contain the card
+            html_code += f"<div class='card' style='width: 22rem;'>"
+            html_code += f"<div class='card-header'><h5 class='card-title' style='font-size: 1rem;'><a href='/open_admin_app_{area.id}'>\
+            {company_name} - {area.name}</a> - {last_fi0} / {last_interval_ord}</h5></div>"
+
+            html_code += "<div class='card-body'>"
+            html_code += "<table class='table table-sm'>"
+            html_code += "<thead><tr><th style='font-size: 0.8rem;'>Subarea</th><th style='font-size: 0.8rem;'>Records</th></tr></thead>"
+            html_code += "<tbody>"
+
+            try:
+                admin_view_name = f"admin_app{area.id}"
+                print(admin_view_name)
+
+                # Use the dictionary to get the actual Admin instance
+                admin_instance = admin_instances.get(admin_view_name)
+
+                if admin_instance is None:
+                    print(f"No Admin instance found for: {admin_view_name}")
+                    continue
+
+                # Check if the admin_instance is actually an Admin instance
+                if not isinstance(admin_instance, Admin):
+                    print("Provided instance is not a Flask-Admin instance.")
+                    continue
+                else:
+                    print(f"Admin instance: {admin_instance} is an Admin instance")
+                    print(admin_view_name)
+                    # Fetch admin view endpoints
+                    admin_view_endpoints = get_admin_view_endpoints(admin_instance)
+                    print('admin_view_endpoints', admin_view_endpoints)
+            except Exception as e:
+                print(f"An error occurred: {e}")
+                continue
+
+            # Display subarea details
+            for subarea in subareas:
+                subarea_description = get_subarea_description(subarea.id)
+                record_count = subarea_record_counts.get(subarea.id, 0)
+                # Add different background color for rows with zero records
+                row_style = ""
+                if record_count == 0:
+                    row_style = "background-color: #ffccaa;"  # Light orange
+                elif record_count > 2:
+                    row_style = "background-color: #add8e6;"  # Light blue
+
+                # Use the subarea ID or name to find the correct endpoint
+                endpoint = admin_view_endpoints.get(f"view_{subarea_description.replace(' ', '_').lower()}/", "")
+                print('*** endpoint is ***', endpoint)
+                if not endpoint:
+                    endpoint = "/"  # Fallback to a default view
+
+                # Create the link dynamically
+                record_link = f"<a href='/open_admin_{area.id}/{endpoint}'>{record_count}</a>"
+
+                html_code += f"<tr style='{row_style}'><td style='font-size: 0.8rem;'>\
+                {subarea_description}</td><td style='font-size: 0.8rem; text-align: center;'>{record_link}</td></tr>"
+
+            # End table body and card body
+            html_code += "</tbody>"
+            html_code += "</table>"
+            html_code += "</div>"
+
+            # Calculate progress based on the total number of subareas
+            total_subareas_with_records = sum(1 for count in subarea_record_counts.values() if count > 0)
+            divisor = len(subareas) if len(subareas) > 0 else 1
+            percentage = (total_subareas_with_records / divisor) * 100
+            percentage = min(percentage, 100)
+
+            # Create a progress bar based on the calculated percentage
+            progress_bar = f"<a href='/open_admin_app_{area.id}'>\
+               <div class='progress' style='font-size: 10px;'>" \
+               f"<div class='progress-bar' role='progressbar' style='width: {percentage}%;\
+               ' aria-valuenow='{percentage}' aria-valuemin='0' aria-valuemax='100'>\
+               {percentage:.2f}%</div></div></a>"
+
+            # Card footer with the progress bar
+            html_code += f"<div class='card-footer'>{progress_bar}</div>"
+
+            # Close the card
+            html_code += "</div>"
+            html_code += "</div>"  # Close Bootstrap column
+
+            # Increment the counter for cards in the row
+            cards_in_row += 1
+
+            # If three cards are already in the row, close the row and start a new one
+            if cards_in_row == 3:
+                html_code += "</div>"  # Close the row
+                html_code += "<div class='row'>"  # Start a new row
+                cards_in_row = 0
+
+        # Close the row for the current company
+        html_code += "</div>"
+
+    return html_code
+
+
+
+
+# PREVIOUS VERSION!
+# =======================   =======================   =======================   =======================
+
+def generate_html_cards_progression_with_progress_bars111444(sorted_values, current_time_qualifier, session, company_id=None):
+    html_code = ""
+
+    from app_defs import admin_app1, admin_app2, admin_app3, admin_app4, admin_app5, admin_app6, admin_app10
+    # Create a dictionary to map names to admin instances
+    admin_instances = {
+        'admin_app1': admin_app1,
+        'admin_app2': admin_app2,
+        'admin_app3': admin_app3,
+        'admin_app4': admin_app4,
+        'admin_app5': admin_app5,
+        'admin_app6': admin_app6,
+        'admin_app10': admin_app10
+    }
+
+    areas_with_subareas = get_areas_with_subareas(session)
+
+    # If current_time_qualifier is None, set it to an empty dictionary
+    current_time_qualifier = current_time_qualifier or {}
+
+    # If company_id is None, get all companies
+    companies = session.query(Company).all() if company_id is None else [session.query(Company).get(company_id)]
+
+    # Loop through each company
+    for company in companies:
+        # Get company name and ID
+        company_name = company.name
+        company_id = company.id
+
+        # Initialize counter for cards in the row
+        cards_in_row = 0
+
+        # Start the row for the current company
+        html_code += "<div class='row'>"
+
+        # Loop through each area with its subareas
+        for area, subareas in areas_with_subareas:
+            # Filter sorted_values to include only items for the current area, company, and time qualifier
+            filtered_values_area = [item for item in sorted_values if
+                                    item['area_id'] == area.id and
+                                    item['time_qualifier'] == current_time_qualifier and
+                                    item['company_id'] == company_id]
+
+            # Initialize dictionary to store record counts for subareas
+            subarea_record_counts = {subarea.id: 0 for subarea in subareas}
+
+            # Update record counts for subareas with non-zero counts
+            last_fi0 = None
+            last_interval_ord = None
+
+            for item in filtered_values_area:
+                subarea_id = item.get('subarea_id')
+                if subarea_id is not None and subarea_id in subarea_record_counts:
+                    subarea_record_counts[subarea_id] += 1
+                else:
+                    print(f"Subarea ID {subarea_id} not found or invalid.")
+
+                # Store the last fi0 and interval_ord before the loop ends
+                last_fi0 = item.get('fi0', '')
+                last_interval_ord = item.get('interval_ord', '')
+
+            # Start card body using the stored last values
+            html_code += f"<div class='col-md-4'>"  # Bootstrap column to contain the card
+            html_code += f"<div class='card' style='width: 22rem;'>"
+            html_code += f"<div class='card-header'><h5 class='card-title' style='font-size: 1rem;'><a href='/open_admin_app_{area.id}'>\
+            {company_name} - {area.name}</a> - {last_fi0} / {last_interval_ord}</h5></div>"
+
+            html_code += "<div class='card-body'>"
+            html_code += "<table class='table table-sm'>"
+            html_code += "<thead><tr><th style='font-size: 0.8rem;'>Subarea</th><th style='font-size: 0.8rem;'>Records</th></tr></thead>"
+            html_code += "<tbody>"
+
+            #areaid = f"_{area.id}" if area.id != 1 else ''
+
+            try:
+                admin_view_name = f"admin_app{area.id}"
+                print(admin_view_name)
+
+                # Use the dictionary to get the actual Admin instance
+                admin_instance = admin_instances.get(admin_view_name)
+
+                if admin_instance is None:
+                    print(f"No Admin instance found for: {admin_view_name}")
+                    return endpoints
+
+                # Check if the admin_instance is actually an Admin instance
+                if not isinstance(admin_instance, Admin):
+                    print("Provided instance is not a Flask-Admin instance.")
+                    return endpoints
+                else:
+                    print(f"Admin instance: {admin_instance} is an Admin instance")
+                    print(admin_view_name)
+                    # Fetch admin view endpoints
+                    admin_view_endpoints = get_admin_view_endpoints(admin_instance)
+                    print('admin_view_endpoints', admin_view_endpoints)
+            except Exception as e:
+                print(f"An error occurred: {e}")
+                return endpoints
+
+            # Display subarea details
+            for subarea in subareas:
+                subarea_description = get_subarea_description(subarea.id)
+                record_count = subarea_record_counts.get(subarea.id, 0)
+                # Add different background color for rows with zero records
+                row_style = ""
+                if record_count == 0:
+                    row_style = "background-color: #ffccaa;"  # Light orange
+                elif record_count > 2:
+                    row_style = "background-color: #add8e6;"  # Light blue
+
+                # Use subarea name or order to build the correct route
+                view_name = f"subarea_{subarea.id}"  # Or use subarea.name if more descriptive
+                print('view_name', view_name)
+                # Check if this view name exists in the extracted admin endpoints
+                # endpoint = admin_view_endpoints.get(view_name, "")
+                # print(endpoint)
+                endpoint = "view_area_contendibilita"
+
+                record_link = f"<a href='/open_admin_{area.id}/{endpoint}/'>{record_count}</a>"
+                # record_link = "open_admin_2"
+
+                html_code += f"<tr style='{row_style}'><td style='font-size: 0.8rem;'>\
+                {subarea_description}</td><td style='font-size: 0.8rem; text-align: center;'>{record_link}</td></tr>"
+
+            # End table body and card body
+            html_code += "</tbody>"
+            html_code += "</table>"
+            html_code += "</div>"
+
+            # Calculate progress based on the total number of subareas
+            total_subareas_with_records = sum(1 for count in subarea_record_counts.values() if count > 0)
+            divisor = len(subareas) if len(subareas) > 0 else 1
+            percentage = (total_subareas_with_records / divisor) * 100
+            percentage = min(percentage, 100)
+
+            # Create a progress bar based on the calculated percentage
+            progress_bar = f"<a href='/open_admin_app_{area.id}'>\
+               <div class='progress' style='font-size: 10px;'>" \
+               f"<div class='progress-bar' role='progressbar' style='width: {percentage}%;\
+               ' aria-valuenow='{percentage}' aria-valuemin='0' aria-valuemax='100'>\
+               {percentage:.2f}%</div></div></a>"
+
+            # Card footer with the progress bar
+            html_code += f"<div class='card-footer'>{progress_bar}</div>"
+
+            # Close the card
+            html_code += "</div>"
+            html_code += "</div>"  # Close Bootstrap column
+
+            # Increment the counter for cards in the row
+            cards_in_row += 1
+
+            # If three cards are already in the row, close the row and start a new one
+            if cards_in_row == 3:
+                html_code += "</div>"  # Close the row
+                html_code += "<div class='row'>"  # Start a new row
+                cards_in_row = 0
+
+        # Close the row for the current company
+        html_code += "</div>"
+
+    return html_code
+
+
+# PREVIOUS VERSION!
+# =======================   =======================   =======================   =======================
+def generate_html_cards_progression_with_progress_bars111222(sorted_values, current_time_qualifier, session, company_id=None):
     html_code = ""
 
     areas_with_subareas = get_areas_with_subareas(session)

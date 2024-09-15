@@ -3,6 +3,16 @@ from datetime import datetime
 from models.user import Post, UserRoles, Role, Users, AuditLog
 from sqlalchemy.exc import IntegrityError
 
+# Initialize variables for admin instances
+admin_app1 = None
+admin_app2 = None
+admin_app3 = None
+admin_app4 = None
+admin_app5 = None
+admin_app6 = None
+admin_app10 = None
+
+
 def get_user_roles(session=None, user_id=None):
     # Query UserRoles to get the roles for the given user ID
     user_roles = session.query(UserRoles).filter(UserRoles.user_id == user_id).all()

@@ -695,7 +695,7 @@ class BaseData(db.Model):
 
     # Define relationship with StepBaseData
     steps_relationship = relationship("StepBaseData", back_populates="base_data")
-
+    # Define back_populates relationship with StepBaseData
     # Relationship with BaseDataInline
     # base_data_inlines = db.relationship('BaseDataInline', backref='base_data', lazy=True, cascade="all, delete-orphan")
     base_data_inlines = db.relationship('BaseDataInline', backref='parent_base_data', lazy=True, cascade="all, delete-orphan")
@@ -974,7 +974,7 @@ class StepBaseData(db.Model):
     workflow = relationship("Workflow", foreign_keys=[workflow_id])
     step = relationship("Step", foreign_keys=[step_id])
     status = relationship("Status", foreign_keys=[status_id])
-
+    # base_data = db.relationship('BaseData', back_populates='step_base_data')
 
     @validates('auto_move')
     def validate_auto_move(self, key, value):
@@ -1001,8 +1001,6 @@ class StepBaseData(db.Model):
             # Handle constraint violation error
             print("Constraint violation error:", e)
             return None
-
-
 
 
 class StepQuestionnaire(db.Model):

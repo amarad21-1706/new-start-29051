@@ -38,9 +38,7 @@ import traceback
 from wtforms import StringField
 from flask_admin.form import rules
 
-
 from flask import request, redirect, url_for
-
 
 from sqlalchemy import text
 from sqlalchemy.orm.exc import NoResultFound
@@ -865,6 +863,7 @@ class DocumentsNewBaseDataView(ModelView):
 
 # for document workflow management (forward, backward, deadlines etc) - for already distributed documents
 class DocumentsBaseDataDetails(ModelView):
+    print('doc 0')
     can_create = True  # Optionally disable creation
     can_edit = True  # Optionally disable editing
     can_delete = True  # Optionally disable deletion
@@ -878,6 +877,7 @@ class DocumentsBaseDataDetails(ModelView):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        print('doc 1')
         self.class_name = self.__class__.__name__  # Store the class name
 
     column_list = [
@@ -910,20 +910,41 @@ class DocumentsBaseDataDetails(ModelView):
     form_excluded_columns = ('base_data.id')
 
     def get_query(self):
-        query = super().get_query()
-        if current_user.is_authenticated:
-            if current_user.has_role('Admin') or current_user.has_role('Authority'):
-                return query
-            elif current_user.has_role('Manager'):
-                company_ids = [base_data.company_id for base_data in query.join('base_data').all()]
-                query = query.filter(StepBaseData.company_id.in_(company_ids))
-            elif current_user.has_role('Employee'):
-                base_data_query = query.join('base_data').filter(BaseData.user_id == current_user.id)
-                company_ids = [base_data.company_id for base_data in base_data_query]
-                query = query.filter(StepBaseData.company_id.in_(company_ids))
+        print('doc 2')
+        try:
+            query = super().get_query()
+        except Exception as e:
+            print('Error getting base query:', str(e))
+            raise
 
-        # Modify the query to join Company and User tables to access their names
-        query = query.join(StepBaseData.base_data).join(BaseData.company).join(BaseData.user)
+        print('doc 3')
+        if current_user.is_authenticated:
+            try:
+                if current_user.has_role('Admin') or current_user.has_role('Authority'):
+
+                    print('doc 3.1', query)
+                    return query
+                elif current_user.has_role('Manager'):
+                    print('Filtering for Manager role')
+                    company_ids = [base_data.company_id for base_data in query.join('base_data').all()]
+                    query = query.filter(StepBaseData.company_id.in_(company_ids))
+                elif current_user.has_role('Employee'):
+                    print('Filtering for Employee role')
+                    base_data_query = query.join('base_data').filter(BaseData.user_id == current_user.id)
+                    company_ids = [base_data.company_id for base_data in base_data_query]
+                    query = query.filter(StepBaseData.company_id.in_(company_ids))
+            except Exception as e:
+                print('Error filtering query based on user role:', str(e))
+                raise
+
+        print('doc 4')
+        try:
+            # Modify the query to join Company and User tables to access their names
+            query = query.join(StepBaseData.base_data).join(BaseData.company).join(BaseData.user)
+            print('step 5', query)
+        except Exception as e:
+            print('Error joining tables:', str(e))
+            raise
 
         return query
 
@@ -4613,9 +4634,9 @@ def create_admin_views(app, intervals):
         # First Flask-Admin instance with the first custom index view
         admin_app1 = Admin(app,
                        name='Area di controllo 1 - Documenti e atti',
-                       url='/open_admin',
+                       url='/open_admin_1',
                        template_mode='bootstrap3',
-                       endpoint='open_admin',
+                       endpoint='open_admin_1',
         )
 
         admin_app1.add_view(CustomFlussiDataView(model=BaseData, session=db.session, name='Pre-complaint flows',
@@ -4683,7 +4704,7 @@ def create_admin_views(app, intervals):
                                                     endpoint='view_struttura_offerta', intervals=intervals))
 
         admin_app2.add_view(CustomTabella22DataView(BaseData, db.session, name="Area di contendibilità",
-                                                    endpoint="view_area_contendibilita'", intervals=intervals))
+                                                    endpoint="view_area_contendibilita", intervals=intervals))
         admin_app2.add_view(CustomTabella23DataView(BaseData, db.session, name="Grado di contendibilità",
                                                     endpoint = 'view_grado_contendibilita', intervals = intervals))
         admin_app2.add_view(CustomTabella24DataView(BaseData, db.session, name='Accesso venditori a DSO',
@@ -4692,8 +4713,8 @@ def create_admin_views(app, intervals):
                                                     endpoint='view_quote_mercato_ivi', intervals=intervals))
         admin_app2.add_view(CustomTabella26DataView(BaseData, db.session, name='Trattamento switching',
                                                     endpoint='view_trattamento_switching', intervals=intervals))
-        admin_app2.add_view(CustomTabella27DataView(BaseData, db.session, name="Livello di contendibilta'",
-                                                    endpoint="view_livello_contendibilita'", intervals=intervals))
+        admin_app2.add_view(CustomTabella27DataView(BaseData, db.session, name="Livello di contendibilita'",
+                                                    endpoint="view_livello_contendibilita", intervals=intervals))
 
         # Third Flask-Admin instance with the third Area index view
         # ===========================================================

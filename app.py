@@ -38,7 +38,10 @@ from workflow_manager import (add_transition_log, create_card,
                               get_model_statistics, create_deadline_card,
                               create_model_card, deadline_approaching)
 
-from app_defs import get_user_roles, create_message, generate_menu_tree
+import app_defs
+from app_defs import (get_user_roles, create_message, generate_menu_tree, admin_app1, admin_app2, admin_app3,
+                      admin_app4, admin_app5, admin_app6, admin_app10)
+from admin_views import DraftingContractsView, create_admin_views
 
 from models.user import (Users, UserRoles, Event, Role, Questionnaire, Question,
         QuestionnaireQuestions,
@@ -56,7 +59,6 @@ from models.user import (Users, UserRoles, Event, Role, Questionnaire, Question,
          )
 
 # from master_password_reset import admin_reset_password, AdminResetPasswordForm
-from admin_views import DraftingContractsView
 from forms.forms import (AddPlanToCartForm, SignupForm, UpdateAccountForm, TicketForm, ResponseForm, LoginForm, ForgotPasswordForm,
          ResetPasswordForm101, RegistrationForm, EventForm,
          QuestionnaireCompanyForm, CustomBaseDataForm,
@@ -270,7 +272,6 @@ def log_request_info(response):
     return response
 
 
-
 @login_manager.user_loader
 def load_user(user_id):
     user = Users.query.get(int(user_id))
@@ -301,7 +302,10 @@ intervals = initialize_app(app)
 print('intervals', intervals)
 
 # Initialize the admin views
-admin_app1, admin_app2, admin_app3, admin_app4, admin_app5, admin_app6, admin_app10 = create_admin_views(app, intervals)
+app_defs.admin_app1, app_defs.admin_app2, app_defs.admin_app3, app_defs.admin_app4, app_defs.admin_app5, app_defs.admin_app6, app_defs.admin_app10 = create_admin_views(app, intervals)
+
+# Call the function to create the admin views
+#shared.admin_app1, shared.admin_app2, shared.admin_app3 = create_admin_views(app, intervals)
 
 @app.route('/set_session')
 def set_session():
@@ -377,6 +381,7 @@ bootstrap = Bootstrap(app)
 
 # Serializer for generating tokens
 serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
+
 
 # TODO - eliminati tutti i blueprint per i quali c'è Admin?
 # pyobjc
@@ -654,7 +659,7 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
                 menu_data = menu_builder_instance.parse_menu_data(user_roles=user_roles,
                                                                   is_authenticated=is_authenticated, include_protected=include_protected)
             buttons = []
-            admin_url = url_for('open_admin.index')
+            admin_1_url = url_for('open_admin_1.index')
             admin_2_url = url_for('open_admin_2.index')
             admin_3_url = url_for('open_admin_3.index')
             admin_4_url = url_for('open_admin_4.index')
@@ -727,7 +732,7 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
                 "allowed_roles": allowed_roles,
                 "limited_menu": limited_menu,
                 "buttons": buttons,
-                "admin_url": admin_url,
+                "admin_1_url": admin_1_url,
                 "admin_2_url": admin_2_url,
                 "admin_3_url": admin_3_url,
                 "admin_4_url": admin_4_url,
@@ -1335,7 +1340,7 @@ def custom_action():
         #return redirect(request.referrer)
 
         # Redirect the user back to the Flask-Admin atti_data_view
-        return redirect('open_admin/atti_data_view')
+        return redirect('open_admin_1/atti_data_view')
 
     else:
         # Render the data input template
@@ -1553,7 +1558,7 @@ def open_admin_app_1():
 
     admin_app1.name = formatted_string
 
-    return redirect(url_for('open_admin.index'))
+    return redirect(url_for('open_admin_1.index'))
 
 
 
@@ -2496,7 +2501,7 @@ def dashboard_company_audit():
 def handle_card_click():
     card_id = request.args.get('id')
     # Handle the card click action here, if needed
-    return redirect(url_for('open_admin', card_id=card_id))
+    return redirect(url_for('open_admin_1', card_id=card_id))
 
 
 ''' 
@@ -2719,6 +2724,7 @@ def company_overview_current():
         with open('report_cards1.html', 'w') as f:
             f.write(html_cards)
 
+        print(html_cards)
         return render_template('admin_cards_progression.html', html_cards=html_cards, user_roles=user_roles)
 
     except Exception as e:

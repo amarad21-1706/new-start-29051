@@ -214,14 +214,14 @@
                 "submenus": {
                     "Area 1a": {
                         "label": "Raccolta dati",
-                        "url": "/open_admin",
+                        "url": "/open_admin_1",
                         "protected": true,
                         "allowed_roles": [
                             "Admin", "Employee", "Manager"],
                         "widget": {
                             "display": true,
                             "type": "button",
-                            "submit_url": "/open_admin",
+                            "submit_url": "/open_admin_1",
                             "style": "btn-neutral",
                             "size": "medium"
                         }
@@ -263,6 +263,15 @@
             },
             "Area di controllo 3": {
                 "label": "Area 3",
+                "url": "/open_admin_3",
+                "protected": true,
+                "allowed_roles": ["Admin", "Employee", "Manager"],
+                "widget": {
+                    "display": false
+                }
+            },
+            "Area di controllo 5": {
+                "label": "Documents",
                 "url": "/open_admin_5",
                 "protected": true,
                 "allowed_roles": ["Admin", "Employee", "Manager"],
