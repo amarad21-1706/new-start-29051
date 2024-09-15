@@ -1356,7 +1356,6 @@ def get_admin_view_endpoints(admin_instance):
 
     # Iterate over all views in the admin instance
     for view in admin_instance._views:
-        print(f"Processing view: {view}")  # Debug print to check each view
         # Extract the endpoint and the class name of the view
         endpoints[view.endpoint] = view.__class__.__name__
 
@@ -1438,7 +1437,6 @@ def generate_html_cards_progression_with_progress_bars111(sorted_values, current
 
             try:
                 admin_view_name = f"admin_app{area.id}"
-                print(admin_view_name)
 
                 # Use the dictionary to get the actual Admin instance
                 admin_instance = admin_instances.get(admin_view_name)
@@ -1449,10 +1447,8 @@ def generate_html_cards_progression_with_progress_bars111(sorted_values, current
 
                 # Check if the admin_instance is actually an Admin instance
                 if not isinstance(admin_instance, Admin):
-                    print("Provided instance is not a Flask-Admin instance.")
                     continue
                 else:
-                    print(f"Admin instance: {admin_instance} is an Admin instance")
                     print(admin_view_name)
                     # Fetch admin view endpoints
                     admin_view_endpoints = get_admin_view_endpoints(admin_instance)
@@ -1478,7 +1474,6 @@ def generate_html_cards_progression_with_progress_bars111(sorted_values, current
                 try:
                     # Use the index to find the correct endpoint from the endpoint list
                     endpoint = f"{endpoint_list[index + 1]}/" if index < len(endpoint_list) else default_endpoint
-                    print('*** endpoint is ***', endpoint, 'index', index, 'len', len(endpoint_list))
                 except:
                     # Use the index to find the correct endpoint from the endpoint list
                     endpoint = default_endpoint

@@ -505,6 +505,17 @@
                         "widget": {
                             "display": false
                         }
+                    },
+                    "DocumentViewer2": {
+                        "label": "Document Viewer2",
+                        "url": "/user_documents_d3",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin"
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     }
                 }
             },

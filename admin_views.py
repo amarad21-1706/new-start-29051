@@ -10,6 +10,7 @@ from wtforms.fields import StringField, TextAreaField, DateTimeField, SelectFiel
 from wtforms.validators import InputRequired, DataRequired, Length, Email, EqualTo
 from flask_admin.form import Select2Widget, rules
 from flask_admin.contrib.sqla import ModelView
+from flask import has_request_context
 from wtforms.validators import Email, InputRequired, NumberRange
 from sqlalchemy.ext.hybrid import hybrid_property
 from flask_wtf.csrf import CSRFProtect, generate_csrf
@@ -28,7 +29,6 @@ from flask_login import current_user
 from flask_admin.actions import action  # Import the action decorator
 from flask_admin.form import JSONField
 from flask.views import MethodView
-from flask_admin.contrib.sqla import ModelView
 from sqlalchemy import distinct
 from copy import deepcopy
 
@@ -1183,24 +1183,29 @@ class Tabella21_dataView(ModelView):
         self.area_id = Tabella21_dataView.area_id  # Initialize area_id in __init__
         self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
 
-    column_list = ('fi0', 'interval_ord', 'fi1', 'fi2', 'fc1')
+    column_list = ('company_id', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fc1')
     form_columns = ('fi0', 'interval_ord', 'fi1', 'fi2', 'fc1')  # Specify form columns with dropdowns
 
-    column_labels = {'interval_ord': 'Periodo', 'fi0': 'Anno',
+    column_labels = {'company_id': 'Comp', 'interval_ord': 'Periodo', 'fi0': 'Anno',
                      'fi1': 'UDD', 'fi2': 'PdR',
                      'fc1': 'Note'}
-    column_descriptions = {'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
+    column_descriptions = {'company_id': 'Comp', 'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
                            'fi0': 'Inserire anno (in formato YYYY)',
                            'fi1': 'Numero UDD', 'fi2': 'Numero PdR',
                            'fc1': 'Note (opzionale)'}
 
     # Customize inlist for the View class
-    column_default_sort = ('fi0', True)
-    column_searchable_list = ('fi0', 'interval_ord', 'fi1', 'fi2', 'fc1')  # Adjust based on your model structure
-    column_filters = ('fi0', 'interval_ord', 'fi1', 'fi2', 'fc1')  # Adjust based on your model structure
+    column_default_sort = ('company_id', 'fi0')
+    column_searchable_list = ('company_id', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fc1')  # Adjust based on your model structure
+    column_filters = ('company_id', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fc1')  # Adjust based on your model structure
 
     # Specify fields to be excluded from the form
-    # form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_by', 'created_on', 'updated_on')
+    form_excluded_columns = ('user_id', 'status_id', 'created_by', 'created_on', 'updated_on')
+
+    column_formatters = {
+        'company_id': lambda view, context, model, name: (
+            model.company.name[:5] if model.company and model.company.name else 'N/A')
+    }
 
     def scaffold_form(self):
         form_class = super(Tabella21_dataView, self).scaffold_form()
@@ -1460,24 +1465,29 @@ class Tabella22_dataView(ModelView):
         self.area_id = Tabella22_dataView.area_id  # Initialize area_id in __init__
         self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
 
-    column_list = ('fi0', 'interval_ord', 'fi1', 'fi2', 'fc1')
+    column_list = ('company_id', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fc1')
     form_columns = ('fi0', 'interval_ord', 'fi1', 'fi2', 'fc1')  # Specify form columns with dropdowns
 
-    column_labels = {'interval_ord': 'Periodo', 'fi0': 'Anno',
+    column_labels = {'company_id': 'Comp.', 'interval_ord': 'Periodo', 'fi0': 'Anno',
                      'fi1': 'UDD', 'fi2': 'PdR',
                      'fc1': 'Note'}
-    column_descriptions = {'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
+    column_descriptions = {'company_id': 'Company', 'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
                            'fi0': 'Inserire anno (in formato YYYY)',
                            'fi1': 'Numero UDD', 'fi2': 'Numero PdR',
                            'fc1': 'Note (opzionale)'}
 
     # Customize inlist for the View class
-    column_default_sort = ('fi0', True)
-    column_searchable_list = ('fi0', 'interval_ord', 'fi1', 'fi2', 'fc1')  # Adjust based on your model structure
-    column_filters = ('fi0', 'interval_ord', 'fi1', 'fi2', 'fc1')  # Adjust based on your model structure
+    column_default_sort = ('company_id', 'fi0')
+    column_searchable_list = ('company_id', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fc1')  # Adjust based on your model structure
+    column_filters = ('company_id', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fc1')  # Adjust based on your model structure
 
     # Specify fields to be excluded from the form
-    # form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_by', 'created_on', 'updated_on')
+    form_excluded_columns = ('user_id', 'status_id', 'created_by', 'created_on', 'updated_on')
+
+    column_formatters = {
+        'company_id': lambda view, context, model, name: (
+            model.company.name[:5] if model.company and model.company.name else 'N/A')
+    }
 
     def scaffold_form(self):
         form_class = super(Tabella22_dataView, self).scaffold_form()
@@ -1712,29 +1722,34 @@ class Tabella24_dataView(ModelView):
         self.area_id = Tabella24_dataView.area_id  # Initialize area_id in __init__
         self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
 
-    column_list = ('interval_ord', 'fi0', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fc1')
+    column_list = ('company_id', 'interval_ord', 'fi0', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fc1')
     form_columns = ('interval_ord', 'fi0', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fc1')
     # Specify form columns with dropdowns
 
-    column_labels = {'interval_ord': 'Periodo', 'fi0': 'Anno',
+    column_labels = {'company_id': 'Comp.', 'interval_ord': 'Periodo', 'fi0': 'Anno',
                      'fi1': 'Totale', 'fi2': 'IVI', 'fi3': 'Altri',
                      'fi4': 'Lavori semplici', 'fi5': 'Lavori complessi',
                      'fc1': 'Note'}
-    column_descriptions = {'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
+    column_descriptions = {'company_id': 'Comp.', 'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
                            'fi0': 'Inserire anno (es. 2024)',
                            'fi1': 'Totale', 'fi2': 'di cui: IVI', 'fi3': 'altri',
                            'fi4': 'Lavori semplici', 'fi5': 'Lavori complessi',
                            'fc1': 'Inserire commento'}
 
     # Customize inlist for class dataView
-    column_default_sort = ('fi0', True)
-    column_searchable_list = ('fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fc1')
+    column_default_sort = ('company_id', 'fi0')
+    column_searchable_list = ('company_id', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fc1')
     # Adjust based on your model structure
-    column_filters = ('fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fc1')
+    column_filters = ('company_id', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fc1')
     # Adjust based on your model structure
 
     # Specify fields to be excluded from the form
-    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_by', 'created_on', 'updated_on')
+    form_excluded_columns = ('user_id', 'status_id', 'created_by', 'created_on', 'updated_on')
+
+    column_formatters = {
+        'company_id': lambda view, context, model, name: (
+            model.company.name[:5] if model.company and model.company.name else 'N/A')
+    }
 
     def scaffold_form(self):
         form_class = super(Tabella24_dataView, self).scaffold_form()
@@ -1977,12 +1992,13 @@ class Tabella25_dataView(ModelView):
         self.area_id = Tabella25_dataView.area_id  # Initialize area_id in __init__
         self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
 
-    column_list = ('subject_id', 'interval_ord', 'fi0',
+    column_list = ('company_id', 'subject_id', 'interval_ord', 'fi0',
                     'fi1', 'fi2', 'fi7', 'fi4', 'fi5', 'fi6', 'fn1', 'fn2', 'fn3', 'fn4', 'fn5', 'fn6', 'fc1')
     form_columns = ('subject_id', 'interval_ord', 'fi0',
                     'fi1', 'fi2', 'fi4', 'fi5', 'fc1')
 
     column_labels = {
+        'company_id': 'Comp.',
         'subject_id': 'Fascia di domanda',
         'interval_ord': 'Periodo',
         'fi0': 'Anno',
@@ -2003,6 +2019,7 @@ class Tabella25_dataView(ModelView):
         'fc1': 'Note'
     }
     column_descriptions = {
+        'company_id': 'Comp.',
         'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
         'fi0': 'Inserire anno (es. 2024)',
 
@@ -2023,11 +2040,13 @@ class Tabella25_dataView(ModelView):
         'fc1': 'Inserire commento al report complessivo del periodo'
     }
 
-    column_default_sort = ('fi0', True)
-    column_searchable_list = ('fi0', 'interval_ord', 'subject.name', 'fi1', 'fi2', 'fi4', 'fi5', 'fc1')
-    column_filters = ('fi0', 'interval_ord', 'subject.name', 'fi1', 'fi2', 'fi4', 'fi5', 'fc1')
+    column_default_sort = ('company_id', 'fi0')
+    column_searchable_list = ('company_id', 'fi0', 'interval_ord', 'subject.name', 'fi1', 'fi2', 'fi4', 'fi5', 'fc1')
+    column_filters = ('company_id', 'fi0', 'interval_ord', 'subject.name', 'fi1', 'fi2', 'fi4', 'fi5', 'fc1')
 
-    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_by', 'created_on', 'updated_on')
+    form_excluded_columns = ('user_id', 'status_id', 'created_by', 'created_on', 'updated_on')
+
+    # formaters*
 
     def _subject_formatter(view, context, model, name):
         if model.subject_id:
@@ -2044,7 +2063,10 @@ class Tabella25_dataView(ModelView):
         'fn3': lambda view, context, model, name: "%.2f" % model.fn3 if model.fn3 is not None else None,
         'fn4': lambda view, context, model, name: "%.2f" % model.fn4 if model.fn4 is not None else None,
         'fn5': lambda view, context, model, name: "%.2f" % model.fn5 if model.fn5 is not None else None,
-        'fn6': lambda view, context, model, name: "%.2f" % model.fn6 if model.fn6 is not None else None,}
+        'fn6': lambda view, context, model, name: "%.2f" % model.fn6 if model.fn6 is not None else None,
+        'company_id': lambda view, context, model, name: (
+            model.company.name[:5] if model.company and model.company.name else 'N/A')
+    }
 
     def scaffold_form(self):
         form_class = super(Tabella25_dataView, self).scaffold_form()
@@ -2342,7 +2364,7 @@ class Tabella26_dataView(ModelView):
         self.area_id = Tabella26_dataView.area_id  # Initialize area_id in __init__
         self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
 
-    column_list = ('interval_ord', 'fi0',
+    column_list = ('company_id', 'interval_ord', 'fi0',
                    'fi1', 'fi2', 'fn1', 'fi3', 'fn2', 'fi4', 'fn3', 'fi5', 'fn4',
                    'fi6', 'fn5', 'fi7', 'fn6', 'fi8', 'fi9', 'fn7', 'fi10', 'fi11', 'fn8',
                    'fc1')
@@ -2352,7 +2374,7 @@ class Tabella26_dataView(ModelView):
                     'fc1')
     # Specify form columns with dropdowns
 
-    column_labels = {'interval_ord': 'Periodo', 'fi0': 'Anno',
+    column_labels = {'company_id': 'Comp.', 'interval_ord': 'Periodo', 'fi0': 'Anno',
                      'fi1': 'Totale rich. (a)', 'fi2': 'IVI (b)', 'fn1': '% (c)', 'fi3': 'Esito positivo (d)',
                      'fn2': '% (e)', 'fi4': 'Esito negativo (f)', 'fn3': '% (g)',
                      'fi5': 'ALTRI (h)', 'fn4': '% (i)',
@@ -2360,7 +2382,8 @@ class Tabella26_dataView(ModelView):
                      'fi8': 'Rich. altri su PdR altri (n)', 'fi9': 'Esito neg. (p)', 'fn7': '% (q)',
                      'fi10': 'Rich altri su PdR IVI (r)', 'fi11': 'Esito neg. (s)', 'fn8': '% (t)',
                      'fc1': 'Note'}
-    column_descriptions = {'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
+    column_descriptions = {'company_id': 'Comp.',
+                           'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
                            'fi0': 'Inserire anno (es. 2024)',
                            'fi1': 'Totale richieste presentate', 'fi2': 'di cui IVI',
                            'fn1': 'Percentuale richieste IVI (=b/a)',
@@ -2382,15 +2405,15 @@ class Tabella26_dataView(ModelView):
                            'fc1': '(opzionale)'}
 
     # Customize inlist for tabella26
-    column_default_sort = ('fi0', True)
-    column_searchable_list = ('fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5',
+    column_default_sort = ('company_id', 'fi0')
+    column_searchable_list = ('company_id', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5',
                               'fi6', 'fi7', 'fi8', 'fi9', 'fi10', 'fi11', 'fc1')
     # Adjust based on your model structure
-    column_filters = ('fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5',
+    column_filters = ('company_id', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5',
                       'fi6', 'fi7', 'fi8', 'fi9', 'fi10', 'fi11', 'fc1')
 
     # Specify fields to be excluded from the form
-    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_by', 'created_on', 'updated_on')
+    form_excluded_columns = ('user_id', 'status_id', 'created_by', 'created_on', 'updated_on')
 
     column_formatters = {
         'fn1': lambda view, context, model, name: "%.2f" % model.fn1 if model.fn1 is not None else None,
@@ -2401,6 +2424,8 @@ class Tabella26_dataView(ModelView):
         'fn6': lambda view, context, model, name: "%.2f" % model.fn6 if model.fn6 is not None else None,
         'fn7': lambda view, context, model, name: "%.2f" % model.fn7 if model.fn7 is not None else None,
         'fn8': lambda view, context, model, name: "%.2f" % model.fn8 if model.fn8 is not None else None,
+        'company_id': lambda view, context, model, name: (
+            model.company.name[:5] if model.company and model.company.name else 'N/A')
     }
 
     def scaffold_form(self):
@@ -2682,17 +2707,19 @@ class Tabella27_dataView(ModelView):
         self.area_id = Tabella27_dataView.area_id  # Initialize area_id in __init__
         self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
 
-    column_list = ('interval_ord', 'fi0', 'fi1', 'fi2', 'fn1', 'fi3', 'fn2', 'fi4', 'fn3', 'fi5', 'fn4', 'fc1')
+    column_list = ('company_id', 'interval_ord', 'fi0', 'fi1', 'fi2', 'fn1', 'fi3', 'fn2', 'fi4', 'fn3', 'fi5', 'fn4', 'fc1')
     form_columns = ('interval_ord', 'fi0', 'fi1', 'fi2', 'fn1', 'fi3', 'fn2', 'fi4', 'fn3', 'fi5', 'fn4', 'fc1')
     # Specify form columns with dropdowns
 
-    column_labels = {'interval_ord': 'Periodo', 'fi0': 'Anno',
+    column_labels = {'company_id': 'Comp.',
+                     'interval_ord': 'Periodo', 'fi0': 'Anno',
                      'fi1': 'Totale', 'fi2': 'domestico', 'fn1': '%',
                      'fi3': 'IVI', 'fn2': '%',
                      'fi4': 'altri', 'fn3': '%',
                      'fi5': 'PdR', 'fn4': 'Tasso switching PdR',
                      'fc1': 'Note'}
-    column_descriptions = {'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
+    column_descriptions = {'company_id': 'Comp.',
+                           'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
                            'fi0': 'Inserire anno (es. 2024)',
                            'fi1': 'Totale', 'fi2': 'di cui: domestico', 'fn1': 'domestico, in percentuale',
                            'fi3': 'di cui IVI', 'fn2': 'IVI, in percentuale',
@@ -2701,21 +2728,23 @@ class Tabella27_dataView(ModelView):
                            'fc1': 'Inserire commento'}
 
     # Customize inlist for the View class
-    column_default_sort = ('fi0', True)
+    column_default_sort = ('company_id', 'fi0')
     column_searchable_list = (
-    'fi0', 'interval_ord', 'fi1', 'fi2', 'fn1', 'fi3', 'fn2', 'fi4', 'fn3', 'fi5', 'fn4', 'fc1')
+    'company_id', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fn1', 'fi3', 'fn2', 'fi4', 'fn3', 'fi5', 'fn4', 'fc1')
     # Adjust based on your model structure
-    column_filters = ('fi0', 'interval_ord', 'fi1', 'fi2', 'fn1', 'fi3', 'fn2', 'fi4', 'fn3', 'fi5', 'fn4', 'fc1')
+    column_filters = ('company_id', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fn1', 'fi3', 'fn2', 'fi4', 'fn3', 'fi5', 'fn4', 'fc1')
     # Adjust based on your model structure
 
     # Specify fields to be excluded from the form
-    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_by', 'created_on', 'updated_on')
+    form_excluded_columns = ('user_id', 'status_id', 'created_by', 'created_on', 'updated_on')
 
     column_formatters = {
         'fn1': lambda view, context, model, name: "%.2f" % model.fn1 if model.fn1 is not None else None,
         'fn2': lambda view, context, model, name: "%.2f" % model.fn2 if model.fn2 is not None else None,
         'fn3': lambda view, context, model, name: "%.2f" % model.fn3 if model.fn3 is not None else None,
         'fn4': lambda view, context, model, name: "%.2f" % model.fn4 if model.fn4 is not None else None,
+        'company_id': lambda view, context, model, name: (
+            model.company.name[:5] if model.company and model.company.name else 'N/A')
     }
 
     def scaffold_form(self):
@@ -2981,30 +3010,6 @@ class MyIntegerIntervalField(IntegerField):
 # TODO *** salva file (attachment) in folder company (dove si trova? perché non funziona più?)
 
 
-
-
-class ContingenciesDataView(ModelView):
-    # Inherit from ModelView
-    def __init__(self, intervals, area_id, subarea_id, **kwargs):
-        super().__init__(**kwargs)  # Pass other arguments to ModelView
-        self.intervals = intervals
-        self.area_id = area_id
-        self.subarea_id = subarea_id
-
-    def get_show_survey_url(self, context):
-        # Extract relevant data for your route (e.g., questionnaire ID)
-        questionnaire_id = context.model.id  # Assuming 'id' field stores the ID
-        return url_for('your_desired_route', questionnaire_id=questionnaire_id)
-
-    def scaffold_list_columns(self):
-        return ['column1', 'column2', 'show_survey_link']  # Add custom column
-
-    def generate_link(self, context):
-        url = self.get_show_survey_url(context)
-        return Markup('<a href="' + url + '">View Survey</a>')  # Generate HTML link
-
-
-
 class DocumentUploadView(BaseDataViewCommon):
     create_template = 'admin/area_1/create_base_data_8.html'
     area_id = 3
@@ -3021,36 +3026,11 @@ class DocumentUploadView(BaseDataViewCommon):
     column_filters = ('subject', 'fc2', 'no_action')
     form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
 
-
-
-class ContingenciesDataView222(BaseDataViewCommon):
-
-    '''
-
-    'create_template = 'admin/area_1/create_base_data_3.html'
-    subarea_id = 3
-    area_id = 1
-
-    column_list = ('fi0', 'interval_ord', 'subject', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    form_columns = ('fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    column_labels = {'fi0': 'Anno di rif.', 'interval_ord': 'Periodo di rif.', 'subject': 'Oggetto',
-                     'number_of_doc': 'Nr. documento', 'date_of_doc': 'Data documento', 'file_path': 'Allegati',
-                     'no_action': 'Conferma assenza doc.', 'fc2': 'Note'}
-    column_descriptions = {'interval_ord': '(inserire il numero; es. 1: primo quadrimestre; 2: secondo ecc.)',
-                           'fi0': 'Inserire anno (es. 2024)', 'subject_id': 'Seleziona oggetto',
-                           'fc2': 'Note', 'file_path': 'Allegati', 'no_action': 'Dichiarazione di assenza di documenti (1)'}
-    column_filters = ('subject', 'fc2', 'no_action')
-    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
-
-    '''
-
     @expose('/')
     def index(self):
         redirect_url = url_for('redirect_to_survey', questionnaire_id=1)
         print(f"Generated redirect URL: {redirect_url}")  # Print for debugging
         return redirect(redirect_url)
-
-
 
 
 class AttiDataView(BaseDataView):
@@ -3059,10 +3039,11 @@ class AttiDataView(BaseDataView):
     subarea_id = 2
 
     # Adjusted order of fields
-    column_list = ('number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
+    column_list = ('company_id', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
     form_columns = ('number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
 
     column_labels = {
+        'company_id': 'Comp.',
         'number_of_doc': 'Nr. documento',
         'date_of_doc': 'Data documento',
         'file_path': 'Allegato',
@@ -3074,6 +3055,7 @@ class AttiDataView(BaseDataView):
     }
 
     column_descriptions = {
+        'company_id': 'Comp.',
         'number_of_doc': 'Nr. documento allegato',
         'date_of_doc': 'Data documento allegato',
         'file_path': 'Allegato',
@@ -3084,8 +3066,14 @@ class AttiDataView(BaseDataView):
         'fc2': 'Note',
     }
 
-    column_filters = ('number_of_doc', 'date_of_doc', 'subject_id', 'fi0', 'interval_ord', 'fc2')
-    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
+    # Define column formatters to display the first 5 letters of the company name
+    column_formatters = {
+        'company_id': lambda view, context, model, name: (
+            model.company.name[:5] if model.company and model.company.name else 'N/A')
+    }
+
+    column_filters = ('company_id', 'number_of_doc', 'date_of_doc', 'subject_id', 'fi0', 'interval_ord', 'fc2')
+    form_excluded_columns = ('company_id', 'user_id', 'status_id', 'created_on', 'updated_on', 'data_type')
 
     def __init__(self, model, session, **kwargs):
         self.intervals = kwargs.pop('intervals', [])
@@ -3235,13 +3223,14 @@ class AttiDataView(BaseDataView):
 class ContenziosiDataView(BaseDataView):
     create_template = 'admin/area_1/create_base_data_4.html'
     area_id = 1
-    subarea_id = 4
+    subarea_id = 3
 
     # Adjusted order of fields
-    column_list = ('number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
+    column_list = ('company_id', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
     form_columns = ('number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
 
     column_labels = {
+        'company_id': 'Comp.',
         'number_of_doc': 'Nr. documento',
         'date_of_doc': 'Data documento',
         'file_path': 'Allegato',
@@ -3253,6 +3242,7 @@ class ContenziosiDataView(BaseDataView):
     }
 
     column_descriptions = {
+        'company_id': 'Comp.',
         'number_of_doc': 'Nr. documento allegato',
         'date_of_doc': 'Data documento allegato',
         'file_path': 'Allegato',
@@ -3263,8 +3253,13 @@ class ContenziosiDataView(BaseDataView):
         'fc2': 'Note',
     }
 
-    column_filters = ('number_of_doc', 'date_of_doc', 'subject_id', 'fi0', 'interval_ord', 'fc2')
-    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
+    column_filters = ('company_id', 'number_of_doc', 'date_of_doc', 'subject_id', 'fi0', 'interval_ord', 'fc2')
+    form_excluded_columns = ('company_id', 'user_id', 'status_id', 'created_on', 'updated_on', 'data_type')
+
+    column_formatters = {
+        'company_id': lambda view, context, model, name: (
+            model.company.name[:5] if model.company and model.company.name else 'N/A')
+    }
 
     def __init__(self, model, session, **kwargs):
         self.intervals = kwargs.pop('intervals', [])
@@ -3411,18 +3406,17 @@ class ContenziosiDataView(BaseDataView):
         return form
 
 
-
-
-class IniziativeDsoAsDataView(BaseDataView):
-    create_template = 'admin/area_1/create_base_data_8.html'
+class ContingenciesDataView(BaseDataView):
+    create_template = 'admin/area_1/create_base_data_4.html'
     area_id = 1
-    subarea_id = 6
+    subarea_id = 4
 
     # Adjusted order of fields
-    column_list = ('number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
+    column_list = ('company_id', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
     form_columns = ('number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
 
     column_labels = {
+        'company_id': 'Comp.',
         'number_of_doc': 'Nr. documento',
         'date_of_doc': 'Data documento',
         'file_path': 'Allegato',
@@ -3434,6 +3428,7 @@ class IniziativeDsoAsDataView(BaseDataView):
     }
 
     column_descriptions = {
+        'company_id': 'Comp.',
         'number_of_doc': 'Nr. documento allegato',
         'date_of_doc': 'Data documento allegato',
         'file_path': 'Allegato',
@@ -3444,9 +3439,200 @@ class IniziativeDsoAsDataView(BaseDataView):
         'fc2': 'Note',
     }
 
-    column_filters = ('number_of_doc', 'date_of_doc', 'subject_id', 'fi0', 'interval_ord', 'fc2')
-    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
+    column_filters = ('company_id', 'number_of_doc', 'date_of_doc', 'subject_id', 'fi0', 'interval_ord', 'fc2')
+    form_excluded_columns = ('company_id', 'user_id', 'status_id', 'created_on', 'updated_on', 'data_type')
 
+    column_formatters = {
+        'company_id': lambda view, context, model, name: (
+            model.company.name[:5] if model.company and model.company.name else 'N/A')
+    }
+
+    def __init__(self, model, session, **kwargs):
+        self.intervals = kwargs.pop('intervals', [])
+        self.area_id = kwargs.pop('area_id', None)
+        self.subarea_id = kwargs.pop('subarea_id', None)
+        super().__init__(model, session, **kwargs)
+        self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
+
+    def scaffold_form(self):
+        form_class = super().scaffold_form()
+
+        current_year = datetime.now().year
+        year_choices = [(year, year) for year in range(current_year - 11, current_year + 1)]
+        default_year = current_year
+
+        form_class.fi0 = SelectField(
+            'Anno di rif.',
+            coerce=int,
+            choices=year_choices,
+            default=default_year,
+            widget=Select2Widget()
+        )
+
+        config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
+                                          subarea_id=None)
+        nr_intervals = config_values[0]
+
+        if self.intervals:
+            current_interval = [t[2] for t in self.intervals if t[0] == nr_intervals]
+            first_element = current_interval[0] if current_interval else None
+            interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
+        else:
+            first_element = None
+            interval_choices = []
+
+        form_class.interval_ord = SelectField(
+            'Periodo di rif.',
+            coerce=int,
+            choices=interval_choices,
+            default=first_element,
+            widget=Select2Widget()
+        )
+
+        form_class.subject_id = SelectField(
+            'Tipo di documento',
+            validators=[InputRequired()],
+            coerce=int,
+            choices=[(subject.id, subject.name) for subject in Subject.query.filter_by(tier_1='Legale').all()],
+            widget=Select2Widget()
+        )
+
+        form_class.no_action = BooleanField('Dichiarazione di assenza di documenti')  # Use BooleanField
+        form_class.fc2 = StringField('Note')
+
+        # Ensure base_path is set for FileUploadField
+        upload_folder = current_app.config.get('UPLOAD_FOLDER', 'uploads')
+        form_class.file_path = FileUploadField('Allegati',
+                                               base_path=upload_folder)  # Correctly display file upload button
+
+        return form_class
+
+    def on_model_change(self, form, model, is_created):
+
+        # Custom validation logic
+        if not form.fi0.data or not form.interval_ord.data:
+            raise ValidationError("Time interval reference fields cannot be null")
+
+        if not form.date_of_doc.data or not form.number_of_doc.data:
+            raise ValidationError("Document data is missing.")
+
+        if form.date_of_doc.data.year != form.fi0.data:
+            raise ValidationError("Date of document must be consistent with the reporting year.")
+
+        if not form.file_path.data and not form.no_action.data:
+            raise ValidationError(
+                'If no file exists, then this absence must be acknowledged by checking the "no documents" box.')
+
+        if form.file_path.data and form.no_action.data:
+            raise ValidationError(
+                'The no-document box is checked but a document was uploaded - please confirm either of the two.')
+
+        # Populate the necessary fields
+        model.user_id = current_user.id
+        model.company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
+        model.area_id = self.area_id
+        model.subarea_id = self.subarea_id
+        model.interval_id = form.interval_ord.data  # Assuming interval_id is same as interval_ord
+        model.created_by = current_user.id
+        # Check for duplicate documents
+        existing_document = self.session.query(self.model).filter_by(
+            number_of_doc=form.number_of_doc.data,
+            date_of_doc=form.date_of_doc.data,
+            company_id=model.company_id,
+            subarea_id=model.subarea_id,
+            area_id=model.area_id,
+            subject_id=form.subject_id.data,
+        ).first()
+        if existing_document and existing_document.id != model.id:
+            raise ValidationError('A document with the same number, date, subarea, area, and subject already exists.')
+
+        if is_created:
+            model.status_id = 1
+            model.created_on = datetime.now()
+        else:
+            model.status_id = 14 # Updated
+
+        super().on_model_change(form, model, is_created)
+
+    def get_query(self):
+        query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
+        if current_user.is_authenticated:
+            if current_user.has_role('Admin') or current_user.has_role('Authority'):
+                return query
+            elif current_user.has_role('Manager'):
+                subquery = db.session.query(CompanyUsers.company_id).filter(
+                    CompanyUsers.user_id == current_user.id).subquery()
+                query = query.filter(self.model.company_id.in_(subquery))
+            elif current_user.has_role('Employee'):
+                return query.filter(self.model.user_id == current_user.id)
+        return query.filter(self.model.id < 0)
+
+    def create_form(self, obj=None):
+        form = super(ContingenciesDataView, self).create_form(obj)
+        form.subject_id = form.subject_id
+        form.number_of_doc = form.number_of_doc
+        form.date_of_doc = form.date_of_doc
+        form.file_path = form.file_path
+        form.no_action = form.no_action
+        form.fi0 = form.fi0
+        form.interval_ord = form.interval_ord
+        form.fc2 = form.fc2
+        return form
+
+    def edit_form(self, obj=None):
+        form = super(ContingenciesDataView, self).edit_form(obj)
+        form.subject_id = form.subject_id
+        form.number_of_doc = form.number_of_doc
+        form.date_of_doc = form.date_of_doc
+        form.file_path = form.file_path
+        form.no_action = form.no_action
+        form.fi0 = form.fi0
+        form.interval_ord = form.interval_ord
+        form.fc2 = form.fc2
+        return form
+
+
+
+class IniziativeDsoAsDataView(BaseDataView):
+    create_template = 'admin/area_1/create_base_data_8.html'
+    area_id = 1
+    subarea_id = 6
+
+    # Adjusted order of fields
+    column_list = ('company_id', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
+    form_columns = ('number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
+
+    column_labels = {
+        'company_id': 'Comp.',
+        'number_of_doc': 'Nr. documento',
+        'date_of_doc': 'Data documento',
+        'file_path': 'Allegato',
+        'no_action': 'Conferma assenza doc.',
+        'subject_id': 'Oggetto',
+        'fi0': 'Anno di rif.',
+        'interval_ord': 'Periodo di rif.',
+        'fc2': 'Note'
+    }
+
+    column_descriptions = {
+        'company_id': 'Comp.',
+        'number_of_doc': 'Nr. documento allegato',
+        'date_of_doc': 'Data documento allegato',
+        'file_path': 'Allegato',
+        'no_action': 'Dichiarazione di assenza di documenti da allegare (1)',
+        'subject_id': 'Seleziona oggetto',
+        'fi0': 'Inserire anno di riferimento (in formato YYYY)',
+        'interval_ord': '(inserire il periodo; es. 1: primo quadrimestre; 2: secondo ecc.)',
+        'fc2': 'Note',
+    }
+
+    column_filters = ('company_id', 'number_of_doc', 'date_of_doc', 'subject_id', 'fi0', 'interval_ord', 'fc2')
+    form_excluded_columns = ('company_id', 'user_id', 'status_id', 'created_on', 'updated_on', 'data_type')
+
+    column_formatters = {
+        'company_id': lambda view, context, model, name: (
+            model.company.name[:5] if model.company and model.company.name else 'N/A')
+    }
     def __init__(self, model, session, **kwargs):
         self.intervals = kwargs.pop('intervals', [])
         self.area_id = kwargs.pop('area_id', None)
@@ -3600,10 +3786,11 @@ class IniziativeAsDsoDataView(BaseDataView):
     subarea_id = 7
 
     # Adjusted order of fields
-    column_list = ('number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
+    column_list = ('company_id', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
     form_columns = ('number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
 
     column_labels = {
+        'company_id': 'Comp.',
         'number_of_doc': 'Nr. documento',
         'date_of_doc': 'Data documento',
         'file_path': 'Allegato',
@@ -3615,6 +3802,7 @@ class IniziativeAsDsoDataView(BaseDataView):
     }
 
     column_descriptions = {
+        'company_id': 'Comp.',
         'number_of_doc': 'Nr. documento allegato',
         'date_of_doc': 'Data documento allegato',
         'file_path': 'Allegato',
@@ -3625,9 +3813,13 @@ class IniziativeAsDsoDataView(BaseDataView):
         'fc2': 'Note',
     }
 
-    column_filters = ('number_of_doc', 'date_of_doc', 'subject_id', 'fi0', 'interval_ord', 'fc2')
-    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
+    column_filters = ('company_id', 'number_of_doc', 'date_of_doc', 'subject_id', 'fi0', 'interval_ord', 'fc2')
+    form_excluded_columns = ('company_id', 'user_id', 'status_id', 'created_on', 'updated_on', 'data_type')
 
+    column_formatters = {
+        'company_id': lambda view, context, model, name: (
+            model.company.name[:5] if model.company and model.company.name else 'N/A')
+    }
     def __init__(self, model, session, **kwargs):
         self.intervals = kwargs.pop('intervals', [])
         self.area_id = kwargs.pop('area_id', None)
@@ -3780,10 +3972,11 @@ class IniziativeDsoDsoDataView(BaseDataView):
     subarea_id = 8
 
     # Adjusted order of fields
-    column_list = ('number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
+    column_list = ('company_id', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
     form_columns = ('number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
 
     column_labels = {
+        'company_id': 'Comp.',
         'number_of_doc': 'Nr. documento',
         'date_of_doc': 'Data documento',
         'file_path': 'Allegato',
@@ -3795,6 +3988,7 @@ class IniziativeDsoDsoDataView(BaseDataView):
     }
 
     column_descriptions = {
+        'company_id': 'Comp.',
         'number_of_doc': 'Nr. documento allegato',
         'date_of_doc': 'Data documento allegato',
         'file_path': 'Allegato',
@@ -3805,9 +3999,13 @@ class IniziativeDsoDsoDataView(BaseDataView):
         'fc2': 'Note',
     }
 
-    column_filters = ('number_of_doc', 'date_of_doc', 'subject_id', 'fi0', 'interval_ord', 'fc2')
-    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
+    column_filters = ('company_id', 'number_of_doc', 'date_of_doc', 'subject_id', 'fi0', 'interval_ord', 'fc2')
+    form_excluded_columns = ('company_id', 'user_id', 'status_id', 'created_on', 'updated_on', 'data_type')
 
+    column_formatters = {
+        'company_id': lambda view, context, model, name: (
+            model.company.name[:5] if model.company and model.company.name else 'N/A')
+    }
     def __init__(self, model, session, **kwargs):
         self.intervals = kwargs.pop('intervals', [])
         self.area_id = kwargs.pop('area_id', None)
@@ -3959,18 +4157,6 @@ def create_admin_views(app, intervals):
 
     with app.app_context():
         # Custom admin view
-        # TODO insert custom Contingencies route here
-        '''
-        class CustomContingenciesView(BaseView):
-            @expose('/')
-            @login_required
-            def index(self):
-                # Redirect to /show_survey/1
-                return redirect(url_for('show_survey', questionnaire_id=1))
-        '''
-
-        # TODO This view includes InLines ('basedata_inline'), filtered on the record_type value
-        # specifically, the record_type for the function below is 'pre-complaint'
 
         class CustomFlussiDataView(ModelView):
             create_template = 'admin/area_1/create_base_data_1.html'
@@ -3993,9 +4179,10 @@ def create_admin_views(app, intervals):
             }
 
             form_columns = ['interval_ord', 'fi0', 'fi1', 'fi2', 'fi3', 'fc1']
-            column_list = ['interval_ord', 'fi0', 'lexic', 'subject', 'fi1', 'fi2', 'fi3', 'fc1']
+            column_list = ['company_id', 'interval_ord', 'fi0', 'lexic', 'subject', 'fi1', 'fi2', 'fi3', 'fc1']
 
             column_labels = {
+                'company_id': 'Comp.',
                 'interval_ord': 'Periodo',
                 'fi0': 'Anno',
                 'fi1': 'Totale',
@@ -4004,32 +4191,11 @@ def create_admin_views(app, intervals):
                 'fc1': 'Notes'
             }
 
-            column_descriptions = {
-                'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
-                'fi0': 'Inserire anno (es. 2025)',
-                'fi1': 'Inserisci numero totale di casi registrati',
-                'fi2': 'di cui IVI',
-                'fi3': 'altri (IVI+Altri=Totale)',
-                'fc1': 'Notes'
+            # Define column formatters to display the first 5 letters of the company name
+            column_formatters = {
+                'company_id': lambda view, context, model, name: (
+                    model.company.name[:5] if model.company and model.company.name else 'N/A')
             }
-
-            column_default_sort = ('subject_id', True)
-            column_searchable_list = ['lexic.name', 'subject.name', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fc1']
-            column_filters = ['lexic.name', 'subject.name', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fc1']
-            form_excluded_columns = ['user_id', 'company_id', 'status_id', 'created_by', 'created_on', 'updated_on']
-
-            # Customize the order of fields in the create form
-            form_create_rules = [
-                'lexic_id',
-                'subject_id',
-                'fi0',
-                'interval_ord',
-                'fi1',
-                'fi2',
-                'fi3',
-                'fc1',
-                FieldSet(('base_data_inlines',), 'Vendor Data')  # Include the inline form
-            ]
 
             def scaffold_form(self):
                 form_class = super(CustomFlussiDataView, self).scaffold_form()
@@ -4322,32 +4488,34 @@ def create_admin_views(app, intervals):
                 self.area_id = CustomTabella23DataView.area_id  # Initialize area_id in __init__
                 self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
 
-            column_list = ('interval_ord', 'fi0', 'fi1', 'fi2', 'fi3', 'fn1', 'fn2', 'fc1')
+            column_list = ('company_id', 'interval_ord', 'fi0', 'fi1', 'fi2', 'fi3', 'fn1', 'fn2', 'fc1')
             form_columns = ('interval_ord', 'fi0', 'fi1', 'fi2', 'fi3', 'fn1', 'fn2', 'fc1')
             # Specify form columns with dropdowns
 
-            column_labels = {'interval_ord': 'Periodo', 'fi0': 'Anno',
+            column_labels = {'company_id': 'Comp.', 'interval_ord': 'Periodo', 'fi0': 'Anno',
                              'fi1': 'Totale', 'fi2': 'PdR domestico *', 'fi3': 'PdR non domestico *',
                              'fn1': 'Tasso Switching (%)', 'fn2': '',
                              'fc1': 'Note'}
             column_descriptions = {
-                'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
+                'company_id': 'Comp.', 'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
                 'fi0': 'Inserire anno (in formato YYYY)',
                 'fi1': '(numero)', 'fi2': 'di cui: PdR domestico', 'fi3': 'PdR non domestico',
                 'fn1': 'di cui % domestico', 'fn2': '% non domestico',
                 'fc1': '(opzionale)'}
 
             # Customize inlist for the class
-            column_default_sort = ('fi0', True)
-            column_searchable_list = ('fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fn1', 'fn2', 'fc1')
+            column_default_sort = ('company_id', 'fi0')
+            column_searchable_list = ('company_id', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fn1', 'fn2', 'fc1')
             # Adjust based on your model structure
-            column_filters = ('fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fn1', 'fn2', 'fc1')
+            column_filters = ('company_id', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fn1', 'fn2', 'fc1')
             # Adjust based on your model structure
 
             # Specify fields to be excluded from the form
-            form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_by', 'created_on', 'updated_on')
+            form_excluded_columns = ('user_id', 'status_id', 'created_by', 'created_on', 'updated_on')
 
             column_formatters = {
+                'company_id': lambda view, context, model, name: (
+                    model.company.name[:5] if model.company and model.company.name else 'N/A'),
                 'fn1': lambda view, context, model, name: "%.2f" % model.fn1 if model.fn1 is not None else None,
                 'fn2': lambda view, context, model, name: "%.2f" % model.fn2 if model.fn2 is not None else None,
             }
@@ -4640,45 +4808,20 @@ def create_admin_views(app, intervals):
         )
 
         admin_app1.add_view(CustomFlussiDataView(model=BaseData, session=db.session, name='Pre-complaint flows',
-                                                 intervals=intervals, endpoint='flussi_data_view'))
+                                                 intervals=intervals,
+                                                 endpoint='flussi_data_view'))
 
         admin_app1.add_view(
             AttiDataView(model=BaseData, session=db.session, name='Atti complaint', intervals=intervals, area_id=1,
                                 subarea_id=2, endpoint='atti_data_view'))
 
-        #admin_app1.add_view(
-        #    ContingenciesDataView(model=BaseData, session=db.session, name='Disputes', intervals=intervals, area_id=1,
-        # subarea_id=3, endpoint='atti_data_view'))
-
-        # Example of adding the specific view
-        # admin_app1.add_view(
-        #     AttiDataView(model=BaseData, session=db.session, name='Complaint documents', intervals=intervals, area_id=1,
-        #                  subarea_id=2, endpoint='atti_data_view'))
-        #admin_app1.add_view(
-        #    ContingenciesDataView(model=BaseData, session=db.session, name='Contingencies', intervals=intervals, area_id=1,
-        #                           subarea_id=3, endpoint='show_survey/1'))
-
-        '''
         admin_app1.add_view(
-            ContingenciesDataView(model=BaseData, session=db.session, name='Contingencies', intervals=intervals,
-                                  area_id=1,
-                                  subarea_id=3, endpoint='show_survey')
-        )
-        '''
-
-        # Register the custom redirect view for Contingencies without 'open_admin' prefix in endpoint
-        # admin_app1.add_view(CustomRedirectView(name='Contingencies', endpoint='show_survey_view'))
-        #
-        # Register the custom view for Contingencies with 'open_admin' prefix in endpoint
-        # Register the custom redirect view for Contingencies
-        # admin_app1.add_view(CustomRedirectView(name='Contingencies', endpoint='show_survey/1'))
-
-        # Register the atypical custom view (questionnaire, not data view)
-        # admin_app1.add_view(CustomContingenciesView(name='Contingencies', endpoint='contingencies_data_view'))
+            ContenziosiDataView(model=BaseData, session=db.session, name='Contenziosi', intervals=intervals, area_id=1,
+                                subarea_id=3, endpoint='contenziosi_data_view'))
 
         admin_app1.add_view(
-            ContenziosiDataView(model=BaseData, session=db.session, name='Contingencies', intervals=intervals, area_id=1,
-                                subarea_id=4, endpoint='contenziosi_data_view'))
+            ContingenciesDataView(model=BaseData, session=db.session, name='Contingencies', intervals=intervals, area_id=1,
+                                subarea_id=4, endpoint='contingencies_data_view'))
         admin_app1.add_view(
             IniziativeDsoAsDataView(model=BaseData, session=db.session, name='DSO-AS Initiatives', intervals=intervals, area_id=1,
                                 subarea_id=6, endpoint='iniziative_dso_as_data_view'))
