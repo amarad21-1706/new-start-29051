@@ -739,7 +739,6 @@ class DocumentsNewBaseDataView(ModelView):
         # For other roles or anonymous users, return an empty query
         return query.filter(BaseData.id < 0)
 
-
     def get_count_query(self):
         # Return count query for pagination
         return None  # Disable pagination count query
@@ -878,7 +877,6 @@ class DocumentsBaseDataDetails(ModelView):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        print('doc 1')
         self.class_name = self.__class__.__name__  # Store the class name
 
     column_list = [
@@ -975,24 +973,32 @@ class DocumentsBaseDataDetails(ModelView):
             print('Error in super().get_list:', str(e))
             raise
 
-        # Fetch company and user names for each record
+        # Fetch additional information for each record
         for item in data:
-            print(f'Processing item {item.id} in get_list')
             try:
+                print(f'Processing item {item.id} in get_list')
+                # Safely retrieve associated data
                 company_name = item.base_data.company.name if item.base_data and item.base_data.company else "N/A"
                 user_name = item.base_data.user.last_name if item.base_data and item.base_data.user else "N/A"
                 created_on = item.base_data.created_on if item.base_data else "N/A"
-                workflow_id = item.workflow.id if item.workflow else "N/A"
+                workflow_id = item.workflow.id if item.workflow and isinstance(item.workflow.id, int) else "N/A"
                 step_name = item.step.name if item.step else "N/A"
 
+                # Assign values to the item, ensuring correct handling of invalid data
                 item.company_name = company_name
                 item.user_name = user_name
                 item.workflow_id = workflow_id
                 item.step_name = step_name
                 item.created_on = created_on
             except Exception as e:
-                print('Error processing item in get_list:', str(e))
-                raise
+                # Log error and continue with the next item
+                print(f'Error processing item {item.id} in get_list: {str(e)}')
+                # Optionally set default or fallback values to handle error gracefully
+                item.company_name = "Error"
+                item.user_name = "Error"
+                item.workflow_id = 0
+                item.step_name = "Error"
+                item.created_on = datetime.utcnow()
 
         return count, data
 
@@ -4986,8 +4992,9 @@ def create_admin_views(app, intervals):
                                                   endpoint='assigned_documents'))
         admin_app3.add_view(DocumentsNewBaseDataView(name='New Unassigned Documents', model=BaseData, session=db.session,
                                                             endpoint='new_documents'))
-        admin_app3.add_view(DocumentsBaseDataDetails(name='Documents Workflow Management', model=StepBaseData, session=db.session))
-
+        admin_app3.add_view(DocumentsBaseDataDetails(name='Documents Workflow Management', model=StepBaseData, session=db.session,
+                                                     endpoint='step_base_data'
+                                                     ))
 
         # Fourth Flask-Admin instance
         # ===========================================================
