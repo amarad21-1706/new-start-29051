@@ -188,6 +188,9 @@ class Config:
         self.STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY')
         self.STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY')
 
+        self.BABEL_DEFAULT_LOCALE = 'en'  # Default language
+        self.BABEL_TRANSLATION_DIRECTORIES = 'translations'  # Directory for translations
+        self.BABEL_DEFAULT_TIMEZONE = 'UTC'  # Default timezone
 
 # Define a custom JSON encoder class to handle datetime serialization
 class DateTimeEncoder(json.JSONEncoder):

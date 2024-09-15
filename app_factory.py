@@ -15,8 +15,10 @@ from models.user import Users #, Plan, Product
 from functools import wraps
 from password_reset import password_reset_bp  # Import the blueprint
 from admin_views import DraftingContractsView
+# from flask_babel import Babel
 
 csrf = CSRFProtect()  # Define csrf globally
+# babel = Babel()  # Initialize Babel without an app instance
 
 def my_locale_selector():
     return 'en_EN'  # Example for French
@@ -98,8 +100,6 @@ def create_app(conf=None):
         storage_uri="memory://",
     )
 
-    db.init_app(app)
-
     login_manager = LoginManager()
     login_manager.init_app(app)
     login_manager.login_view = "login"
@@ -107,7 +107,10 @@ def create_app(conf=None):
     with app.app_context():
         from models import user
         from routes import routes  # Ensure your routes are imported here
+        db.init_app(app)
         db.create_all()
+        # Initialize extensions with the app instance
+        # babel.init_app(app)  # Initialize Babel with the app instance
 
     app.register_blueprint(password_reset_bp)  # Register the blueprint
 

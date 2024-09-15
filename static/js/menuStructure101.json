@@ -676,6 +676,15 @@
                                     "display": false
                                 }
                             },
+                            "AI Test": {
+                                "label": "AI Test",
+                                "url": "/analyze_text_view",
+                                "protected": true,
+                                "allowed_roles": ["Admin"],
+                                "widget": {
+                                    "display": false
+                                }
+                            },
                             "Contract-Management": {
                                 "label": "Contract Management",
                                 "url": "/team",
@@ -699,6 +708,17 @@
                                     "View Teams": {
                                         "label": "View Teams",
                                         "url": "/team/view_teams",
+                                        "protected": true,
+                                        "allowed_roles": [
+                                            "Admin"
+                                        ],
+                                        "widget": {
+                                            "display": false
+                                        }
+                                    },
+                                    "Contracts": {
+                                        "label": "Contracts",
+                                        "url": "/open_admin_6",
                                         "protected": true,
                                         "allowed_roles": [
                                             "Admin"

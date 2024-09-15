@@ -7,6 +7,8 @@ import re
 import requests
 import stripe
 
+import openai
+
 import logging
 from logging import FileHandler, Formatter
 from flask_wtf.csrf import CSRFProtect, generate_csrf, validate_csrf
@@ -70,9 +72,10 @@ from forms.forms import (AddPlanToCartForm, SignupForm, UpdateAccountForm, Ticke
                          UpdateCartItemForm, AddProductToCartForm, SubscriptionForm)
 
 from flask_mail import Mail, Message
-from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as _
+# from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as _
 
 from app_factory import create_app, roles_required, subscription_required, csrf
+# from app_factory import babel
 
 from config.config import (get_current_intervals,
         generate_company_questionnaire_report_data, generate_area_subarea_report_data,
@@ -200,6 +203,10 @@ cache = TTLCache(maxsize=100, ttl=86400)  # Adjust cache size and TTL as needed
 print('geo-names on')
 # Create a cache with a TTL of 600 seconds and a max size of 100 items
 
+# Load API key from environment variable
+openai.api_key = os.getenv("OPENAI_API_KEY")
+print('openAI ready')
+
 # Setup Limiter
 limiter = Limiter(
     get_remote_address,
@@ -253,6 +260,24 @@ logger.addHandler(file_handler)
 
 # Test logging
 logger.info("Logging to both console and file is configured.")
+'''
+
+# Language selection logic
+# Use the correct decorator on the initialized babel object
+'''
+@babel.localeselector
+def get_locale():
+    # Check if a language is set in the session
+    if 'lang' in session:
+        return session['lang']
+    # Default to browser settings if not set
+    return request.accept_languages.best_match(['en', 'it'])
+
+@app.route('/set_language/<language>')
+def set_language(language=None):
+    # Set the user's language preference in the session
+    session['lang'] = language
+    return redirect(request.referrer or '/')
 '''
 
 @app.route('/test_relationship')
@@ -864,6 +889,61 @@ def get_cards001(company_id):
 
     return cards
 
+
+def analyze_text(contract_text, prompt):
+    """
+    Analyze a given contract text using a custom prompt.
+
+    Parameters:
+    contract_text (str): The contract text to be analyzed.
+    prompt (str): The custom prompt to guide the analysis.
+
+    Returns:
+    str: The analysis result from OpenAI's model.
+    """
+    # Use OpenAI's GPT model to perform the analysis
+    try:
+        response = openai.Completion.create(
+            model="gpt-3.5-turbo",  # Use 'gpt-3.5-turbo' or any other model you have access to
+            prompt=prompt,
+            max_tokens=500,
+            temperature=0.3
+        )
+
+        # Return the analysis result
+        return response.choices[0].message['content'].strip()
+
+    except openai.error.OpenAIError as e:
+        print(f"OpenAI API error: {e}")  # Print API-related errors
+        return f"An error occurred during the analysis: {str(e)}"
+    except Exception as e:
+        print(f"General error: {e}")  # Print general errors
+        return f"An unexpected error occurred: {str(e)}"
+
+
+@app.route('/analyze_text_view', methods=['GET', 'POST'])
+@login_required
+@roles_required(['Admin'])
+def analyze_text_view():
+    try:
+        if request.method == 'POST':
+            contract_text = request.form.get('contract_text')
+            prompt_text = request.form.get('prompt_text')
+
+            # Debugging print statements
+            print(f"Contract Text: {contract_text}")
+            print(f"Prompt Text: {prompt_text}")
+
+            # Check if form data exists
+            if not contract_text or not prompt_text:
+                return "Error: Missing contract text or prompt", 400
+
+            analysis_result = analyze_text(contract_text, prompt_text)
+            return render_template('analysis_result.html', analysis_result=analysis_result)
+        return render_template('contract_form.html')
+    except Exception as e:
+        print(f"Error occurred: {e}")  # Print the error for debugging
+        return "An error occurred during analysis", 500
 
 
 class MoveDocumentForm(FlaskForm):

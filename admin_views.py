@@ -5034,7 +5034,7 @@ def create_admin_views(app, intervals):
 
         # Add views to admin_app2
         admin_app5.add_view(
-            DocumentUploadView(model=BaseData, session=db.session, name='Documents Upload', intervals=intervals, area_id=3,
+            DocumentUploadView(model=BaseData, session=db.session, name='Documents Workflow', intervals=intervals, area_id=3,
                                 subarea_id=1, endpoint='upload_documenti_view'))
 
         # EOF app5
