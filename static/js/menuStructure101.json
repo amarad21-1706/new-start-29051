@@ -120,19 +120,6 @@
             "display": false
         },
         "submenus": {
-            "Current": {
-                "label": "Open Actions",
-                "url": "/company_overview_current",
-                "protected": true,
-                "allowed_roles": [
-                    "Admin",
-                    "Employee",
-                    "Manager"
-                ],
-                "widget": {
-                    "display": false
-                }
-            },
             "History": {
                 "label": "Historic Data",
                 "url": "/company_overview_historical",
@@ -199,6 +186,23 @@
             "display": false
         },
         "submenus": {
+            "Open Actions": {
+                "label": "Open Actions",
+                "url": "/company_overview_current",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin",
+                    "Employee",
+                    "Manager"
+                ],
+                "widget": {
+                    "display": true,
+                    "type": "button",
+                    "submit_url": "/company_overview_current",
+                    "style": "btn-primary btn-lg",
+                    "size": "large"
+                }
+            },
             "Area di controllo 1": {
                 "label": "Area 1",
                 "url": "/area_di_controllo_1",
@@ -219,7 +223,7 @@
                         "allowed_roles": [
                             "Admin", "Employee", "Manager"],
                         "widget": {
-                            "display": true,
+                            "display": false,
                             "type": "button",
                             "submit_url": "/open_admin_1",
                             "style": "btn-neutral",
@@ -254,7 +258,7 @@
                 "protected": true,
                 "allowed_roles": ["Admin", "Employee", "Manager"],
                 "widget": {
-                    "display": true,
+                    "display": false,
                     "type": "button",
                     "submit_url": "/open_admin_2",
                     "style": "btn-secondary",
