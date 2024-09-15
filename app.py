@@ -662,6 +662,17 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
             admin_2_url = url_for('open_admin_2.index')
             admin_3_url = url_for('open_admin_3.index')
             admin_4_url = url_for('open_admin_4.index')
+
+            try:
+                admin_5_url = url_for('open_admin_5.index')
+            except Exception as e:
+                print('Error generating admin_5_url:', str(e))
+
+            try:
+                admin_6_url = url_for('open_admin_6.index')
+            except Exception as e:
+                print('Error generating admin_6_url:', str(e))
+
             admin_10_url = url_for('open_admin_10.index')
 
             company_name = ' '
@@ -735,6 +746,10 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
                 "admin_2_url": admin_2_url,
                 "admin_3_url": admin_3_url,
                 "admin_4_url": admin_4_url,
+
+                "admin_5_url": admin_5_url,
+
+                "admin_6_url": admin_6_url,
                 "admin_10_url": admin_10_url,
                 "left_menu_items": menu_data,
                 "unread_notices_count": unread_notices_count,
@@ -1498,42 +1513,6 @@ def load_workflow_controls():
 # TOD how to eliminate relationship fields in the Question and workflow CREATE templates?
 
 
-@app.route('/open_admin_app_4')
-@login_required
-@roles_required('Admin')
-# Define the index route
-def open_admin_app_4():
-    user_id = current_user.id
-    return redirect(url_for('open_admin_4.index'))
-
-
-@app.route('/open_admin_app_5')
-@login_required
-@roles_required('Admin')
-# Define the index route
-def open_admin_app_5():
-    user_id = current_user.id
-    return redirect(url_for('open_admin_5.index'))
-
-
-@app.route('/open_admin_app_6')
-@login_required
-@roles_required('Admin', 'Manager', 'Employee')
-# Define the index route
-def open_admin_app_6():
-    user_id = current_user.id
-    return redirect(url_for('open_admin_6.index'))
-
-'''
-
-@login_required
-@roles_required('Admin')
-@app.route('/master_reset_password')
-def master_reset_password():
-    return redirect(url_for('admin_reset_password'))
-'''
-
-
 
 @app.route('/open_admin_app_1')
 @login_required
@@ -1600,25 +1579,62 @@ def open_admin_app_3():
     return redirect(url_for('open_admin_3.index'))
 
 
-@app.route('/open_admin_app_10')
+@app.route('/open_admin_app_4')
+@login_required
+@roles_required('Admin')
+# Define the index route
+def open_admin_app_4():
+    user_id = current_user.id
+    return redirect(url_for('open_admin_4.index'))
+
+
+@app.route('/open_admin_app_5')
+@login_required
+@roles_required('Admin')
+# Define the index route
+def open_admin_app_5():
+    user_id = current_user.id
+    return redirect(url_for('open_admin_5.index'))
+
+
+@app.route('/open_admin_app_6')
 @login_required
 @roles_required('Admin', 'Manager', 'Employee')
 # Define the index route
-def open_admin_app_10():
+def open_admin_app_6():
     user_id = current_user.id
-    company_row = db.session.query(Company.name) \
-        .join(CompanyUsers, CompanyUsers.company_id == Company.id) \
-        .filter(CompanyUsers.user_id == user_id) \
-        .first()
+    return redirect(url_for('open_admin_6.index'))
 
-    company_name = company_row[0] if company_row else None  # Extracting the name attribute
+@app.route('/open_admin_app_10')
+@login_required
+@roles_required('Admin', 'Manager', 'Employee')
+def open_admin_app_10():
+    try:
+        print('quest 0')
+        user_id = current_user.id
+        print('quest 1', user_id)
+        company_row = db.session.query(Company.name) \
+            .join(CompanyUsers, CompanyUsers.company_id == Company.id) \
+            .filter(CompanyUsers.user_id == user_id) \
+            .first()
+        print('quest 2', company_row)
+        company_name = company_row[0] if company_row else None  # Extracting the name attribute
+        print('quest 3', company_name)
 
-    template = "Surveys & Questionnaires"
-    placeholder_value = company_name
-    formatted_string = template.format(placeholder_value) if placeholder_value else template
-    admin_app10.name = formatted_string
+        if admin_app10 is None:
+            raise ValueError("admin_app10 is not initialized.")
 
-    return redirect(url_for('open_admin_10.index'))
+        template = "Surveys & Questionnaires"
+        placeholder_value = company_name
+        formatted_string = template.format(placeholder_value) if placeholder_value else template
+        admin_app10.name = formatted_string
+
+        print('quest 4', admin_app10.name, 'redirect to open_Admin_10')
+        return redirect(url_for('open_admin_10.index'))
+
+    except Exception as e:
+        print('Error occurred:', str(e))
+        return 'An error occurred', 500
 
 
 # TODO: ***** inserire come action: move one step forward!

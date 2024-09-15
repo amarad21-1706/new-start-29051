@@ -3010,25 +3010,156 @@ class MyIntegerIntervalField(IntegerField):
 
 
 class DocumentUploadView(BaseDataViewCommon):
+    # Template for creating records
     create_template = 'admin/area_1/create_base_data_8.html'
+    # Area and subarea identifiers for filtering records
     area_id = 3
     subarea_id = 1
 
-    column_list = ('fi0', 'interval_ord', 'subject', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    form_columns = ('fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    column_labels = {'fi0': 'Anno di rif.', 'interval_ord': 'Periodo di rif.', 'subject': 'Oggetto',
-                     'number_of_doc': 'Nr. documento', 'date_of_doc': 'Data documento', 'file_path': 'Allegati',
-                     'no_action': 'Conferma assenza doc.', 'fc2': 'Note'}
-    column_descriptions = {'interval_ord': '(inserire il numero; es. 1: primo quadrimestre; 2: secondo ecc.)',
-                           'fi0': 'Inserire anno (es. 2024)', 'subject_id': 'Seleziona oggetto',
-                           'fc2': 'Note', 'file_path': 'Allegati', 'no_action': 'Dichiarazione di assenza di documenti (1)'}
-    column_filters = ('subject', 'fc2', 'no_action')
-    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
+    # Columns to display in the list view
+    column_list = ('company_id', 'fi0', 'interval_ord', 'subject', 'ft1', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
 
-    @expose('/')
-    def index(self):
-        redirect_url = url_for('redirect_to_survey', questionnaire_id=1)
-        return redirect(redirect_url)
+    # Columns to include in the form view
+    form_columns = ('fi0', 'interval_ord', 'ft1', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
+
+    # Custom labels for columns
+    column_labels = {
+        'company_id': 'Comp.',
+        'fi0': 'Anno di rif.',
+        'interval_ord': 'Periodo di rif.',
+        'subject': 'Oggetto',
+        'ft1': 'Codice documento',
+        'number_of_doc': 'Nr. documento',
+        'date_of_doc': 'Data documento',
+        'file_path': 'Allegati',
+        'no_action': 'Conferma assenza doc.',
+        'fc2': 'Note'
+    }
+
+    # Descriptions for form fields
+    column_descriptions = {
+        'company_id': 'Company',
+        'ft1': 'Codice interno documento',
+        'interval_ord': '(inserire il numero; es. 1: primo quadrimestre; 2: secondo ecc.)',
+        'fi0': 'Inserire anno (es. 2024)',
+        'subject_id': 'Seleziona oggetto',
+        'fc2': 'Note',
+        'file_path': 'Allegati',
+        'no_action': 'Dichiarazione di assenza di documenti (1)'
+    }
+
+    # Filters to use in the list view
+    column_filters = ('company_id', 'ft1', 'subject', 'fc2', 'no_action')
+
+    # Fields to exclude from the form view
+    form_excluded_columns = ('user_id', 'status_id', 'created_on', 'updated_on', 'data_type')
+
+    # Define column formatters to display the first 5 letters of the company name
+    column_formatters = {
+        'company_id': lambda view, context, model, name: (
+            model.company.name[:5] if model.company and model.company.name else 'N/A')
+    }
+
+    def __init__(self, model, session, *args, **kwargs):
+        # Initialize with intervals, area_id, and subarea_id passed as kwargs
+        super().__init__(model, session, *args, **kwargs)
+
+    def on_model_change(self, form, model, is_created):
+        """
+        Override method to add custom logic before saving the object.
+        """
+        try:
+            # Validate no-action checkbox logic
+            self._validate_no_action(model, form)
+            # Uncheck no-action if a document is uploaded
+            self._uncheck_if_document(model, form)
+
+            # Custom logic if a new model is created
+            if is_created:
+                # Example: Set some initial values or states for the new record
+                model.created_on = datetime.utcnow()
+                flash(f'New document upload created successfully.', 'success')
+            else:
+                flash(f'Document upload updated successfully.', 'success')
+        except Exception as ex:
+            flash(f'Error during model change: {str(ex)}', 'error')
+            raise
+
+    def _validate_no_action(self, model, form):
+        """
+        Validate that the 'no_action' field is appropriately set.
+        """
+        super()._validate_no_action(model, form)
+
+    def _uncheck_if_document(self, model, form):
+        """
+        Ensure 'no_action' field is unset if a document is uploaded.
+        """
+        super()._uncheck_if_document(model, form)
+
+    def create_model(self, form):
+        """
+        Custom method to create a new model instance with the correct area_id and subarea_id.
+        """
+        try:
+            # Create a new instance of the model
+            model = self.model()
+
+            # Populate the model with form data
+            form.populate_obj(model)
+
+            # Populate the necessary fields
+            # Ensure area_id and subarea_id are set correctly
+            model.area_id = self.area_id
+            model.subarea_id = self.subarea_id
+            model.created_on = datetime.utcnow()
+            model.updated_on = datetime.utcnow()
+            model.user_id = current_user.id
+            model.company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
+            model.record_type = 'document'
+            model.data_type = 'data_type'
+
+            # Add and commit the model to the session
+            self.session.add(model)
+            self.session.commit()
+
+            # Custom behavior after successful creation
+            flash(f'Document uploaded successfully.', 'success')
+            return model
+        except Exception as ex:
+            # Handle exceptions and rollback if there is an error
+            flash(f'Failed to create document record: {str(ex)}', 'error')
+            self.session.rollback()
+            return False
+
+
+def get_query(self):
+    """
+    Override default query to filter records by area, subarea, and user role.
+    """
+    # Base query filtered by area and subarea
+    query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
+
+    if current_user.is_authenticated:
+        if current_user.has_role('Admin'):
+            # Admins can access all documents, no additional filtering needed
+            print("Admin access: fetching all documents.")
+            return query
+        elif current_user.has_role('Manager'):
+            # Managers can access documents of their own company_id
+            subquery = db.session.query(CompanyUsers.company_id).filter(CompanyUsers.user_id == current_user.id).subquery()
+            query = query.filter(self.model.company_id.in_(subquery))
+            print(f"Manager access: fetching documents for company_id(s) {subquery}.")
+        elif current_user.has_role('Employee'):
+            # Employees can only access their own documents
+            query = query.filter(self.model.user_id == current_user.id)
+            print(f"Employee access: fetching documents for user_id {current_user.id}.")
+    else:
+        print("Unauthenticated access: returning empty query.")
+        # If the user is not authenticated or does not have any specific role, return an empty query
+        query = query.filter(self.model.id < 0)
+
+    return query
 
 
 class AttiDataView(BaseDataView):
@@ -4862,7 +4993,9 @@ def create_admin_views(app, intervals):
         # ===========================================================
         # admin_app4 = Admin(app, name='Setup', url = '/open_setup_basic', template_mode='bootstrap4', endpoint = 'setup_basic')
 
-        admin_app4 = Admin(app, name='System Setup', url='/open_admin_4', template_mode='bootstrap4',
+        admin_app4 = Admin(app, name='System Setup',
+                           url='/open_admin_4',
+                           template_mode='bootstrap4',
                            endpoint='open_admin_4')
         # Add your ModelViews to Flask-Admin
         admin_app4.add_view(CompanyView(Company, db.session, name='Companies', endpoint='companies_data_view'))
@@ -4912,9 +5045,9 @@ def create_admin_views(app, intervals):
         # Initialize Flask-Admin
         admin_app6 = Admin(app,
                            name='Contracts Management',
-                           url='/admin/contracts',
+                           url='/open_admin_6',
                            template_mode='bootstrap4',
-                           endpoint='admin_contracts')
+                           endpoint='open_admin_6')
 
         # Add views for each model
         # (Use the custom view for contracts)
@@ -4929,11 +5062,6 @@ def create_admin_views(app, intervals):
         admin_app6.add_view(
             ContractArticleAdmin(ContractArticle, db.session, name='Contract Articles', endpoint="contract_articles")
         )
-
-        #admin_app6.add_view(
-        #    AllArticlesAdmin(ContractArticle, db.session, name='All Articles', endpoint="all_articles")
-        #)
-
         # Add views for each model
         admin_app6.add_view(ModelView(ContractParty, db.session, name='Contract Parties'))
         admin_app6.add_view(ModelView(ContractTerm, db.session, name='Contract Terms'))
@@ -4942,11 +5070,14 @@ def create_admin_views(app, intervals):
         # Optionally, you can add views for related models (e.g., Company, Party, User)
         admin_app6.add_view(ModelView(Party, db.session, name='Parties'))
 
+
         # 10-th Flask-Admin instance
         # ===========================================================
         admin_app10 = Admin(app, name='Surveys & Questionnaires Workflow',
-                            url='/open_admin_10', template_mode='bootstrap4',
+                            url='/open_admin_10',
+                            template_mode='bootstrap4',
                             endpoint='open_admin_10')
+
         # Add your ModelViews to Flask-Admin
         admin_app10.add_view(OpenQuestionnairesView(name='Open Questionnaires', endpoint='open_questionnaires'))
 

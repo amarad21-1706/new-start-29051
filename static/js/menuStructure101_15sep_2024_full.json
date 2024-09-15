@@ -120,9 +120,9 @@
             "display": false
         },
         "submenus": {
-            "Overview": {
-                "label": "Overview",
-                "url": "/overview_statistics_1",
+            "History": {
+                "label": "Historic Data",
+                "url": "/company_overview_historical",
                 "protected": true,
                 "allowed_roles": [
                     "Admin",
@@ -133,9 +133,9 @@
                     "display": false
                 }
             },
-            "History": {
-                "label": "Archive",
-                "url": "/company_overview_historical",
+            "Overview": {
+                "label": "Overview",
+                "url": "/overview_statistics_1",
                 "protected": true,
                 "allowed_roles": [
                     "Admin",
@@ -151,6 +151,16 @@
                 "url": "/deadlines_1",
                 "protected": true,
                 "allowed_roles": ["Admin", "Employee", "Manager"],
+                "widget": {
+                    "display": false
+                }
+            },
+            "Control areas - workflow": {
+                "label": "Control areas - workflow",
+                "url": "/dashboard/left_menu_route",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin", "Employee", "Manager"],
                 "widget": {
                     "display": false
                 }
@@ -264,36 +274,22 @@
                     "display": false
                 }
             },
+            "Area di controllo 5": {
+                "label": "Documents",
+                "url": "/open_admin_5",
+                "protected": true,
+                "allowed_roles": ["Admin", "Employee", "Manager"],
+                "widget": {
+                    "display": false
+                }
+            },
             "Area di controllo 10": {
                 "label": "Surveys and Questionnaires",
-                "url": "/open_admin_10",
+                "url": "/open_admin_app_10",
                 "protected": true,
                 "allowed_roles": ["Admin", "Manager", "Employee", "Provider"],
                 "widget": {
                     "display": false
-                }
-            },
-            "Documents Workflow": {
-                "label": "Workflows",
-                "url": "/open_admin_3",
-                "protected": true,
-                "allowed_roles": [
-                    "Admin", "Employee", "Manager"],
-                "widget": {
-                    "display": false
-                }
-            },
-            "Contracts": {
-                "label": "Contract Management",
-                "url": "/open_admin_6",
-                "protected": true,
-                "allowed_roles": ["Admin", "Employee", "Manager", "Authority", "Provider"],
-                "widget": {
-                    "display": true,
-                    "type": "button",
-                    "submit_url": "/admin/contracts",
-                    "style": "btn-link",
-                    "size": "large"
                 }
             },
             "Cards One": {
@@ -305,11 +301,42 @@
                     "display": false
                 }
             },
-            "Area di controllo 5": {
-                "label": "Documents",
-                "url": "/open_admin_5",
+            "Compliance": {
+                "label": "Auditing",
+                "url": "/dashboard/authority/dashboard_a3",
                 "protected": true,
-                "allowed_roles": ["Admin", "Employee", "Manager"],
+                "allowed_roles": [
+                    "Admin", "Authority"],
+                "widget": {
+                    "display": false
+                }
+            },
+            "Controls": {
+                "label": "Controls",
+                "url": "/dashboard/authority/dashboard_a3",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin", "Authority"],
+                "widget": {
+                    "display": false
+                }
+            },
+            "Disciplinary": {
+                "label": "Disciplinary Actions",
+                "url": "/dashboard/authority/dashboard_a3",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin", "Authority"],
+                "widget": {
+                    "display": false
+                }
+            },
+            "Remediation": {
+                "label": "Remediation",
+                "url": "/dashboard/authority/dashboard_a3",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin", "Authority"],
                 "widget": {
                     "display": false
                 }
@@ -322,6 +349,38 @@
                     "Admin", "Authority"],
                 "widget": {
                     "display": false
+                }
+            },
+            "Regulation": {
+                "label": "Regulation",
+                "url": "/dashboard/authority/dashboard_a3",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin", "Authority"],
+                "widget": {
+                    "display": false
+                }
+            },
+            "Calendar-Events": {
+                "label": "Calendar",
+                "url": "/calendar",
+                "protected": true,
+                "allowed_roles": ["Admin", "Employee", "Manager", "Authority", "Provider"],
+                "widget": {
+                    "display": false
+                }
+            },
+            "Contracts": {
+                "label": "Contract Management",
+                "url": "/admin/contracts",
+                "protected": true,
+                "allowed_roles": ["Admin", "Employee", "Manager", "Authority", "Provider"],
+                "widget": {
+                    "display": true,
+                    "type": "button",
+                    "submit_url": "/admin/contracts",
+                    "style": "btn-link",
+                    "size": "large"
                 }
             }
         }
@@ -515,6 +574,50 @@
                             "display": false
                         }
                     },
+                    "Controls": {
+                        "label": "Authority Controls",
+                        "url": "/dashboard/company/dashboard_controls",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin"
+                        ],
+                        "widget": {
+                            "display": false
+                        }
+                    },
+                    "Remediation": {
+                        "label": "Remediation",
+                        "url": "/dashboard/company/dashboard_remediation",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin"
+                        ],
+                        "widget": {
+                            "display": false
+                        }
+                    },
+                    "Compliance": {
+                        "label": "Compliance",
+                        "url": "/dashboard/company/dashboard_compliance",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin"
+                        ],
+                        "widget": {
+                            "display": false
+                        }
+                    },
+                    "Proceedings": {
+                        "label": "Proceedings",
+                        "url": "/dashboard/company/dashboard_proceedings",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin"
+                        ],
+                        "widget": {
+                            "display": false
+                        }
+                    },
                     "Deadlines": {
                         "label": "Deadlines",
                         "url": "/dashboard/company/dashboard_deadlines",
@@ -549,7 +652,7 @@
                         }
                     },
                     "Area 6 - test": {
-                        "label": "Workflows Area - test",
+                        "label": "Workflows Area",
                         "url": "/test_relationship",
                         "protected": true,
                         "allowed_roles": [

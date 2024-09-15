@@ -168,6 +168,7 @@ class LoginForm(FlaskForm):
     remember_me = BooleanField('Remember Me')
     submit = SubmitField('Login')
 
+
 class BaseDataInlineModelForm(InlineFormAdmin):
     form_columns = ['name', 'type', 'value', 'record_type']
     form_label = 'Vendor Data'
@@ -324,7 +325,6 @@ class CustomSubjectAjaxLoader(QueryAjaxModelLoader):
         return query.all()
 
 
-
 class StepBaseDataInlineForm(InlineFormAdmin):
 
     def __init__(self, model, form_data=None, **kwargs):
@@ -340,6 +340,19 @@ class StepBaseDataInlineForm(InlineFormAdmin):
     workflow_id = SelectField('Workflow', coerce=int)  # Assuming 'workflow_id' is the field for selecting workflows
     step_id = SelectField('Step', coerce=int)  # Assuming 'step_id' is the field for selecting steps
     status_id = SelectField('Status', coerce=int)  # Assuming 'status_id' is the field for selecting statuses
+
+    # Define custom form fields
+    form_extra_fields = {
+        'workflow_id': SelectField('Workflow', coerce=int),  # Workflow choices populated dynamically
+        'step_id': SelectField('Step', coerce=int),  # Step choices populated dynamically
+        'status_id': SelectField('Status', coerce=int),  # Status choices populated dynamically
+        'auto_move': SelectField(
+            'Auto Move',
+            choices=[(1, 'Yes'), (0, 'No')],  # Choices for auto move
+            coerce=int,  # Coerce to int to match database field type
+            description='Automatically move to the next step (Yes/No)'
+        ),
+    }
 
     @property
     def form(self):
