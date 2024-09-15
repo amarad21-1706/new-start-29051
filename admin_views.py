@@ -862,8 +862,10 @@ class DocumentsNewBaseDataView(ModelView):
 
 
 # for document workflow management (forward, backward, deadlines etc) - for already distributed documents
+    # for document workflow management (forward, backward, deadlines etc) - for already distributed documents
+from wtforms import BooleanField
+
 class DocumentsBaseDataDetails(ModelView):
-    print('doc 0')
     can_create = True  # Optionally disable creation
     can_edit = True  # Optionally disable editing
     can_delete = True  # Optionally disable deletion
@@ -874,7 +876,6 @@ class DocumentsBaseDataDetails(ModelView):
     menu_icon_type = 'glyph'  # You can also use 'fa' for Font Awesome icons
     menu_icon_value = 'glyphicon-list-alt'  # Icon class for the menu item
 
-
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         print('doc 1')
@@ -884,8 +885,30 @@ class DocumentsBaseDataDetails(ModelView):
         'id', 'base_data.file_path', 'base_data.created_on', 'company_name', 'user_name',
         'workflow.name', 'step.name', 'status_id', 'auto_move',
         'start_date', 'deadline_date', 'end_date', 'start_recall', 'deadline_recall',
-        'end_recall', 'recall_unit', 'hidden_data'
+        'end_recall', 'recall_unit', 'hidden_data', 'open_action'  # Include 'open_action' in the column list
     ]
+
+    # Formatter to display 'Yes' or 'No' instead of 0 or 1 for 'auto_move'
+    column_formatters = {
+        'auto_move': lambda view, context, model, name: 'Yes' if model.auto_move else 'No',
+        'recall_unit': lambda view, context, model, name: {
+            0: 'none', 1: 'day', 2: 'week', 3: 'month'
+        }.get(model.recall_unit, 'Unknown')  # Use .get() to handle unexpected values
+    }
+
+    # Dropdown choices for the create/edit form
+    form_choices = {
+        'auto_move': [
+            (1, 'Yes'),
+            (0, 'No')
+        ],
+        'recall_unit': [
+            (0, 'none'),
+            (1, 'day'),
+            (2, 'week'),
+            (3, 'month')
+        ]
+    }
 
     column_labels = {
         'id': 'ID',
@@ -895,53 +918,50 @@ class DocumentsBaseDataDetails(ModelView):
         'status_id': 'Status', 'auto_move': 'Auto transition',
         'start_date': 'Start', 'deadline_date': 'Deadline', 'end_date': 'End',
         'start_recall': 'Start Recall', 'deadline_recall': 'Deadline Recall',
-        'end_recall': 'End Recall', 'recall_unit': 'Recall Unit', 'hidden_data': 'Miscellanea'
+        'end_recall': 'End Recall', 'recall_unit': 'Recall Unit', 'hidden_data': 'Miscellanea',
+        'open_action': 'Open Action'  # Label for the checkbox
     }
-    # column_descriptions
 
     # Customize inlist for the View class
     column_default_sort = ('base_data.created_on', True)
     column_searchable_list = ('base_data.file_path', 'workflow_id', 'step_id', 'start_date', 'deadline_date')
-    # Adjust based on your model structure
     column_filters = ('base_data.file_path', 'workflow_id', 'step_id', 'start_date', 'deadline_date')
-    # Adjust based on your model structure
 
-    # Specify fields to be excluded from the form
+    # Define 'open_action' as a checkbox in the form
+    form_extra_fields = {
+        'open_action': BooleanField('Open Action')
+    }
     form_excluded_columns = ('base_data.id')
 
     def get_query(self):
-        print('doc 2')
         try:
             query = super().get_query()
         except Exception as e:
             print('Error getting base query:', str(e))
             raise
 
-        print('doc 3')
-        if current_user.is_authenticated:
-            try:
+        try:
+            if current_user.is_authenticated:
+                print('User is authenticated.')
                 if current_user.has_role('Admin') or current_user.has_role('Authority'):
-
-                    print('doc 3.1', query)
+                    print('User is Admin or Authority. Returning query:', query)
                     return query
                 elif current_user.has_role('Manager'):
-                    print('Filtering for Manager role')
+                    print('User is Manager. Filtering query by Manager.')
                     company_ids = [base_data.company_id for base_data in query.join('base_data').all()]
                     query = query.filter(StepBaseData.company_id.in_(company_ids))
                 elif current_user.has_role('Employee'):
-                    print('Filtering for Employee role')
+                    print('User is Employee. Filtering query by Employee.')
                     base_data_query = query.join('base_data').filter(BaseData.user_id == current_user.id)
                     company_ids = [base_data.company_id for base_data in base_data_query]
                     query = query.filter(StepBaseData.company_id.in_(company_ids))
-            except Exception as e:
-                print('Error filtering query based on user role:', str(e))
-                raise
+        except Exception as e:
+            print('Error filtering query based on user role:', str(e))
+            raise
 
-        print('doc 4')
         try:
             # Modify the query to join Company and User tables to access their names
             query = query.join(StepBaseData.base_data).join(BaseData.company).join(BaseData.user)
-            print('step 5', query)
         except Exception as e:
             print('Error joining tables:', str(e))
             raise
@@ -949,57 +969,48 @@ class DocumentsBaseDataDetails(ModelView):
         return query
 
     def get_list(self, page, sort_column, sort_desc, search, filters, page_size=None):
-        # Define a custom get_list method to fetch company and user names
-        count, data = super().get_list(page, sort_column, sort_desc, search, filters, page_size)
+        try:
+            count, data = super().get_list(page, sort_column, sort_desc, search, filters, page_size)
+        except Exception as e:
+            print('Error in super().get_list:', str(e))
+            raise
 
         # Fetch company and user names for each record
         for item in data:
-            if item.base_data and item.base_data.company:
-                company_name = item.base_data.company.name
-            else:
-                company_name = "N/A"  # Or any default value
-            if item.base_data and item.base_data.user:
-                user_name = item.base_data.user.last_name  # Use the correct attribute for the user's name
-            else:
-                user_name = "N/A"
-            if item.base_data and item.base_data:
-                created_on = item.base_data.created_on  # Use the correct attribute for the user's name
-            else:
-                created_on = "N/A"
+            print(f'Processing item {item.id} in get_list')
+            try:
+                company_name = item.base_data.company.name if item.base_data and item.base_data.company else "N/A"
+                user_name = item.base_data.user.last_name if item.base_data and item.base_data.user else "N/A"
+                created_on = item.base_data.created_on if item.base_data else "N/A"
+                workflow_id = item.workflow.id if item.workflow else "N/A"
+                step_name = item.step.name if item.step else "N/A"
 
-            if item.base_data and item.workflow:  # Access the ID of the Workflow object
-                workflow_id =  item.workflow.id
-            else:
-                workflow_id = "N/A"
-            if item.base_data and item.step:
-                step_name = item.step.name  # Access the name of the Step object
-            else:
-                step_name = "N/A"
-
-            item.company_name = company_name
-            item.user_name = user_name
-            item.workflow_id = workflow_id
-            item.step_name = step_name
-            item.created_on = created_on
+                item.company_name = company_name
+                item.user_name = user_name
+                item.workflow_id = workflow_id
+                item.step_name = step_name
+                item.created_on = created_on
+            except Exception as e:
+                print('Error processing item in get_list:', str(e))
+                raise
 
         return count, data
 
-
     def is_accessible(self):
         if current_user.is_authenticated:
+            print('User is authenticated in is_accessible.')
             if (current_user.has_role('Admin') or current_user.has_role('Authority')
                     or current_user.has_role('Manager') or current_user.has_role('Employee')):
-                # Allow access for Admin, Manager, and Employee
+                print('User has sufficient role for access.')
                 return True
 
+        print('User does not have sufficient access role.')
         return False
 
     def on_model_change(self, form, model, is_created):
         super().on_model_change(form, model, is_created)
         # Reset form data
         form.populate_obj(model)  # This resets the form data to its default values
-
-        # print('method is', form.get('_method'), form.get('_method') in ['PUT', 'PATCH'])
 
         if is_created:
             # Handle new model creation:
@@ -1037,9 +1048,6 @@ class DocumentsBaseDataDetails(ModelView):
         # Pass the lists of workflows, steps, and selected documents to the template
         return render_template('admin/set_documents_deadline.html',
                                selected_documents=selected_documents)
-
-
-
 # BASE PER LE View 2, 3, 4, 6, 7 e 8 (NO FLUSSI PRE-COMPLAINT!)
 # ==================================
 
@@ -1602,7 +1610,6 @@ class Tabella22_dataView(ModelView):
         # Reset form data
         form.populate_obj(model)  # This resets the form data to its default values
 
-        # print('method is', form.get('_method'), form.get('_method') in ['PUT', 'PATCH'])
         fi0_value = model.fi0
 
         now = datetime.now()
@@ -1868,7 +1875,6 @@ class Tabella24_dataView(ModelView):
         # Reset form data
         form.populate_obj(model)  # This resets the form data to its default values
 
-        # print('method is', form.get('_method'), form.get('_method') in ['PUT', 'PATCH'])
         fi0_value = model.fi0
 
         now = datetime.now()
@@ -2119,21 +2125,15 @@ class Tabella25_dataView(ModelView):
                 model.user_id = current_user.id
                 created_by = current_user.username
 
-                # Debug prints for fi1 and fi2 values
-                print(f'fi1: {model.fi1}, fi2: {model.fi2}')
-                print(f'fi4: {model.fi4}, fi5: {model.fi5}')
-
                 # calculate totals
                 # NUMBERS
                 if form.fi1.data and form.fi2.data and form.fi1.data + form.fi2.data != 0:
                     model.fi7 = form.fi1.data + form.fi2.data
-                    print('set fi7 to', form.fi1.data + form.fi2.data)
                     model.fn1 = 100 * form.fi1.data / (form.fi1.data + form.fi2.data)
                     model.fn2 = 100 * form.fi2.data / (form.fi1.data + form.fi2.data)
                     model.fn3 = 100 * (form.fi1.data / (form.fi1.data + form.fi2.data) + \
                                        form.fi2.data / (form.fi1.data + form.fi2.data))
                 else:
-                    print('set fi7=0')
                     model.fi7 = 0
                     model.fn1 = 0
                     model.fn2 = 0
@@ -2540,7 +2540,6 @@ class Tabella26_dataView(ModelView):
         # Reset form data
         form.populate_obj(model)  # This resets the form data to its default values
 
-        # print('method is', form.get('_method'), form.get('_method') in ['PUT', 'PATCH'])
         fi0_value = model.fi0
 
         now = datetime.now()
@@ -3029,7 +3028,6 @@ class DocumentUploadView(BaseDataViewCommon):
     @expose('/')
     def index(self):
         redirect_url = url_for('redirect_to_survey', questionnaire_id=1)
-        print(f"Generated redirect URL: {redirect_url}")  # Print for debugging
         return redirect(redirect_url)
 
 
@@ -4268,7 +4266,6 @@ def create_admin_views(app, intervals):
             def create_model(self, form):
 
                 try:
-                    print('Starting create_model')
                     model = self.model()
                     form.populate_obj(model)
 
@@ -4308,25 +4305,13 @@ def create_admin_views(app, intervals):
 
                     self.session.add(model)
                     self.session.commit()
-                    print('Model committed, setting inline record types')
-
 
                     # Update record_type for each inline model
                     for inline in model.base_data_inlines:
-                        print(f'Setting record_type for inline {inline.id}')
                         inline.record_type = 'pre-complaint'
                         self.session.add(inline)
 
-                    # Verify the inline updates
-                    '''
-                    for inline in model.base_data_inlines:
-                        updated_inline = self.session.query(BaseDataInline).get(inline.id)
-                        print(f'Updated record_type for inline {updated_inline.id}: {updated_inline.record_type}')
-                        assert updated_inline.record_type == 'pre-complaint'
-                    '''
-
                     self.session.commit()
-                    print('Inlines updated and committed')
 
                     # ... remaining code ...
 
@@ -4424,7 +4409,6 @@ def create_admin_views(app, intervals):
                 model.legal_document_id = legal_document_id
 
                 # Update record_type for each inline model
-                print('INLINE')
                 for inline in model.base_data_inlines:
                     print('set precomplaint for', inline)
                     inline.record_type = 'pre-complaint'
@@ -4702,8 +4686,6 @@ def create_admin_views(app, intervals):
                 if not result:
                     raise ValidationError(message)
 
-                print('fi2, fi3', form.fi2.data, form.fi3.data)
-
                 # Assign form data to model explicitly
                 model.fi0 = form.fi0.data
                 model.interval_ord = form.interval_ord.data
@@ -4713,10 +4695,8 @@ def create_admin_views(app, intervals):
 
                 # Commit the changes to the database
                 if is_created:
-                    print('created', model.fi3)
                     self.session.add(model)
                 else:
-                    print('merged', model.fi3)
                     self.session.merge(model)
                 self.session.commit()
 
@@ -4954,8 +4934,6 @@ def create_admin_views(app, intervals):
         #    AllArticlesAdmin(ContractArticle, db.session, name='All Articles', endpoint="all_articles")
         #)
 
-        print("ContractArticle view added to Flask-Admin with endpoint 'contract_articles'")
-
         # Add views for each model
         admin_app6.add_view(ModelView(ContractParty, db.session, name='Contract Parties'))
         admin_app6.add_view(ModelView(ContractTerm, db.session, name='Contract Terms'))
@@ -4963,7 +4941,6 @@ def create_admin_views(app, intervals):
         admin_app6.add_view(ModelView(ContractStatusHistory, db.session, name='Contract Status History'))
         # Optionally, you can add views for related models (e.g., Company, Party, User)
         admin_app6.add_view(ModelView(Party, db.session, name='Parties'))
-
 
         # 10-th Flask-Admin instance
         # ===========================================================
@@ -5658,7 +5635,6 @@ class AreaModelView(ModelView):
     form_columns = ['name', 'description']
 
     def create_model(self, form):
-        print('Starting create_model method for Area')  # Debugging print
         try:
             # Print the current sequence value
             current_sequence_value = self.session.execute(text("SELECT last_value FROM area_id_seq")).fetchone()

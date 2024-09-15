@@ -577,7 +577,6 @@ def process_menu_items222(menu_items, is_authenticated, user_roles):
         for subkey, submenu in submenus.items():
             # Check if the submenu has a widget and should be displayed as a widget
             if 'widget' in submenu and submenu['widget'].get('display', False):
-                print('Submenu widget to display:', subkey)
                 widgets_to_display.append(submenu)
             else:
                 # If not a widget, consider it a submenu item to display

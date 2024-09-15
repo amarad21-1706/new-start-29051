@@ -1090,7 +1090,6 @@ def get_pd_report_from_base_data(session):
 
     # Apply the same logic as the loop for assigning time qualifier to each record
     df['time_qualifier'] = df.apply(lambda row: get_time_qualifier(row['interval_id'], row['interval_ord'], row['fi0']), axis=1)
-    # Print the updated DataFrame
 
     # (debugging an error): Assuming df is your DataFrame
     #df['time_qualifier'] = df.apply(lambda row: get_time_qualifier(row['interval_id'], row['interval_ord'], row['fi0']),
@@ -1359,7 +1358,6 @@ def get_admin_view_endpoints(admin_instance):
         # Extract the endpoint and the class name of the view
         endpoints[view.endpoint] = view.__class__.__name__
 
-    print(endpoints)
     return endpoints
 
 
@@ -1449,7 +1447,6 @@ def generate_html_cards_progression_with_progress_bars111(sorted_values, current
                 if not isinstance(admin_instance, Admin):
                     continue
                 else:
-                    print(admin_view_name)
                     # Fetch admin view endpoints
                     admin_view_endpoints = get_admin_view_endpoints(admin_instance)
 
