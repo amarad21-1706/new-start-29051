@@ -625,9 +625,6 @@ def process_menu_items(menu_items, is_authenticated, user_roles):
                 # Find the intersection between user_roles and allowed_roles
                 intersection = set(user_roles).intersection(allowed_roles)
 
-                print('Widget to display:', key, is_authenticated, user_roles, allowed_roles, 'Intersection:',
-                      intersection)
-
                 if intersection:
                     widgets_to_display.append(item)
                 else:
@@ -889,7 +886,6 @@ def get_cards001(company_id):
 
     return cards
 
-
 def analyze_text(contract_text, prompt):
     """
     Analyze a given contract text using a custom prompt.
@@ -901,25 +897,35 @@ def analyze_text(contract_text, prompt):
     Returns:
     str: The analysis result from OpenAI's model.
     """
-    # Use OpenAI's GPT model to perform the analysis
     try:
-        response = openai.Completion.create(
-            model="gpt-3.5-turbo",  # Use 'gpt-3.5-turbo' or any other model you have access to
-            prompt=prompt,
+        # Combine contract_text and prompt for analysis
+        full_prompt = f"{prompt}\n\nContract Text:\n{contract_text}"
+
+        logging.debug(f"Sending request to OpenAI API with combined prompt: {full_prompt}")
+
+        # Use the correct API endpoint for gpt-3.5-turbo
+        response = openai.ChatCompletion.create(
+            model="gpt-3.5-turbo",  # Correct model usage
+            messages=[
+                {"role": "system", "content": "You are an assistant for contract analysis."},
+                {"role": "user", "content": full_prompt}
+            ],
             max_tokens=500,
             temperature=0.3
         )
+
+        # Log the full response from OpenAI for debugging
+        logging.debug(f"OpenAI API response: {response}")
 
         # Return the analysis result
         return response.choices[0].message['content'].strip()
 
     except openai.error.OpenAIError as e:
-        print(f"OpenAI API error: {e}")  # Print API-related errors
+        logging.error(f"OpenAI API error: {e}", exc_info=True)
         return f"An error occurred during the analysis: {str(e)}"
     except Exception as e:
-        print(f"General error: {e}")  # Print general errors
+        logging.error(f"General error: {e}", exc_info=True)
         return f"An unexpected error occurred: {str(e)}"
-
 
 @app.route('/analyze_text_view', methods=['GET', 'POST'])
 @login_required
@@ -936,14 +942,17 @@ def analyze_text_view():
 
             # Check if form data exists
             if not contract_text or not prompt_text:
+                print("Error: Missing contract text or prompt")
                 return "Error: Missing contract text or prompt", 400
 
             analysis_result = analyze_text(contract_text, prompt_text)
             return render_template('analysis_result.html', analysis_result=analysis_result)
+
         return render_template('contract_form.html')
     except Exception as e:
         print(f"Error occurred: {e}")  # Print the error for debugging
         return "An error occurred during analysis", 500
+
 
 
 class MoveDocumentForm(FlaskForm):
@@ -3433,7 +3442,7 @@ def get_steps():
 
     return jsonify(steps=step_list)
 
-
+# TODO old? Eliminate? v following get_workflow
 @app.route('/get_workflows', methods=['GET'])
 def get_workflows():
     base_data_id = request.args.get('base_data_id')
@@ -3453,9 +3462,77 @@ def get_workflows():
     return jsonify(workflows=workflow_list)
 
 
+# 16sep2024
 ''' 
 Trilateral entry form route - 3-key entry_trilateral_tiangle_triangolo_SERVER SIDE II
 '''
+
+
+@app.route('/workflow/<int:document_id>', methods=['GET'])
+def get_workflow(document_id):
+    print(f"Checking for workflow association with document ID: {document_id}")
+
+    # Attempt to find workflow association
+    workflow_base_data = WorkflowBaseData.query.filter_by(base_data_id=document_id).first()
+    if not workflow_base_data:
+        print(f"No workflow association found for document ID: {document_id}")
+        return jsonify({"error": "No workflow found for the given document ID."}), 404
+
+    workflow_id = workflow_base_data.workflow_id
+    print(f"Found workflow association: Workflow ID {workflow_id} for Document ID: {document_id}")
+
+    # Step 2: Fetch all steps associated with the workflow_id
+    workflow_steps = WorkflowSteps.query.filter_by(workflow_id=workflow_id).all()
+
+    # Step 3: Convert steps to a list of dictionaries for JSON response
+    steps_data = []
+    for step in workflow_steps:
+        steps_data.append({
+            "step_id": step.step.id,  # Get the actual step ID
+            "step_name": step.step.name  # Get the actual step name (assuming 'name' is a field in Step model)
+        })
+
+    workflow_data = {"steps": steps_data}
+
+    # Return the workflow data as JSON
+    return jsonify(workflow_data)
+
+@app.route('/all_documents', methods=['GET'])
+def show_all_documents():
+    return render_template('documents_workflow_react.html')
+
+
+
+# 16sep2024, using React
+@app.route('/workflow/update_step/<int:document_id>', methods=['POST'])
+def update_workflow_step(document_id):
+   data = request.json
+   step_id = data.get('step_id')
+
+   document = BaseData.query.filter_by(id=document_id, area_id=3).first_or_404()
+
+   # Find the step and update the workflow (based on your business logic)
+   step = StepBaseData.query.filter_by(document_id=document_id, id=step_id).first_or_404()
+
+   # For example, mark the step as 'in_progress' or any other status update logic
+   step.status = 'in_progress'
+
+   db.session.commit()
+
+   # Return the updated workflow data
+   steps = StepBaseData.query.filter_by(document_id=document.id).all()
+   return jsonify({
+       'document_id': document.id,
+       'document_name': document.document_name,
+       'steps': [
+           {
+               'step_id': step.id,
+               'step_name': step.step_name,
+               'status': step.status
+           } for step in steps
+       ]
+   })
+
 
 @app.route('/manage_base_data_workflow_step', methods=['GET', 'POST'])
 @login_required

@@ -685,6 +685,15 @@
                                     "display": false
                                 }
                             },
+                            "All Documents WF": {
+                                "label": "All Documents Test",
+                                "url": "/all_documents",
+                                "protected": true,
+                                "allowed_roles": ["Admin", "Manager", "Employee"],
+                                "widget": {
+                                    "display": false
+                                }
+                            },
                             "Contract-Management": {
                                 "label": "Contract Management",
                                 "url": "/team",

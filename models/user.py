@@ -1146,9 +1146,13 @@ class Step(db.Model):
         self.status_id = to_status
         db.session.commit()
 
-    def __repr__(self):
-        return f"{self.name} ({self.description})"
+    # prior to 16sep2024
+    # def __repr__(self):
+    #    return f"{self.name} ({self.description})"
 
+    # post 16sep2024
+    def __repr__(self):
+        return f"Step {self.id}: {self.name}"
 
 class WorkflowSteps(db.Model):
     __tablename__ = 'workflow_steps'
@@ -1187,7 +1191,6 @@ class WorkflowBaseData(db.Model):
 
     def __repr__(self):
         return f"Docs workflow: doc {self.base_data_id}, wf {self.workflow_id}"
-
 
 
 class Config(db.Model):
