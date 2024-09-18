@@ -3571,7 +3571,54 @@ def get_steps():
     return jsonify(steps=step_list)
 
 
+# Gantt - oriented
+@app.route('/api/workflows/<int:workflow_id>', methods=['GET'])
+@login_required
+def get_workflow(workflow_id):
+    workflow = Workflow.query.get(workflow_id)
+    if not workflow:
+        return jsonify({'message': 'Workflow not found'}), 404
+
+    tasks = []
+    for step in workflow.steps:
+        task = {
+            'id': step.id,
+            'name': step.name,
+            'start_date': step.start_date.isoformat(),
+            'end_date': step.end_date.isoformat(),
+            'status': step.status,
+            'assignee': step.assignee.name if step.assignee else None
+        }
+        tasks.append(task)
+
+    workflow_data = {
+        'id': workflow.id,
+        'name': workflow.name,
+        'tasks': tasks
+    }
+
+    return jsonify(workflow_data)
+
+# Gantt oriented (optional, exampple)
+
+@app.route('/api/tasks/<int:task_id>', methods=['PUT'])
+@login_required
+def update_task(task_id):
+    task = Task.query.get(task_id)
+    if not task:
+        return jsonify({'message': 'Task not found'}), 404
+
+    data = request.get_json()
+    task.status = data['status']
+    task.assignee_id = data.get('assignee_id', task.assignee_id)
+
+    db.session.commit()
+    return jsonify({'message': 'Task updated successfully'})
+
+
+
 @app.route('/get_workflows', methods=['GET'])
+@login_required
 def get_workflows():
     base_data_id = request.args.get('base_data_id')
 

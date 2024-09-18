@@ -1,12 +1,22 @@
 import React from 'react';
-import WorkflowView from './WorkflowView';  // Import the WorkflowView component
+import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import WorkflowView from './WorkflowView';
+import WorkflowGanttChart from './WorkflowGanttChart';
+import Menu from './Menu';
+import { ErrorBoundary } from 'react-error-boundary';  // Correct package
 
-function App() {
-  return (
-    <div className="App">
-      <WorkflowView />  {/* Use the WorkflowView component */}
-    </div>
-  );
-}
+const App = () => (
+  <ErrorBoundary fallback={<h1>Something went wrong.</h1>}>
+    <Router>
+      <div className="App">
+        <Menu />
+        <Routes>
+          <Route path="/" element={<WorkflowView />} />
+          <Route path="/react-page" element={<WorkflowGanttChart workflowId={1} />} />
+        </Routes>
+      </div>
+    </Router>
+  </ErrorBoundary>
+);
 
 export default App;
