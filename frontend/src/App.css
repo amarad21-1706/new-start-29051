@@ -58,3 +58,64 @@ li {
   border-radius: 5px;
   border: 1px solid #ddd;
 }
+
+body {
+    background-color: #121212; /* Dark background */
+    color: #cccbb6; /* Light font color */
+    font-size: 0.875em; /* Smaller font size for the entire body (adjust as needed) */
+}
+.navbar, .navbar-light .navbar-nav .nav-link {
+    background-color: #333333; /* Darker navbar background */
+    color: #ccddee; /* Light font color for navbar */
+    font-size: 0.875em; /* Smaller font size for navbar */
+}
+.navbar-light .navbar-nav .nav-link:hover, .navbar-light .navbar-nav .nav-link:focus {
+    background-color: #444444; /* Slightly lighter background on hover */
+    color: #bbccdd; /* Ensure the font color remains light on hover */
+}
+.container {
+    background-color: #1f1f1f; /* Slightly lighter container background */
+    border-radius: 5px;
+    padding: 20px;
+    font-size: 0.875em; /* Smaller font size for container */
+}
+footer {
+    color: #bbbbcc; /* Light grey footer text */
+    font-size: 0.75em; /* Smaller font size for footer */
+}
+.flashes li {
+    list-style: none;
+    margin-bottom: 10px;
+    font-size: 0.875em; /* Smaller font size for flash messages */
+}
+.flashes li.success {
+    color: #2185e2;
+}
+.flashes li.error {
+    color: #f44336;
+}
+.flashes li.info {
+    color: #2196f3;
+}
+.flashes li.warning {
+    color: #ff9800;
+}
+.btn-link {
+    color: #dddddd;
+    text-decoration: none;
+    font-size: 0.875em; /* Smaller font size for button links */
+}
+.btn-link:hover, .btn-link:focus {
+    color: #aaddff;
+    text-decoration: underline;
+}
+input[type="text"], input[type="date"], input[type="email"], input[type="number"], input[type="password"], input[type="search"], input[type="tel"], input[type="url"], textarea, select {
+    background-color: #333333; /* Dark background for input fields */
+    color: #cccbb6; /* Light font color for input fields */
+    border: 1px solid #555555; /* Border color for input fields */
+    font-size: 0.875em; /* Smaller font size for input fields */
+}
+input[type="text"]::placeholder, input[type="date"]::placeholder, input[type="email"]::placeholder, input[type="number"]::placeholder, input[type="password"]::placeholder, input[type="search"]::placeholder, input[type="tel"]::placeholder, input[type="url"]::placeholder, textarea::placeholder {
+    color: #888888; /* Placeholder text color */
+    font-size: 0.875em; /* Smaller font size for placeholders */
+}

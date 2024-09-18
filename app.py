@@ -516,12 +516,16 @@ def get_documents_query(session, current_user):
     # For other roles or anonymous users, return an empty query
     return query.filter(BaseData.id < 0)
 
-# in ... frontend:
-#  npm run build
+# How to rerun the React manager:
+# in ... frontend: (
+# 1) cd frontend
+# )
+#  2) npm run build
 
 # and then
-# cp -r build/* /Users/aradulescu/PycharmProjects/ILM501/new-repository-28051/static/react-page/
+# 3) cp -r build/* /Users/aradulescu/PycharmProjects/ILM501/new-repository-28051/static/react-page/
 
+# 4) cd ..
 
 # http://127.0.0.1:5000/api/workflow-data?area_id=3&subarea_id=1&fi0=2024
 
@@ -549,6 +553,31 @@ def serialize_base_data(item):
         "step": item.step()  # Call the step function if it returns serializable data
         # Add more fields as needed
     }
+
+
+@app.route('/api/area-subarea', methods=['GET'])
+@login_required
+def get_area_subarea():
+    try:
+        # Query the AreaSubareas table and join with Area and Subarea to get the names
+        area_subareas = db.session.query(
+            AreaSubareas.area_id, AreaSubareas.subarea_id,
+            Area.name.label('area_name'),
+            Subarea.name.label('subarea_name')
+        ).join(Area, AreaSubareas.area_id == Area.id) \
+         .join(Subarea, AreaSubareas.subarea_id == Subarea.id).all()
+
+        # Serialize the data for the response
+        areas_data = {area.area_id: area.area_name for area in area_subareas}
+        subareas_data = [{"id": subarea.subarea_id, "name": subarea.subarea_name, "area_id": subarea.area_id} for subarea in area_subareas]
+
+        # Return the data as JSON
+        return jsonify({"areas": list(areas_data.items()), "subareas": subareas_data})
+
+    except Exception as e:
+        print(f"Error fetching area and subarea data: {e}")  # Log the error
+        return jsonify({"error": "Server error occurred"}), 500
+
 
 
 @app.route('/api/workflow-data', methods=['GET'])
