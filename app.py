@@ -20,7 +20,7 @@ from sqlalchemy.exc import OperationalError
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.exceptions import HTTPException
 from db import db
-from flask import Flask, render_template, redirect, url_for, request, g, make_response, flash, Markup
+from flask import Flask, render_template, redirect, url_for, request, g, make_response, flash, Markup, send_from_directory
 import datetime
 from dateutil import rrule
 from flask_wtf import FlaskForm
@@ -280,6 +280,27 @@ def set_language(language=None):
     return redirect(request.referrer or '/')
 '''
 
+
+# Serve the React app
+
+# Serve the React app on a specific route
+@app.route('/react-page', defaults={'path': ''})
+@app.route('/react-page/<path:path>')
+def serve_react(path):
+    try:
+        if path == "" or path == "index.html":
+            # Serve the React app's index.html file
+            return send_from_directory(app.static_folder + '/react-page', 'index.html')
+        else:
+            # Serve other static files in the React build folder
+            return send_from_directory(app.static_folder + '/react-page', path)
+    except Exception as e:
+        # Print the error to the console and return a JSON response with the error message
+        print(f"Error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+
 @app.route('/test_relationship')
 def test_relationship():
     try:
@@ -494,6 +515,93 @@ def get_documents_query(session, current_user):
 
     # For other roles or anonymous users, return an empty query
     return query.filter(BaseData.id < 0)
+
+# in ... frontend:
+#  npm run build
+
+# and then
+# cp -r build/* /Users/aradulescu/PycharmProjects/ILM501/new-repository-28051/static/react-page/
+
+
+# http://127.0.0.1:5000/api/workflow-data?area_id=3&subarea_id=1&fi0=2024
+
+# from serializers import serialize_step, serialize_workflow
+
+def serialize_base_data(item):
+    return {
+        "id": item.id,
+        "user_id": item.user_id,
+        "company_id": item.company_id,
+        "interval_id": item.interval_id,
+        "status_id": item.status_id,
+        "record_type": item.record_type,
+        "data_type": item.data_type,
+        "created_on": item.created_on.strftime("%Y-%m-%d") if item.created_on else None,
+        "updated_on": item.updated_on.strftime("%Y-%m-%d") if item.updated_on else None,
+        "deadline": item.deadline.strftime("%Y-%m-%d") if item.deadline else None,
+        "area_id": item.area_id,
+        "subarea_id": item.subarea_id,
+        "fi0": item.fi0,
+        "fn0": float(item.fn0) if item.fn0 else None,  # Convert Decimal fields to float
+        "file_path": item.file_path,
+        "no_action": item.no_action,
+        "workflow": item.workflow(),  # Call the workflow function if it returns serializable data
+        "step": item.step()  # Call the step function if it returns serializable data
+        # Add more fields as needed
+    }
+
+
+@app.route('/api/workflow-data', methods=['GET'])
+@login_required
+def get_workflow_data():
+    # Get user role, user ID, and company ID from session
+    user_role = session.get('user_roles', [role.name for role in current_user.roles] if current_user.roles else [])
+    user_id = session.get('user_id', current_user.id)
+    company_id = session.get('company_id')
+
+    # Debug print to check session data
+    print('session data', user_role, user_id, company_id)
+
+    # Get request parameters
+    area_id = request.args.get('area_id', default=3, type=int)
+    subarea_id = request.args.get('subarea_id', type=int)
+    fi0 = request.args.get('fi0', type=int)
+
+    # Debug print to verify input parameters
+    print(f"area, subarea, fi0 {area_id} {subarea_id} {fi0}")
+
+    # Build query
+    query = BaseData.query.filter_by(area_id=area_id, subarea_id=subarea_id, fi0=fi0)
+
+    # Role-based access control
+    if 'Admin' in user_role:
+        print("User is Admin")
+        data = query.all()
+        print(f"Data retrieved: {data}")
+    elif 'Manager' in user_role:
+        print("User is Manager")
+        data = query.filter_by(company_id=company_id).all()
+    elif 'Employee' in user_role:
+        print("User is Employee")
+        data = query.filter_by(user_id=user_id).all()
+    else:
+        flash('Access denied: You do not have permission to view this data.', 'error')
+        return jsonify({"error": "Access denied"}), 403
+
+    if not data:
+        return jsonify({"error": "No data found"}), 404
+
+    # Manually serialize the data
+    serialized_data = [serialize_base_data(item) for item in data]
+    print(f"Serialized data for response: {serialized_data}")
+
+    # Wrap jsonify in a try-except block to catch potential serialization issues
+    try:
+        return jsonify(serialized_data)
+    except Exception as e:
+        print(f"Error serializing data: {e}")
+        return jsonify({"error": "Serialization error", "details": str(e)}), 500
+
 
 
 def create_company_folder222(company_id, subfolder):

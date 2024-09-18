@@ -1,7 +1,7 @@
 # app_factory.py
 
 import os
-from flask import Flask, request, session, flash, redirect, url_for
+from flask import Flask, request, session, flash, redirect, url_for, send_from_directory
 from flask_login import LoginManager
 from flask_wtf.csrf import CSRFProtect
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -70,7 +70,10 @@ def create_app(conf=None):
     if conf is None:
         conf = Config()
 
-    app = Flask(__name__)
+    # app = Flask(__name__)
+    # app = Flask(__name__, static_folder='static')
+    app = Flask(__name__, static_folder="static", static_url_path="/")
+
     app.config.from_object(conf)
 
     lun_sk = len(conf.SECRET_KEY)

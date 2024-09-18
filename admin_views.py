@@ -862,37 +862,34 @@ class DocumentsNewBaseDataView(ModelView):
 
 # for document workflow management (forward, backward, deadlines etc) - for already distributed documents
     # for document workflow management (forward, backward, deadlines etc) - for already distributed documents
-from wtforms import BooleanField
+
+from wtforms import SelectField, HiddenField
+from flask import session
+from flask_login import current_user
+from datetime import datetime, timedelta
 
 class DocumentsBaseDataDetails(ModelView):
-    can_create = True  # Optionally disable creation
-    can_edit = True  # Optionally disable editing
-    can_delete = True  # Optionally disable deletion
-
+    can_create = True
+    can_edit = True
+    can_delete = False
     can_view_details = True
 
     name = 'Manage Document Flow'
-    menu_icon_type = 'glyph'  # You can also use 'fa' for Font Awesome icons
-    menu_icon_value = 'glyphicon-list-alt'  # Icon class for the menu item
+    menu_icon_type = 'glyph'
+    menu_icon_value = 'glyphicon-list-alt'
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.class_name = self.__class__.__name__  # Store the class name
+        self.class_name = self.__class__.__name__
 
+    # Add 'base_data_id' to the column list but keep it hidden in the form
     column_list = [
-        'id', 'base_data.file_path', 'base_data.created_on', 'company_name', 'user_name',
+        'base_data_id',  # Hidden document ID
+        'base_data.file_path', 'base_data.created_on', 'company_name', 'user_name',
         'workflow.name', 'step.name', 'status_id', 'auto_move',
         'start_date', 'deadline_date', 'end_date', 'start_recall', 'deadline_recall',
-        'end_recall', 'recall_unit', 'hidden_data', 'open_action'  # Include 'open_action' in the column list
+        'end_recall', 'recall_unit', 'hidden_data', 'open_action'
     ]
-
-    # Formatter to display 'Yes' or 'No' instead of 0 or 1 for 'auto_move'
-    column_formatters = {
-        'auto_move': lambda view, context, model, name: 'Yes' if model.auto_move else 'No',
-        'recall_unit': lambda view, context, model, name: {
-            0: 'none', 1: 'day', 2: 'week', 3: 'month'
-        }.get(model.recall_unit, 'Unknown')  # Use .get() to handle unexpected values
-    }
 
     # Dropdown choices for the create/edit form
     form_choices = {
@@ -905,31 +902,85 @@ class DocumentsBaseDataDetails(ModelView):
             (1, 'day'),
             (2, 'week'),
             (3, 'month')
-        ]
+        ],
+        'open_action': [
+            (True, 'Yes'),
+            (False, 'No')
+        ],
     }
 
     column_labels = {
-        'id': 'ID',
-        'base_data.file_path': 'Document Name', 'base_data.created_on': 'Created',
-        'company_name': 'Company', 'user_name': 'User',
-        'workflow_id': 'Workflow', 'step_id': 'Phase',
-        'status_id': 'Status', 'auto_move': 'Auto transition',
-        'start_date': 'Start', 'deadline_date': 'Deadline', 'end_date': 'End',
-        'start_recall': 'Start Recall', 'deadline_recall': 'Deadline Recall',
-        'end_recall': 'End Recall', 'recall_unit': 'Recall Unit', 'hidden_data': 'Miscellanea',
-        'open_action': 'Open Action'  # Label for the checkbox
+        'base_data_id': 'Document ID',  # Label for base_data_id
+        'base_data.file_path': 'Document Name',
+        'base_data.created_on': 'Created',
+        'company_name': 'Company',
+        'user_name': 'User',
+        'workflow.name': 'Workflow',
+        'step.name': 'Phase',
+        'status_id': 'Status',
+        'auto_move': 'Auto transition',
+        'start_date': 'Start',
+        'deadline_date': 'Deadline',
+        'end_date': 'End',
+        'start_recall': 'Start Recall',
+        'deadline_recall': 'Deadline Recall',
+        'end_recall': 'End Recall',
+        'recall_unit': 'Recall Unit',
+        'hidden_data': 'Miscellanea',
+        'open_action': 'Open Action'
     }
 
-    # Customize inlist for the View class
-    column_default_sort = ('base_data.created_on', True)
-    column_searchable_list = ('base_data.file_path', 'workflow_id', 'step_id', 'start_date', 'deadline_date')
-    column_filters = ('base_data.file_path', 'workflow_id', 'step_id', 'start_date', 'deadline_date')
-
-    # Define 'open_action' as a checkbox in the form
+    # Define 'base_data_id' as a hidden field and a visible dropdown for document selection
     form_extra_fields = {
+        'base_data_id': HiddenField('Document ID'),  # Hidden field to hold the document ID
+        'document_selection': SelectField('Document', coerce=int),  # Visible dropdown
         'open_action': BooleanField('Open Action')
     }
-    form_excluded_columns = ('base_data.id')
+
+    def on_form_prefill(self, form, id):
+        form.document_selection.choices = self.get_base_data_choices()
+        form.base_data_id.data = form.document_selection.data  # Populate the hidden field with the selected value
+
+    def create_form(self, obj=None):
+        form = super().create_form(obj)
+        form.document_selection.choices = self.get_base_data_choices()
+        form.base_data_id.data = form.document_selection.data  # Set base_data_id from dropdown
+        return form
+
+    def edit_form(self, obj=None):
+        form = super().edit_form(obj)
+        form.document_selection.choices = self.get_base_data_choices()
+        form.base_data_id.data = form.document_selection.data  # Set base_data_id from dropdown
+        return form
+
+    def get_base_data_choices(self):
+        """
+        Get the choices for the document_selection dropdown based on user roles and creation date.
+        Only show documents created within the last year.
+        """
+        one_year_ago = datetime.utcnow() - timedelta(days=365)
+        query = BaseData.query.filter(BaseData.created_on >= one_year_ago)
+
+        # Role-based filtering
+        if current_user.has_role('Admin'):
+            pass  # Admin sees all documents
+        elif current_user.has_role('Manager'):
+            company_id = session.get('company_id')
+            query = query.filter(BaseData.company_id == company_id)
+        elif current_user.has_role('Employee'):
+            user_id = session.get('user_id', current_user.id)
+            query = query.filter(BaseData.user_id == user_id)
+
+        # Create a list of tuples with (id, concatenated 'number_of_doc' and 'date_of_doc')
+        choices = [
+            (
+                base_data.id,
+                f"{base_data.number_of_doc} - {base_data.date_of_doc.strftime('%Y-%m-%d') if base_data.date_of_doc else 'No Date'}"
+            )
+            for base_data in query.all()
+        ]
+        return choices
+    # Other methods (get_query, get_list, is_accessible, etc.) remain unchanged.
 
     def get_query(self):
         try:
@@ -1014,25 +1065,26 @@ class DocumentsBaseDataDetails(ModelView):
         return False
 
     def on_model_change(self, form, model, is_created):
+        # Populate model fields with form data
+        form.populate_obj(model)
+
+        # Explicitly assign the selected document ID from the dropdown to the base_data_id field
+        model.base_data_id = form.document_selection.data
+
+        # Call the parent method for additional processing (if any)
         super().on_model_change(form, model, is_created)
-        # Reset form data
-        form.populate_obj(model)  # This resets the form data to its default values
 
         if is_created:
-            # Handle new model creation:
-            # - Set default values
-            # - Send notification
-            # Apply your custom logic to set data_type
-            model.created_on = datetime.now()  # Set the created_on
-            pass
+            # Handle logic for new model creation
+            # Set default values or perform actions upon record creation
+            model.created_on = datetime.now()  # Set created_on date
+            pass  # You can implement further custom logic here
         else:
-            # Handle existing model edit:
-            # - Compare previous and updated values
-            # - Trigger specific actions based on changes
-            pass
+            # Handle logic for editing an existing model
+            # Compare previous and updated values, trigger actions based on changes
+            pass  # You can implement further custom logic here
 
         return model
-
 
     # Common action to Flask Admin 'Documents' (attach/detach documents to/from W-S)
     @action('action_manage_dws_deadline', 'Deadline Setting',
@@ -4985,16 +5037,16 @@ def create_admin_views(app, intervals):
                            endpoint='open_admin_3',
                            )
 
-
-        admin_app3.add_view(ModelView(name='Workflows Dictionary', model=Workflow, session=db.session))
-        admin_app3.add_view(ModelView(name='Steps Dictionary', model=Step, session=db.session))
+        admin_app3.add_view(DocumentsBaseDataDetails(name='Documents Workflow Management', model=StepBaseData, session=db.session,
+                                                     endpoint='step_base_data'
+                                                     ))
         admin_app3.add_view(DocumentsAssignedBaseDataView(name='Documents Assigned to Workflows', model=BaseData, session=db.session,
                                                   endpoint='assigned_documents'))
         admin_app3.add_view(DocumentsNewBaseDataView(name='New Unassigned Documents', model=BaseData, session=db.session,
                                                             endpoint='new_documents'))
-        admin_app3.add_view(DocumentsBaseDataDetails(name='Documents Workflow Management', model=StepBaseData, session=db.session,
-                                                     endpoint='step_base_data'
-                                                     ))
+        admin_app3.add_view(ModelView(name='Workflows Dictionary', model=Workflow, session=db.session))
+        admin_app3.add_view(ModelView(name='Steps Dictionary', model=Step, session=db.session))
+
 
         # Fourth Flask-Admin instance
         # ===========================================================

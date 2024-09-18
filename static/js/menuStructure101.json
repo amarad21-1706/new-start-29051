@@ -685,6 +685,15 @@
                                     "display": false
                                 }
                             },
+                            "Workflow Data": {
+                                "label": "Workflow Data",
+                                "url": "/react-page",
+                                "protected": true,
+                                "allowed_roles": ["Admin", "Manager", "Employee"],
+                                "widget": {
+                                    "display": false
+                                }
+                            },
                             "Contract-Management": {
                                 "label": "Contract Management",
                                 "url": "/team",

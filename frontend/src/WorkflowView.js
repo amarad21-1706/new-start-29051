@@ -54,10 +54,9 @@ function WorkflowView() {
           <label>
             Area ID:
             <select value={areaId} onChange={(e) => setAreaId(e.target.value)}>
+              <option value="1">Area 1</option>
+              <option value="2">Area 2</option>
               <option value="3">Area 3</option>
-              <option value="4">Area 4</option>
-              <option value="5">Area 5</option>
-              <option value="6">Area 6</option>
             </select>
           </label>
         </div>
@@ -69,19 +68,31 @@ function WorkflowView() {
               <option value="2">Subarea 2</option>
               <option value="3">Subarea 3</option>
               <option value="4">Subarea 4</option>
+              <option value="5">Subarea 5</option>
+              <option value="6">Subarea 6</option>
+              <option value="7">Subarea 7</option>
+              <option value="8">Subarea 8</option>
+              <option value="9">Subarea 9</option>
+              <option value="10">Subarea 10</option>
+              <option value="11">Subarea 11</option>
+              <option value="12">Subarea 12</option>
+              <option value="13">Subarea 13</option>
+              <option value="14">Subarea 14</option>
+              <option value="15">Subarea 15</option>
             </select>
           </label>
         </div>
         <div>
-          <label>
+        <label>
             FI0:
-            <select value={fi0} onChange={(e) => setFi0(e.target.value)}>
-              <option value="2024">2024</option>
-              <option value="2023">2023</option>
-              <option value="2022">2022</option>
-              <option value="2021">2021</option>
-            </select>
-          </label>
+          <select value={fi0} onChange={(e) => setFi0(e.target.value)}>
+            <option value="2024">2024</option>
+            <option value="2023">2023</option>
+            <option value="2022">2022</option>
+            <option value="2021">2021</option>
+            <option value="2020">2020</option>
+          </select>
+        </label>
         </div>
         <button type="submit">Fetch Workflow</button>
       </form>

@@ -38,6 +38,8 @@ from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, func
 from sqlalchemy.orm import relationship
 from db import db  # Your SQLAlchemy instance
 
+from serializers import serialize_step, serialize_workflow
+
 # Add an event listener to set 'article_id' before inserting
 
 class CheckboxField(BooleanField):
@@ -705,6 +707,29 @@ class BaseData(db.Model):
     def __repr__(self):
         return f'<Data ID: {self.id}>'
 
+    def workflow(self):
+        workflows = []
+        try:
+            for step_relationship in self.steps_relationship:
+                if step_relationship and step_relationship.workflow:
+                    print(f"Serializing workflow for: {step_relationship.workflow}")  # Debugging print
+                    workflows.append(serialize_workflow(step_relationship.workflow))
+        except Exception as e:
+            print(f"Error serializing workflow: {e}")
+        return workflows
+
+    def step(self):
+        steps = []
+        try:
+            for step_relationship in self.steps_relationship:
+                if step_relationship and step_relationship.step:
+                    print(f"Serializing step for: {step_relationship.step}")  # Debugging print
+                    steps.append(serialize_step(step_relationship.step))
+        except Exception as e:
+            print(f"Error serializing step: {e}")
+        return steps
+
+
     @classmethod
     def get_documents(cls):
         """
@@ -794,55 +819,6 @@ class BaseData(db.Model):
 
             # Add more fields as needed for the API view
         }
-
-    def workflow(self):
-        workflows = []  # List to store workflow attributes of each element
-        for step_relationship in self.steps_relationship:
-            if step_relationship:  # Ensure the step_rel object exists
-                workflow = step_relationship.workflow
-                workflows.append(workflow)  # Append the workflow attribute to the list
-        return workflows
-
-
-    '''
-
-    @property
-    def workflow(self):
-        if self.steps_relationship:
-            print('self_rel workflow', self.steps_relationship)
-            return self.steps_relationship.workflow
-        else:
-            return None  # Handle cases where there's no related step_base_data
-
-    @property
-    def workflow(self):
-        workflows = [step.workflow for step in self.steps_relationship if step.workflow]
-        return workflows[0] if workflows else None
-    '''
-
-    def step(self):
-        steps = []  # List to store 'step' attributes of each element
-        for step_relationship in self.steps_relationship:
-            if step_relationship:  # Ensure the step_rel object exists
-                step = step_relationship.step
-                steps.append(step)  # Append the 'step' attribute to the list
-        return steps
-
-    '''
-    @property
-    def step(self):
-        if self.steps_relationship:
-            return self.steps_relationship.step
-        else:
-            return None  # Handle cases where there's no related step_base_data
-
-
-
-    @property
-    def step(self):
-        steps = [step.step for step in self.steps_relationship if step.step]
-        return steps[0] if steps else None
-    '''
 
     from sqlalchemy.orm import aliased
     @classmethod
@@ -967,7 +943,7 @@ class StepBaseData(db.Model):
     end_recall = db.Column(db.Integer, default=0)
     recall_unit = db.Column(db.String(24), default='day')
 
-    open_action = db.Column(db.Integer, default=1)
+    open_action = db.Column(Boolean, default=False)
 
     # Define relationship with BaseData
     base_data = relationship("BaseData", back_populates="steps_relationship")
