@@ -1,21 +1,21 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 import WorkflowView from './WorkflowView';
-import WorkflowGanttChart from './WorkflowGanttChart';
-import Menu from './Menu';
-import { ErrorBoundary } from 'react-error-boundary';  // Correct package
+import { ErrorBoundary } from 'react-error-boundary';  // Error boundary for safe error handling
+
+// Error fallback component to display more useful information
+const ErrorFallback = ({ error, resetErrorBoundary }) => (
+  <div role="alert">
+    <h2>Something went wrong:</h2>
+    <pre>{error.message}</pre>
+    <button onClick={resetErrorBoundary}>Try again</button>
+  </div>
+);
 
 const App = () => (
-  <ErrorBoundary fallback={<h1>Something went wrong.</h1>}>
-    <Router>
-      <div className="App">
-        <Menu />
-        <Routes>
-          <Route path="/" element={<WorkflowView />} />
-          <Route path="/react-page" element={<WorkflowGanttChart workflowId={1} />} />
-        </Routes>
-      </div>
-    </Router>
+  <ErrorBoundary FallbackComponent={ErrorFallback}>
+    <div className="App">
+      <WorkflowView />
+    </div>
   </ErrorBoundary>
 );
 

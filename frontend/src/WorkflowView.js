@@ -1,140 +1,181 @@
 import React, { useState, useEffect } from 'react';
-import './styles.css';  // Importing the shared styles
+import './WorkflowView.css'; // Import custom CSS for styling
 
 function WorkflowView() {
-  // State to hold the workflow data, area, and subarea data
+  // State for workflow data and filter inputs
   const [workflowData, setWorkflowData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+
+  // State for dynamic filter values (area, subarea, fi0)
   const [areas, setAreas] = useState([]);
   const [subareas, setSubareas] = useState([]);
-  const [selectedArea, setSelectedArea] = useState("");
-  const [selectedSubarea, setSelectedSubarea] = useState("");
+  const [selectedArea, setSelectedArea] = useState('');
+  const [filteredSubareas, setFilteredSubareas] = useState([]);  // Stores the filtered subareas based on selected area
+  const [selectedSubarea, setSelectedSubarea] = useState('');
+  const [fi0, setFi0] = useState(2024);
 
-  const [fi0, setFi0] = useState(2024);  // Default FI0
+  // Fetch the list of areas and subareas from the server
+  useEffect(() => {
+    fetch('/api/area-subarea')
+      .then(response => {
+        if (!response.ok) {
+          throw new Error('Failed to fetch area and subarea data');
+        }
+        return response.json();
+      })
+      .then(data => {
+        const areasList = data.areas.map(([id, name]) => ({ id, name }));
+        setAreas(areasList);
+        setSubareas(data.subareas); // Load subareas once the API responds
+      })
+      .catch(error => setError(error));
+  }, []);
 
-  // Fetch area and subarea data from the API
-  const fetchAreaSubareaData = async () => {
-    try {
-      const response = await fetch("/api/area-subarea");
-      const data = await response.json();
-      setAreas(data.areas);
-      setSubareas(data.subareas);
-    } catch (error) {
-      console.error("Error fetching area and subarea data:", error);
+  // Update filtered subareas when an area is selected
+  useEffect(() => {
+    if (selectedArea) {
+      const areaSubareas = subareas.filter(subarea => subarea.area_id === parseInt(selectedArea));
+      setFilteredSubareas(areaSubareas);
+    } else {
+      setFilteredSubareas([]); // Reset if no area is selected
     }
-  };
+  }, [selectedArea, subareas]);
 
-  // Fetch workflow data from the API
-  const fetchWorkflowData = async () => {
+  // Clear workflow data when any filter changes
+  useEffect(() => {
+    setWorkflowData([]); // Clear the current workflow list
+  }, [selectedArea, selectedSubarea, fi0]);
+
+  // Function to fetch the workflow data based on selected filters
+  const fetchData = () => {
     setLoading(true);
     setError(null);
-    setWorkflowData([]);
 
-    try {
-      const response = await fetch(`/api/workflow-data?area_id=${selectedArea}&subarea_id=${selectedSubarea}&fi0=${fi0}`);
-      if (!response.ok) {
-        throw new Error('No response from network');
-      }
-      const data = await response.json();
-      setWorkflowData(data);
-    } catch (error) {
-      setError(error);
-    } finally {
-      setLoading(false);
-    }
+    fetch(`/api/workflow-data?area_id=${selectedArea}&subarea_id=${selectedSubarea}&fi0=${fi0}`)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('Failed to fetch workflow data');
+        }
+        return response.json();
+      })
+      .then((data) => {
+        setWorkflowData(data);
+        setLoading(false);
+      })
+      .catch((error) => {
+        setError(error);
+        setLoading(false);
+      });
   };
-
-  // Fetch area and subarea data when the component mounts
-  useEffect(() => {
-    fetchAreaSubareaData();
-  }, []);
 
   // Handle form submission
   const handleSubmit = (e) => {
-    e.preventDefault();
-    fetchWorkflowData();
+    e.preventDefault(); // Prevent page reload
+    fetchData(); // Fetch data with the new filters
   };
 
-  // Filter subareas based on selected area
-  const filteredSubareas = subareas.filter(subarea => subarea.area_id === parseInt(selectedArea));
-
   return (
-    <div>
-      <h1>Workflow Data</h1>
+    <div className="container">
+      <h1 className="title">Workflow Data</h1>
 
-      <form onSubmit={handleSubmit}>
-        <div>
-          <label>
-            Area:
-            <select value={selectedArea} onChange={(e) => setSelectedArea(e.target.value)}>
-              <option value="">Select Area</option>
-              {areas.map(([id, name]) => (
-                <option key={id} value={id}>{name}</option>
-              ))}
-            </select>
-          </label>
+      {/* Filter form */}
+      <form onSubmit={handleSubmit} className="form-container">
+        <div className="form-group">
+          <label htmlFor="area-select">Area:</label>
+          <select
+            id="area-select"
+            value={selectedArea}
+            onChange={(e) => setSelectedArea(e.target.value)}
+            className="form-control"
+            required
+          >
+            <option value="">Select an Area</option>
+            {areas.map((area) => (
+              <option key={area.id} value={area.id}>
+                {area.name}
+              </option>
+            ))}
+          </select>
         </div>
 
-        <div>
-          <label>
-            Subarea:
-            <select value={selectedSubarea} onChange={(e) => setSelectedSubarea(e.target.value)} disabled={!selectedArea}>
-              <option value="">Select Subarea</option>
-              {filteredSubareas.map(subarea => (
-                <option key={subarea.id} value={subarea.id}>{subarea.name}</option>
-              ))}
-            </select>
-          </label>
+        <div className="form-group">
+          <label htmlFor="subarea-select">Subarea:</label>
+          <select
+            id="subarea-select"
+            value={selectedSubarea}
+            onChange={(e) => setSelectedSubarea(e.target.value)}
+            className="form-control"
+            required
+          >
+            <option value="">Select a Subarea</option>
+            {filteredSubareas.map((subarea) => (
+              <option key={subarea.id} value={subarea.id}>
+                {subarea.name}
+              </option>
+            ))}
+          </select>
         </div>
 
-        <div>
-          <label>
-            Year:
-            <select value={fi0} onChange={(e) => setFi0(e.target.value)}>
-              <option value="2024">2024</option>
-              <option value="2023">2023</option>
-              <option value="2022">2022</option>
-              <option value="2021">2021</option>
-              <option value="2020">2020</option>
-            </select>
-          </label>
+        <div className="form-group">
+          <label htmlFor="year-select">Year (FI0):</label>
+          <select
+            id="year-select"
+            value={fi0}
+            onChange={(e) => setFi0(e.target.value)}
+            className="form-control"
+            required
+          >
+            <option value="2024">2024</option>
+            <option value="2023">2023</option>
+            <option value="2022">2022</option>
+            <option value="2021">2021</option>
+            <option value="2020">2020</option>
+          </select>
         </div>
 
-        <button type="submit" disabled={!selectedArea || !selectedSubarea}>Fetch Workflow</button>
+        <button type="submit" className="btn btn-primary">Fetch Workflow</button>
       </form>
 
+      {/* Loading spinner */}
       {loading && <div>Loading...</div>}
-      {error && <div>Error: {error.message}</div>}
 
-      <ul>
-        {workflowData.map((item) => (
-          <li key={item.id}>
-            <h2>Document ID: {item.id}</h2>
-            <p>Status: {item.record_type || 'No Data'}</p>
-            <p>Created On: {item.created_on || 'No Data'}</p>
-            <h3>Workflow:</h3>
-            <ul>
-              {item.workflow.length > 0 ? (
-                item.workflow.map((workflow) => (
-                  <li key={workflow.workflow_id}>{workflow.workflow_name}</li>
-                ))
-              ) : (
-                <li>No workflow</li>
-              )}
-            </ul>
-            <h3>Step:</h3>
-            <ul>
-              {item.step.length > 0 ? (
-                item.step.map((step) => (
-                  <li key={step.step_id}>{step.step_name}</li>
-                ))
-              ) : (
-                <li>No steps</li>
-              )}
-            </ul>
-          </li>
-        ))}
+      {/* Error handling */}
+      {error && <div className="error">Error: {error.message}</div>}
+
+      {/* Display workflow data */}
+      <ul className="workflow-list">
+        {workflowData.length > 0 ? (
+          workflowData.map((item) => (
+            <li key={item.id} className="workflow-item">
+              <h2>Document ID: {item.id}</h2>
+              <p>Status: {item.record_type || 'No Data'}</p>
+              <p>Created On: {item.created_on || 'No Data'}</p>
+              <h3>Workflow:</h3>
+              <ul>
+                {item.workflow.length > 0 ? (
+                  item.workflow.map((workflow) => (
+                    <li key={workflow.workflow_id}>{workflow.workflow_name}</li>
+                  ))
+                ) : (
+                  <li>No workflow</li>
+                )}
+              </ul>
+              <h3>Step:</h3>
+              <ul>
+                {item.step.length > 0 ? (
+                  item.step.map((step) => (
+                    <li key={step.step_id}>{step.step_name}</li>
+                  ))
+                ) : (
+                  <li>No steps</li>
+                )}
+              </ul>
+            </li>
+          ))
+        ) : (
+          !loading && <p>No workflow data available</p>
+        )}
       </ul>
     </div>
   );
