@@ -43,7 +43,7 @@ from workflow_manager import (add_transition_log, create_card,
 import app_defs
 from app_defs import (get_user_roles, create_message, generate_menu_tree, admin_app1, admin_app2, admin_app3,
                       admin_app4, admin_app5, admin_app6, admin_app10)
-from admin_views import DraftingContractsView, create_admin_views
+from admin_views import create_admin_views, admin_all
 
 from models.user import (Users, UserRoles, Event, Role, Questionnaire, Question,
         QuestionnaireQuestions,
@@ -74,7 +74,7 @@ from forms.forms import (AddPlanToCartForm, SignupForm, UpdateAccountForm, Ticke
 from flask_mail import Mail, Message
 # from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as _
 
-from app_factory import create_app, roles_required, subscription_required, csrf
+from app_factory import create_app, roles_required, subscription_required
 # from app_factory import babel
 
 from config.config import (get_current_intervals,
@@ -435,6 +435,9 @@ with app.app_context():
     # db.create_all()
 
     #app.register_blueprint(admin_bp)
+
+    # Register the Blueprint
+    app.register_blueprint(admin_all, url_prefix='/admin')  # Add a prefix like '/admin' if desired
 
     # Register the blueprint
     app.register_blueprint(contract_bp)
@@ -1729,129 +1732,6 @@ def load_workflow_controls():
 
 # TOD how to eliminate relationship fields in the Question and workflow CREATE templates?
 
-
-
-@app.route('/open_admin_app_1')
-@login_required
-@subscription_required
-def open_admin_app_1():
-    user_id = current_user.id
-
-    company_row = db.session.query(Company.name) \
-        .join(CompanyUsers, CompanyUsers.company_id == Company.id) \
-        .filter(CompanyUsers.user_id == user_id) \
-        .first()
-
-    company_name = company_row[0] if company_row else None  # Extracting the name attribute
-
-    user_subscription_plan = current_user.subscription_plan
-    user_subscription_status = current_user.subscription_status
-
-    template = "Area di controllo 1 - Atti, iniziative, documenti"
-    placeholder_value = company_name if company_name else None
-    formatted_string = template.format(placeholder_value) if placeholder_value else template
-
-    admin_app1.name = formatted_string
-
-    return redirect(url_for('open_admin_1.index'))
-
-
-
-@app.route('/open_admin_app_2')
-@login_required
-@subscription_required
-def open_admin_app_2():
-    user_id = current_user.id
-    company_row = db.session.query(Company.name) \
-        .join(CompanyUsers, CompanyUsers.company_id == Company.id) \
-        .filter(CompanyUsers.user_id == user_id) \
-        .first()
-
-    company_name = company_row[0] if company_row else None  # Extracting the name attribute
-    template = "Area di controllo 2 - Elementi quantitativi"
-    placeholder_value = company_name if company_name else None
-    formatted_string = template.format(placeholder_value) if placeholder_value else template
-    admin_app2.name = formatted_string
-
-    return redirect(url_for('open_admin_2.index'))
-
-
-# Define the index route
-@app.route('/open_admin_app_3')
-@login_required
-def open_admin_app_3():
-    user_id = current_user.id
-    company_row = db.session.query(Company.name) \
-        .join(CompanyUsers, CompanyUsers.company_id == Company.id) \
-        .filter(CompanyUsers.user_id == user_id) \
-        .first()
-
-    company_name = company_row[0] if company_row else None  # Extracting the name attribute
-
-    template = "Area di controllo 3 - Contratti e documenti"
-    placeholder_value = company_name
-    formatted_string = template.format(placeholder_value) if placeholder_value else template
-    admin_app3.name = formatted_string
-
-    return redirect(url_for('open_admin_3.index'))
-
-
-@app.route('/open_admin_app_4')
-@login_required
-@roles_required('Admin')
-# Define the index route
-def open_admin_app_4():
-    user_id = current_user.id
-    return redirect(url_for('open_admin_4.index'))
-
-
-@app.route('/open_admin_app_5')
-@login_required
-@roles_required('Admin')
-# Define the index route
-def open_admin_app_5():
-    user_id = current_user.id
-    return redirect(url_for('open_admin_5.index'))
-
-
-@app.route('/open_admin_app_6')
-@login_required
-@roles_required('Admin', 'Manager', 'Employee')
-# Define the index route
-def open_admin_app_6():
-    user_id = current_user.id
-    return redirect(url_for('open_admin_6.index'))
-
-@app.route('/open_admin_app_10')
-@login_required
-@roles_required('Admin', 'Manager', 'Employee')
-def open_admin_app_10():
-    try:
-        print('quest 0')
-        user_id = current_user.id
-        print('quest 1', user_id)
-        company_row = db.session.query(Company.name) \
-            .join(CompanyUsers, CompanyUsers.company_id == Company.id) \
-            .filter(CompanyUsers.user_id == user_id) \
-            .first()
-        print('quest 2', company_row)
-        company_name = company_row[0] if company_row else None  # Extracting the name attribute
-        print('quest 3', company_name)
-
-        if admin_app10 is None:
-            raise ValueError("admin_app10 is not initialized.")
-
-        template = "Surveys & Questionnaires"
-        placeholder_value = company_name
-        formatted_string = template.format(placeholder_value) if placeholder_value else template
-        admin_app10.name = formatted_string
-
-        print('quest 4', admin_app10.name, 'redirect to open_Admin_10')
-        return redirect(url_for('open_admin_10.index'))
-
-    except Exception as e:
-        print('Error occurred:', str(e))
-        return 'An error occurred', 500
 
 
 # TODO: ***** inserire come action: move one step forward!
