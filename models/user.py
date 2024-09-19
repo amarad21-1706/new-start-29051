@@ -1,9 +1,12 @@
 import json
 from db import db
-from flask import Markup
+from flask import Flask, render_template, redirect, url_for, request, g, make_response, flash, send_from_directory #, markupsafe #Markup
+from markupsafe import Markup  # Import Markup from markupsafe
 
 from flask_bcrypt import generate_password_hash, check_password_hash
-from flask_security import RoleMixin, UserMixin
+from flask_security import RoleMixin, UserMixin # deprecated
+#from flask_security_too import RoleMixin, UserMixin
+
 from sqlalchemy import (Column, Integer, String, DateTime, ForeignKey,
                         LargeBinary, Numeric, func, TIMESTAMP, DATE, Sequence, Boolean)
 

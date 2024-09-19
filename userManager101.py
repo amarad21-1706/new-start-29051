@@ -1,10 +1,9 @@
-from flask_bcrypt import check_password_hash
+
 from models.user import Users, UserRoles, Role
 from flask import current_app
 from flask import session
-from flask_login import login_user, logout_user, current_user, UserMixin
+from flask_login import current_user, UserMixin
 from sqlalchemy.orm import joinedload
-from flask_login import current_user
 
 from flask_sqlalchemy import SQLAlchemy
 from flask_babel import Domain
@@ -16,7 +15,7 @@ class UserManager:
 
     def authenticate_user(self, username, password):
         try:
-            print('auth', username, password)
+            print('authenticate', username, password)
             user = Users.query.filter_by(username=username).options(joinedload(Users.roles)).first()
             print('user', user)
             if user and user.check_password(password):  # Use the custom check_password method
@@ -67,7 +66,6 @@ class UserManager:
             print(f'Db error 4 (load_user_by_username): {e}')
             raise
             return None
-
 
 
 class TemporaryUser(UserMixin):

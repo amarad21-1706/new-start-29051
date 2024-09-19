@@ -14,7 +14,6 @@ from db import db
 from models.user import Users #, Plan, Product
 from functools import wraps
 from password_reset import password_reset_bp  # Import the blueprint
-from admin_views import DraftingContractsView
 # from flask_babel import Babel
 
 csrf = CSRFProtect()  # Define csrf globally
@@ -72,7 +71,8 @@ def create_app(conf=None):
 
     # app = Flask(__name__)
     # app = Flask(__name__, static_folder='static')
-    app = Flask(__name__, static_folder="static", static_url_path="/")
+    # app = Flask(__name__, static_folder="static", static_url_path="/")
+    app = Flask(__name__, static_folder="static")
 
     app.config.from_object(conf)
 

@@ -2,6 +2,7 @@
 # You can continue defining other ModelViews for your models
 from db import db
 from flask_admin import Admin
+from flask import Blueprint, redirect, url_for
 from flask_admin.form.rules import FieldSet
 from flask_admin.model import typefmt
 from flask_admin.model.fields import InlineFormField, InlineFieldList
@@ -38,10 +39,12 @@ import traceback
 from wtforms import StringField
 from flask_admin.form import rules
 
-from flask import request, redirect, url_for
+from flask import request, redirect
 
 from sqlalchemy import text
 from sqlalchemy.orm.exc import NoResultFound
+
+from app_factory import roles_required, subscription_required
 
 from config.config import (get_if_active, get_subarea_name, get_current_interval, get_current_intervals,
                            get_subarea_interval_type, create_audit_log, remove_duplicates,
@@ -78,7 +81,8 @@ from config.config import (Config, check_status, check_status_limited,
 
 from flask_login import login_required, LoginManager
 
-from flask import flash, redirect, url_for, Markup
+from flask import flash, redirect, url_for #, Markup
+from markupsafe import Markup
 from flask_admin.contrib.sqla import ModelView
 from sqlalchemy.exc import IntegrityError
 import uuid
@@ -94,6 +98,9 @@ config = Config()
 from flask_admin import Admin, AdminIndexView, expose
 from flask_login import current_user
 from flask import session
+
+# Define the Blueprint for the admin views
+admin_views_blueprints = Blueprint('admin_views_blueprints', __name__)
 
 # Custom Admin Index View to manage session roles
 '''
@@ -3965,8 +3972,6 @@ class IniziativeDsoAsDataView(BaseDataView):
         return form
 
 
-
-
 class IniziativeAsDsoDataView(BaseDataView):
     create_template = 'admin/area_1/create_base_data_7.html'
     area_id = 1
@@ -4972,9 +4977,10 @@ def create_admin_views(app, intervals):
         admin_app1 = Admin(app,
                        name='Area di controllo 1 - Documenti e atti',
                        url='/open_admin_1',
-                       template_mode='bootstrap3',
+                       template_mode='bootstrap4',
                        endpoint='open_admin_1',
         )
+
 
         admin_app1.add_view(CustomFlussiDataView(model=BaseData, session=db.session, name='Pre-complaint flows',
                                                  intervals=intervals,
@@ -5002,6 +5008,32 @@ def create_admin_views(app, intervals):
             IniziativeDsoDsoDataView(model=BaseData, session=db.session, name='Iniziative DSO-DSO', intervals=intervals, area_id=1,
                                 subarea_id=8, endpoint='iniziative_dso_dso_data_view'))
 
+        @admin_views_blueprints.route('/open_admin_app_1')
+        @login_required
+        @subscription_required
+        def open_admin_app_1():
+            user_id = current_user.id
+
+            company_row = db.session.query(Company.name) \
+                .join(CompanyUsers, CompanyUsers.company_id == Company.id) \
+                .filter(CompanyUsers.user_id == user_id) \
+                .first()
+
+            company_name = company_row[0] if company_row else None  # Extracting the name attribute
+
+            user_subscription_plan = current_user.subscription_plan
+            user_subscription_status = current_user.subscription_status
+
+            template = "Area di controllo 1 - Atti, iniziative, documenti"
+            placeholder_value = company_name if company_name else None
+            formatted_string = template.format(placeholder_value) if placeholder_value else template
+
+            admin_app1.name = formatted_string
+
+            # return redirect(url_for('open_admin_1.index'))
+            return redirect(url_for('admin_app1.index_view'))
+
+
         # Second Flask-Admin instance with the second Area index view
         # ===========================================================
         admin_app2 = Admin(app,
@@ -5028,6 +5060,25 @@ def create_admin_views(app, intervals):
         admin_app2.add_view(CustomTabella27DataView(BaseData, db.session, name="Livello di contendibilita'",
                                                     endpoint="view_livello_contendibilita", intervals=intervals))
 
+
+        @admin_views_blueprints.route('/open_admin_app_2')
+        @login_required
+        @subscription_required
+        def open_admin_app_2():
+            user_id = current_user.id
+            company_row = db.session.query(Company.name) \
+                .join(CompanyUsers, CompanyUsers.company_id == Company.id) \
+                .filter(CompanyUsers.user_id == user_id) \
+                .first()
+
+            company_name = company_row[0] if company_row else None  # Extracting the name attribute
+            template = "Area di controllo 2 - Elementi quantitativi"
+            placeholder_value = company_name if company_name else None
+            formatted_string = template.format(placeholder_value) if placeholder_value else template
+            admin_app2.name = formatted_string
+
+            return redirect(url_for('open_admin_2.index'))
+
         # Third Flask-Admin instance with the third Area index view
         # ===========================================================
         admin_app3 = Admin(app,
@@ -5046,6 +5097,26 @@ def create_admin_views(app, intervals):
                                                             endpoint='new_documents'))
         admin_app3.add_view(ModelView(name='Workflows Dictionary', model=Workflow, session=db.session))
         admin_app3.add_view(ModelView(name='Steps Dictionary', model=Step, session=db.session))
+
+
+        # Define the index route
+        @admin_views_blueprints.route('/open_admin_app_3')
+        @login_required
+        def open_admin_app_3():
+            user_id = current_user.id
+            company_row = db.session.query(Company.name) \
+                .join(CompanyUsers, CompanyUsers.company_id == Company.id) \
+                .filter(CompanyUsers.user_id == user_id) \
+                .first()
+
+            company_name = company_row[0] if company_row else None  # Extracting the name attribute
+
+            template = "Area di controllo 3 - Contratti e documenti"
+            placeholder_value = company_name
+            formatted_string = template.format(placeholder_value) if placeholder_value else template
+            admin_app3.name = formatted_string
+
+            return redirect(url_for('open_admin_3.index'))
 
 
         # Fourth Flask-Admin instance
@@ -5077,6 +5148,15 @@ def create_admin_views(app, intervals):
         admin_app4.add_view(PlanView(Plan, db.session, name='Plans', endpoint='plan_view'))
         admin_app4.add_view(ProductView(Product, db.session, name='Products', endpoint='product_view'))
 
+
+        @admin_views_blueprints.route('/open_admin_app_4')
+        @login_required
+        @roles_required('Admin')
+        # Define the index route
+        def open_admin_app_4():
+            user_id = current_user.id
+            return redirect(url_for('open_admin_4.index'))
+
         # TODO Associazione di 1->m da non consentire qui (can_create = False) , in quanto già fatta (con controllo IF EXISTS) altrove
         # TODO ***** le risposte ai questionnari *** - answer - sono da STORE non in Answer, ma in BaseData (cu data_type='answer')!
 
@@ -5095,6 +5175,15 @@ def create_admin_views(app, intervals):
         admin_app5.add_view(
             DocumentUploadView(model=BaseData, session=db.session, name='Documents Workflow', intervals=intervals, area_id=3,
                                 subarea_id=1, endpoint='upload_documenti_view'))
+
+
+        @admin_views_blueprints.route('/open_admin_app_5')
+        @login_required
+        @roles_required('Admin')
+        # Define the index route
+        def open_admin_app_5():
+            user_id = current_user.id
+            return redirect(url_for('open_admin_5.index'))
 
         # EOF app5
         # === = ==================================== === ====================================
@@ -5128,6 +5217,15 @@ def create_admin_views(app, intervals):
         admin_app6.add_view(ModelView(ContractStatusHistory, db.session, name='Contract Status History'))
         # Optionally, you can add views for related models (e.g., Company, Party, User)
         admin_app6.add_view(ModelView(Party, db.session, name='Parties'))
+
+
+        @admin_views_blueprints.route('/open_admin_app_6')
+        @login_required
+        @roles_required('Admin', 'Manager', 'Employee')
+        # Define the index route
+        def open_admin_app_6():
+            user_id = current_user.id
+            return redirect(url_for('open_admin_6.index'))
 
 
         # 10-th Flask-Admin instance
@@ -5167,6 +5265,39 @@ def create_admin_views(app, intervals):
         admin_app10.add_view(ContainerAdmin(Container, db.session, name='Containers data'))
         # admin_app10.add_view(StatusView(Status, db.session, name='E. Dictionary of Status',
         #                                endpoint='status_questionnaire_view'))
+
+
+
+        @admin_views_blueprints.route('/open_admin_app_10')
+        @login_required
+        @roles_required('Admin', 'Manager', 'Employee')
+        def open_admin_app_10():
+            try:
+                print('quest 0')
+                user_id = current_user.id
+                print('quest 1', user_id)
+                company_row = db.session.query(Company.name) \
+                    .join(CompanyUsers, CompanyUsers.company_id == Company.id) \
+                    .filter(CompanyUsers.user_id == user_id) \
+                    .first()
+                print('quest 2', company_row)
+                company_name = company_row[0] if company_row else None  # Extracting the name attribute
+                print('quest 3', company_name)
+
+                if admin_app10 is None:
+                    raise ValueError("admin_app10 is not initialized.")
+
+                template = "Surveys & Questionnaires"
+                placeholder_value = company_name
+                formatted_string = template.format(placeholder_value) if placeholder_value else template
+                admin_app10.name = formatted_string
+
+                print('quest 4', admin_app10.name, 'redirect to open_Admin_10')
+                return redirect(url_for('open_admin_10.index'))
+
+            except Exception as e:
+                print('Error occurred:', str(e))
+                return 'An error occurred', 500
 
 
     return admin_app1, admin_app2, admin_app3, admin_app4, admin_app5, admin_app6, admin_app10

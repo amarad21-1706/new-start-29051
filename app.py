@@ -19,8 +19,13 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.exc import OperationalError
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.exceptions import HTTPException
+
+import admin_views
 from db import db
-from flask import Flask, render_template, redirect, url_for, request, g, make_response, flash, Markup, send_from_directory
+
+from flask import Flask, render_template, redirect, url_for, request, g, make_response, flash, send_from_directory
+from markupsafe import Markup  # Import Markup from markupsafe
+
 import datetime
 from dateutil import rrule
 from flask_wtf import FlaskForm
@@ -43,7 +48,7 @@ from workflow_manager import (add_transition_log, create_card,
 import app_defs
 from app_defs import (get_user_roles, create_message, generate_menu_tree, admin_app1, admin_app2, admin_app3,
                       admin_app4, admin_app5, admin_app6, admin_app10)
-from admin_views import DraftingContractsView, create_admin_views
+from admin_views import create_admin_views, admin_views_blueprints
 
 from models.user import (Users, UserRoles, Event, Role, Questionnaire, Question,
         QuestionnaireQuestions,
@@ -170,8 +175,6 @@ from opencage.geocoder import OpenCageGeocode
 import plotly.graph_objects as go
 from custom_encoder import CustomJSONEncoder
 # Use the custom JSON encoder
-
-from admin_views import create_admin_views  # Import the admin views module
 
 import pycountry
 import phonenumbers
@@ -435,6 +438,8 @@ with app.app_context():
     # db.create_all()
 
     #app.register_blueprint(admin_bp)
+    # Register the blueprint
+    app.register_blueprint(admin_views_blueprints)
 
     # Register the blueprint
     app.register_blueprint(contract_bp)
@@ -460,6 +465,7 @@ with app.app_context():
 
     model_document = create_crud_blueprint('model_document', __name__)
 
+    print('blueprints registered')
 
 # Load menu items from JSON file
 json_file_path = os.path.join(os.path.dirname(__file__), 'static', 'js', 'menuStructure101.json')
@@ -530,6 +536,25 @@ def get_documents_query(session, current_user):
 # http://127.0.0.1:5000/api/workflow-data?area_id=3&subarea_id=1&fi0=2024
 
 # from serializers import serialize_step, serialize_workflow
+
+
+# first real data test
+@app.route('/api/metrics-data', methods=['GET'])
+def get_metrics_data():
+    area_id = request.args.get('area_id')
+    subarea_id = request.args.get('subarea_id')
+    year = request.args.get('year')
+
+    data = (BaseData.query
+            .filter_by(area_id=area_id, subarea_id=subarea_id, fi0=year)
+            .with_entities(BaseData.interval_id, db.func.count(BaseData.id).label('record_count'))
+            .group_by(BaseData.interval_id)
+            .all())
+
+    result = [{'interval_id': row.interval_id, 'record_count': row.record_count} for row in data]
+
+    return jsonify(result)
+
 
 def serialize_base_data(item):
     return {
@@ -824,6 +849,7 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
             admin_2_url = url_for('open_admin_2.index')
             admin_3_url = url_for('open_admin_3.index')
             admin_4_url = url_for('open_admin_4.index')
+            admin_10_url = url_for('open_admin_10.index')
 
             try:
                 admin_5_url = url_for('open_admin_5.index')
@@ -836,6 +862,8 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
                 print('Error generating admin_6_url:', str(e))
 
             admin_10_url = url_for('open_admin_10.index')
+
+            print('urls created')
 
             company_name = ' '
             if current_user:
@@ -908,9 +936,7 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
                 "admin_2_url": admin_2_url,
                 "admin_3_url": admin_3_url,
                 "admin_4_url": admin_4_url,
-
                 "admin_5_url": admin_5_url,
-
                 "admin_6_url": admin_6_url,
                 "admin_10_url": admin_10_url,
                 "left_menu_items": menu_data,
@@ -1729,129 +1755,6 @@ def load_workflow_controls():
 
 # TOD how to eliminate relationship fields in the Question and workflow CREATE templates?
 
-
-
-@app.route('/open_admin_app_1')
-@login_required
-@subscription_required
-def open_admin_app_1():
-    user_id = current_user.id
-
-    company_row = db.session.query(Company.name) \
-        .join(CompanyUsers, CompanyUsers.company_id == Company.id) \
-        .filter(CompanyUsers.user_id == user_id) \
-        .first()
-
-    company_name = company_row[0] if company_row else None  # Extracting the name attribute
-
-    user_subscription_plan = current_user.subscription_plan
-    user_subscription_status = current_user.subscription_status
-
-    template = "Area di controllo 1 - Atti, iniziative, documenti"
-    placeholder_value = company_name if company_name else None
-    formatted_string = template.format(placeholder_value) if placeholder_value else template
-
-    admin_app1.name = formatted_string
-
-    return redirect(url_for('open_admin_1.index'))
-
-
-
-@app.route('/open_admin_app_2')
-@login_required
-@subscription_required
-def open_admin_app_2():
-    user_id = current_user.id
-    company_row = db.session.query(Company.name) \
-        .join(CompanyUsers, CompanyUsers.company_id == Company.id) \
-        .filter(CompanyUsers.user_id == user_id) \
-        .first()
-
-    company_name = company_row[0] if company_row else None  # Extracting the name attribute
-    template = "Area di controllo 2 - Elementi quantitativi"
-    placeholder_value = company_name if company_name else None
-    formatted_string = template.format(placeholder_value) if placeholder_value else template
-    admin_app2.name = formatted_string
-
-    return redirect(url_for('open_admin_2.index'))
-
-
-# Define the index route
-@app.route('/open_admin_app_3')
-@login_required
-def open_admin_app_3():
-    user_id = current_user.id
-    company_row = db.session.query(Company.name) \
-        .join(CompanyUsers, CompanyUsers.company_id == Company.id) \
-        .filter(CompanyUsers.user_id == user_id) \
-        .first()
-
-    company_name = company_row[0] if company_row else None  # Extracting the name attribute
-
-    template = "Area di controllo 3 - Contratti e documenti"
-    placeholder_value = company_name
-    formatted_string = template.format(placeholder_value) if placeholder_value else template
-    admin_app3.name = formatted_string
-
-    return redirect(url_for('open_admin_3.index'))
-
-
-@app.route('/open_admin_app_4')
-@login_required
-@roles_required('Admin')
-# Define the index route
-def open_admin_app_4():
-    user_id = current_user.id
-    return redirect(url_for('open_admin_4.index'))
-
-
-@app.route('/open_admin_app_5')
-@login_required
-@roles_required('Admin')
-# Define the index route
-def open_admin_app_5():
-    user_id = current_user.id
-    return redirect(url_for('open_admin_5.index'))
-
-
-@app.route('/open_admin_app_6')
-@login_required
-@roles_required('Admin', 'Manager', 'Employee')
-# Define the index route
-def open_admin_app_6():
-    user_id = current_user.id
-    return redirect(url_for('open_admin_6.index'))
-
-@app.route('/open_admin_app_10')
-@login_required
-@roles_required('Admin', 'Manager', 'Employee')
-def open_admin_app_10():
-    try:
-        print('quest 0')
-        user_id = current_user.id
-        print('quest 1', user_id)
-        company_row = db.session.query(Company.name) \
-            .join(CompanyUsers, CompanyUsers.company_id == Company.id) \
-            .filter(CompanyUsers.user_id == user_id) \
-            .first()
-        print('quest 2', company_row)
-        company_name = company_row[0] if company_row else None  # Extracting the name attribute
-        print('quest 3', company_name)
-
-        if admin_app10 is None:
-            raise ValueError("admin_app10 is not initialized.")
-
-        template = "Surveys & Questionnaires"
-        placeholder_value = company_name
-        formatted_string = template.format(placeholder_value) if placeholder_value else template
-        admin_app10.name = formatted_string
-
-        print('quest 4', admin_app10.name, 'redirect to open_Admin_10')
-        return redirect(url_for('open_admin_10.index'))
-
-    except Exception as e:
-        print('Error occurred:', str(e))
-        return 'An error occurred', 500
 
 
 # TODO: ***** inserire come action: move one step forward!
@@ -2956,13 +2859,11 @@ def company_overview_current():
         with open('report_cards1.html', 'w') as f:
             f.write(html_cards)
 
-        print(html_cards)
         return render_template('admin_cards_progression.html', html_cards=html_cards, user_roles=user_roles)
 
     except Exception as e:
         # logging.error(f'Error in company_overview_current: {e}')
         return render_template('error.html', error_message=str(e)), 500
-
 
 
 @app.route('/company_overview_current222')
@@ -6357,7 +6258,6 @@ def checkout_success():
     return render_template('checkout_success.html')
 
 
-
 if __name__ == '__main__':
     # Load menu items from JSON file
     current_dir = get_current_directory()
@@ -6369,6 +6269,7 @@ if __name__ == '__main__':
     guest_menu_builder = MenuBuilder(main_menu_items, ["guest"])
     guest_menu_data = guest_menu_builder.parse_menu_data(user_roles=["guest"],
                                                          is_authenticated=False, include_protected=False)
+
     # Pass the "Guest" menu data to the template
     additional_data = {
         "username": "Guest",
@@ -6376,8 +6277,15 @@ if __name__ == '__main__':
         "public_menu": guest_menu_data
     }
 
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.getenv('PORT', 5000))
 
-    # TODO DEBUG
+    # Load the debug mode from the environment variable
+    debug_mode = os.getenv('FLASK_DEBUG', '0') == '1'
+    print('debug mode', debug_mode)
+
+    # Set up logging
     logging.basicConfig(filename='app.log', level=logging.DEBUG)
-    app.run(debug=True, host='0.0.0.0', port=port, extra_files=['./static/js/menuStructure101.json'])
+
+    # Run the Flask app with environment-controlled debug mode
+    app.run(debug=debug_mode, port=port)
+

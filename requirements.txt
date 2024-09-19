@@ -88,7 +88,7 @@ Flask==2.2.5
 Flask-Admin==1.6.1
 Flask-Assets==2.1.0
 flask-babel==4.0.0
-Flask-BabelEx==0.9.4
+Flask-Babel
 Flask-Bcrypt==1.0.1
 Flask-Bootstrap==3.3.7.1
 Flask-Caching==2.3.0
@@ -106,7 +106,7 @@ Flask-Principal==0.4.0
 Flask-ReCaptcha==0.4.2
 Flask-RESTful==0.3.10
 Flask-Script==2.0.6
-Flask-Security==3.0.0
+Flask-Security
 Flask-Session==0.6.0
 Flask-SQLAlchemy==3.1.1
 Flask-WAT==0.1.3
