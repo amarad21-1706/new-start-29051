@@ -112,7 +112,6 @@ function WorkflowView() {
         });
     };
 
-
   return (
       <div className="container">
           <h1 className="title">Workflow Data</h1>

@@ -587,6 +587,10 @@ def get_area_subarea():
 @login_required
 def get_documents():
     try:
+        user_roles = session.get('user_roles', [role.name for role in current_user.roles] if current_user.roles else [])
+        user_id = session.get('user_id', current_user.id)
+        company_id = session.get('company_id', None)
+
         workflow_id = request.args.get('workflow_id')
         step_id = request.args.get('step_id')
         fi0 = request.args.get('fi0')
