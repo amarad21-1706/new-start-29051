@@ -587,6 +587,63 @@ def get_area_subarea():
 @login_required
 def get_documents():
     try:
+        workflow_id = request.args.get('workflow_id')
+        step_id = request.args.get('step_id')
+        fi0 = request.args.get('fi0')
+
+        # Log the received parameters
+        app.logger.info(
+            f"Received workflow_id: {workflow_id}, step_id: {step_id}, fi0: {fi0}, roles: {session['user_roles']}, company: {session['company_id']}, user: {session['user_id']}")
+
+        # Modify the query to use correct fields and relationships
+        query = DocumentWorkflow.query
+
+        # Apply filters
+        if workflow_id != 'all':
+            query = query.filter(DocumentWorkflow.workflow_id == workflow_id)
+
+        if step_id != 'all':
+            # Assuming step_id is part of WorkflowSteps or related via relationship
+            query = query.join(WorkflowSteps).filter(WorkflowSteps.step_id == step_id)
+
+        if fi0:
+            # Assuming fi0 is part of BaseData or related via relationship
+            query = query.join(BaseData).filter(BaseData.fi0 == fi0)
+
+        if 'Admin' in user_roles:
+            documents = query.all()
+        elif 'Manager' in user_roles:
+            documents = query.filter_by(company_id=company_id).all()
+        elif 'Employee' in user_roles:
+            documents = query.filter_by(user_id=user_id).all()
+        else:
+            return jsonify({"error": "Access denied"}), 403
+
+        if not documents:
+            return jsonify({"error": "No documents found"}), 404
+
+        # Fetch results
+        documents = query.all()
+
+        if not documents:
+            return jsonify({"error": "No documents found"}), 404
+
+        # Prepare the document list response
+        document_list = [{'id': doc.base_data_id, 'name': doc.base_data.number_of_doc or f"Document {doc.base_data_id}"}
+                         for doc in documents]
+
+        return jsonify(document_list), 200
+
+    except Exception as e:
+        app.logger.error(f"Error fetching documents: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+
+@app.route('/api/documents555', methods=['GET'])
+@login_required
+def get_documents555():
+    try:
 
         user_roles = session.get('user_roles', [])
         company_id = session.get('company_id', [])
