@@ -52,12 +52,13 @@ from models.user import (Users, UserRoles, Event, Role, Questionnaire, Question,
         Interval, Subject,
         Container, AuditLog, Post, Ticket, StepQuestionnaire,
         Workflow, Step, BaseData, DataMapping, Container, WorkflowSteps, WorkflowBaseData,
-         StepBaseData, Config, Product, Cart,
-         Plan, PlanProducts, UserPlans, Subscription, # Adjust based on actual imports
-         Questionnaire_psf, Response_psf,
-         Contract, ContractParty, ContractTerm, ContractDocument, ContractStatusHistory,
-            ContractArticle, Party,
-         Team, TeamMembership, ContractTeam
+        DocumentWorkflow, DocumentWorkflowHistory,
+        StepBaseData, Config, Product, Cart,
+        Plan, PlanProducts, UserPlans, Subscription, # Adjust based on actual imports
+        Questionnaire_psf, Response_psf,
+        Contract, ContractParty, ContractTerm, ContractDocument, ContractStatusHistory,
+        ContractArticle, Party,
+        Team, TeamMembership, ContractTeam
          )
 
 # from master_password_reset import admin_reset_password, AdminResetPasswordForm
@@ -582,58 +583,208 @@ def get_area_subarea():
         return jsonify({"error": "Server error occurred"}), 500
 
 
+@app.route('/api/documents', methods=['GET'])
+@login_required
+def get_documents():
+    try:
+
+        user_roles = session.get('user_roles', [])
+        company_id = session.get('company_id', [])
+        user_id = session.get('user_id', [])
+
+        workflow_id = request.args.get('workflow_id')
+        step_id = request.args.get('step_id')
+        fi0 = request.args.get('fi0')  # Fetch the year parameter
+
+        # Log the received parameters
+        app.logger.info(f"Received workflow_id: {workflow_id}, step_id: {step_id}, fi0: {fi0}, roles: {user_roles}, company: {company_id}, user: {user_id}")
+
+        # Start the query with filtering by year (fi0)
+        query = BaseData.query.filter(BaseData.fi0 == fi0)
+
+        # If workflow_id is not 'all', filter through the DocumentWorkflow table
+        if workflow_id != 'all':
+            query = query.join(DocumentWorkflow, DocumentWorkflow.base_data_id == BaseData.id).filter(DocumentWorkflow.workflow_id == workflow_id)
+
+        # If step_id is not 'all', filter by step through DocumentWorkflow
+        if step_id != 'all':
+            query = query.filter(DocumentWorkflow.step_id == step_id)
+
+        # Fetch the filtered documents
+        # Role-based filtering
+        if 'Admin' in user_roles:
+            documents = query.all()
+        elif 'Manager' in user_roles:
+            documents = query.filter_by(company_id=company_id).all()
+        elif 'Employee' in user_roles:
+            documents = query.filter_by(user_id=user_id).all()
+        else:
+            return jsonify({"error": "Access denied"}), 403
+
+        if not documents:
+            return jsonify({"error": "No documents found"}), 404
+
+        # Prepare response
+        document_list = [{'id': doc.id, 'name': doc.number_of_doc or f"Document {doc.id}"} for doc in documents]
+
+        return jsonify(document_list), 200
+
+    except Exception as e:
+        app.logger.error(f"Error fetching documents: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/documents333', methods=['GET'])
+@login_required
+def get_documents333():
+    try:
+        # Optional filtering by area, subarea, or year if passed as query parameters
+        area_id = request.args.get('area_id')
+        subarea_id = request.args.get('subarea_id')
+        fi0 = request.args.get('fi0')
+
+        query = BaseData.query
+
+        # Apply filters based on query parameters if present
+        if area_id:
+            query = query.filter_by(area_id=area_id)
+        if subarea_id:
+            query = query.filter_by(subarea_id=subarea_id)
+        if fi0:
+            query = query.filter_by(fi0=fi0)
+
+        # Fetch documents with non-null file_path (assuming file_path signifies a valid document)
+        documents = query.filter(BaseData.file_path.isnot(None)).all()
+
+        # Prepare response data
+        document_list = [{'id': doc.id, 'name': doc.number_of_doc or f"Document {doc.id}"} for doc in documents]
+
+        return jsonify(document_list), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/get_workflows', methods=['GET'])
+@login_required
+def get_workflows():
+    try:
+        # Fetch all workflows from the Workflow table
+        workflows = Workflow.query.all()
+
+        if not workflows:
+            return jsonify({"error": "No workflows found"}), 404
+
+        # Prepare the list of workflows to be sent as a JSON response
+        workflow_list = [
+            {'id': w.id, 'name': w.name if w.name else 'Unnamed Workflow'}  # Handle missing names
+            for w in workflows
+            if w.id is not None  # Ensure the id is valid
+        ]
+
+        return jsonify(workflows=workflow_list), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/get_workflows222', methods=['GET'])
+@login_required
+def get_workflows222():
+    base_data_id = request.args.get('base_data_id')
+
+    if not base_data_id:
+        return jsonify({"error": "Document ID is required"}), 400
+
+    # Query DocumentWorkflow to get workflows for the selected base_data_id
+    document_workflows = DocumentWorkflow.query.filter_by(base_data_id=base_data_id).all()
+
+    if not document_workflows:
+        return jsonify({"error": "No workflows found for the selected document"}), 404
+
+    # Extract workflow IDs and get Workflow details
+    workflow_ids = [dw.workflow_id for dw in document_workflows]
+    workflows = Workflow.query.filter(Workflow.id.in_(workflow_ids)).all()
+
+    # Prepare the list of workflows to be sent as a JSON response
+    workflow_list = [{'id': w.id, 'name': w.name} for w in workflows]
+
+    return jsonify(workflows=workflow_list)
+
+
+@app.route('/api/get_steps', methods=['GET'])
+@login_required
+def get_steps():
+    workflow_id = request.args.get('workflow_id')
+    app.logger.info(f"Received workflow_id: {workflow_id}")
+
+    try:
+        workflow_steps = WorkflowSteps.query.filter_by(workflow_id=workflow_id).all()
+        step_ids = [ws.step_id for ws in workflow_steps]
+        steps = Step.query.filter(Step.id.in_(step_ids)).all()
+
+        return jsonify(steps=[{'id': step.id, 'name': step.name} for step in steps]), 200
+    except Exception as e:
+        app.logger.error(f"Error fetching steps: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/get_steps333', methods=['GET'])
+@login_required
+def get_steps333():
+    workflow_id = request.args.get('workflow_id')
+
+    if not workflow_id:
+        return jsonify({"error": "Workflow ID is required"}), 400
+
+    # Query DocumentWorkflowHistory to get steps for the selected workflow
+    workflow_steps = DocumentWorkflowHistory.query.filter_by(workflow_id=workflow_id).all()
+
+    if not workflow_steps:
+        return jsonify({"error": "No steps found for the selected workflow"}), 404
+
+    # Extract step IDs and get Step details
+    step_ids = [ws.step_id for ws in workflow_steps]
+    steps = Step.query.filter(Step.id.in_(step_ids)).all()
+
+    # Prepare the list of steps to be sent as a JSON response
+    steps_list = [{'id': step.id, 'name': step.name} for step in steps]
+
+    return jsonify(steps=steps_list)
 
 @app.route('/api/workflow-data', methods=['GET'])
 @login_required
 def get_workflow_data():
-    # Get user role, user ID, and company ID from session
-    user_role = session.get('user_roles', [role.name for role in current_user.roles] if current_user.roles else [])
-    user_id = session.get('user_id', current_user.id)
-    company_id = session.get('company_id')
-
-    # Debug print to check session data
-    print('session data', user_role, user_id, company_id)
-
-    # Get request parameters
-    area_id = request.args.get('area_id', default=3, type=int)
-    subarea_id = request.args.get('subarea_id', type=int)
-    fi0 = request.args.get('fi0', type=int)
-
-    # Debug print to verify input parameters
-    print(f"area, subarea, fi0 {area_id} {subarea_id} {fi0}")
-
-    # Build query
-    query = BaseData.query.filter_by(area_id=area_id, subarea_id=subarea_id, fi0=fi0)
-
-    # Role-based access control
-    if 'Admin' in user_role:
-        print("User is Admin")
-        data = query.all()
-        print(f"Data retrieved: {data}")
-    elif 'Manager' in user_role:
-        print("User is Manager")
-        data = query.filter_by(company_id=company_id).all()
-    elif 'Employee' in user_role:
-        print("User is Employee")
-        data = query.filter_by(user_id=user_id).all()
-    else:
-        flash('Access denied: You do not have permission to view this data.', 'error')
-        return jsonify({"error": "Access denied"}), 403
-
-    if not data:
-        return jsonify({"error": "No data found"}), 404
-
-    # Manually serialize the data
-    serialized_data = [serialize_base_data(item) for item in data]
-    print(f"Serialized data for response: {serialized_data}")
-
-    # Wrap jsonify in a try-except block to catch potential serialization issues
     try:
-        return jsonify(serialized_data)
-    except Exception as e:
-        print(f"Error serializing data: {e}")
-        return jsonify({"error": "Serialization error", "details": str(e)}), 500
+        base_data_id = request.args.get('base_data_id')
+        workflow_id = request.args.get('workflow_id')
+        step_id = request.args.get('step_id')
+        fi0 = request.args.get('fi0')
 
+        # Log the received parameters
+        app.logger.info(f"Received base_data_id: {base_data_id}, workflow_id: {workflow_id}, step_id: {step_id}, fi0: {fi0}")
+
+        # Modify the query based on the presence of base_data_id, workflow_id, and step_id
+        query = BaseData.query
+        if base_data_id:
+            query = query.filter(BaseData.id == base_data_id)
+        if workflow_id:
+            query = query.filter(BaseData.workflow_id == workflow_id)
+        if step_id and step_id != 'all':
+            query = query.filter(BaseData.step_id == step_id)
+        if fi0:
+            query = query.filter(BaseData.fi0 == fi0)
+
+        data = query.all()
+
+        if not data:
+            return jsonify({"error": "No workflow data found"}), 404
+
+        serialized_data = [serialize_base_data(item) for item in data]
+        return jsonify(serialized_data), 200
+
+    except Exception as e:
+        app.logger.error(f"Error fetching workflow data: {e}")
+        return jsonify({"error": str(e)}), 500
 
 
 def create_company_folder222(company_id, subfolder):
@@ -3432,24 +3583,6 @@ def delete_records_bws():
 Trilateral entry form route - SERVER SIDE I, Jsonify combos
 Complex (involves trilateral relationship table)
 '''
-@app.route('/get_steps', methods=['GET'])
-def get_steps():
-    workflow_id = request.args.get('workflow_id')
-
-    # Query the WorkflowBaseData model to get workflow IDs associated with the selected base_data_id
-    workflow_step = WorkflowSteps.query.filter_by(workflow_id=workflow_id).all()
-
-    # Extract the workflow IDs from the query result
-    step_ids = [wb.step_id for wb in workflow_step]
-
-    # Query the Workflow model to get details of workflows based on the extracted workflow IDs
-    steps = Step.query.filter(Step.id.in_(step_ids)).all()
-
-    # Prepare the list of workflows to be sent as a JSON response
-    step_list = [{'id': w.id, 'name': w.name} for w in steps]
-
-    return jsonify(steps=step_list)
-
 
 # Gantt - oriented
 @app.route('/api/workflows/<int:workflow_id>', methods=['GET'])
@@ -3494,27 +3627,6 @@ def update_task(task_id):
 
     db.session.commit()
     return jsonify({'message': 'Task updated successfully'})
-
-
-
-@app.route('/get_workflows', methods=['GET'])
-@login_required
-def get_workflows():
-    base_data_id = request.args.get('base_data_id')
-
-    # Query the WorkflowBaseData model to get workflow IDs associated with the selected base_data_id
-    workflow_base_data = WorkflowBaseData.query.filter_by(base_data_id=base_data_id).all()
-
-    # Extract the workflow IDs from the query result
-    workflow_ids = [wb.workflow_id for wb in workflow_base_data]
-
-    # Query the Workflow model to get details of workflows based on the extracted workflow IDs
-    workflows = Workflow.query.filter(Workflow.id.in_(workflow_ids)).all()
-
-    # Prepare the list of workflows to be sent as a JSON response
-    workflow_list = [{'id': w.id, 'name': w.name} for w in workflows]
-
-    return jsonify(workflows=workflow_list)
 
 
 ''' 

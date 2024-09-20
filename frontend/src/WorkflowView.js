@@ -1,183 +1,252 @@
 import React, { useState, useEffect } from 'react';
-import './WorkflowView.css'; // Import custom CSS for styling
+import './WorkflowView.css';
 
 function WorkflowView() {
-  // State for workflow data and filter inputs
   const [workflowData, setWorkflowData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // State for dynamic filter values (area, subarea, fi0)
-  const [areas, setAreas] = useState([]);
-  const [subareas, setSubareas] = useState([]);
-  const [selectedArea, setSelectedArea] = useState('');
-  const [filteredSubareas, setFilteredSubareas] = useState([]);  // Stores the filtered subareas based on selected area
-  const [selectedSubarea, setSelectedSubarea] = useState('');
+  // State for dynamic filter values
+  const [workflows, setWorkflows] = useState([]);  // Workflows array
+  const [steps, setSteps] = useState([]);          // Steps array
+  const [documents, setDocuments] = useState([]);  // Documents array
+
+  const [selectedWorkflow, setSelectedWorkflow] = useState('all');  // Default to 'All Workflows'
+  const [selectedStep, setSelectedStep] = useState('all');          // Default to 'All Steps'
+  const [selectedDocument, setSelectedDocument] = useState('');
   const [fi0, setFi0] = useState(2024);
 
-  // Fetch the list of areas and subareas from the server
+  // Fetch all workflows when the component mounts
   useEffect(() => {
-    fetch('/api/area-subarea')
-      .then(response => {
-        if (!response.ok) {
-          throw new Error('Failed to fetch area and subarea data');
+    fetch(`/api/get_workflows`)
+      .then((response) => response.json())
+      .then((data) => {
+        if (Array.isArray(data.workflows)) {
+          setWorkflows([{ id: 'all', name: 'All Workflows' }, ...data.workflows]);
+        } else {
+          setWorkflows([{ id: 'all', name: 'All Workflows' }]);
         }
-        return response.json();
       })
-      .then(data => {
-        const areasList = data.areas.map(([id, name]) => ({ id, name }));
-        setAreas(areasList);
-        setSubareas(data.subareas); // Load subareas once the API responds
-      })
-      .catch(error => setError(error));
+      .catch((error) => setError(error));
   }, []);
 
-  // Update filtered subareas when an area is selected
+  // Fetch steps based on selected workflow
   useEffect(() => {
-    if (selectedArea) {
-      const areaSubareas = subareas.filter(subarea => subarea.area_id === parseInt(selectedArea));
-      setFilteredSubareas(areaSubareas);
+    if (selectedWorkflow === 'all') {
+      // If "All Workflows" is selected, fetch all steps
+      fetch(`/api/get_steps`)
+        .then((response) => response.json())
+        .then((data) => {
+          if (Array.isArray(data.steps)) {
+            setSteps([{ id: 'all', name: 'All Steps' }, ...data.steps]);
+          } else {
+            setSteps([{ id: 'all', name: 'All Steps' }]);
+          }
+        })
+        .catch((error) => setError(error));
     } else {
-      setFilteredSubareas([]); // Reset if no area is selected
+      // Fetch steps related to the selected workflow
+      fetch(`/api/get_steps?workflow_id=${selectedWorkflow}`)
+        .then((response) => response.json())
+        .then((data) => {
+          if (Array.isArray(data.steps)) {
+            setSteps([{ id: 'all', name: 'All Steps' }, ...data.steps]);
+          } else {
+            setSteps([{ id: 'all', name: 'All Steps' }]);
+          }
+        })
+        .catch((error) => setError(error));
     }
-  }, [selectedArea, subareas]);
+  }, [selectedWorkflow]);
 
-  // Clear workflow data when any filter changes
+  // Fetch documents based on selected workflow and step
   useEffect(() => {
-    setWorkflowData([]); // Clear the current workflow list
-  }, [selectedArea, selectedSubarea, fi0]);
+    if (selectedWorkflow === 'all' && selectedStep === 'all') {
+      fetch(`/api/documents`)
+        .then((response) => response.json())
+        .then((data) => {
+          setDocuments(data);
+        })
+        .catch((error) => setError(error));
+    } else {
+      fetch(`/api/documents?workflow_id=${selectedWorkflow}&step_id=${selectedStep}`)
+        .then((response) => response.json())
+        .then((data) => {
+          setDocuments(data);
+        })
+        .catch((error) => setError(error));
+    }
+  }, [selectedWorkflow, selectedStep]);
 
-  // Function to fetch the workflow data based on selected filters
-  const fetchData = () => {
-    setLoading(true);
-    setError(null);
+  // Clear steps and documents when the workflow changes
+  useEffect(() => {
+    setSelectedStep('all');
+    setSteps([]);             // Clear steps
+    setDocuments([]);         // Clear documents
+  }, [selectedWorkflow]);
 
-    fetch(`/api/workflow-data?area_id=${selectedArea}&subarea_id=${selectedSubarea}&fi0=${fi0}`)
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error('Failed to fetch workflow data');
-        }
-        return response.json();
-      })
-      .then((data) => {
-        setWorkflowData(data);
-        setLoading(false);
-      })
-      .catch((error) => {
-        setError(error);
-        setLoading(false);
-      });
-  };
+  // Clear documents when the step changes
+  useEffect(() => {
+    setSelectedDocument('');  // Clear selected document
+    setDocuments([]);         // Clear documents
+  }, [selectedStep]);
 
-  // Handle form submission
-  const handleSubmit = (e) => {
-    e.preventDefault(); // Prevent page reload
-    fetchData(); // Fetch data with the new filters
-  };
+    // Handle form submission to fetch workflow data
+    const handleSubmit = (e) => {
+      e.preventDefault();
+      setError(null); // Clear previous errors
+      setLoading(true);
+
+      // Build query string with workflow, step, and year (fi0)
+      let queryString = `/api/documents?workflow_id=${selectedWorkflow}&step_id=${selectedStep}&fi0=${fi0}`;
+
+      fetch(queryString)
+        .then((response) => response.json())
+        .then((data) => {
+          setWorkflowData(data);
+          setLoading(false);
+        })
+        .catch((error) => {
+          setError(error); // Set error if fetch fails
+          setLoading(false); // Stop loading
+        });
+    };
+
 
   return (
-    <div className="container">
-      <h1 className="title">Workflow Data</h1>
+      <div className="container">
+          <h1 className="title">Workflow Data</h1>
+          <form onSubmit={handleSubmit} className="form-container">
+              {/* Workflow Dropdown */}
+              <div className="form-group">
+                  <label htmlFor="workflow-select">Workflow:</label>
+                  <select
+                      id="workflow-select"
+                      value={selectedWorkflow || 'all'}  // Set 'all' if selectedWorkflow is undefined
+                      onChange={(e) => setSelectedWorkflow(e.target.value)}
+                      className="form-control"
+                  >
+                      {/* Add default "All Workflows" option only once */}
+                      <option value="all">All Workflows</option>
+                      {workflows.length > 0 && workflows.map((wf) => (
+                          <option key={wf.id} value={wf.id}>
+                              {wf.name}
+                          </option>
+                      ))}
+                  </select>
 
-      {/* Filter form */}
-      <form onSubmit={handleSubmit} className="form-container">
-        <div className="form-group">
-          <label htmlFor="area-select">Area:</label>
-          <select
-            id="area-select"
-            value={selectedArea}
-            onChange={(e) => setSelectedArea(e.target.value)}
-            className="form-control"
-            required
-          >
-            <option value="">Select an Area</option>
-            {areas.map((area) => (
-              <option key={area.id} value={area.id}>
-                {area.name}
-              </option>
-            ))}
-          </select>
-        </div>
 
-        <div className="form-group">
-          <label htmlFor="subarea-select">Subarea:</label>
-          <select
-            id="subarea-select"
-            value={selectedSubarea}
-            onChange={(e) => setSelectedSubarea(e.target.value)}
-            className="form-control"
-            required
-          >
-            <option value="">Select a Subarea</option>
-            {filteredSubareas.map((subarea) => (
-              <option key={subarea.id} value={subarea.id}>
-                {subarea.name}
-              </option>
-            ))}
-          </select>
-        </div>
+              </div>
 
-        <div className="form-group">
-          <label htmlFor="year-select">Year (FI0):</label>
-          <select
-            id="year-select"
-            value={fi0}
-            onChange={(e) => setFi0(e.target.value)}
-            className="form-control"
-            required
-          >
-            <option value="2024">2024</option>
-            <option value="2023">2023</option>
-            <option value="2022">2022</option>
-            <option value="2021">2021</option>
-            <option value="2020">2020</option>
-          </select>
-        </div>
+              {/* Step Dropdown */}
+              <div className="form-group">
+                  <label htmlFor="step-select">Step:</label>
+                  <select
+                      id="step-select"
+                      value={selectedStep || 'all'}  // Set 'all' if selectedStep is undefined
+                      onChange={(e) => setSelectedStep(e.target.value)}
+                      className="form-control"
+                  >
+                      {/* Add default "All Steps" option only once */}
+                      <option value="all">All Steps</option>
+                      {steps.length > 0 && steps.map((step) => (
+                          <option key={step.id} value={step.id}>
+                              {step.name}
+                          </option>
+                      ))}
+                  </select>
 
-        <button type="submit" className="btn btn-primary">Fetch Workflow</button>
-      </form>
 
-      {/* Loading spinner */}
-      {loading && <div>Loading...</div>}
+              </div>
 
-      {/* Error handling */}
-      {error && <div className="error">Error: {error.message}</div>}
+              {/* Year Dropdown */}
+              <div className="form-group">
+                  <label htmlFor="year-select">Year (FI0):</label>
+                  <select
+                      id="year-select"
+                      value={fi0}
+                      onChange={(e) => setFi0(e.target.value)}
+                      className="form-control"
+                      required
+                  >
+                  <option value="2024">2024</option>
+                      <option value="2023">2023</option>
+                      <option value="2022">2022</option>
+                      <option value="2021">2021</option>
+                      <option value="2020">2020</option>
+                  </select>
+              </div>
 
-      {/* Display workflow data */}
-      <ul className="workflow-list">
-        {workflowData.length > 0 ? (
-          workflowData.map((item) => (
-            <li key={item.id} className="workflow-item">
-              <h2>Document ID: {item.id}</h2>
-              <p>Status: {item.record_type || 'No Data'}</p>
-              <p>Created On: {item.created_on || 'No Data'}</p>
-              <h3>Workflow:</h3>
-              <ul>
-                {item.workflow.length > 0 ? (
-                  item.workflow.map((workflow) => (
-                    <li key={workflow.workflow_id}>{workflow.workflow_name}</li>
+              {/* Document Dropdown */}
+              <div className="form-group">
+                  <label htmlFor="document-select">Document:</label>
+                  <select
+                      id="document-select"
+                      value={selectedDocument}
+                      onChange={(e) => setSelectedDocument(e.target.value)}
+                      className="form-control"
+                  >
+                      <option value="">All Documents</option>
+                      {documents.length > 0 &&
+                          documents.map((doc) => (
+                              <option key={doc.id} value={doc.id}>
+                                  {doc.name}
+                              </option>
+                          ))}
+                  </select>
+              </div>
+
+              <button type="submit" className="btn btn-primary">
+                  Fetch Workflow
+              </button>
+          </form>
+
+
+          {/* Loading Spinner */}
+          {loading && <div>Loading...</div>}
+
+          {/* Error Handling */}
+          {error && <div className="error">Error: {error.message}</div>}
+
+          {/* Display workflow data */}
+          <ul className="workflow-list">
+              {workflowData.length > 0 ? (
+                  workflowData.map((item) => (
+                      <li key={item.id} className="workflow-item">
+                          <h2>Document ID: {item.id}</h2>
+                          <p>Status: {item.record_type || 'No Data'}</p>
+                          <p>Created On: {item.created_on || 'No Data'}</p>
+                          <h3>Workflow:</h3>
+                          <ul>
+                              {/* Check if workflow is an array and has length > 0 */}
+                              {Array.isArray(item.workflow) && item.workflow.length > 0 ? (
+                                  item.workflow.map((workflow) => (
+                                      <li key={workflow.workflow_id}>{workflow.workflow_name}</li>
+                                  ))
+                              ) : (
+                                  <li>No workflow</li>  // Display "No workflow" if workflow is not an array or empty
+                              )}
+                          </ul>
+
+                          <h3>Step:</h3>
+                          <ul>
+                              {/* Check if step is an array and has length > 0 */}
+                              {Array.isArray(item.step) && item.step.length > 0 ? (
+                                  item.step.map((step) => (
+                                      <li key={step.step_id}>{step.step_name}</li>
+                                  ))
+                              ) : (
+                                  <li>No steps</li>  // Display "No steps" if step is not an array or empty
+                              )}
+                          </ul>
+
+                      </li>
                   ))
-                ) : (
-                  <li>No workflow</li>
-                )}
-              </ul>
-              <h3>Step:</h3>
-              <ul>
-                {item.step.length > 0 ? (
-                  item.step.map((step) => (
-                    <li key={step.step_id}>{step.step_name}</li>
-                  ))
-                ) : (
-                  <li>No steps</li>
-                )}
-              </ul>
-            </li>
-          ))
-        ) : (
-          !loading && <p>No workflow data available</p>
-        )}
-      </ul>
-    </div>
+              ) : (
+                  !loading && <p>No workflow data available</p>
+              )}
+          </ul>
+      </div>
   );
 }
 

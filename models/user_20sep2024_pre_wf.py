@@ -697,14 +697,12 @@ class BaseData(db.Model):
 
     # Define relationship with StepBaseData
     steps_relationship = relationship("StepBaseData", back_populates="base_data")
+    # Define back_populates relationship with StepBaseData
+    # Relationship with BaseDataInline
+    # base_data_inlines = db.relationship('BaseDataInline', backref='base_data', lazy=True, cascade="all, delete-orphan")
     base_data_inlines = db.relationship('BaseDataInline', backref='parent_base_data', lazy=True, cascade="all, delete-orphan")
-
-    # Relationship with DocumentWorkflow and History
-    document_workflows = db.relationship('DocumentWorkflow', back_populates='base_data')
-    document_workflow_history = db.relationship('DocumentWorkflowHistory', back_populates='base_data')
-
-    def __repr__(self):
-        return f'<Data ID: {self.id}>'
+    # Define the relationship
+    # base_data_inlines = db.relationship('BaseDataInline', back_populates='base_data', cascade='all, delete-orphan')
 
     def __repr__(self):
         return f'<Data ID: {self.id}>'
@@ -1031,6 +1029,26 @@ class StepQuestionnaire(db.Model):
             return None
 
 
+class Workflow(db.Model):
+    __tablename__ = 'workflow'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    name = db.Column(db.String(50), unique=True)
+    description = db.Column(db.String(200))
+    status = db.Column(db.String(20))
+    restricted = db.Column(db.Boolean, default=True)
+    deadline_date = db.Column(db.DateTime, nullable=True)
+
+    # Define the relationship with WorkflowBaseData
+    # workflow_base_data = db.relationship("WorkflowBaseData", back_populates="workflow")
+
+    def to_dict(self):
+        return {'id': self.id, 'name': self.name}
+
+    def __repr__(self):
+        return f"{self.name} ({self.description})"
+
+
 class Step(db.Model):
     __tablename__ = 'step'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -1041,9 +1059,6 @@ class Step(db.Model):
     next_step_id = db.Column(db.Integer, db.ForeignKey('step.id'))
     deadline_date = db.Column(db.DateTime, nullable=True)
     reminder_date = db.Column(db.DateTime, nullable=True)
-
-    # Relationship with WorkflowSteps
-    workflow_steps = db.relationship("WorkflowSteps", back_populates="step")
 
     def __init__(self, base_data_id=None, step_id=None, hidden_data=None, workflow_id=None, start_date=None,
                  deadline_date=None, auto_move=False, end_date=None, start_recall=None,
@@ -1109,6 +1124,20 @@ class Step(db.Model):
 
     def __repr__(self):
         return f"{self.name} ({self.description})"
+
+
+class WorkflowSteps(db.Model):
+    __tablename__ = 'workflow_steps'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    workflow_id = db.Column(db.Integer, db.ForeignKey('workflow.id'))
+    step_id = db.Column(db.Integer, db.ForeignKey('step.id'))
+
+    workflow = db.relationship("Workflow", backref="workflow_steps")
+    step = db.relationship("Step", backref="workflow_steps")
+
+    def __repr__(self):
+        return f"{self.workflow_id}, step {self.step_id}"
 
 
 class WorkflowBaseData(db.Model):
@@ -1661,123 +1690,3 @@ class ContractTeam(db.Model):
     # Define relationships
     contract = relationship('Contract', back_populates='contract_teams')
     team = relationship('Team', back_populates='contract_teams')
-
-
-
-
-class DocumentWorkflow(db.Model):
-    __tablename__ = 'document_workflow'
-
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    base_data_id = db.Column(db.Integer, db.ForeignKey('base_data.id'))
-    workflow_id = db.Column(db.Integer, db.ForeignKey('workflow.id'))
-    current_step_id = db.Column(db.Integer, db.ForeignKey('step.id'))
-    start_date = db.Column(DateTime, nullable=False)
-    end_date = db.Column(DateTime, nullable=True)
-
-    # Relationships
-    base_data = db.relationship('BaseData', back_populates='document_workflows')
-    workflow = db.relationship('Workflow')
-    current_step = db.relationship('Step')
-
-    def __repr__(self):
-        return f"Document Workflow for {self.base_data_id} in Workflow {self.workflow_id} at Step {self.current_step_id}"
-
-
-'''
-
-class Workflow(db.Model):
-    __tablename__ = 'workflow'
-
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    name = db.Column(db.String(50), unique=True)
-    description = db.Column(db.String(200))
-    status = db.Column(db.String(20))
-    restricted = db.Column(db.Boolean, default=True)
-    deadline_date = db.Column(db.DateTime, nullable=True)
-
-    # Define the relationship with WorkflowBaseData
-    # workflow_base_data = db.relationship("WorkflowBaseData", back_populates="workflow")
-
-    def to_dict(self):
-        return {'id': self.id, 'name': self.name}
-
-    def __repr__(self):
-        return f"{self.name} ({self.description})"
-
-'''
-
-class Workflow(db.Model):
-    __tablename__ = 'workflow'
-
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    name = db.Column(db.String(50), unique=True)
-    description = db.Column(db.String(200))
-    status = db.Column(db.String(20))
-    restricted = db.Column(db.Boolean, default=True)
-    deadline_date = db.Column(db.DateTime, nullable=True)
-
-    # Relationship with WorkflowSteps
-    workflow_steps = db.relationship('WorkflowSteps', back_populates='workflow')
-
-    def to_dict(self):
-        return {'id': self.id, 'name': self.name}
-
-    def __repr__(self):
-        return f"{self.name} ({self.description})"
-
-
-'''
-class Step(db.Model):
-    __tablename__ = 'step'
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    name = db.Column(db.String(50), unique=True)
-    description = db.Column(db.String(200))
-    action = db.Column(db.String(50))
-    order = db.Column(db.Integer)
-    next_step_id = db.Column(db.Integer, db.ForeignKey('step.id'))
-
-    next_step = db.relationship('Step', remote_side=[id])  # Self-referential relationship for next step
-
-    # Relationship with WorkflowSteps
-    workflow_steps = db.relationship('WorkflowSteps', back_populates='step')
-
-    def __repr__(self):
-        return f"{self.name} ({self.description})"
-'''
-
-class WorkflowSteps(db.Model):
-    __tablename__ = 'workflow_steps'
-
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    workflow_id = db.Column(db.Integer, db.ForeignKey('workflow.id'))
-    step_id = db.Column(db.Integer, db.ForeignKey('step.id'))
-
-    # Relationships
-    workflow = db.relationship('Workflow', back_populates='workflow_steps')
-    step = db.relationship('Step', back_populates='workflow_steps')
-
-    def __repr__(self):
-        return f"Workflow ID: {self.workflow_id}, Step ID: {self.step_id}"
-
-
-class DocumentWorkflowHistory(db.Model):
-    __tablename__ = 'document_workflow_history'
-
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    base_data_id = db.Column(db.Integer, db.ForeignKey('base_data.id'))
-    workflow_id = db.Column(db.Integer, db.ForeignKey('workflow.id'))
-    step_id = db.Column(db.Integer, db.ForeignKey('step.id'))
-    transition_date = db.Column(DateTime, default=datetime.now, nullable=False)
-    status = db.Column(db.String(50))
-
-    # Relationships
-    base_data = db.relationship('BaseData', back_populates='document_workflow_history')
-    workflow = db.relationship('Workflow')
-    step = db.relationship('Step')
-
-    def __repr__(self):
-        return f"Document {self.base_data_id} transitioned in Workflow {self.workflow_id} to Step {self.step_id} on {self.transition_date}"
-
-
-
