@@ -501,6 +501,7 @@ def verify_reset_token(token, expiration=3600):
 
 # Function to get documents query based on user's role
 def get_documents_query(session, current_user):
+    print('Get documents query')
     query = session.query(BaseData).filter(BaseData.file_path != None).all()
     if current_user.is_authenticated:
         if current_user.has_role('Admin') or current_user.has_role('Authority'):
@@ -586,6 +587,50 @@ def get_area_subarea():
 @app.route('/api/documents', methods=['GET'])
 @login_required
 def get_documents():
+    try:
+        workflow_id = request.args.get('workflow_id')
+        step_id = request.args.get('step_id')
+        fi0 = request.args.get('fi0')
+
+        # Log the received parameters for debugging
+        app.logger.info(f"Received workflow_id: {workflow_id}, step_id: {step_id}, fi0: {fi0}")
+
+        # Start building the query from the BaseData table
+        query = db.session.query(BaseData)
+
+        # Explicitly define the joins using select_from and join to avoid ambiguity
+        query = query.select_from(BaseData).join(DocumentWorkflow, BaseData.id == DocumentWorkflow.base_data_id)
+
+        if workflow_id and workflow_id != 'all':
+            query = query.join(Workflow, Workflow.id == DocumentWorkflow.workflow_id)
+            query = query.filter(DocumentWorkflow.workflow_id == workflow_id)
+
+        if step_id and step_id != 'all':
+            query = query.join(WorkflowSteps, WorkflowSteps.step_id == DocumentWorkflow.step_id)
+            query = query.filter(DocumentWorkflow.step_id == step_id)
+
+        if fi0:
+            query = query.filter(BaseData.fi0 == fi0)
+
+        # Fetch the filtered documents
+        documents = query.all()
+
+        if not documents:
+            return jsonify({"error": "No documents found"}), 404
+
+        # Prepare the response data
+        document_list = [{'id': doc.id, 'name': doc.number_of_doc or f"Document {doc.id}"} for doc in documents]
+
+        return jsonify(document_list), 200
+
+    except Exception as e:
+        app.logger.error(f"Error fetching documents: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/documents223', methods=['GET'])
+@login_required
+def get_documents223():
     try:
         user_roles = session.get('user_roles', [role.name for role in current_user.roles] if current_user.roles else [])
         user_id = session.get('user_id', current_user.id)
@@ -815,6 +860,7 @@ def get_steps333():
 @app.route('/api/workflow-data', methods=['GET'])
 @login_required
 def get_workflow_data():
+    print('Get workflows data')
     try:
         base_data_id = request.args.get('base_data_id')
         workflow_id = request.args.get('workflow_id')
