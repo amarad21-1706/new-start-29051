@@ -591,9 +591,10 @@ def get_documents():
         workflow_id = request.args.get('workflow_id')
         step_id = request.args.get('step_id')
         fi0 = request.args.get('fi0')
+        document_id = request.args.get('id')  # Now using 'id' to retrieve the document ID
 
         # Log the received parameters for debugging
-        app.logger.info(f"Received workflow_id: {workflow_id}, step_id: {step_id}, fi0: {fi0}")
+        app.logger.info(f"Received workflow_id: {workflow_id}, step_id: {step_id}, fi0: {fi0}, document_id: {document_id}")
 
         # Start building the query from the BaseData table
         query = db.session.query(BaseData)
@@ -612,6 +613,9 @@ def get_documents():
         if fi0:
             query = query.filter(BaseData.fi0 == fi0)
 
+        if document_id:
+            query = query.filter(BaseData.id == document_id)  # Filter by 'id' field
+
         # Fetch the filtered documents
         documents = query.all()
 
@@ -626,7 +630,6 @@ def get_documents():
     except Exception as e:
         app.logger.error(f"Error fetching documents: {e}")
         return jsonify({"error": str(e)}), 500
-
 
 @app.route('/api/documents223', methods=['GET'])
 @login_required

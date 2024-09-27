@@ -60,55 +60,54 @@ function WorkflowView() {
   }, [selectedWorkflow]);
 
   // Fetch documents based on selected workflow and step
-  useEffect(() => {
-    if (selectedWorkflow === 'all' && selectedStep === 'all') {
-      fetch(`/api/documents`)
-        .then((response) => response.json())
-        .then((data) => {
-          setDocuments(data);
-        })
-        .catch((error) => setError(error));
-    } else {
-      fetch(`/api/documents?workflow_id=${selectedWorkflow}&step_id=${selectedStep}`)
-        .then((response) => response.json())
-        .then((data) => {
-          setDocuments(data);
-        })
-        .catch((error) => setError(error));
-    }
-  }, [selectedWorkflow, selectedStep]);
-
-  // Clear steps and documents when the workflow changes
-  useEffect(() => {
-    setSelectedStep('all');
-    setSteps([]);             // Clear steps
-    setDocuments([]);         // Clear documents
-  }, [selectedWorkflow]);
-
-  // Clear documents when the step changes
-  useEffect(() => {
-    setSelectedDocument('');  // Clear selected document
-    setDocuments([]);         // Clear documents
-  }, [selectedStep]);
-
-    // Handle form submission to fetch workflow data
-    const handleSubmit = (e) => {
-      e.preventDefault();
-      setError(null); // Clear previous errors
-      setLoading(true);
-
-      // Build query string with workflow, step, and year (fi0)
-      let queryString = `/api/documents?workflow_id=${selectedWorkflow}&step_id=${selectedStep}&fi0=${fi0}`;
+    useEffect(() => {
+      let queryString = `/api/documents`;
+      if (selectedWorkflow !== 'all') queryString += `?workflow_id=${selectedWorkflow}`;
+      if (selectedStep !== 'all') queryString += `&step_id=${selectedStep}`;
 
       fetch(queryString)
         .then((response) => response.json())
         .then((data) => {
-          setWorkflowData(data);
-          setLoading(false);
+          setDocuments(data);  // Set the fetched documents
+        })
+        .catch((error) => setError(error));
+    }, [selectedWorkflow, selectedStep]);
+
+      // Clear steps and documents when the workflow changes
+      useEffect(() => {
+        setSelectedStep('all');
+        setSteps([]);             // Clear steps
+        setDocuments([]);         // Clear documents
+      }, [selectedWorkflow]);
+
+      // Clear documents when the step changes
+      useEffect(() => {
+        setSelectedDocument('');  // Clear selected document
+        setDocuments([]);         // Clear documents
+      }, [selectedStep]);
+
+  const handleSubmit = (e) => {
+      e.preventDefault();
+      setError(null);  // Clear previous errors
+      setLoading(true);
+
+      // Build query string with workflow, step, fi0, and document
+      let queryString = `/api/documents?workflow_id=${selectedWorkflow}&step_id=${selectedStep}&fi0=${fi0}`;
+
+      // If a specific document is selected, add it to the query
+      if (selectedDocument !== '') {
+        queryString += `&id=${selectedDocument}`;  // Pass 'id' for the selected document
+      }
+
+      fetch(queryString)
+        .then((response) => response.json())
+        .then((data) => {
+          setWorkflowData(data);  // Set fetched workflow data
+          setLoading(false);       // Stop loading
         })
         .catch((error) => {
-          setError(error); // Set error if fetch fails
-          setLoading(false); // Stop loading
+          setError(error);  // Set error if fetch fails
+          setLoading(false);  // Stop loading
         });
     };
 
@@ -182,7 +181,7 @@ function WorkflowView() {
                   <select
                       id="document-select"
                       value={selectedDocument}
-                      onChange={(e) => setSelectedDocument(e.target.value)}
+                      onChange={(e) => setSelectedDocument(e.target.value)}  // Update the selected document state
                       className="form-control"
                   >
                       <option value="">All Documents</option>
