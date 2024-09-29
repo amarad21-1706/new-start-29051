@@ -71,6 +71,7 @@ function WorkflowView() {
       .then((response) => response.json())
       .then((data) => {
         console.log('Fetched Data:', data);
+
         if (Array.isArray(data)) {
           setWorkflowData(data);  // Set data for the timeline
           setDocuments(data);     // Set documents for the dropdown
@@ -102,11 +103,9 @@ function WorkflowView() {
       .then((response) => response.json())
       .then((data) => {
         if (Array.isArray(data)) {
-          setWorkflowData(data);  // Set data for the timeline
-          setDocuments(data);     // Set documents for the dropdown
+          setWorkflowData(data);  // Ensure workflowData is an array
         } else {
-          setWorkflowData([]);    // If not an array, set to empty
-          setDocuments([]);       // Clear documents dropdown
+          setWorkflowData([]);  // If it's not an array, set it to empty array
         }
         setLoading(false);
       })
@@ -117,18 +116,12 @@ function WorkflowView() {
   };
 
   // Prepare groups and items for the timeline
+  const groups = [{ id: 1, title: 'Documents' }];  // One group for simplicity
 
-  // 1. Create a group for each document
-  const groups = workflowData.map((doc) => ({
-    id: doc.id, // Each document gets its own unique group
-    title: `Doc: ${doc.name}`,  // Group title is the document name
-  }));
-
-  // 2. Map each document to its own timeline item
   const items = workflowData.map((doc) => ({
     id: doc.id,
-    group: doc.id,  // Ensure the document is in its own group (row)
-    title: `Doc: ${doc.name}`,
+    group: 1,
+    title: `Doc: ${doc.name}`,  // Assuming 'name' is the document name
     start_time: moment(doc.workflows[0]?.date_start),  // Use the actual date_start from first workflow
     end_time: moment(doc.workflows[0]?.date_end)      // Use the actual date_end from first workflow
   }));
@@ -141,16 +134,16 @@ function WorkflowView() {
         <div className="form-group">
           <label htmlFor="workflow-select">Workflow:</label>
           <select
-            id="workflow-select"
-            value={selectedWorkflow}
-            onChange={(e) => setSelectedWorkflow(e.target.value)}
-            className="form-control"
+              id="workflow-select"
+              value={selectedWorkflow}
+              onChange={(e) => setSelectedWorkflow(e.target.value)}
+              className="form-control"
           >
             <option value="all">All Workflows</option>
             {workflows.map((wf) => (
-              <option key={wf.id} value={wf.id}>
-                {wf.name}
-              </option>
+                <option key={wf.id} value={wf.id}>
+                  {wf.name}
+                </option>
             ))}
           </select>
         </div>
@@ -158,16 +151,16 @@ function WorkflowView() {
         <div className="form-group">
           <label htmlFor="step-select">Step:</label>
           <select
-            id="step-select"
-            value={selectedStep}
-            onChange={(e) => setSelectedStep(e.target.value)}
-            className="form-control"
+              id="step-select"
+              value={selectedStep}
+              onChange={(e) => setSelectedStep(e.target.value)}
+              className="form-control"
           >
             <option value="all">All Steps</option>
             {steps.map((step) => (
-              <option key={step.id} value={step.id}>
-                {step.name}
-              </option>
+                <option key={step.id} value={step.id}>
+                  {step.name}
+                </option>
             ))}
           </select>
         </div>
@@ -175,10 +168,10 @@ function WorkflowView() {
         <div className="form-group">
           <label htmlFor="year-select">Year (FI0):</label>
           <select
-            id="year-select"
-            value={fi0}
-            onChange={(e) => setFi0(e.target.value)}
-            className="form-control"
+              id="year-select"
+              value={fi0}
+              onChange={(e) => setFi0(e.target.value)}
+              className="form-control"
           >
             <option value="2024">2024</option>
             <option value="2023">2023</option>
@@ -191,17 +184,18 @@ function WorkflowView() {
         <div className="form-group">
           <label htmlFor="document-select">Document:</label>
           <select
-            id="document-select"
-            value={selectedDocument}
-            onChange={(e) => setSelectedDocument(e.target.value)}
-            className="form-control"
+              id="document-select"
+              value={selectedDocument}
+              onChange={(e) => setSelectedDocument(e.target.value)}
+              className="form-control"
           >
             <option value="">All Documents</option>
-            {documents.map((doc) => (
-              <option key={doc.id} value={doc.id}>
-                {doc.name}
-              </option>
-            ))}
+            {documents.length > 0 &&
+                documents.map((doc) => (
+                    <option key={doc.id} value={doc.id}>
+                      {doc.name}
+                    </option>
+                ))}
           </select>
         </div>
 
@@ -218,12 +212,12 @@ function WorkflowView() {
 
       {/* Render the Timeline */}
       {!loading && workflowData.length > 0 && (
-        <Timeline
-          groups={groups}
-          items={items}
-          defaultTimeStart={moment().startOf('year')}
-          defaultTimeEnd={moment().endOf('year')}
-        />
+          <Timeline
+              groups={groups}
+              items={items}
+              defaultTimeStart={moment().startOf('year')}
+              defaultTimeEnd={moment().endOf('year')}
+          />
       )}
     </div>
   );
