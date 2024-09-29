@@ -4,6 +4,10 @@ from db import db
 from flask_admin import Admin
 from flask import Blueprint, render_template
 
+from flask_admin import Admin, AdminIndexView, expose
+from flask_login import current_user
+from flask import session
+
 from flask import current_app as app
 
 from flask_admin.form.rules import FieldSet
@@ -56,16 +60,16 @@ from config.config import (get_if_active, get_subarea_name, get_current_interval
 from config.custom_fields import CustomFileUploadField  # Import the custom field
 
 from models.user import (Users, UserRoles, Role, Table, Questionnaire, Question,
-        QuestionnaireQuestions, BaseData, Product, Plan, PlanProducts,
-        Answer, Company, Area, Subarea, AreaSubareas,
-        QuestionnaireCompanies, CompanyUsers, Status, Lexic,
-        Interval, Subject, Cart, AuditLog, Post, Ticket, StepQuestionnaire,
-        Workflow, Step, BaseData, BaseDataInline, WorkflowSteps, WorkflowBaseData,
-        DocumentWorkflow, DocumentWorkflowHistory,
-                         Container, Config,
-                         Contract, ContractParty, ContractTerm, ContractDocument,
-                         ContractStatusHistory, ContractArticle, Party,
-                         get_config_values)
+                                QuestionnaireQuestions, BaseData, Product, Plan, PlanProducts,
+                                Answer, Company, Area, Subarea, AreaSubareas,
+                                QuestionnaireCompanies, CompanyUsers, Status, Lexic,
+                                Interval, Subject, Cart, AuditLog, Post, Ticket, StepQuestionnaire,
+                                Workflow, Step, BaseData, BaseDataInline, WorkflowSteps, WorkflowBaseData,
+                                DocumentWorkflow, DocumentWorkflowHistory,
+                                Container, Config,
+                                Contract, ContractParty, ContractTerm, ContractDocument,
+                                ContractStatusHistory, ContractArticle, Party,
+                                get_config_values)
 
 from wtforms.widgets import DateTimeInput
 
@@ -95,13 +99,6 @@ from flask import session
 
 config = Config()
 
-
-# Custom Admin Index View to manage session roles
-from flask_admin import Admin, AdminIndexView, expose
-from flask_login import current_user
-from flask import session
-
-# Custom Admin Index View to manage session roles
 '''
 class MyAdminIndexView(AdminIndexView):
     @expose('/')
@@ -152,6 +149,7 @@ class BaseDataView(ModelView):
         if not self.is_accessible():
             return redirect(url_for('login', next=request.url))
 
+    '''
     def can_edit(self):
         return current_user.is_authenticated and (current_user.has_role('Admin') or current_user.has_role('Manager')
                                                   or current_user.has_role('Employee'))
@@ -166,10 +164,7 @@ class BaseDataView(ModelView):
     def can_view_details(self):
         return current_user.is_authenticated and (current_user.has_role('Admin') or current_user.has_role('Manager')
                                                   or current_user.has_role('Employee'))
-
-    def is_accessible(self):
-        # Add logic here to check if the user has access to this view
-        return True
+    '''
 
     def inaccessible_callback(self, name, **kwargs):
         # Redirect to the login page if the user doesn't have access
@@ -197,7 +192,6 @@ class BaseDataView(ModelView):
             else:
                 raise ValidationError("Invalid date format for date_of_doc.")
 
-
     def create_form(self, obj=None):
         form = super(BaseDataView, self).create_form(obj)
         return form
@@ -220,14 +214,18 @@ class CheckboxField(BooleanField):
             self.data = True
         else:
             self.data = False
+
     def populate_obj(self, obj, name):
         setattr(obj, name, "Yes" if self.data else "No")  # Customize as per your model
 
+
 class SignedContractsView(ModelView):
-    column_list = ['contract_name', 'contract_status', 'created_by_user', 'start_date', 'end_date']
+    column_list = ['contract_name', 'contract_status', 'created_by_user',
+                   'start_date', 'end_date']
 
     # Columns that can be edited (if editing were allowed)
-    form_columns = ['contract_name', 'contract_type', 'contract_status', 'start_date', 'end_date', 'description', 'created_by_user']
+    form_columns = ['contract_name', 'contract_type', 'contract_status',
+                    'start_date', 'end_date', 'description', 'created_by_user']
 
     # Columns that can be filtered
     column_filters = ['contract_status', 'start_date', 'end_date']
@@ -263,7 +261,7 @@ class SignedContractsView(ModelView):
 
 class ContractArticleAdmin(ModelView):
     can_edit = True
-    can_delete =True
+    can_delete = True
     can_create = False
     can_export = True
     can_view_details = True
@@ -476,6 +474,7 @@ class DraftingContractsView(ModelView):
         # Remove contract_id check from create_view handling
         return super(DraftingContractsView, self)._handle_view(name, **kwargs)
 
+
 class UnassignedDocumentsBaseDataView(ModelView):
     can_create = False  # Optionally disable creation
     can_edit = True  # Optionally disable editing
@@ -515,7 +514,7 @@ class UnassignedDocumentsBaseDataView(ModelView):
         query = db.session.query(BaseData)
 
         # Filter documents with no workflows assigned
-        query = query.outerjoin(DocumentWorkflow).filter(DocumentWorkflow.id == None)
+        query = query.outerjoin(DocumentWorkflow).filter(DocumentWorkflow.id is None)
         # Filter for documents with workflows
 
         # Filter based on user roles
@@ -561,7 +560,6 @@ class UnassignedDocumentsBaseDataView(ModelView):
                 return True
         return False
 
-
     @action('action_attach_to_workflow', 'Attach to Workflow',
             'Are you sure you want to assign these documents to a workflow?')
     def action_attach_to_workflow(self, ids):
@@ -570,7 +568,7 @@ class UnassignedDocumentsBaseDataView(ModelView):
             app.logger.info(f"Attach to Workflow triggered for document IDs: {ids}")
 
             # Parse the document IDs into integers
-            document_ids = [int(id) for id in ids]
+            document_ids = [int(id_1) for id_1 in ids]
 
             # Query the selected documents based on their IDs
             selected_documents = BaseData.query.filter(BaseData.id.in_(document_ids)).all()
@@ -747,7 +745,7 @@ class DocumentsBaseDataDetails(ModelView):
             'Are you sure you want to change documents deadline?')
     def action_manage_dws_deadline(self, ids):
         # Parse the list of IDs
-        id_list = [int(id) for id in ids]
+        id_list = [int(id_1) for id_1 in ids]
 
         # Define the selected columns you want to retrieve
         column_list = [DocumentWorkflow.base_data_id, DocumentWorkflow.workflow_id,
@@ -806,6 +804,7 @@ class BaseDataViewCommon(ModelView):
             current_interval = [t[2] for t in self.intervals if t[0] == nr_intervals]
         except:
             current_interval = intervals[1]
+            pass
 
         first_element = current_interval[0] if current_interval else None
         interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
@@ -952,8 +951,10 @@ class Tabella21_dataView(ModelView):
 
     # Customize inlist for the View class
     column_default_sort = ('company_id', 'fi0')
-    column_searchable_list = ('company_id', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fc1')  # Adjust based on your model structure
-    column_filters = ('company_id', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fc1')  # Adjust based on your model structure
+    column_searchable_list = ('company_id', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fc1')
+    # Adjust based on your model structure
+    column_filters = ('company_id', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fc1')
+    # Adjust based on your model structure
 
     # Specify fields to be excluded from the form
     form_excluded_columns = ('user_id', 'status_id', 'created_by', 'created_on', 'updated_on')
@@ -1868,7 +1869,7 @@ class Tabella25_dataView(ModelView):
         try:
             model = self.model()
             form.populate_obj(model)
-
+            comp_id = None
             if current_user.is_authenticated:
                 model.user_id = current_user.id
                 created_by = current_user.username
@@ -1879,7 +1880,7 @@ class Tabella25_dataView(ModelView):
                     model.fi7 = form.fi1.data + form.fi2.data
                     model.fn1 = 100 * form.fi1.data / (form.fi1.data + form.fi2.data)
                     model.fn2 = 100 * form.fi2.data / (form.fi1.data + form.fi2.data)
-                    model.fn3 = 100 * (form.fi1.data / (form.fi1.data + form.fi2.data) + \
+                    model.fn3 = 100 * (form.fi1.data / (form.fi1.data + form.fi2.data) +
                                        form.fi2.data / (form.fi1.data + form.fi2.data))
                 else:
                     model.fi7 = 0
@@ -1892,7 +1893,7 @@ class Tabella25_dataView(ModelView):
                     model.fi6 = form.fi4.data + form.fi5.data
                     model.fn4 = 100 * form.fi4.data / (form.fi4.data + form.fi5.data)
                     model.fn5 = 100 * form.fi5.data / (form.fi4.data + form.fi5.data)
-                    model.fn6 = 100 * (form.fi4.data / (form.fi4.data + form.fi5.data) + \
+                    model.fn6 = 100 * (form.fi4.data / (form.fi4.data + form.fi5.data) +
                                        form.fi5.data / (form.fi4.data + form.fi5.data))
                 else:
                     model.fi6 = 0
@@ -2052,7 +2053,7 @@ class Tabella25_dataView(ModelView):
             model.fn2 = 0
 
         if (form.fi1.data + form.fi2.data) != 0:
-            model.fn3 = 100 * (form.fi1.data / (form.fi1.data + form.fi2.data) + \
+            model.fn3 = 100 * (form.fi1.data / (form.fi1.data + form.fi2.data) +
                         form.fi2.data / (form.fi1.data + form.fi2.data))
 
         # QUANT
@@ -2068,7 +2069,7 @@ class Tabella25_dataView(ModelView):
             model.fn5 = 0
 
         if (form.fi4.data + form.fi5.data) != 0:
-            model.fn6 = 100 * (form.fi4.data / (form.fi4.data + form.fi5.data) + \
+            model.fn6 = 100 * (form.fi4.data / (form.fi4.data + form.fi5.data) +
                         form.fi5.data / (form.fi4.data + form.fi5.data))
 
         if result == False:
@@ -5575,9 +5576,6 @@ class PlanView(PlanForm):
 
 class ProductView(ProductForm):
     pass  # No customizations needed for now
-
-class ProductView(ProductForm):
-    pass  # No customizations needed for
 
 class QuestionnaireModelView(ModelView):
     form_columns = ['questionnaire_id', 'questionnaire_type', 'name', 'interval', 'deadline_date', 'status_id', 'headers']

@@ -24,7 +24,9 @@ from sqlalchemy.exc import OperationalError
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.exceptions import HTTPException
 from db import db
-from flask import Flask, render_template, redirect, url_for, request, g, make_response, flash, Markup, send_from_directory
+from flask import (Flask, render_template, redirect, url_for, request, g,
+                   make_response, flash, Markup,
+                   send_from_directory)
 import datetime
 from dateutil import rrule
 from flask_wtf import FlaskForm
@@ -198,7 +200,7 @@ print('JSON decoder on')
 #cache = Cache(app)
 # Choose one geocoder based on your preference:
 # geocoder = geocoder.geocoder  # Original implementation
-geocoder = os.getenv('OPENCAGE_GEOCODE')
+# geocoder = os.getenv('OPENCAGE_GEOCODE')
 GEONAMES_USERNAME = os.getenv('GEONAMES_USERNAME')
 NOMINATIM_URL = os.getenv('NOMINATIM_URL')
 cache = TTLCache(maxsize=100, ttl=86400)  # Adjust cache size and TTL as needed
@@ -1144,11 +1146,7 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
                 "admin_1_url": admin_1_url,
                 "admin_2_url": admin_2_url,
                 "admin_3_url": admin_3_url,
-                "admin_4_url": admin_4_url,
-
-                "admin_5_url": admin_5_url,
-
-                "admin_6_url": admin_6_url,
+                "admin_4_url": admin_4_url, # "admin_5_url": admin_5_url, admin_6_url": admin_6_url,
                 "admin_10_url": admin_10_url,
                 "left_menu_items": menu_data,
                 "unread_notices_count": unread_notices_count,
@@ -4917,7 +4915,6 @@ def subscriptions():
                     'status': 'active' if subscription.end_date is None or subscription.end_date > datetime.utcnow() else 'inactive',
                     'start_date': subscription.start_date,
                     'end_date': subscription.end_date,
-                    'status': subscription.status,
                 }
             else:
                 subscription_info = {
@@ -4926,7 +4923,6 @@ def subscriptions():
                     'status': 'N/A',
                     'start_date': 'N/A',
                     'end_date': 'N/A',
-                    'status': 'N/A'
                 }
         else:
             subscription_info = {
@@ -4935,7 +4931,6 @@ def subscriptions():
                 'status': 'N/A',
                 'start_date': 'N/A',
                 'end_date': 'N/A',
-                'status': 'N/A'
             }
 
         logging.debug(f'Subscription info: {subscription_info}')

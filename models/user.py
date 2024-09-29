@@ -925,63 +925,6 @@ event.listen(db.session, 'after_flush', after_flush_listener)
 event.listen(db.session, 'after_flush_postexec', after_flush_postexec_listener)
 
 
-'''
-class StepBaseData(db.Model):
-    __tablename__ = 'step_base_data'
-
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    base_data_id = db.Column(db.Integer, db.ForeignKey('base_data.id'))
-    workflow_id = db.Column(db.Integer, db.ForeignKey('workflow.id'))
-    step_id = db.Column(db.Integer, db.ForeignKey('step.id'))
-    status_id = db.Column(db.Integer, db.ForeignKey('status.id'))
-    start_date = db.Column(db.DateTime, default=func.current_timestamp())
-    deadline_date = db.Column(db.DateTime)
-    auto_move = db.Column(db.Boolean, default=False)
-    end_date = db.Column(db.DateTime)
-    hidden_data = db.Column(db.String(255))
-    start_recall = db.Column(db.Integer, default=0)
-    deadline_recall = db.Column(db.Integer, default=0)
-    end_recall = db.Column(db.Integer, default=0)
-    recall_unit = db.Column(db.String(24), default='day')
-
-    open_action = db.Column(Boolean, default=False)
-
-    # Define relationship with BaseData
-    base_data = relationship("BaseData", back_populates="steps_relationship")
-    workflow = relationship("Workflow", foreign_keys=[workflow_id])
-    step = relationship("Step", foreign_keys=[step_id])
-    status = relationship("Status", foreign_keys=[status_id])
-    # base_data = db.relationship('BaseData', back_populates='step_base_data')
-
-    @validates('auto_move')
-    def validate_auto_move(self, key, value):
-        # Ensure the value is explicitly a boolean
-        if not isinstance(value, bool):
-            raise ValueError("auto_move must be a boolean value")
-        return value
-
-    # Define unique constraint
-    #__table_args__ = (
-    #    UniqueConstraint('base_data_id', 'workflow_id', 'step_id', 'status_id', name='unique_step_base_data'),
-    #)
-
-    def __repr__(self):
-        return f"Workflow ID {self.id}: doc {self.base_data_id} in wf {self.workflow_id}, step {self.step_id}, status {self.status_id}"
-
-    @classmethod
-    def create(cls, **kwargs):
-        try:
-            instance = cls(**kwargs)
-            db.session.add(instance)
-            db.session.commit()
-            return instance
-        except IntegrityError as e:
-            db.session.rollback()
-            # Handle constraint violation error
-            print("Constraint violation error:", e)
-            return None
-'''
-
 class StepQuestionnaire(db.Model):
     __tablename__ = 'step_questionnaire'
 
@@ -1009,11 +952,6 @@ class StepQuestionnaire(db.Model):
     workflow = relationship("Workflow", foreign_keys=[workflow_id])
     step = relationship("Step", foreign_keys=[step_id])
     status = relationship("Status", foreign_keys=[status_id])
-
-    # Define unique constraint
-    #__table_args__ = (
-    #    UniqueConstraint('base_data_id', 'workflow_id', 'step_id', 'status_id', name='unique_step_base_data'),
-    #)
 
     def __repr__(self):
         return f"Quesionnaire ID {self.id}: quest {self.questionnaire_id} in wf {self.workflow_id}, step {self.step_id}, status {self.status_id}"
