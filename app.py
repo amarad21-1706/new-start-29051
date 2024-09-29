@@ -1,6 +1,10 @@
-
+import os
+'''
+print(f"FLASK_APP: {os.getenv('FLASK_APP')}")
+print(f"FLASK_ENV: {os.getenv('FLASK_ENV')}")
+print(f"FLASK_DEBUG: {os.getenv('FLASK_DEBUG')}")
 # DEBUG LOGGING LOGGER TOOLBAR: see app_factory.py
-
+'''
 # app.py (or run.py)
 import traceback
 import re
@@ -152,7 +156,6 @@ from werkzeug.utils import secure_filename
 from werkzeug.datastructures import ImmutableMultiDict
 
 from flask_login import login_user, logout_user, current_user
-import os
 
 from flask_caching import Cache
 import geocoder
@@ -226,7 +229,6 @@ login_manager = LoginManager(app)
 
 stripe.api_key = app.config['STRIPE_API_KEY']
 stripe.publishable_key = app.config['STRIPE_PUBLISHABLE_KEY']
-
 
 # Register the password reset route
 # app.add_url_rule('/admin_reset_password', 'admin_reset_password', admin_reset_password, methods=['GET', 'POST'])
@@ -464,6 +466,31 @@ with app.app_context():
 
     model_document = create_crud_blueprint('model_document', __name__)
 
+import logging
+from logging import FileHandler, Formatter
+
+# Configure error logging to a file
+print('app.debug is', app.debug)
+import logging
+from logging import FileHandler, Formatter
+
+# Basic logging configuration
+if not app.debug:
+    file_handler = FileHandler('error.log')
+    file_handler.setLevel(logging.ERROR)
+    file_handler.setFormatter(Formatter(
+        '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+    ))
+    app.logger.addHandler(file_handler)
+
+# For testing purposes, you can force an error log in debug mode:
+if app.debug:
+    app.logger.setLevel(logging.DEBUG)
+    app.logger.debug("Logging is active.")
+
+
+app.logger.info("Testing log output")
+app.logger.error("Testing error output")
 
 # Load menu items from JSON file
 json_file_path = os.path.join(os.path.dirname(__file__), 'static', 'js', 'menuStructure101.json')
@@ -768,6 +795,58 @@ def get_workflow_data():
     except Exception as e:
         app.logger.error(f"Error fetching workflow data: {e}")
         return jsonify({"error": str(e)}), 500
+
+@app.route('/attach_documents_to_workflow', methods=['POST'])
+def attach_documents_to_workflow():
+    try:
+        # Get the submitted form data
+        workflow_id = request.form.get('workflow_id')
+        step_id = request.form.get('step_id')
+        auto_move = request.form.get('auto_move') == 'True'  # Convert string to boolean
+        date_start = request.form.get('date_start')
+        date_end = request.form.get('date_end')
+        document_ids = request.form.get('document_ids').split(',')
+
+        app.logger.info(f"Received workflow_id: {workflow_id}, step_id: {step_id}, document_ids: {document_ids}")
+
+        # Fetch the selected workflow and step
+        selected_workflow = Workflow.query.get(workflow_id)
+        selected_step = Step.query.get(step_id)
+
+        # Fetch the selected documents
+        documents = BaseData.query.filter(BaseData.id.in_(document_ids)).all()
+
+        for doc in documents:
+            # Check if the document is already assigned to the workflow
+            existing_assignment = DocumentWorkflow.query.filter_by(
+                base_data_id=doc.id,
+                workflow_id=workflow_id
+            ).first()
+
+            if not existing_assignment:
+                # Create a new DocumentWorkflow entry if it doesn't exist
+                new_assignment = DocumentWorkflow(
+                    base_data_id=doc.id,
+                    workflow_id=workflow_id,
+                    current_step_id=step_id,
+                    start_date=date_start,
+                    end_date=date_end,
+                    auto_move=auto_move
+                )
+                db.session.add(new_assignment)
+            else:
+                app.logger.info(f"Document {doc.id} is already assigned to workflow {workflow_id}")
+
+        # Commit the changes to the database
+        db.session.commit()
+
+        flash("Documents successfully attached to the workflow.", "success")
+        return redirect(url_for('open_admin_3.index'))
+
+    except Exception as e:
+        app.logger.error(f"Error attaching documents to workflow: {e}")
+        flash(f"Error: {e}", "error")
+        return redirect(url_for('open_admin_3.index'))
 
 
 def create_company_folder222(company_id, subfolder):
@@ -1969,8 +2048,8 @@ def attach_documents_to_workflow_step():
                 start_recall=0,
                 deadline_recall=0,
                 end_recall=0,
-                recall_unit='...',
-                open_action='new',
+                recall_unit='day',
+                open_action=True,
                 auto_move=False # Include start_recall in the initialization
             )
 
@@ -6402,4 +6481,7 @@ if __name__ == '__main__':
 
     # TODO DEBUG
     logging.basicConfig(filename='app.log', level=logging.DEBUG)
-    app.run(debug=True, host='0.0.0.0', port=port, extra_files=['./static/js/menuStructure101.json'])
+    # Set `debug` in app.run based on config
+    app.run(debug=app.config['DEBUG'], host='0.0.0.0', port=port, extra_files=['./static/js/menuStructure101.json'])
+
+    # app.run(debug=True, host='0.0.0.0', port=port, extra_files=['./static/js/menuStructure101.json'])

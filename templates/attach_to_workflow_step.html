@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Attach Documents to Workflow{% endblock %}
+
+{% block content %}
+<div class="container">
+    <h1 class="mt-5">Attach Documents to Workflow</h1>
+
+    <form method="POST" action="{{ url_for('attach_documents_to_workflow') }}">
+        <div class="form-group">
+            <label for="workflow">Select Workflow:</label>
+            <select name="workflow_id" id="workflow" class="form-control">
+                {% for workflow in workflows %}
+                    <option value="{{ workflow.id }}">{{ workflow.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label for="step">Select Step:</label>
+            <select name="step_id" id="step" class="form-control">
+                {% for step in steps %}
+                    <option value="{{ step.id }}">{{ step.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <!-- Auto-move field (boolean) -->
+        <div class="form-group">
+            <label for="auto_move">Auto Move:</label>
+            <select name="auto_move" id="auto_move" class="form-control">
+                <option value="True">Yes</option>
+                <option value="False">No</option>
+            </select>
+        </div>
+
+        <!-- Start Date -->
+        <div class="form-group">
+            <label for="date_start">Start Date:</label>
+            <input type="date" name="date_start" id="date_start" class="form-control">
+        </div>
+
+        <!-- End Date -->
+        <div class="form-group">
+            <label for="date_end">End Date:</label>
+            <input type="date" name="date_end" id="date_end" class="form-control">
+        </div>
+
+        <!-- Hidden input for document IDs -->
+        <input type="hidden" name="document_ids" value="{{ selected_documents | map(attribute='id') | join(',') }}">
+
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+
+    <h2 class="mt-5">Selected Documents:</h2>
+    <ul class="list-group">
+        {% for document in selected_documents %}
+            <li class="list-group-item">Document ID: {{ document.id }} - {{ document.number_of_doc or 'Unnamed Document' }}</li>
+        {% endfor %}
+    </ul>
+
+    <div class="mt-3">
+        <a href="{{ url_for('admin.index') }}" class="btn btn-secondary">Home</a>
+        <a href="{{ url_for('open_admin_3.index') }}" class="btn btn-warning">Back</a>
+    </div>
+</div>
+{% endblock %}

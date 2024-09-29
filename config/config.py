@@ -135,6 +135,7 @@ class Config:
         self.CACHE_REDIS_DB = 0
         self.CACHE_REDIS_URL = 'redis://localhost:6379/0'
         self.CACHE_DEFAULT_TIMEOUT = 300
+        self.TEMPLATES_AUTO_RELOAD = True
 
         # CAPTCHA
         # selfRECAPTCHA_PUBLIC_KEY = some_keys['recaptcha_public_key']

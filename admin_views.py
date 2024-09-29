@@ -2,7 +2,9 @@
 # You can continue defining other ModelViews for your models
 from db import db
 from flask_admin import Admin
-from flask import Blueprint
+from flask import Blueprint, render_template
+
+from flask import current_app as app
 
 from flask_admin.form.rules import FieldSet
 from flask_admin.model import typefmt
@@ -21,13 +23,13 @@ from wtforms.fields import DateField
 from flask_admin import BaseView
 from flask_admin.base import expose
 from wtforms import IntegerField, FileField, HiddenField
-from datetime import datetime, date
+from datetime import datetime, date, timedelta
 
 from sqlalchemy import and_
 from flask_wtf import FlaskForm
 from flask_admin.form import rules
 from flask import current_app
-from flask_login import current_user
+from flask_login import current_user, login_required, LoginManager
 from flask_admin.actions import action  # Import the action decorator
 from flask_admin.form import JSONField
 from flask.views import MethodView
@@ -76,12 +78,11 @@ from forms.forms import (LoginForm, ForgotPasswordForm, ResetPasswordForm101, Re
                 CustomSubjectAjaxLoader, BaseSurveyForm)
 
 from flask_admin.form import FileUploadField
-from wtforms import (SelectField, BooleanField, ValidationError, EmailField)
-from wtforms import (SelectField, BooleanField, ValidationError, EmailField)
+from wtforms import (SelectField, BooleanField, ValidationError, EmailField, HiddenField)
 from config.config import (Config, check_status, check_status_limited,
                            check_status_extended)
 
-from flask_login import login_required, LoginManager
+from flask import session
 
 from flask import flash, redirect, url_for, Markup
 from flask_admin.contrib.sqla import ModelView
@@ -475,9 +476,7 @@ class DraftingContractsView(ModelView):
         # Remove contract_id check from create_view handling
         return super(DraftingContractsView, self)._handle_view(name, **kwargs)
 
-
-
-class DocumentsAssignedBaseDataView(ModelView):
+class UnassignedDocumentsBaseDataView(ModelView):
     can_create = False  # Optionally disable creation
     can_edit = True  # Optionally disable editing
     can_delete = True  # Optionally disable deletion
@@ -502,381 +501,96 @@ class DocumentsAssignedBaseDataView(ModelView):
                      'interval_name': 'Interval', 'interval_ord': 'Interv.#', 'fi0': 'Year',
                      'record_type': 'Type', 'area_name': 'Area', 'subarea_name': 'Subarea',
                      'data_type': 'Data Type', 'subject_name': 'Subject', 'legal_name': 'Doc Type',
-                     'file_path': 'File', 'created_on':'Date created', 'number_of_doc': 'Doc. #',
+                     'file_path': 'File', 'created_on': 'Date created', 'number_of_doc': 'Doc. #',
                      'fc1': 'Note', 'no_action': 'No doc.'}
-    # column_descriptions
 
-    # Customize inlist for the View class
     column_default_sort = ('created_on', True)
     column_searchable_list = ('company_id', 'user_id', 'fi0', 'subject_id', 'legal_document_id', 'file_path')
-    # Adjust based on your model structure
     column_filters = ('company_id', 'user_id', 'fi0', 'subject_id', 'legal_document_id', 'file_path')
-    # Adjust based on your model structure
 
-    # Specify fields to be excluded from the form
     form_excluded_columns = ('company_id', 'status_id', 'created_by', 'updated_on')
 
     def get_query(self):
-        # Assuming `db` is your SQLAlchemy instance
+        # Query documents that are not yet assigned to any workflow
         query = db.session.query(BaseData)
 
-        # Apply any necessary filters or conditions here
-        query = query.filter(BaseData.file_path != None)
-        query = query.filter(BaseData.fi0 > (int(get_current_interval(1)[3:]) - 2))  # Filter by year
+        # Filter documents with no workflows assigned
+        query = query.outerjoin(DocumentWorkflow).filter(DocumentWorkflow.id == None)
+        # Filter for documents with workflows
 
-        # Filter out BaseData records without related StepBaseData records
-        subquery = db.session.query(distinct(StepBaseData.base_data_id)).subquery()
-
-        # Assign the subquery result to a variable (alias)
-        unrelated_data_ids = subquery
-
-        # Use the alias in the filter clause
-        query = query.filter(BaseData.id.in_(unrelated_data_ids))
-
+        # Filter based on user roles
         if current_user.is_authenticated:
             if current_user.has_role('Admin') or current_user.has_role('Authority'):
                 return query
             elif current_user.has_role('Manager'):
-                # Manager can only see records related to their company_users
-                # Assuming you have a relationship named 'user_companies' between User and CompanyUsers models
                 subquery = session.query(CompanyUsers.company_id).filter(
                     CompanyUsers.user_id == current_user.id
                 ).subquery()
                 query = query.filter(BaseData.company_id.in_(subquery))
             elif current_user.has_role('Employee'):
-                # Employee can only see their own records
                 query = query.filter(BaseData.user_id == current_user.id)
                 return query
 
-        # For other roles or anonymous users, return an empty query
-        return query.filter(BaseData.id < 0)
-
+        return query
 
     def get_count_query(self):
-        # Return count query for pagination
         return None  # Disable pagination count query
 
     def get_list(self, page, sort_column, sort_desc, search, filters, page_size=None):
+        try:
+            count, data = super().get_list(page, sort_column, sort_desc, search, filters, page_size)
 
-        count, data = super().get_list(page, sort_column, sort_desc, search, filters, page_size)
+            for item in data:
+                item.company_name = item.company.name if item.company else 'n.a.'
+                item.user_name = item.user.last_name if item.user else 'n.a.'
+                item.interval_name = item.interval.description if item.interval else 'n.a.'
+                item.area_name = item.area.name if item.area else 'n.a.'
+                item.subarea_name = item.subarea.name if item.subarea else 'n.a.'
+                item.subject_name = item.subject.name if item.subject else 'n.a.'
+                item.legal_name = item.subject.name if item.subject else 'n.a.'
 
-        # Fetch company and user names for each record
-        for item in data:
-            if item.company:
-                company_name = item.company.name
-            else:
-                company_name = 'n.a.'
-
-            if item.user:
-                user_name = item.user.last_name  # Use the correct attribute for the user's name
-            else:
-                user_name = 'n.a.'
-
-            if item.interval:
-                interval_name = item.interval.description  # Access the name of the Step object
-            else:
-                interval_name = 'n.a.'
-
-            if item.area:
-                area_name = item.area.name  # Access the name of the Step object
-            else:
-                area_name = 'n.a.'
-
-            if item.subarea:
-                subarea_name = item.subarea.name
-            else:
-                subarea_name = 'n.a.'
-
-            if item.subject:
-                subject_name = item.subject.name
-            else:
-                subject_name = 'n.a.'
-
-            if item.subject:
-                legal_name = item.subject.name
-            else:
-                legal_name = 'n.a.'
-
-            item.company_name = company_name
-            item.user_name = user_name
-            item.interval_name = interval_name
-            item.area_name = area_name
-            item.subarea_name = subarea_name
-            item.subject_name = subject_name
-            item.legal_name = legal_name
-
-        return count, data
+            return count, data
+        except Exception as e:
+            app.logger.error(f"Error in get_list: {e}")
+            raise  # Re-raise the exception so you still get the 500 if necessary
 
     def is_accessible(self):
         if current_user.is_authenticated:
             if (current_user.has_role('Admin') or current_user.has_role('Authority')
                     or current_user.has_role('Manager') or current_user.has_role('Employee')):
-                # Allow access for Admin, Manager, and Employee
                 return True
-
         return False
 
-    def on_model_change(self, form, model, is_created):
-        super().on_model_change(form, model, is_created)
-        # Reset form data
-        form.populate_obj(model)  # This resets the form data to its default values
 
-        if is_created:
-            # Handle new model creation:
-            # - Set default values
-            # - Send notification
-            # Apply your custom logic to set data_type
-            model.created_on = datetime.now()  # Set the created_on
-            pass
-        else:
-            # Handle existing model edit:
-            # - Compare previous and updated values
-            # - Trigger specific actions based on changes
-            pass
-
-        # Perform actions relevant to both creation and edit:
-        user_id = current_user.id  # Get the current user's ID or any other criteria
+    @action('action_attach_to_workflow', 'Attach to Workflow',
+            'Are you sure you want to assign these documents to a workflow?')
+    def action_attach_to_workflow(self, ids):
         try:
-            company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-        except:
-            company_id = None
-            pass
+            # Log the IDs of the selected documents
+            app.logger.info(f"Attach to Workflow triggered for document IDs: {ids}")
 
-        return model
+            # Parse the document IDs into integers
+            document_ids = [int(id) for id in ids]
 
+            # Query the selected documents based on their IDs
+            selected_documents = BaseData.query.filter(BaseData.id.in_(document_ids)).all()
 
-    # Common action to Flask Admin 'Documents' (attach/detach documents to/from W-S)
-    # TODO sostituire/complement action_manage_workflow_step con action_one_step_forward (to be built) - incuding MESSAGE etc etc
-    @action('action_manage_workflow_step', 'Workflow Management',
-            'Are you sure you want to change documents workflow?')
-    def action_manage_workflow_step(self, ids):
-        # Parse the list of IDs
-        id_list = [int(id) for id in ids]
+            # Fetch all available workflows and steps
+            workflows = Workflow.query.all()
+            steps = Step.query.all()
 
-        # Define the selected columns you want to retrieve
-        selected_columns = [BaseData.id, BaseData.user_id, BaseData.company_id,
-                            BaseData.interval_id, BaseData.interval_ord, BaseData.fi0,
-                            BaseData.record_type, BaseData.area_id, BaseData.subarea_id,
-                            BaseData.data_type, BaseData.subject_id, BaseData.legal_document_id,
-                            BaseData.file_path, BaseData.created_on, BaseData.number_of_doc,
-                            BaseData.fc1, BaseData.no_action]  # Add or remove columns as needed
+            # Render the final form with workflows, steps, and selected documents
+            return render_template('admin/attach_to_workflow.html',  # The form template
+                                   workflows=workflows,
+                                   steps=steps,
+                                   selected_documents=selected_documents)
+        except Exception as e:
+            # Log the error and flash a message
+            app.logger.error(f"Error in action_attach_to_workflow: {e}")
+            flash(f"Error attaching documents to workflow: {e}", 'error')
 
-        # Select specific columns
-        selected_documents = BaseData.query.with_entities(*selected_columns).filter(BaseData.id.in_(id_list)).all()
-
-        # Retrieve lists of workflows and steps from your database or any other source
-        workflows = Workflow.query.all()
-        steps = Step.query.all()
-
-        # Pass the lists of workflows, steps, and selected documents to the template
-        return render_template('admin/attach_to_workflow_step.html',
-                               workflows=workflows, steps=steps,
-                               selected_documents=selected_documents)
-
-
-class DocumentsNewBaseDataView(ModelView):
-    can_create = False  # Optionally disable creation
-    can_edit = True  # Optionally disable editing
-    can_delete = True  # Optionally disable deletion
-    name = 'Documents'
-    menu_icon_type = 'glyph'  # You can also use 'fa' for Font Awesome icons
-    menu_icon_value = 'glyphicon-list-alt'  # Icon class for the menu item
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.class_name = self.__class__.__name__  # Store the class name
-
-    column_list = [
-        'id', 'company_name', 'user_name',
-        'interval_name', 'interval_ord', 'fi0',
-        'record_type', 'area_name', 'subarea_name',
-        'data_type', 'subject_name', 'legal_name',
-        'file_path', 'created_on', 'number_of_doc',
-        'fc1', 'no_action'
-    ]
-
-    column_labels = {'id': 'Document ID', 'company_name': 'Company', 'user_name': 'User',
-                     'interval_name': 'Interval', 'interval_ord': 'Interv.#', 'fi0': 'Year',
-                     'record_type': 'Type', 'area_name': 'Area', 'subarea_name': 'Subarea',
-                     'data_type': 'Data Type', 'subject_name': 'Subject', 'legal_name': 'Doc Type',
-                     'file_path': 'File', 'created_on':'Date created', 'number_of_doc': 'Doc. #',
-                     'fc1': 'Note', 'no_action': 'No doc.'}
-    # column_descriptions
-
-    # Customize inlist for the View class
-    column_default_sort = ('created_on', True)
-    column_searchable_list = ('company_id', 'user_id', 'fi0', 'subject_id', 'legal_document_id', 'file_path')
-    # Adjust based on your model structure
-    column_filters = ('company_id', 'user_id', 'fi0', 'subject_id', 'legal_document_id', 'file_path')
-    # Adjust based on your model structure
-
-    # Specify fields to be excluded from the form
-    form_excluded_columns = ('company_id', 'status_id', 'created_by', 'updated_on')
-
-    def get_query(self):
-        # Assuming `db` is your SQLAlchemy instance
-        query = db.session.query(BaseData)
-
-        # Apply any necessary filters or conditions here
-        query = query.filter(BaseData.file_path != None)
-        query = query.filter(BaseData.fi0 > (int(get_current_interval(1)[3:]) - 2))  # Filter by year
-
-        # Filter out BaseData records without related StepBaseData records
-        subquery = db.session.query(distinct(StepBaseData.base_data_id)).subquery()
-
-        # Assign the subquery result to a variable (alias)
-        unrelated_data_ids = subquery
-
-        # Use the alias in the filter clause
-        query = query.filter(BaseData.id.notin_(unrelated_data_ids))
-
-        if current_user.is_authenticated:
-            if current_user.has_role('Admin') or current_user.has_role('Authority'):
-                return query
-            elif current_user.has_role('Manager'):
-                # Manager can only see records related to their company_users
-                # Assuming you have a relationship named 'user_companies' between User and CompanyUsers models
-                subquery = session.query(CompanyUsers.company_id).filter(
-                    CompanyUsers.user_id == current_user.id
-                ).subquery()
-                query = query.filter(BaseData.company_id.in_(subquery))
-            elif current_user.has_role('Employee'):
-                # Employee can only see their own records
-                query = query.filter(BaseData.user_id == current_user.id)
-                return query
-
-        # For other roles or anonymous users, return an empty query
-        return query.filter(BaseData.id < 0)
-
-    def get_count_query(self):
-        # Return count query for pagination
-        return None  # Disable pagination count query
-
-    def get_list(self, page, sort_column, sort_desc, search, filters, page_size=None):
-
-        count, data = super().get_list(page, sort_column, sort_desc, search, filters, page_size)
-
-        # Fetch company and user names for each record
-        for item in data:
-            if item.company:
-                company_name = item.company.name
-            else:
-                company_name = 'n.a.'
-
-            if item.user:
-                user_name = item.user.last_name  # Use the correct attribute for the user's name
-            else:
-                user_name = 'n.a.'
-
-            if item.interval:
-                interval_name = item.interval.description  # Access the name of the Step object
-            else:
-                interval_name = 'n.a.'
-
-            if item.area:
-                area_name = item.area.name  # Access the name of the Step object
-            else:
-                area_name = 'n.a.'
-
-            if item.subarea:
-                subarea_name = item.subarea.name
-            else:
-                subarea_name = 'n.a.'
-
-            if item.subject:
-                subject_name = item.subject.name
-            else:
-                subject_name = 'n.a.'
-
-            if item.subject:
-                legal_name = item.subject.name
-            else:
-                legal_name = 'n.a.'
-
-            item.company_name = company_name
-            item.user_name = user_name
-            item.interval_name = interval_name
-            item.area_name = area_name
-            item.subarea_name = subarea_name
-            item.subject_name = subject_name
-            item.legal_name = legal_name
-
-        return count, data
-
-    def is_accessible(self):
-        if current_user.is_authenticated:
-            if (current_user.has_role('Admin') or current_user.has_role('Authority')
-                    or current_user.has_role('Manager') or current_user.has_role('Employee')):
-                # Allow access for Admin, Manager, and Employee
-                return True
-
-        return False
-
-    def on_model_change(self, form, model, is_created):
-        super().on_model_change(form, model, is_created)
-        # Reset form data
-        form.populate_obj(model)  # This resets the form data to its default values
-
-        if is_created:
-            # Handle new model creation:
-            # - Set default values
-            # - Send notification
-            # Apply your custom logic to set data_type
-            model.created_on = datetime.now()  # Set the created_on
-            pass
-        else:
-            # Handle existing model edit:
-            # - Compare previous and updated values
-            # - Trigger specific actions based on changes
-            pass
-
-        # Perform actions relevant to both creation and edit:
-        user_id = current_user.id  # Get the current user's ID or any other criteria
-        try:
-            company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-        except:
-            company_id = None
-            pass
-
-        return model
-
-
-    # Common action to Flask Admin 'Documents' (attach/detach documents to/from W-S)
-    @action('action_manage_workflow_step', 'Workflow Management',
-            'Are you sure you want to change documents workflow?')
-    def action_manage_workflow_step(self, ids):
-        # Parse the list of IDs
-        id_list = [int(id) for id in ids]
-
-        # Define the selected columns you want to retrieve
-        selected_columns = [BaseData.id, BaseData.user_id, BaseData.company_id,
-                            BaseData.interval_id, BaseData.interval_ord, BaseData.fi0,
-                            BaseData.record_type, BaseData.area_id, BaseData.subarea_id,
-                            BaseData.data_type, BaseData.subject_id, BaseData.legal_document_id,
-                            BaseData.file_path, BaseData.created_on, BaseData.number_of_doc,
-                            BaseData.fc1, BaseData.no_action]  # Add or remove columns as needed
-
-        # Select specific columns
-        selected_documents = BaseData.query.with_entities(*selected_columns).filter(BaseData.id.in_(id_list)).all()
-
-        # Retrieve lists of workflows and steps from your database or any other source
-        workflows = Workflow.query.all()
-        steps = Step.query.all()
-
-        # Pass the lists of workflows, steps, and selected documents to the template
-        return render_template('admin/attach_to_workflow_step.html',
-                               workflows=workflows, steps=steps,
-                               selected_documents=selected_documents)
-
-
-# for document workflow management (forward, backward, deadlines etc) - for already distributed documents
-    # for document workflow management (forward, backward, deadlines etc) - for already distributed documents
-
-from wtforms import SelectField, HiddenField
-from flask import session
-from flask_login import current_user
-from datetime import datetime, timedelta
-
+            # Redirect back to the admin page in case of error
+            return redirect(url_for('open_admin_3.index'))  # Replace with the correct admin endpoint
 
 
 class DocumentsBaseDataDetails(ModelView):
@@ -919,8 +633,8 @@ class DocumentsBaseDataDetails(ModelView):
     # Dropdown choices for auto_move and recall_unit (already updated in form_extra_fields)
     form_choices = {
         'auto_move': [
-            (1, 'Yes'),
-            (0, 'No')
+            (True, 'Yes'),
+            (False, 'No')
         ],
         'recall_unit': [
             (0, 'None'),
@@ -1075,8 +789,8 @@ class DocumentsBaseDataDetails222(ModelView):
     # Dropdown choices for the create/edit form
     form_choices = {
         'auto_move': [
-            (1, 'Yes'),
-            (0, 'No')
+            (True, 'Yes'),
+            (False, 'No')
         ],
         'recall_unit': [
             (0, 'none'),
@@ -5223,18 +4937,22 @@ def create_admin_views(app, intervals):
         #                                             ))
 
         admin_app3.add_view(DocumentsBaseDataDetails(
-            name='Documents Workflow Management',
-            model=DocumentWorkflow,  # Replacing StepBaseData with the correct model
-            session=db.session,
-            endpoint='document_workflow'  # Make sure the endpoint is unique
+                                                name='Documents in Workflows',
+                                                model=DocumentWorkflow,  # Replacing StepBaseData with the correct model
+                                                session=db.session,
+                                                endpoint='document_workflow'  # Make sure the endpoint is unique
         ))
 
-        admin_app3.add_view(DocumentsAssignedBaseDataView(name='Documents Assigned to Workflows', model=BaseData, session=db.session,
-                                                  endpoint='assigned_documents'))
-        admin_app3.add_view(DocumentsNewBaseDataView(name='New Unassigned Documents', model=BaseData, session=db.session,
-                                                            endpoint='new_documents'))
-        admin_app3.add_view(ModelView(name='Workflows Dictionary', model=Workflow, session=db.session))
-        admin_app3.add_view(ModelView(name='Steps Dictionary', model=Step, session=db.session))
+        admin_app3.add_view(UnassignedDocumentsBaseDataView(name='Documents Unassigned To Workflows',
+                                                     model=BaseData,
+                                                     session=db.session,
+                                                    endpoint='new_documents'))
+        admin_app3.add_view(ModelView(name='Workflows Dictionary',
+                                      model=Workflow,
+                                      session=db.session))
+        admin_app3.add_view(ModelView(name='Steps Dictionary',
+                                      model=Step,
+                                      session=db.session))
 
 
         # Fourth Flask-Admin instance

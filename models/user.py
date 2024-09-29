@@ -941,7 +941,7 @@ class StepBaseData(db.Model):
     status_id = db.Column(db.Integer, db.ForeignKey('status.id'))
     start_date = db.Column(db.DateTime, default=func.current_timestamp())
     deadline_date = db.Column(db.DateTime)
-    auto_move = db.Column(db.Integer, default=0)
+    auto_move = db.Column(db.Boolean, default=False)
     end_date = db.Column(db.DateTime)
     hidden_data = db.Column(db.String(255))
     start_recall = db.Column(db.Integer, default=0)
@@ -960,8 +960,10 @@ class StepBaseData(db.Model):
 
     @validates('auto_move')
     def validate_auto_move(self, key, value):
-        return int(value)
-
+        # Ensure the value is explicitly a boolean
+        if not isinstance(value, bool):
+            raise ValueError("auto_move must be a boolean value")
+        return value
 
     # Define unique constraint
     #__table_args__ = (
@@ -1679,6 +1681,9 @@ class DocumentWorkflow(db.Model):
     current_step_id = db.Column(db.Integer, db.ForeignKey('step.id'))
     start_date = db.Column(DateTime, nullable=False)
     end_date = db.Column(DateTime, nullable=True)
+
+    # Add auto_move field
+    auto_move = db.Column(db.Boolean, default=False)  # Assuming it's a boolean field
 
     # Relationships
     base_data = db.relationship('BaseData', back_populates='document_workflows')
