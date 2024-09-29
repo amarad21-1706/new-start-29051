@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './WorkflowView.css';
+import Timeline from 'react-calendar-timeline';
+import 'react-calendar-timeline/lib/Timeline.css';
+import moment from 'moment';
 
 function WorkflowView() {
   const [workflowData, setWorkflowData] = useState([]);
@@ -16,7 +19,7 @@ function WorkflowView() {
   const [selectedDocument, setSelectedDocument] = useState('');
   const [fi0, setFi0] = useState(2024);
 
-  // Fetch all workflows when the component mounts
+  // Fetch workflows, steps, and documents as before
   useEffect(() => {
     fetch(`/api/get_workflows`)
       .then((response) => response.json())
@@ -30,10 +33,8 @@ function WorkflowView() {
       .catch((error) => setError(error));
   }, []);
 
-  // Fetch steps based on selected workflow
   useEffect(() => {
     if (selectedWorkflow === 'all') {
-      // If "All Workflows" is selected, fetch all steps
       fetch(`/api/get_steps`)
         .then((response) => response.json())
         .then((data) => {
@@ -45,7 +46,6 @@ function WorkflowView() {
         })
         .catch((error) => setError(error));
     } else {
-      // Fetch steps related to the selected workflow
       fetch(`/api/get_steps?workflow_id=${selectedWorkflow}`)
         .then((response) => response.json())
         .then((data) => {
@@ -59,192 +59,167 @@ function WorkflowView() {
     }
   }, [selectedWorkflow]);
 
-  // Fetch documents based on selected workflow and step
-    useEffect(() => {
-      let queryString = `/api/documents`;
-      if (selectedWorkflow !== 'all') queryString += `?workflow_id=${selectedWorkflow}`;
-      if (selectedStep !== 'all') queryString += `&step_id=${selectedStep}`;
+  useEffect(() => {
+    let queryString = `/api/documents?workflow_id=${selectedWorkflow}&step_id=${selectedStep}&fi0=${fi0}`;
+    if (selectedDocument !== '') {
+      queryString += `&id=${selectedDocument}`;
+    }
 
-      fetch(queryString)
-        .then((response) => response.json())
-        .then((data) => {
-          setDocuments(data);  // Set the fetched documents
-        })
-        .catch((error) => setError(error));
-    }, [selectedWorkflow, selectedStep]);
+    setLoading(true);
 
-      // Clear steps and documents when the workflow changes
-      useEffect(() => {
-        setSelectedStep('all');
-        setSteps([]);             // Clear steps
-        setDocuments([]);         // Clear documents
-      }, [selectedWorkflow]);
+    fetch(queryString)
+      .then((response) => response.json())
+      .then((data) => {
+        console.log('Fetched Data:', data);
 
-      // Clear documents when the step changes
-      useEffect(() => {
-        setSelectedDocument('');  // Clear selected document
-        setDocuments([]);         // Clear documents
-      }, [selectedStep]);
+        if (Array.isArray(data)) {
+          setWorkflowData(data);  // Set data for the timeline
+          setDocuments(data);     // Set documents for the dropdown
+        } else {
+          setWorkflowData([]);    // If not an array, set to empty
+          setDocuments([]);       // Clear documents dropdown
+        }
+
+        setLoading(false);
+      })
+      .catch((error) => {
+        setError(error);
+        setLoading(false);
+      });
+  }, [selectedWorkflow, selectedStep, fi0, selectedDocument]);
 
   const handleSubmit = (e) => {
-      e.preventDefault();
-      setError(null);  // Clear previous errors
-      setLoading(true);
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
 
-      // Build query string with workflow, step, fi0, and document
-      let queryString = `/api/documents?workflow_id=${selectedWorkflow}&step_id=${selectedStep}&fi0=${fi0}`;
+    // Build query string with workflow, step, fi0, and document
+    let queryString = `/api/documents?workflow_id=${selectedWorkflow}&step_id=${selectedStep}&fi0=${fi0}`;
+    if (selectedDocument !== '') {
+      queryString += `&id=${selectedDocument}`;
+    }
 
-      // If a specific document is selected, add it to the query
-      if (selectedDocument !== '') {
-        queryString += `&id=${selectedDocument}`;  // Pass 'id' for the selected document
-      }
+    fetch(queryString)
+      .then((response) => response.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setWorkflowData(data);  // Ensure workflowData is an array
+        } else {
+          setWorkflowData([]);  // If it's not an array, set it to empty array
+        }
+        setLoading(false);
+      })
+      .catch((error) => {
+        setError(error);
+        setLoading(false);
+      });
+  };
 
-      fetch(queryString)
-        .then((response) => response.json())
-        .then((data) => {
-          setWorkflowData(data);  // Set fetched workflow data
-          setLoading(false);       // Stop loading
-        })
-        .catch((error) => {
-          setError(error);  // Set error if fetch fails
-          setLoading(false);  // Stop loading
-        });
-    };
+  // Prepare groups and items for the timeline
+  const groups = [{ id: 1, title: 'Documents' }];  // One group for simplicity
+
+  const items = workflowData.map((doc) => ({
+    id: doc.id,
+    group: 1,
+    title: `Doc: ${doc.name}`,  // Assuming 'name' is the document name
+    start_time: moment(doc.workflows[0]?.date_start),  // Use the actual date_start from first workflow
+    end_time: moment(doc.workflows[0]?.date_end)      // Use the actual date_end from first workflow
+  }));
 
   return (
-      <div className="container">
-          <h1 className="title">Workflow Data</h1>
-          <form onSubmit={handleSubmit} className="form-container">
-              {/* Workflow Dropdown */}
-              <div className="form-group">
-                  <label htmlFor="workflow-select">Workflow:</label>
-                  <select
-                      id="workflow-select"
-                      value={selectedWorkflow || 'all'}  // Set 'all' if selectedWorkflow is undefined
-                      onChange={(e) => setSelectedWorkflow(e.target.value)}
-                      className="form-control"
-                  >
-                      {/* Add default "All Workflows" option only once */}
-                      <option value="all">All Workflows</option>
-                      {workflows.length > 0 && workflows.map((wf) => (
-                          <option key={wf.id} value={wf.id}>
-                              {wf.name}
-                          </option>
-                      ))}
-                  </select>
+    <div className="container">
+      <h1 className="title">Workflow Data</h1>
+      <form onSubmit={handleSubmit} className="form-container">
+        {/* Workflow, Step, Year, and Document dropdowns as before */}
+        <div className="form-group">
+          <label htmlFor="workflow-select">Workflow:</label>
+          <select
+              id="workflow-select"
+              value={selectedWorkflow}
+              onChange={(e) => setSelectedWorkflow(e.target.value)}
+              className="form-control"
+          >
+            <option value="all">All Workflows</option>
+            {workflows.map((wf) => (
+                <option key={wf.id} value={wf.id}>
+                  {wf.name}
+                </option>
+            ))}
+          </select>
+        </div>
 
+        <div className="form-group">
+          <label htmlFor="step-select">Step:</label>
+          <select
+              id="step-select"
+              value={selectedStep}
+              onChange={(e) => setSelectedStep(e.target.value)}
+              className="form-control"
+          >
+            <option value="all">All Steps</option>
+            {steps.map((step) => (
+                <option key={step.id} value={step.id}>
+                  {step.name}
+                </option>
+            ))}
+          </select>
+        </div>
 
-              </div>
+        <div className="form-group">
+          <label htmlFor="year-select">Year (FI0):</label>
+          <select
+              id="year-select"
+              value={fi0}
+              onChange={(e) => setFi0(e.target.value)}
+              className="form-control"
+          >
+            <option value="2024">2024</option>
+            <option value="2023">2023</option>
+            <option value="2022">2022</option>
+            <option value="2021">2021</option>
+            <option value="2020">2020</option>
+          </select>
+        </div>
 
-              {/* Step Dropdown */}
-              <div className="form-group">
-                  <label htmlFor="step-select">Step:</label>
-                  <select
-                      id="step-select"
-                      value={selectedStep || 'all'}  // Set 'all' if selectedStep is undefined
-                      onChange={(e) => setSelectedStep(e.target.value)}
-                      className="form-control"
-                  >
-                      {/* Add default "All Steps" option only once */}
-                      <option value="all">All Steps</option>
-                      {steps.length > 0 && steps.map((step) => (
-                          <option key={step.id} value={step.id}>
-                              {step.name}
-                          </option>
-                      ))}
-                  </select>
+        <div className="form-group">
+          <label htmlFor="document-select">Document:</label>
+          <select
+              id="document-select"
+              value={selectedDocument}
+              onChange={(e) => setSelectedDocument(e.target.value)}
+              className="form-control"
+          >
+            <option value="">All Documents</option>
+            {documents.length > 0 &&
+                documents.map((doc) => (
+                    <option key={doc.id} value={doc.id}>
+                      {doc.name}
+                    </option>
+                ))}
+          </select>
+        </div>
 
+        <button type="submit" className="btn btn-primary">
+          Fetch Workflow
+        </button>
+      </form>
 
-              </div>
+      {/* Loading Spinner */}
+      {loading && <div>Loading...</div>}
 
-              {/* Year Dropdown */}
-              <div className="form-group">
-                  <label htmlFor="year-select">Year (FI0):</label>
-                  <select
-                      id="year-select"
-                      value={fi0}
-                      onChange={(e) => setFi0(e.target.value)}
-                      className="form-control"
-                      required
-                  >
-                  <option value="2024">2024</option>
-                      <option value="2023">2023</option>
-                      <option value="2022">2022</option>
-                      <option value="2021">2021</option>
-                      <option value="2020">2020</option>
-                  </select>
-              </div>
+      {/* Error Handling */}
+      {error && <div className="error">Error: {error.message}</div>}
 
-              {/* Document Dropdown */}
-              <div className="form-group">
-                  <label htmlFor="document-select">Document:</label>
-                  <select
-                      id="document-select"
-                      value={selectedDocument}
-                      onChange={(e) => setSelectedDocument(e.target.value)}  // Update the selected document state
-                      className="form-control"
-                  >
-                      <option value="">All Documents</option>
-                      {documents.length > 0 &&
-                          documents.map((doc) => (
-                              <option key={doc.id} value={doc.id}>
-                                  {doc.name}
-                              </option>
-                          ))}
-                  </select>
-              </div>
-
-              <button type="submit" className="btn btn-primary">
-                  Fetch Workflow
-              </button>
-          </form>
-
-
-          {/* Loading Spinner */}
-          {loading && <div>Loading...</div>}
-
-          {/* Error Handling */}
-          {error && <div className="error">Error: {error.message}</div>}
-
-          {/* Display workflow data */}
-          <ul className="workflow-list">
-              {workflowData.length > 0 ? (
-                  workflowData.map((item) => (
-                      <li key={item.id} className="workflow-item">
-                          <h2>Document ID: {item.id}</h2>
-                          <p>Status: {item.record_type || 'No Data'}</p>
-                          <p>Created On: {item.created_on || 'No Data'}</p>
-                          <h3>Workflow:</h3>
-                          <ul>
-                              {/* Check if workflow is an array and has length > 0 */}
-                              {Array.isArray(item.workflow) && item.workflow.length > 0 ? (
-                                  item.workflow.map((workflow) => (
-                                      <li key={workflow.workflow_id}>{workflow.workflow_name}</li>
-                                  ))
-                              ) : (
-                                  <li>No workflow</li>  // Display "No workflow" if workflow is not an array or empty
-                              )}
-                          </ul>
-
-                          <h3>Step:</h3>
-                          <ul>
-                              {/* Check if step is an array and has length > 0 */}
-                              {Array.isArray(item.step) && item.step.length > 0 ? (
-                                  item.step.map((step) => (
-                                      <li key={step.step_id}>{step.step_name}</li>
-                                  ))
-                              ) : (
-                                  <li>No steps</li>  // Display "No steps" if step is not an array or empty
-                              )}
-                          </ul>
-
-                      </li>
-                  ))
-              ) : (
-                  !loading && <p>No workflow data available</p>
-              )}
-          </ul>
-      </div>
+      {/* Render the Timeline */}
+      {!loading && workflowData.length > 0 && (
+          <Timeline
+              groups={groups}
+              items={items}
+              defaultTimeStart={moment().startOf('year')}
+              defaultTimeEnd={moment().endOf('year')}
+          />
+      )}
+    </div>
   );
 }
 

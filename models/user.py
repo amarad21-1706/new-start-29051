@@ -700,6 +700,10 @@ class BaseData(db.Model):
     base_data_inlines = db.relationship('BaseDataInline', backref='parent_base_data', lazy=True, cascade="all, delete-orphan")
 
     # Relationship with DocumentWorkflow and History
+    # document_workflows = db.relationship('DocumentWorkflow', back_populates='base_data')
+    # Relationship to DocumentWorkflow
+    #document_workflows = db.relationship('DocumentWorkflow', backref='base_data', uselist=False)
+    # Relationship to DocumentWorkflow (many-to-many through an association object)
     document_workflows = db.relationship('DocumentWorkflow', back_populates='base_data')
     document_workflow_history = db.relationship('DocumentWorkflowHistory', back_populates='base_data')
 
@@ -1044,6 +1048,7 @@ class Step(db.Model):
 
     # Relationship with WorkflowSteps
     workflow_steps = db.relationship("WorkflowSteps", back_populates="step")
+
 
     def __init__(self, base_data_id=None, step_id=None, hidden_data=None, workflow_id=None, start_date=None,
                  deadline_date=None, auto_move=False, end_date=None, start_recall=None,
@@ -1677,7 +1682,7 @@ class DocumentWorkflow(db.Model):
 
     # Relationships
     base_data = db.relationship('BaseData', back_populates='document_workflows')
-    workflow = db.relationship('Workflow')
+    workflow = db.relationship('Workflow', back_populates='document_workflows')
     current_step = db.relationship('Step')
 
     def __repr__(self):
@@ -1711,7 +1716,7 @@ class Workflow(db.Model):
     __tablename__ = 'workflow'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    name = db.Column(db.String(50), unique=True)
+    name = db.Column(db.String(128))
     description = db.Column(db.String(200))
     status = db.Column(db.String(20))
     restricted = db.Column(db.Boolean, default=True)
@@ -1720,11 +1725,13 @@ class Workflow(db.Model):
     # Relationship with WorkflowSteps
     workflow_steps = db.relationship('WorkflowSteps', back_populates='workflow')
 
+    # Relationship to DocumentWorkflow
+    document_workflows = db.relationship('DocumentWorkflow', back_populates='workflow')
+
     def to_dict(self):
         return {'id': self.id, 'name': self.name}
-
     def __repr__(self):
-        return f"{self.name} ({self.description})"
+        return f'<Workflow ID: {self.id}, Name: {self.name}>'
 
 
 '''
