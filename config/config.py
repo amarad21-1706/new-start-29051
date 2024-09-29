@@ -7,7 +7,7 @@ from models.user import (Company, CompanyUsers, Users, Role, UserRoles,
                          Area, Subarea, AreaSubareas, Deadline, Interval,
                          QuestionnaireCompanies, Questionnaire, Question, QuestionnaireQuestions,
                          get_config_values, Workflow, Step, BaseData, WorkflowSteps,
-                         WorkflowBaseData, StepBaseData, Post, AuditLog, DataMapping)
+                         WorkflowBaseData, DocumentWorkflow, Post, AuditLog, DataMapping)
 
 # from sqlalchemy import or_, and_, desc, func, null
 # import pandas as pd
@@ -1859,8 +1859,8 @@ def generate_document_step_report_data(session):
             else:
                 subarea_name = "Unknown"
 
-            # Fetch associated StepBaseData for the current BaseData
-            step_base_data_records = session.query(StepBaseData).filter_by(base_data_id=base_data.id).all()
+            # Fetch associated Docs for the current BaseData
+            step_base_data_records = session.query(DocumentWorkflow).filter_by(base_data_id=base_data.id).all()
 
             for step_base_data in step_base_data_records:
                 base_data_id = base_data.id
@@ -1882,7 +1882,7 @@ def generate_document_step_report_data(session):
                 # Append data to report
                 report_data.append([document_id, document_name, area_name, subarea_name, company_name, workflow_id, step_id, step_name, step_start, step_deadline, step_end, auto_move])
 
-            if not step_base_data_records:  # If no StepBaseData records found for the current BaseData
+            if not step_base_data_records:  # If no Step Base Data records found for the current BaseData
                 # Append data to report with placeholders for step and workflow information
                 report_data.append([document_id, document_name, area_name, subarea_name, company_name, "", "", "No step created", "", "", "", False])
 

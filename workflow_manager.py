@@ -4,7 +4,7 @@ from models.user import (Users, Questionnaire, Question,
         Answer, Company, Area, Subarea,
         QuestionnaireCompanies, Status,
         Workflow, Step, BaseData, WorkflowSteps, WorkflowBaseData,
-                         StepBaseData)
+        DocumentWorkflow)
 import os
 
 app = Flask(__name__)
@@ -361,8 +361,8 @@ def get_step_base_data_close_to_deadline(session):
     thirty_days_from_now = datetime.now() + timedelta(days=30)
 
     # Query StepBaseData records where the deadline_date is closer than 30 days
-    step_base_data_records = session.query(StepBaseData).filter(StepBaseData.deadline_date < thirty_days_from_now).\
-                             order_by(StepBaseData.deadline_date).all()
+    step_base_data_records = session.query(DocumentWorkflow).filter(DocumentWorkflow.deadline_date < thirty_days_from_now).\
+                             order_by(DocumentWorkflow.deadline_date).all()
 
     return step_base_data_records
 
@@ -372,8 +372,8 @@ def get_step_base_data_close_to_deadline_days(session, days):
     thirty_days_from_now = datetime.now() + timedelta(days=days)
 
     # Query StepBaseData records where the deadline_date is closer than 30 days
-    step_base_data_records = session.query(StepBaseData).filter(StepBaseData.deadline_date < thirty_days_from_now).\
-                             order_by(StepBaseData.deadline_date).all()
+    step_base_data_records = session.query(DocumentWorkflow).filter(DocumentWorkflow.deadline_date < thirty_days_from_now).\
+                             order_by(DocumentWorkflow.deadline_date).all()
 
     return step_base_data_records
 

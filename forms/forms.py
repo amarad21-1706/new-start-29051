@@ -2,6 +2,8 @@
 # Create a dynamic form based on questions
 from db import db
 
+from wtforms_sqlalchemy.fields import QuerySelectField
+
 from datetime import datetime
 from wtforms import (DecimalField, StringField, BooleanField, FloatField, FileField, DateField, TimeField,
                     DateTimeLocalField, ValidationError,
@@ -16,7 +18,7 @@ from wtforms.fields import ColorField  # Correct import
 from wtforms import FieldList
 
 from flask_wtf import FlaskForm
-from wtforms import StringField, DateTimeField, BooleanField, SubmitField, SelectField, TextAreaField, FieldList
+from wtforms import StringField, DateTimeField, BooleanField, SubmitField, SelectField, TextAreaField, FieldList, IntegerField
 from wtforms.validators import DataRequired
 
 from flask_admin.form import rules
@@ -27,7 +29,8 @@ import re
 from datetime import datetime
 
 from wtforms_sqlalchemy.fields import QuerySelectField
-from models.user import (Users, Company, Event, Subject, Step, Workflow, StepBaseData, WorkflowSteps, BaseData, BaseDataInline,
+from models.user import (Users, Company, Event, Subject, Step, Workflow, #StepBaseData,
+                         WorkflowSteps, BaseData, BaseDataInline,
                          Question, Questionnaire, QuestionnaireQuestions, Status, LegalDocument,
                          Area, Subarea, Lexic, Workflow, Interval, Step,
                          Contract, ContractParty, ContractTerm, ContractDocument,
@@ -208,86 +211,6 @@ class ContractArticleInlineModelForm(InlineFormAdmin):
         super(ContractArticleInlineModelForm, self).on_model_change(form, model, is_created)
 
 
-class ContractArticleInlineModelForm222(InlineFormAdmin):
-    form_columns = ['article_title', 'article_body', 'article_order', 'parent_article']
-    form_label = 'Contract Article'
-
-    form_extra_fields = {
-        'article_id': HiddenField('Article ID'),
-        'article_order': HiddenField('Order')
-    }
-
-    form_edit_rules = (
-        'article_id',
-        rules.FieldSet(
-            ('article_title', 'article_body', 'article_order', 'parent_article'),
-            'Contract Article Details'
-        )
-    )
-
-    def postprocess_form(self, form_class):
-        form_class.article_id = HiddenField()
-        form_class.article_order = HiddenField()
-
-        if hasattr(form_class, 'contract_id'):
-            contract_id = form_class.contract_id.data
-            parent_articles = db.session.query(ContractArticle).filter_by(contract_id=contract_id).order_by(
-                ContractArticle.article_order).all()
-        else:
-            parent_articles = []
-
-        parent_choices = [(str(article.article_id), f"{article.article_order} - {article.article_title}") for article in parent_articles]
-        parent_choices.insert(0, ('', 'No Parent'))  # Add 'No Parent' option
-
-        form_class.parent_article = SelectField('Parent Article', choices=parent_choices, default='', validators=[Optional()])
-
-        return form_class
-
-    def on_form_prefill(self, form, id):
-        if form.parent_article.data:
-            form.parent_article.data = str(form.parent_article.data.article_id)
-
-
-class ContractArticleInlineModelForm333(InlineFormAdmin):
-    form_columns = ['article_title', 'article_body', 'article_order', 'parent_article']
-    form_label = 'Contract Article'
-
-    form_extra_fields = {
-        'article_id': HiddenField('Article ID'),
-        'article_order': HiddenField('Order')
-    }
-
-    form_edit_rules = (
-        'article_id',
-        rules.FieldSet(
-            ('article_title', 'article_body', 'article_order', 'parent_article'),
-            'Contract Article Details'
-        )
-    )
-
-    def postprocess_form(self, form_class):
-        form_class.article_id = HiddenField()
-        form_class.article_order = HiddenField()
-
-        if hasattr(form_class, 'contract_id'):
-            contract_id = form_class.contract_id.data
-            parent_articles = db.session.query(ContractArticle).filter_by(contract_id=contract_id).order_by(
-                ContractArticle.article_order).all()
-        else:
-            parent_articles = []
-
-        parent_choices = [(None, 'No Parent')] + [
-            (str(article.article_id), f"{article.article_order} - {article.article_title}") for article in parent_articles]
-
-        form_class.parent_article = SelectField('Parent Article', choices=parent_choices, default=None,
-                                                validators=[Optional()])
-
-        return form_class
-
-    def on_form_prefill(self, form, id):
-        if form.parent_article.data:
-            form.parent_article.data = str(form.parent_article.data.article_id)
-
 
 class ForgotPasswordForm(FlaskForm):
     email = EmailField(_('Email Address'), validators=[DataRequired(), Email()])
@@ -325,87 +248,56 @@ class CustomSubjectAjaxLoader(QueryAjaxModelLoader):
         return query.all()
 
 
-class StepBaseDataInlineForm(InlineFormAdmin):
-
+class DocumentWorkflowInlineForm(InlineFormAdmin):
     def __init__(self, model, form_data=None, **kwargs):
-        super(StepBaseDataInlineForm, self).__init__(model, **kwargs)
+        super(DocumentWorkflowInlineForm, self).__init__(model, **kwargs)
         self.form_data = form_data  # Store the form data
 
-    form_columns = ('id', 'workflow', 'step', 'status', 'deadline_date', 'auto_move')
-    column_labels = {'id': 'ID', 'workflow': 'Workflow the document is to be assigned to', 'step': 'Step within the Workflow',
-    'status': 'Initial Status', 'deadline_date': 'Deadline of the Step', 'auto_move': 'Automatic transition to next Step'}
-    # Define the primary key field
-    id = IntegerField('ID')  # Assuming the primary key is an IntegerField
-    # Define form fields as SelectFields
-    workflow_id = SelectField('Workflow', coerce=int)  # Assuming 'workflow_id' is the field for selecting workflows
-    step_id = SelectField('Step', coerce=int)  # Assuming 'step_id' is the field for selecting steps
-    status_id = SelectField('Status', coerce=int)  # Assuming 'status_id' is the field for selecting statuses
+    form_columns = ['id', 'workflow', 'step', 'status', 'deadline_date', 'auto_move', 'open_action']
 
-    # Define custom form fields
+    # Assuming the relationship fields are populated with query data
     form_extra_fields = {
-        'workflow_id': SelectField('Workflow', coerce=int),  # Workflow choices populated dynamically
-        'step_id': SelectField('Step', coerce=int),  # Step choices populated dynamically
-        'status_id': SelectField('Status', coerce=int),  # Status choices populated dynamically
+        'id': HiddenField(),  # Ensure the 'id' field is included but hidden
+        'workflow': QuerySelectField(
+            'Workflow',
+            query_factory=lambda: Workflow.query.all(),
+            get_label='name',
+            allow_blank=False
+        ),
+        'step': QuerySelectField(
+            'Step',
+            query_factory=lambda: Step.query.all(),
+            get_label='name',
+            allow_blank=False
+        ),
+        'status': QuerySelectField(
+            'Status',
+            query_factory=lambda: Status.query.all(),
+            get_label='name',
+            allow_blank=False
+        ),
         'auto_move': SelectField(
             'Auto Move',
-            choices=[(1, 'Yes'), (0, 'No')],  # Choices for auto move
-            coerce=int,  # Coerce to int to match database field type
+            choices=[(True, 'Yes'), (False, 'No')],
+            coerce=bool,
             description='Automatically move to the next step (Yes/No)'
         ),
+        'open_action': SelectField(
+            'Open Action',
+            choices=[(True, 'Yes'), (False, 'No')],
+            coerce=bool,
+            description='Open action allowed'
+        )
     }
 
-    @property
-    def form(self):
-        form = super().form
-        # Print the values of the form fields
-        for field in form:
-            print(f"Field: {field.name}, Value: {field.data}")
-        return form
-
-    # Method to populate form with data from StepBaseData instance
-    def populate_form(self, form):
-        super().populate_form(form)
-
-        # Get all StepBaseData instances related to the current main model
-
-        step_base_data_list = self.get_query(StepBaseData).filter_by(main_model_id=form.object_data.id).all()
-        # Retrieve options for dropdowns
-
-        workflow_options = [(workflow.id, workflow.name) for workflow in Workflow.query.all()]
-        step_options = [(step.id, step.name) for step in Step.query.all()]
-        status_options = [(status.id, status.name) for status in Status.query.all()]
-
-        # Update dropdown choices based on StepBaseData instances
-        if step_base_data_list:
-            step_ids = [data.step_id for data in step_base_data_list]
-            workflow_ids = [data.workflow_id for data in step_base_data_list]
-            status_ids = [data.status_id for data in step_base_data_list]
-
-            # Filter out unique IDs and retrieve corresponding names
-
-            workflow_options = [(workflow.id, workflow.name) for workflow in Workflow.query.filter(Workflow.id.in_(workflow_ids)).all()]
-            step_options = [(step.id, step.name) for step in Step.query.filter(Step.id.in_(step_ids)).all()]
-            status_options = [(status.id, status.name) for status in Status.query.filter(Status.id.in_(status_ids)).all()]
-
-        # Populate dropdowns and other fields
-
-        form.workflow_id.choices = workflow_options
-        form.step_id.choices = step_options
-        form.status_id.choices = status_options
-
-        # Populate other fields with data from the first StepBaseData instance (if any)
-        if step_base_data_list:
-            first_data = step_base_data_list[0]
-            form.deadline_date.data = first_data.deadline_date
-            form.auto_move.data = first_data.auto_move
-            form.open_action.data = 1  # Assuming this is a predefined value
-        else:
-            # Populate with default or null values if no related instances
-            form.deadline_date.data = None
-            form.auto_move.data = None
-            form.open_action.data = None
-
-
+    column_labels = {
+        'id': 'ID',
+        'workflow_id': 'Workflow the document is assigned to',
+        'step_id': 'Step in the Workflow',
+        'status_id': 'Initial Status',
+        'deadline_date': 'Deadline of the Step',
+        'auto_move': 'Automatic transition to next Step'
+    }
 
 class SignupForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])

@@ -60,7 +60,7 @@ from models.user import (Users, UserRoles, Role, Table, Questionnaire, Question,
         Answer, Company, Area, Subarea, AreaSubareas,
         QuestionnaireCompanies, CompanyUsers, Status, Lexic,
         Interval, Subject, Cart, AuditLog, Post, Ticket, StepQuestionnaire,
-        Workflow, Step, BaseData, BaseDataInline, WorkflowSteps, WorkflowBaseData, StepBaseData,
+        Workflow, Step, BaseData, BaseDataInline, WorkflowSteps, WorkflowBaseData,
         DocumentWorkflow, DocumentWorkflowHistory,
                          Container, Config,
                          Contract, ContractParty, ContractTerm, ContractDocument,
@@ -73,7 +73,7 @@ from forms.forms import (LoginForm, ForgotPasswordForm, ResetPasswordForm101, Re
                 QuestionnaireCompanyForm, CustomBaseDataForm,
                 QuestionnaireQuestionForm, WorkflowStepForm, WorkflowBaseDataForm,
                 BaseDataWorkflowStepForm, BaseDataInlineModelForm, ContractArticleInlineModelForm,
-                UserRoleForm, CompanyUserForm, UserDocumentsForm, StepBaseDataInlineForm,
+                UserRoleForm, CompanyUserForm, UserDocumentsForm, DocumentWorkflowInlineForm,
                 create_dynamic_form, CustomFileLoaderForm,
                 CustomSubjectAjaxLoader, BaseSurveyForm)
 
@@ -750,264 +750,26 @@ class DocumentsBaseDataDetails(ModelView):
         id_list = [int(id) for id in ids]
 
         # Define the selected columns you want to retrieve
-        column_list = [StepBaseData.base_data_id, StepBaseData.workflow_id,
-                       StepBaseData.step_id, StepBaseData.status_id, StepBaseData.auto_move,
-                       StepBaseData.start_date, StepBaseData.deadline_date, StepBaseData.end_date,
-                       StepBaseData.hidden_data, StepBaseData.start_recall, StepBaseData.deadline_recall,
-                       StepBaseData.end_recall, StepBaseData.recall_unit]  # Add or remove columns as needed
+        column_list = [DocumentWorkflow.base_data_id, DocumentWorkflow.workflow_id,
+                       DocumentWorkflow.step_id, DocumentWorkflow.status_id, DocumentWorkflow.auto_move,
+                       DocumentWorkflow.start_date, DocumentWorkflow.deadline_date, DocumentWorkflow.end_date,
+                       DocumentWorkflow.hidden_data, DocumentWorkflow.start_recall, DocumentWorkflow.deadline_recall,
+                       DocumentWorkflow.end_recall, DocumentWorkflow.recall_unit]  # Add or remove columns as needed
         # Select specific columns
-        selected_documents = StepBaseData.query.with_entities(*column_list).filter(StepBaseData.base_data_id.in_(id_list)).all()
+        selected_documents = DocumentWorkflow.query.with_entities(*column_list).filter(DocumentWorkflow.base_data_id.in_(id_list)).all()
 
         # Pass the lists of workflows, steps, and selected documents to the template
         return render_template('admin/set_documents_deadline.html',
                                selected_documents=selected_documents)
 
-
-class DocumentsBaseDataDetails222(ModelView):
-    can_create = True
-    can_edit = True
-    can_delete = False
-    can_view_details = True
-
-    name = 'Manage Document Flow'
-    menu_icon_type = 'glyph'
-    menu_icon_value = 'glyphicon-list-alt'
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.class_name = self.__class__.__name__
-
-    # Add 'base_data_id' to the column list but keep it hidden in the form
-    column_list = [
-        'base_data_id',  # Hidden document ID
-        'base_data.file_path', 'base_data.created_on', 'company_name', 'user_name',
-        'workflow.name', 'step.name', 'status_id', 'auto_move',
-        'start_date', 'deadline_date', 'end_date', 'start_recall', 'deadline_recall',
-        'end_recall', 'recall_unit', 'hidden_data', 'open_action'
-    ]
-
-    # Dropdown choices for the create/edit form
-    form_choices = {
-        'auto_move': [
-            (True, 'Yes'),
-            (False, 'No')
-        ],
-        'recall_unit': [
-            (0, 'none'),
-            (1, 'day'),
-            (2, 'week'),
-            (3, 'month')
-        ],
-        'open_action': [
-            (True, 'Yes'),
-            (False, 'No')
-        ],
-    }
-
-    column_labels = {
-        'base_data_id': 'Document ID',  # Label for base_data_id
-        'base_data.file_path': 'Document Name',
-        'base_data.created_on': 'Created',
-        'company_name': 'Company',
-        'user_name': 'User',
-        'workflow.name': 'Workflow',
-        'step.name': 'Phase',
-        'status_id': 'Status',
-        'auto_move': 'Auto transition',
-        'start_date': 'Start',
-        'deadline_date': 'Deadline',
-        'end_date': 'End',
-        'start_recall': 'Start Recall',
-        'deadline_recall': 'Deadline Recall',
-        'end_recall': 'End Recall',
-        'recall_unit': 'Recall Unit',
-        'hidden_data': 'Miscellanea',
-        'open_action': 'Open Action'
-    }
-
-    # Define 'base_data_id' as a hidden field and a visible dropdown for document selection
-    form_extra_fields = {
-        'base_data_id': HiddenField('Document ID'),  # Hidden field to hold the document ID
-        'document_selection': SelectField('Document', coerce=int),  # Visible dropdown
-        'open_action': BooleanField('Open Action')
-    }
-
-    def on_form_prefill(self, form, id):
-        form.document_selection.choices = self.get_base_data_choices()
-        form.base_data_id.data = form.document_selection.data  # Populate the hidden field with the selected value
-
-    def create_form(self, obj=None):
-        form = super().create_form(obj)
-        form.document_selection.choices = self.get_base_data_choices()
-        form.base_data_id.data = form.document_selection.data  # Set base_data_id from dropdown
-        return form
-
-    def edit_form(self, obj=None):
-        form = super().edit_form(obj)
-        form.document_selection.choices = self.get_base_data_choices()
-        form.base_data_id.data = form.document_selection.data  # Set base_data_id from dropdown
-        return form
-
-    def get_base_data_choices(self):
-        """
-        Get the choices for the document_selection dropdown based on user roles and creation date.
-        Only show documents created within the last year.
-        """
-        one_year_ago = datetime.utcnow() - timedelta(days=365)
-        query = BaseData.query.filter(BaseData.created_on >= one_year_ago)
-
-        # Role-based filtering
-        if current_user.has_role('Admin'):
-            pass  # Admin sees all documents
-        elif current_user.has_role('Manager'):
-            company_id = session.get('company_id')
-            query = query.filter(BaseData.company_id == company_id)
-        elif current_user.has_role('Employee'):
-            user_id = session.get('user_id', current_user.id)
-            query = query.filter(BaseData.user_id == user_id)
-
-        # Create a list of tuples with (id, concatenated 'number_of_doc' and 'date_of_doc')
-        choices = [
-            (
-                base_data.id,
-                f"{base_data.number_of_doc} - {base_data.date_of_doc.strftime('%Y-%m-%d') if base_data.date_of_doc else 'No Date'}"
-            )
-            for base_data in query.all()
-        ]
-        return choices
-    # Other methods (get_query, get_list, is_accessible, etc.) remain unchanged.
-
-    def get_query(self):
-        try:
-            query = super().get_query()
-        except Exception as e:
-            print('Error getting base query:', str(e))
-            raise
-
-        try:
-            if current_user.is_authenticated:
-                print('User is authenticated.')
-                if current_user.has_role('Admin') or current_user.has_role('Authority'):
-                    print('User is Admin or Authority. Returning query:', query)
-                    return query
-                elif current_user.has_role('Manager'):
-                    print('User is Manager. Filtering query by Manager.')
-                    company_ids = [base_data.company_id for base_data in query.join('base_data').all()]
-                    query = query.filter(StepBaseData.company_id.in_(company_ids))
-                elif current_user.has_role('Employee'):
-                    print('User is Employee. Filtering query by Employee.')
-                    base_data_query = query.join('base_data').filter(BaseData.user_id == current_user.id)
-                    company_ids = [base_data.company_id for base_data in base_data_query]
-                    query = query.filter(StepBaseData.company_id.in_(company_ids))
-        except Exception as e:
-            print('Error filtering query based on user role:', str(e))
-            raise
-
-        try:
-            # Modify the query to join Company and User tables to access their names
-            query = query.join(StepBaseData.base_data).join(BaseData.company).join(BaseData.user)
-        except Exception as e:
-            print('Error joining tables:', str(e))
-            raise
-
-        return query
-
-    def get_list(self, page, sort_column, sort_desc, search, filters, page_size=None):
-        try:
-            count, data = super().get_list(page, sort_column, sort_desc, search, filters, page_size)
-        except Exception as e:
-            print('Error in super().get_list:', str(e))
-            raise
-
-        # Fetch additional information for each record
-        for item in data:
-            try:
-                print(f'Processing item {item.id} in get_list')
-                # Safely retrieve associated data
-                company_name = item.base_data.company.name if item.base_data and item.base_data.company else "N/A"
-                user_name = item.base_data.user.last_name if item.base_data and item.base_data.user else "N/A"
-                created_on = item.base_data.created_on if item.base_data else "N/A"
-                workflow_id = item.workflow.id if item.workflow and isinstance(item.workflow.id, int) else "N/A"
-                step_name = item.step.name if item.step else "N/A"
-
-                # Assign values to the item, ensuring correct handling of invalid data
-                item.company_name = company_name
-                item.user_name = user_name
-                item.workflow_id = workflow_id
-                item.step_name = step_name
-                item.created_on = created_on
-            except Exception as e:
-                # Log error and continue with the next item
-                print(f'Error processing item {item.id} in get_list: {str(e)}')
-                # Optionally set default or fallback values to handle error gracefully
-                item.company_name = "Error"
-                item.user_name = "Error"
-                item.workflow_id = 0
-                item.step_name = "Error"
-                item.created_on = datetime.utcnow()
-
-        return count, data
-
-    def is_accessible(self):
-        if current_user.is_authenticated:
-            print('User is authenticated in is_accessible.')
-            if (current_user.has_role('Admin') or current_user.has_role('Authority')
-                    or current_user.has_role('Manager') or current_user.has_role('Employee')):
-                print('User has sufficient role for access.')
-                return True
-
-        print('User does not have sufficient access role.')
-        return False
-
-    def on_model_change(self, form, model, is_created):
-        # Populate model fields with form data
-        form.populate_obj(model)
-
-        # Explicitly assign the selected document ID from the dropdown to the base_data_id field
-        model.base_data_id = form.document_selection.data
-
-        # Call the parent method for additional processing (if any)
-        super().on_model_change(form, model, is_created)
-
-        if is_created:
-            # Handle logic for new model creation
-            # Set default values or perform actions upon record creation
-            model.created_on = datetime.now()  # Set created_on date
-            pass  # You can implement further custom logic here
-        else:
-            # Handle logic for editing an existing model
-            # Compare previous and updated values, trigger actions based on changes
-            pass  # You can implement further custom logic here
-
-        return model
-
-    # Common action to Flask Admin 'Documents' (attach/detach documents to/from W-S)
-    @action('action_manage_dws_deadline', 'Deadline Setting',
-            'Are you sure you want to change documents deadline?')
-    def action_manage_dws_deadline(self, ids):
-        # Parse the list of IDs
-        id_list = [int(id) for id in ids]
-
-        # Define the selected columns you want to retrieve
-        column_list = [StepBaseData.base_data_id, StepBaseData.workflow_id,
-                       StepBaseData.step_id, StepBaseData.status_id, StepBaseData.auto_move,
-                       StepBaseData.start_date, StepBaseData.deadline_date, StepBaseData.end_date,
-                       StepBaseData.hidden_data, StepBaseData.start_recall, StepBaseData.deadline_recall,
-                       StepBaseData.end_recall, StepBaseData.recall_unit]  # Add or remove columns as needed
-        # Select specific columns
-        # selected_documents = StepBaseData.query.with_entities(*column_list).filter(StepBaseData.id.in_(id_list)).all()
-        selected_documents = StepBaseData.query.with_entities(*column_list).filter(StepBaseData.base_data_id.in_(id_list)).all()
-
-        # Pass the lists of workflows, steps, and selected documents to the template
-        return render_template('admin/set_documents_deadline.html',
-                               selected_documents=selected_documents)
 # BASE PER LE View 2, 3, 4, 6, 7 e 8 (NO FLUSSI PRE-COMPLAINT!)
 # ==================================
 
 class BaseDataViewCommon(ModelView):
     can_view_details = True
     can_export = True
-    inline_models = (StepBaseDataInlineForm(StepBaseData),)
+    inline_models = (DocumentWorkflowInlineForm(DocumentWorkflow),)
+
     form_extra_fields = {
         'file_path': CustomFileUploadField('File', base_path=config.UPLOAD_FOLDER)
     }
@@ -1030,6 +792,7 @@ class BaseDataViewCommon(ModelView):
             choices=year_choices,
             default=default_year
         )
+        form_class.no_action = BooleanField('Confirm no documents to attach', default=False)
 
         config_values = get_config_values(config_type='area_interval', company_id=None,
                                           area_id=self.area_id, subarea_id=None)
@@ -1068,9 +831,9 @@ class BaseDataViewCommon(ModelView):
 
     @action('custom_action', 'List Workflows of Documents')
     def custom_action(self, ids):
-        step_base_data_records = StepBaseData.query.filter(StepBaseData.base_data_id.in_(ids)).all()
+        document_workflow_records = DocumentWorkflow.query.filter(DocumentWorkflow.base_data_id.in_(ids)).all()
         model_records = self.model.query.filter(self.model.id.in_(ids)).all()
-        return self.render('basedata_workflow_step_list.html', step_base_data_records=step_base_data_records, model_records=model_records)
+        return self.render('basedata_workflow_step_list.html', step_base_data_records=document_workflow_records, model_records=model_records)
 
     @action('custom_action_next_step', 'Transition to next Step')
     def custom_action_next_step(self, ids):
@@ -1099,10 +862,23 @@ class BaseDataViewCommon(ModelView):
 
     def create_model(self, form):
         try:
-            print("Creating a new model instance")
+            print("Creating a new model instance one")
+            # Create a new instance of the model
             model = self.model()
+            # Populate the model with form data
             form.populate_obj(model)
             print(f"Model populated: {model.__dict__}")
+
+            # Convert `no_action` field to boolean
+            model.no_action = bool(form.no_action.data)
+
+            # If the model has `auto_move` or `open_action`, ensure they're booleans
+            if hasattr(model, 'auto_move'):
+                model.auto_move = bool(form.auto_move.data)
+
+            if hasattr(model, 'open_action'):
+                model.open_action = bool(form.open_action.data)
+
             self.session.add(model)
             self.session.commit()
             print(f"Model created with values: {model.__dict__}")
@@ -1115,8 +891,27 @@ class BaseDataViewCommon(ModelView):
             return False
 
     def on_model_change(self, form, model, is_created):
-        # Overridden in subclass
-        pass
+        """
+        Override method to convert form values before saving the object.
+        """
+        try:
+            # Ensure 'no_action' is a boolean
+            model.no_action = bool(form.no_action.data)
+
+            # Ensure 'auto_move' is a boolean
+            if hasattr(model, 'auto_move'):
+                model.auto_move = bool(form.auto_move.data)
+
+            # Ensure 'open_action' is a boolean
+            if hasattr(model, 'open_action'):
+                model.open_action = bool(form.open_action.data)
+
+            # Continue with the normal model save process
+            super().on_model_change(form, model, is_created)
+
+        except Exception as ex:
+            flash(f'Error during model change: {str(ex)}', 'error')
+            raise
 
 
 class Tabella21_dataView(ModelView):
@@ -3051,68 +2846,88 @@ class DocumentUploadView(BaseDataViewCommon):
         super()._uncheck_if_document(model, form)
 
     def create_model(self, form):
-        """
-        Custom method to create a new model instance with the correct area_id and subarea_id.
-        """
         try:
-            # Create a new instance of the model
-            model = self.model()
+            print("Creating a new model instance two")
+            print(f"Form data: {form.data}")  # Add this to inspect form data
 
-            # Populate the model with form data
-            form.populate_obj(model)
+            # Use session.no_autoflush directly, no import required
+            with self.session.no_autoflush:
+                # Create a new instance of the model
+                model = self.model()
+                # Populate the model with form data
+                form.populate_obj(model)
 
-            # Populate the necessary fields
-            # Ensure area_id and subarea_id are set correctly
-            model.area_id = self.area_id
-            model.subarea_id = self.subarea_id
-            model.created_on = datetime.utcnow()
-            model.updated_on = datetime.utcnow()
-            model.user_id = current_user.id
-            model.company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-            model.record_type = 'document'
-            model.data_type = 'data_type'
+                # Ensure area_id and subarea_id are set correctly
+                model.area_id = self.area_id
+                model.subarea_id = self.subarea_id
+                model.created_on = datetime.utcnow()
+                model.updated_on = datetime.utcnow()
+                model.user_id = current_user.id
+                model.company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
+                model.record_type = 'document'
+                model.data_type = 'data_type'
 
-            # Add and commit the model to the session
-            self.session.add(model)
+                # Convert `no_action` field to boolean
+                model.no_action = bool(form.no_action.data)
+
+                # If the model has `auto_move` or `open_action`, ensure they're booleans
+                if hasattr(model, 'auto_move'):
+                    model.auto_move = bool(form.auto_move.data)
+
+                if hasattr(model, 'open_action'):
+                    model.open_action = bool(form.open_action.data)
+
+                # Set `start_date` if it's part of the `document_workflows`
+                for workflow in model.document_workflows:
+                    if workflow.start_date is None:
+                        workflow.start_date = datetime.utcnow()  # Set to current date and time
+
+                # Add the model to the session (but do not flush yet)
+                self.session.add(model)
+
+            # Commit the changes
             self.session.commit()
 
             # Custom behavior after successful creation
             flash(f'Document uploaded successfully.', 'success')
+            print(f"Model created with values: {model.__dict__}")  # Check the model after committing
+
             return model
         except Exception as ex:
-            # Handle exceptions and rollback if there is an error
+            # Capture detailed exception and log it
+            print(f"Error occurred: {ex}")
+            traceback.print_exc()  # Log full traceback
             flash(f'Failed to create document record: {str(ex)}', 'error')
             self.session.rollback()
             return False
 
+    def get_query(self):
+        """
+        Override default query to filter records by area, subarea, and user role.
+        """
+        # Base query filtered by area and subarea
+        query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
 
-def get_query(self):
-    """
-    Override default query to filter records by area, subarea, and user role.
-    """
-    # Base query filtered by area and subarea
-    query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
+        if current_user.is_authenticated:
+            if current_user.has_role('Admin'):
+                # Admins can access all documents, no additional filtering needed
+                print("Admin access: fetching all documents.")
+                return query
+            elif current_user.has_role('Manager'):
+                # Managers can access documents of their own company_id
+                subquery = db.session.query(CompanyUsers.company_id).filter(CompanyUsers.user_id == current_user.id).subquery()
+                query = query.filter(self.model.company_id.in_(subquery))
+                print(f"Manager access: fetching documents for company_id(s) {subquery}.")
+            elif current_user.has_role('Employee'):
+                # Employees can only access their own documents
+                query = query.filter(self.model.user_id == current_user.id)
+                print(f"Employee access: fetching documents for user_id {current_user.id}.")
+        else:
+            print("Unauthenticated access: returning empty query.")
+            # If the user is not authenticated or does not have any specific role, return an empty query
+            query = query.filter(self.model.id < 0)
 
-    if current_user.is_authenticated:
-        if current_user.has_role('Admin'):
-            # Admins can access all documents, no additional filtering needed
-            print("Admin access: fetching all documents.")
-            return query
-        elif current_user.has_role('Manager'):
-            # Managers can access documents of their own company_id
-            subquery = db.session.query(CompanyUsers.company_id).filter(CompanyUsers.user_id == current_user.id).subquery()
-            query = query.filter(self.model.company_id.in_(subquery))
-            print(f"Manager access: fetching documents for company_id(s) {subquery}.")
-        elif current_user.has_role('Employee'):
-            # Employees can only access their own documents
-            query = query.filter(self.model.user_id == current_user.id)
-            print(f"Employee access: fetching documents for user_id {current_user.id}.")
-    else:
-        print("Unauthenticated access: returning empty query.")
-        # If the user is not authenticated or does not have any specific role, return an empty query
-        query = query.filter(self.model.id < 0)
-
-    return query
+        return query
 
 
 class AttiDataView(BaseDataView):
@@ -4932,13 +4747,9 @@ def create_admin_views(app, intervals):
                            endpoint='open_admin_3',
                            )
 
-        #admin_app3.add_view(DocumentsBaseDataDetails(name='Documents Workflow Management', model=StepBaseData, session=db.session,
-        #                                             endpoint='step_base_data'
-        #                                             ))
-
         admin_app3.add_view(DocumentsBaseDataDetails(
                                                 name='Documents in Workflows',
-                                                model=DocumentWorkflow,  # Replacing StepBaseData with the correct model
+                                                model=DocumentWorkflow,  # Replacing Step Base Data with the correct model
                                                 session=db.session,
                                                 endpoint='document_workflow'  # Make sure the endpoint is unique
         ))

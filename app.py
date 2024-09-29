@@ -56,8 +56,7 @@ from models.user import (Users, UserRoles, Event, Role, Questionnaire, Question,
         Interval, Subject,
         Container, AuditLog, Post, Ticket, StepQuestionnaire,
         Workflow, Step, BaseData, DataMapping, Container, WorkflowSteps, WorkflowBaseData,
-        DocumentWorkflow, DocumentWorkflowHistory,
-        StepBaseData, Config, Product, Cart,
+        DocumentWorkflow, DocumentWorkflowHistory, Config, Product, Cart, #StepBaseData,
         Plan, PlanProducts, UserPlans, Subscription, # Adjust based on actual imports
         Questionnaire_psf, Response_psf,
         Contract, ContractParty, ContractTerm, ContractDocument, ContractStatusHistory,
@@ -71,7 +70,7 @@ from forms.forms import (AddPlanToCartForm, SignupForm, UpdateAccountForm, Ticke
          QuestionnaireCompanyForm, CustomBaseDataForm,
         QuestionnaireQuestionForm, WorkflowStepForm, WorkflowBaseDataForm,
          BaseDataWorkflowStepForm,
-        UserRoleForm, CompanyUserForm, UserDocumentsForm, StepBaseDataInlineForm,
+        UserRoleForm, CompanyUserForm, UserDocumentsForm, DocumentWorkflowInlineForm,
         create_dynamic_form, CustomFileLoaderForm,
         CustomSubjectAjaxLoader, BaseSurveyForm, AuditLogForm, PlanProductsForm,
                          UpdateCartItemForm, AddProductToCartForm, SubscriptionForm)
@@ -405,7 +404,6 @@ def before_request():
         raise e
     pass
 
-
 bcrypt = Bcrypt(app)
 # Set the login view (replace 'login' with your actual login route)
 login_manager.login_view = 'login'
@@ -461,15 +459,39 @@ with app.app_context():
     workflow_base_data_blueprint = create_crud_blueprint(WorkflowBaseData, 'workflow_base_data')
     app.register_blueprint(workflow_base_data_blueprint, url_prefix='/model_workflow_base_data')
 
-    step_base_data_blueprint = create_crud_blueprint(StepBaseData, 'step_base_data')
+    step_base_data_blueprint = create_crud_blueprint(DocumentWorkflow, 'step_base_data')
     app.register_blueprint(step_base_data_blueprint, url_prefix='/model_step_base_data')
 
     model_document = create_crud_blueprint('model_document', __name__)
+
+
+from urllib.parse import urlparse
+
+# Get the DATABASE_URL from the environment
+database_url = os.getenv('DATABASE_URL')
+
+# Parse the DATABASE_URL
+result = urlparse(database_url)
+
+# Extract components
+username = result.username
+password = result.password
+hostname = result.hostname
+port = result.port if result.port else 5432
+database = result.path[1:]  # Removes the leading "/"
+
+print(f"Username: {username[:5]}")
+print(f"Password: {password[:5]}")
+print(f"Host: {hostname[:5]}")
+print(f"Port: {port}")
+print(f"Database: {database}")
+
 
 import logging
 from logging import FileHandler, Formatter
 
 # Configure error logging to a file
+
 print('app.debug is', app.debug)
 import logging
 from logging import FileHandler, Formatter
@@ -487,7 +509,6 @@ if not app.debug:
 if app.debug:
     app.logger.setLevel(logging.DEBUG)
     app.logger.debug("Logging is active.")
-
 
 app.logger.info("Testing log output")
 app.logger.error("Testing error output")
@@ -636,8 +657,8 @@ def get_documents():
 
         # Join WorkflowSteps if step_id is provided
         if step_id and step_id != 'all':
-            query = query.join(WorkflowSteps, WorkflowSteps.step_id == DocumentWorkflow.current_step_id)
-            query = query.filter(DocumentWorkflow.current_step_id == step_id)
+            query = query.join(WorkflowSteps, WorkflowSteps.step_id == DocumentWorkflow.step_id)
+            query = query.filter(DocumentWorkflow.step_id == step_id)
 
         # Filter by fi0 if provided
         if fi0:
@@ -828,7 +849,7 @@ def attach_documents_to_workflow():
                 new_assignment = DocumentWorkflow(
                     base_data_id=doc.id,
                     workflow_id=workflow_id,
-                    current_step_id=step_id,
+                    step_id=step_id,
                     start_date=date_start,
                     end_date=date_end,
                     auto_move=auto_move
@@ -1747,7 +1768,7 @@ def user_documents_d3():
                         [{"id": step.id, "name": step.name, "color": LIGHT_GRAY} for step in steps])
 
                 # Fetch current step information from StepBaseData table
-                current_step_data = StepBaseData.query.filter_by(base_data_id=document_obj.id).first()
+                current_step_data = DocumentWorkflow.query.filter_by(base_data_id=document_obj.id).first()
                 if current_step_data:
                     current_step_id = current_step_data.step_id
                     current_step = Step.query.get(current_step_id)
@@ -1973,9 +1994,9 @@ def detach_documents_from_workflow_step():
         step_id = data.get('step_id')
 
         # Delete the StepBaseData records corresponding to the selected document IDs
-        query = StepBaseData.query.filter(StepBaseData.base_data_id.in_(ids_list),
-                                           StepBaseData.workflow_id == workflow_id,
-                                           StepBaseData.step_id == step_id)
+        query = DocumentWorkflow.query.filter(DocumentWorkflow.base_data_id.in_(ids_list),
+                                           DocumentWorkflow.workflow_id == workflow_id,
+                                           DocumentWorkflow.step_id == step_id)
         deleted_count = query.delete()
 
         # Commit the changes
@@ -2035,12 +2056,12 @@ def attach_documents_to_workflow_step():
     records_added = 0
     # Check if the StepBaseData record already exists for the selected Workflow and Step
     for id in ids_list:
-        existing_record = StepBaseData.query.filter_by(base_data_id=id, workflow_id=workflow_id, step_id=step_id).first()
+        existing_record = DocumentWorkflow.query.filter_by(base_data_id=id, workflow_id=workflow_id, step_id=step_id).first()
         if not existing_record:
             # If the StepBaseData record doesn't exist, create a new one
 
             # new_record = StepBaseData(base_data_id=id, workflow_id=workflow_id, step_id=step_id, hidden_data='default_value')
-            new_record = StepBaseData(
+            new_record = DocumentWorkflow(
                 base_data_id=id,
                 workflow_id=workflow_id,
                 step_id=step_id,
@@ -2153,7 +2174,7 @@ def manage_deadline():
     records_updated = 0
     if new_date_obj:
         for id in ids_list:
-            existing_record = StepBaseData.query.get(id)
+            existing_record = DocumentWorkflow.query.get(id)
 
             if existing_record:
                 existing_record.deadline_date = new_date_obj
@@ -3546,7 +3567,7 @@ def add_records_bws():
             continue  # Skip this iteration if any key ends with '-id'
 
         # Check if the record already exists
-        existing_record = StepBaseData.query.filter_by(
+        existing_record = DocumentWorkflow.query.filter_by(
             base_data_id=base_data_id,
             workflow_id=workflow_id,
             step_id=step_id
@@ -3556,7 +3577,7 @@ def add_records_bws():
         if not existing_record:
             # Create a new record if essential values are present
             if base_data_id and workflow_id and step_id:
-                new_record = StepBaseData(
+                new_record = DocumentWorkflow(
                     base_data_id=base_data_id,
                     workflow_id=workflow_id,
                     step_id=step_id,
@@ -3619,7 +3640,7 @@ def delete_records_bws():
         step_id = parsed_data.get('step')
 
         # Check if the record exists
-        existing_record = StepBaseData.query.filter_by(
+        existing_record = DocumentWorkflow.query.filter_by(
             base_data_id=base_data_id,
             workflow_id=workflow_id,
             step_id=step_id
@@ -3732,12 +3753,12 @@ def manage_base_data_workflow_step():
             auto_move = form.auto_move.data  # Get the value of auto_move field
 
             # Check if the document-step association already exists for the selected workflow
-            existing_step_base_data_query = StepBaseData.query \
-                .join(WorkflowSteps, WorkflowSteps.step_id == StepBaseData.step_id) \
+            existing_step_base_data_query = DocumentWorkflow.query \
+                .join(WorkflowSteps, WorkflowSteps.step_id == DocumentWorkflow.step_id) \
                 .join(Workflow, Workflow.id == WorkflowSteps.workflow_id) \
                 .filter(Workflow.id == workflow_id,
-                        StepBaseData.step_id == step_id,
-                        StepBaseData.base_data_id == base_data_id)
+                        DocumentWorkflow.step_id == step_id,
+                        DocumentWorkflow.base_data_id == base_data_id)
 
             existing_step_base_data = existing_step_base_data_query.first()
 
@@ -3747,7 +3768,7 @@ def manage_base_data_workflow_step():
                 # Get the current date in format YYYY-MM-DD
                 current_date = datetime.now()
                 # Add logic to associate the document with the step in the selected workflow
-                new_step_base_data = StepBaseData(step_id=step_id, workflow_id=workflow_id,
+                new_step_base_data = DocumentWorkflow(step_id=step_id, workflow_id=workflow_id,
                                                   base_data_id=base_data_id, start_date=current_date,
                                                   auto_move=auto_move)
                 db.session.add(new_step_base_data)
@@ -3766,12 +3787,12 @@ def manage_base_data_workflow_step():
                 step_id = form.step.data
 
                 # Find and delete the document-step association for the selected workflow
-                step_base_data_to_delete = StepBaseData.query \
-                    .join(WorkflowSteps, WorkflowSteps.step_id == StepBaseData.step_id) \
+                step_base_data_to_delete = DocumentWorkflow.query \
+                    .join(WorkflowSteps, WorkflowSteps.step_id == DocumentWorkflow.step_id) \
                     .join(Workflow, Workflow.id == WorkflowSteps.workflow_id) \
                     .filter(Workflow.id == workflow_id,
-                            StepBaseData.step_id == step_id,
-                            StepBaseData.base_data_id == base_data_id) \
+                            DocumentWorkflow.step_id == step_id,
+                            DocumentWorkflow.base_data_id == base_data_id) \
                     .first()
 
                 if step_base_data_to_delete:

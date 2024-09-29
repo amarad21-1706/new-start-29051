@@ -695,16 +695,10 @@ class BaseData(db.Model):
     subarea = db.relationship('Subarea', foreign_keys=[subarea_id])
     lexic = db.relationship('Lexic', foreign_keys=[lexic_id])
 
-    # Define relationship with StepBaseData
-    steps_relationship = relationship("StepBaseData", back_populates="base_data")
+    # Define relationship with Step Base Data
     base_data_inlines = db.relationship('BaseDataInline', backref='parent_base_data', lazy=True, cascade="all, delete-orphan")
 
-    # Relationship with DocumentWorkflow and History
-    # document_workflows = db.relationship('DocumentWorkflow', back_populates='base_data')
-    # Relationship to DocumentWorkflow
-    #document_workflows = db.relationship('DocumentWorkflow', backref='base_data', uselist=False)
-    # Relationship to DocumentWorkflow (many-to-many through an association object)
-    document_workflows = db.relationship('DocumentWorkflow', back_populates='base_data')
+    document_workflows = db.relationship('DocumentWorkflow', back_populates='base_data', cascade="all, delete-orphan")
     document_workflow_history = db.relationship('DocumentWorkflowHistory', back_populates='base_data')
 
     def __repr__(self):
@@ -931,6 +925,7 @@ event.listen(db.session, 'after_flush', after_flush_listener)
 event.listen(db.session, 'after_flush_postexec', after_flush_postexec_listener)
 
 
+'''
 class StepBaseData(db.Model):
     __tablename__ = 'step_base_data'
 
@@ -985,7 +980,7 @@ class StepBaseData(db.Model):
             # Handle constraint violation error
             print("Constraint violation error:", e)
             return None
-
+'''
 
 class StepQuestionnaire(db.Model):
     __tablename__ = 'step_questionnaire'
@@ -1670,28 +1665,49 @@ class ContractTeam(db.Model):
     team = relationship('Team', back_populates='contract_teams')
 
 
-
-
 class DocumentWorkflow(db.Model):
     __tablename__ = 'document_workflow'
 
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    base_data_id = db.Column(db.Integer, db.ForeignKey('base_data.id'))
+    id = db.Column(db.Integer, primary_key=True)
     workflow_id = db.Column(db.Integer, db.ForeignKey('workflow.id'))
-    current_step_id = db.Column(db.Integer, db.ForeignKey('step.id'))
+    step_id = db.Column(db.Integer, db.ForeignKey('step.id'))
+    status_id = db.Column(db.Integer, db.ForeignKey('status.id'))  # Remove the duplicate declaration
+    deadline_date = db.Column(db.DateTime)
+    auto_move = db.Column(db.Boolean, default=False)  # Remove the duplicate declaration
     start_date = db.Column(DateTime, nullable=False)
     end_date = db.Column(DateTime, nullable=True)
 
-    # Add auto_move field
-    auto_move = db.Column(db.Boolean, default=False)  # Assuming it's a boolean field
+    hidden_data = db.Column(db.String(255), default='default_value')
+    start_recall = db.Column(db.Integer, default=0)
+    deadline_recall = db.Column(db.Integer, default=0)
+    end_recall = db.Column(db.Integer, default=0)
+    recall_unit = db.Column(db.String(24), default='day')
+    open_action = db.Column(db.Boolean, default=False)
 
     # Relationships
     base_data = db.relationship('BaseData', back_populates='document_workflows')
     workflow = db.relationship('Workflow', back_populates='document_workflows')
-    current_step = db.relationship('Step')
+    step = db.relationship('Step')
+    status = db.relationship('Status')  # Define the relationship for 'status_id'
+
+    base_data_id = db.Column(db.Integer, db.ForeignKey('base_data.id'))
+
+    @validates('auto_move')
+    def validate_auto_move(self, key, value):
+        # Ensure the value is explicitly a boolean
+        if not isinstance(value, bool):
+            raise ValueError("auto_move must be a boolean value")
+        return value
+
+    @validates('open_action')
+    def validate_open_action(self, key, value):
+        # Ensure the value is explicitly a boolean
+        if not isinstance(value, bool):
+            raise ValueError("open_action must be a boolean value")
+        return value
 
     def __repr__(self):
-        return f"Document Workflow for {self.base_data_id} in Workflow {self.workflow_id} at Step {self.current_step_id}"
+        return f"Document Workflow for {self.base_data_id} in Workflow {self.workflow_id} at Step {self.step_id}"
 
 
 '''
