@@ -186,11 +186,7 @@
                     "Manager"
                 ],
                 "widget": {
-                    "display": true,
-                    "type": "button",
-                    "submit_url": "/company_overview_current",
-                    "style": "btn-link",
-                    "size": "large"
+                    "display": true
                 }
             },
             "Area di controllo 1": {
@@ -279,11 +275,7 @@
                 "protected": true,
                 "allowed_roles": ["Admin", "Employee", "Manager", "Authority", "Provider"],
                 "widget": {
-                    "display": true,
-                    "type": "button",
-                    "submit_url": "/admin/contracts",
-                    "style": "btn-link",
-                    "size": "large"
+                    "display": true
                 }
             },
             "Cards One": {
@@ -301,7 +293,7 @@
                 "protected": true,
                 "allowed_roles": ["Admin", "Employee", "Manager"],
                 "widget": {
-                    "display": false
+                    "display": true
                 }
             },
             "Documents Workflow": {
@@ -310,15 +302,6 @@
                 "protected": true,
                 "allowed_roles": [
                     "Admin", "Employee", "Manager"],
-                "widget": {
-                    "display": false
-                }
-            },
-            "Area di controllo 5.1": {
-                "label": "Documents Test",
-                "url": "/documents_workflow",
-                "protected": true,
-                "allowed_roles": ["Admin", "Employee", "Manager"],
                 "widget": {
                     "display": false
                 }
@@ -535,18 +518,7 @@
                             "display": false
                         }
                     },
-                    "Area 2 - test": {
-                        "label": "Area 2",
-                        "url": "/manage_area2_data",
-                        "protected": true,
-                        "allowed_roles": [
-                            "Admin"
-                        ],
-                        "widget": {
-                            "display": false
-                        }
-                    },
-                    "Area di controllo 5 Admin": {
+                    "Area di controllo 3": {
                         "label": "Document Workflow Manager",
                         "url": "/open_admin_5",
                         "protected": true,
@@ -556,19 +528,8 @@
                         }
                     },
                     "Area 3 - test": {
-                        "label": "Workflows Area",
+                        "label": "Workflows List",
                         "url": "/open_admin_3",
-                        "protected": true,
-                        "allowed_roles": [
-                            "Admin"
-                        ],
-                        "widget": {
-                            "display": false
-                        }
-                    },
-                    "Area 6 - test": {
-                        "label": "Workflows Area - test",
-                        "url": "/test_relationship",
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
@@ -950,7 +911,12 @@
                     "Guest"
                 ],
                 "widget": {
-                    "display": true
+                    "display": true,
+                    "type": "button",
+                    "style": "btn-warning",
+                    "color": "#ff8800",
+                    "icon": "icon-contracts",
+                    "size": "large"
                 }
             },
             "Privacy": {

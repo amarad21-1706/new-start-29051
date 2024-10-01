@@ -2719,7 +2719,7 @@ class DocumentUploadView(BaseDataViewCommon):
     create_template = 'admin/area_1/create_base_data_8.html'
     can_create = False
     can_delete = False
-    can_edit = True
+    can_edit = False
     can_export = True
     can_view_details = True
     # Area and subarea identifiers for filtering records
@@ -2807,89 +2807,49 @@ class DocumentUploadView(BaseDataViewCommon):
         """
         super()._uncheck_if_document(model, form)
 
-    def create_model(self, form):
-        try:
-            print("Creating a new model instance two")
-            print(f"Form data: {form.data}")  # Add this to inspect form data
+from sqlalchemy import desc, func
 
-            # Use session.no_autoflush directly, no import required
-            with self.session.no_autoflush:
-                # Create a new instance of the model
-                model = self.model()
-                # Populate the model with form data
-                form.populate_obj(model)
+def get_query(self):
+    """
+    Override default query to filter records by area, subarea, and user role.
+    Sort by workflow, step, deadline_date (descending), and end_date (descending if deadline_date is null).
+    """
+    # Base query filtered by area and subarea
+    # query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
+    # Base query filtered by area_id in [1, 3] and specific subarea_id
+    query = self.session.query(self.model).filter(
+        self.model.area_id.in_([1, 3]),  # Filtering for area_id in [1, 3]
+        self.model.subarea_id == self.subarea_id  # Filtering by exact subarea_id
+    )
+    # Role-based filtering
+    if current_user.is_authenticated:
+        if current_user.has_role('Admin'):
+            # Admins can access all documents, no additional filtering needed
+            print("Admin access: fetching all documents.")
+        elif current_user.has_role('Manager'):
+            # Managers can access documents of their own company_id
+            subquery = db.session.query(CompanyUsers.company_id).filter(CompanyUsers.user_id == current_user.id).subquery()
+            query = query.filter(self.model.company_id.in_(subquery))
+            print(f"Manager access: fetching documents for company_id(s) {subquery}.")
+        elif current_user.has_role('Employee'):
+            # Employees can only access their own documents
+            query = query.filter(self.model.user_id == current_user.id)
+            print(f"Employee access: fetching documents for user_id {current_user.id}.")
+    else:
+        print("Unauthenticated access: returning empty query.")
+        query = query.filter(self.model.id < 0)
 
-                # Ensure area_id and subarea_id are set correctly
-                model.area_id = self.area_id
-                model.subarea_id = self.subarea_id
-                model.created_on = datetime.utcnow()
-                model.updated_on = datetime.utcnow()
-                model.user_id = current_user.id
-                model.company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-                model.record_type = 'document'
-                model.data_type = 'data_type'
+    # Sorting by workflow, step, and deadline_date or end_date
+    query = query.join(self.model.document_workflows) \
+        .join(DocumentWorkflow.workflow) \
+        .join(DocumentWorkflow.step) \
+        .order_by(
+            Workflow.name,  # Sorting by workflow name
+            Step.name,  # Sorting by step name
+            desc(func.coalesce(DocumentWorkflow.deadline_date, DocumentWorkflow.end_date))  # Sort by deadline_date or end_date if deadline_date is null
+        )
 
-                # Convert `no_action` field to boolean
-                model.no_action = bool(form.no_action.data)
-
-                # If the model has `auto_move` or `open_action`, ensure they're booleans
-                if hasattr(model, 'auto_move'):
-                    model.auto_move = bool(form.auto_move.data)
-
-                if hasattr(model, 'open_action'):
-                    model.open_action = bool(form.open_action.data)
-
-                # Set `start_date` if it's part of the `document_workflows`
-                for workflow in model.document_workflows:
-                    if workflow.start_date is None:
-                        workflow.start_date = datetime.utcnow()  # Set to current date and time
-
-                # Add the model to the session (but do not flush yet)
-                self.session.add(model)
-
-            # Commit the changes
-            self.session.commit()
-
-            # Custom behavior after successful creation
-            flash(f'Document uploaded successfully.', 'success')
-            print(f"Model created with values: {model.__dict__}")  # Check the model after committing
-
-            return model
-        except Exception as ex:
-            # Capture detailed exception and log it
-            print(f"Error occurred: {ex}")
-            traceback.print_exc()  # Log full traceback
-            flash(f'Failed to create document record: {str(ex)}', 'error')
-            self.session.rollback()
-            return False
-
-    def get_query(self):
-        """
-        Override default query to filter records by area, subarea, and user role.
-        """
-        # Base query filtered by area and subarea
-        query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
-
-        if current_user.is_authenticated:
-            if current_user.has_role('Admin'):
-                # Admins can access all documents, no additional filtering needed
-                print("Admin access: fetching all documents.")
-                return query
-            elif current_user.has_role('Manager'):
-                # Managers can access documents of their own company_id
-                subquery = db.session.query(CompanyUsers.company_id).filter(CompanyUsers.user_id == current_user.id).subquery()
-                query = query.filter(self.model.company_id.in_(subquery))
-                print(f"Manager access: fetching documents for company_id(s) {subquery}.")
-            elif current_user.has_role('Employee'):
-                # Employees can only access their own documents
-                query = query.filter(self.model.user_id == current_user.id)
-                print(f"Employee access: fetching documents for user_id {current_user.id}.")
-        else:
-            print("Unauthenticated access: returning empty query.")
-            # If the user is not authenticated or does not have any specific role, return an empty query
-            query = query.filter(self.model.id < 0)
-
-        return query
+    return query
 
 
 class DocumentUploadViewExisting(BaseDataViewCommon):
@@ -2945,6 +2905,7 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
         'fi0': 'Anno di rif.',
         'interval_ord': 'Periodo di rif.',
         'subject': 'Oggetto',
+        'ft1': 'Codice documento',
         'number_of_doc': 'Nr. documento',
         'date_of_doc': 'Data documento',
         'file_path': 'Allegati',
@@ -2959,6 +2920,7 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
         'interval_ord': '(inserire il numero; es. 1: primo quadrimestre; 2: secondo ecc.)',
         'fi0': 'Inserire anno (es. 2024)',
         'subject_id': 'Seleziona oggetto',
+        'ft1': 'Codice documento/Prot. n.',
         'fc2': 'Note',
         'file_path': 'Allegati',
         'no_action': 'Dichiarazione di assenza di documenti (1)'
@@ -2976,39 +2938,120 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
             model.company.name[:5] if model.company and model.company.name else 'N/A')
     }
 
+
+    # Prefill form to ensure the correct document is selected
+    def on_form_prefill(self, form, id):
+        """
+        Override the form prefill method to select the correct document.
+        """
+        # Get the current document record based on the ID
+        document = db.session.query(self.model).get(id)
+
+        # Set the selected document in the 'number_of_doc' field
+        form.number_of_doc.data = document  # Pre-select the document in the dropdown
+
+        # If the form contains other data to prepopulate, handle it here (e.g., workflows, steps, etc.)
+        super(DocumentUploadViewExisting, self).on_form_prefill(form, id)
+
+
+    def get_query(self):
+        """
+        Override default query to filter records by area, subarea, and user role.
+        """
+        # Base query filtered by area and subarea
+        # query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
+        # Base query filtered by area_id in [1, 3] and specific subarea_id
+        query = self.session.query(self.model).filter(
+            self.model.area_id.in_([1, 3]),  # Filtering for area_id in [1, 3]
+            self.model.subarea_id == self.subarea_id  # Filtering by exact subarea_id
+        )
+
+        if current_user.is_authenticated:
+            if current_user.has_role('Admin'):
+                # Admins can access all documents, no additional filtering needed
+                print("Admin access: fetching all documents.")
+                return query
+            elif current_user.has_role('Manager'):
+                # Managers can access documents of their own company_id
+                subquery = db.session.query(CompanyUsers.company_id).filter(CompanyUsers.user_id == current_user.id).subquery()
+                query = query.filter(self.model.company_id.in_(subquery))
+                print(f"Manager access: fetching documents for company_id(s) {subquery}.")
+            elif current_user.has_role('Employee'):
+                # Employees can only access their own documents
+                query = query.filter(self.model.user_id == current_user.id)
+                print(f"Employee access: fetching documents for user_id {current_user.id}.")
+        else:
+            print("Unauthenticated access: returning empty query.")
+            # If the user is not authenticated or does not have any specific role, return an empty query
+            query = query.filter(self.model.id < 0)
+
+        # Sorting by workflow, step, and deadline_date or end_date
+        query = query.join(self.model.document_workflows) \
+            .join(DocumentWorkflow.workflow) \
+            .join(DocumentWorkflow.step) \
+            .order_by(
+            Workflow.name,  # Sorting by workflow name
+            Step.name,  # Sorting by step name
+            desc(func.coalesce(DocumentWorkflow.deadline_date, DocumentWorkflow.end_date))
+            # Sort by deadline_date or end_date if deadline_date is null
+        )
+
+        return query
+
     def on_model_change(self, form, model, is_created):
         """
         Override method to add custom logic before saving the object.
+        This method handles form data assignment and ensures relationships are set correctly.
         """
         try:
             # Validate no-action checkbox logic
+            print('one')
             self._validate_no_action(model, form)
-            # Uncheck no-action if a document is uploaded
+            # Ensure 'no_action' is unchecked if a document is uploaded
             self._uncheck_if_document(model, form)
 
+            print('two')
             # Ensure number_of_doc is correctly assigned from the form
             if form.number_of_doc.data:
-                model.number_of_doc = form.number_of_doc.data.number_of_doc  # Extract the actual value
+                selected_document = form.number_of_doc.data  # Get the selected BaseData object
+                model.number_of_doc = str(selected_document.number_of_doc)  # Ensure this is a string or scalar
+                model.base_data_id = int(selected_document.id)  # Ensure this is an integer (the ID)
 
-            for workflow in model.document_workflows:
-                if workflow.start_date is None:
-                    workflow.start_date = datetime.utcnow()  # Set to the current date and time
-                # Set end_date to three months from start_date if it is None
-                if workflow.end_date is None:
-                    workflow.end_date = workflow.start_date + timedelta(days=90)  # 3 months from start_date
+            print('data', selected_document, model.number_of_doc, model.base_data_id)
 
+            print('three')
+            # Add debug prints to check what you're assigning to the model
+            print(f"Assigned number_of_doc: {model.number_of_doc}")
+            print(f"Assigned base_data_id: {model.base_data_id}")
+            # Process workflows related to the document
+
+            if hasattr(model, 'document_workflows'):
+                for workflow in model.document_workflows:
+                    if workflow.start_date is None:
+                        workflow.start_date = datetime.utcnow()  # Set start date to current time
+                    # Set end_date to three months from start_date if it is None
+                    if workflow.end_date is None:
+                        workflow.end_date = workflow.start_date + timedelta(days=90)  # 3 months from start_date
+
+            print('four')
             # Custom logic if a new model is created
             if is_created:
-                # Example: Set some initial values or states for the new record
-                model.created_on = datetime.utcnow()
-                flash(f'New document upload created successfully.', 'success')
+                model.created_on = datetime.utcnow()  # Set created_on timestamp
+                model.user_id = current_user.id  # Set the user_id to the current user
+                flash('New document upload created successfully.', 'success')
             else:
-                model.updated_on = datetime.utcnow()  # Ensure updated_on is set on update
-                flash(f'Document upload updated successfully.', 'success')
+                model.updated_on = datetime.utcnow()  # Update the updated_on timestamp
+                flash('Document upload updated successfully.', 'success')
+
+            # Log the state of the model (useful for debugging)
+            print(f"Model after changes: {model}")
 
         except Exception as ex:
-            flash(f'Error during model change: {str(ex)}', 'error')
-            raise
+            # Capture the exception and log the error with detailed message
+            error_message = f"Error during model change: {str(ex)}"
+            print(error_message)  # Log the error
+            flash(error_message, 'error')  # Show the error message in the UI
+            raise  # Reraise the exception to ensure it's properly handled by Flask
 
     def _validate_no_action(self, model, form):
         """
@@ -3085,33 +3128,6 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
             self.session.rollback()
             return False
 
-    def get_query(self):
-        """
-        Override default query to filter records by area, subarea, and user role.
-        """
-        # Base query filtered by area and subarea
-        query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
-
-        if current_user.is_authenticated:
-            if current_user.has_role('Admin'):
-                # Admins can access all documents, no additional filtering needed
-                print("Admin access: fetching all documents.")
-                return query
-            elif current_user.has_role('Manager'):
-                # Managers can access documents of their own company_id
-                subquery = db.session.query(CompanyUsers.company_id).filter(CompanyUsers.user_id == current_user.id).subquery()
-                query = query.filter(self.model.company_id.in_(subquery))
-                print(f"Manager access: fetching documents for company_id(s) {subquery}.")
-            elif current_user.has_role('Employee'):
-                # Employees can only access their own documents
-                query = query.filter(self.model.user_id == current_user.id)
-                print(f"Employee access: fetching documents for user_id {current_user.id}.")
-        else:
-            print("Unauthenticated access: returning empty query.")
-            # If the user is not authenticated or does not have any specific role, return an empty query
-            query = query.filter(self.model.id < 0)
-
-        return query
 
 
 class AttiDataView(BaseDataView):
@@ -4987,7 +5003,7 @@ def create_admin_views(app, intervals):
 
         # === = ==================================== === ====================================
         admin_app5 = Admin(app,
-                           name='Area di controllo 3 - Documenti',
+                           name='Workflow Documenti',
                            url='/open_admin_5',
                            template_mode='bootstrap4',
                            endpoint='open_admin_5',

@@ -164,6 +164,10 @@ import geocoder
 
 from opencage.geocoder import OpenCageGeocode
 
+from urllib.parse import urlparse
+import logging
+from logging import FileHandler, Formatter
+
 # for graphical representation of workflows
 # Additional libraries for visualization (choose one)
 # Option 1: Flask-Vis (lightweight)
@@ -467,8 +471,7 @@ with app.app_context():
 
     model_document = create_crud_blueprint('model_document', __name__)
 
-
-from urllib.parse import urlparse
+app.config['SQLALCHEMY_ECHO'] = True
 
 # Get the DATABASE_URL from the environment
 database_url = os.getenv('DATABASE_URL')
@@ -489,15 +492,9 @@ print(f"Host: {hostname[:5]}")
 print(f"Port: {port}")
 print(f"Database: {database}")
 
-
-import logging
-from logging import FileHandler, Formatter
-
 # Configure error logging to a file
 
 print('app.debug is', app.debug)
-import logging
-from logging import FileHandler, Formatter
 
 # Basic logging configuration
 if not app.debug:
@@ -700,80 +697,6 @@ def get_documents():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/documents_workflow', methods=['GET'])
-@login_required
-def documents_workflow():
-    return render_template('new_document_workflow.html')
-
-
-@app.route('/api/documents_workflow_new', methods=['GET'])
-@login_required
-def get_documents_workflow_new():
-    # Logic to handle the API request
-
-    return jsonify({"status": "API working"}), 200
-'''
-    try:
-        workflow_id = request.args.get('workflow_id')
-        step_id = request.args.get('step_id')
-        fi0 = request.args.get('fi0')
-        document_id = request.args.get('id')  # Now using 'id' to retrieve the document ID
-
-        # Log the received parameters for debugging
-        app.logger.info(f"Received workflow_id: {workflow_id}, step_id: {step_id}, fi0: {fi0}, document_id: {document_id}")
-
-        # Start building the query with select_from and join first
-        query = db.session.query(BaseData).select_from(BaseData).join(DocumentWorkflow, BaseData.id == DocumentWorkflow.base_data_id)
-
-        # Apply area filter
-        query = query.filter(BaseData.area_id.in_([2, 3]))
-
-        # Log the query for debugging purposes
-        app.logger.info(f"BaseData query after filtering by area_id: {query}")
-
-        # Join Workflow if workflow_id is provided
-        if workflow_id and workflow_id != 'all':
-            query = query.join(Workflow, Workflow.id == DocumentWorkflow.workflow_id)
-            query = query.filter(DocumentWorkflow.workflow_id == workflow_id)
-
-        # Join WorkflowSteps if step_id is provided
-        if step_id and step_id != 'all':
-            query = query.join(WorkflowSteps, WorkflowSteps.step_id == DocumentWorkflow.step_id)
-            query = query.filter(DocumentWorkflow.step_id == step_id)
-
-        # Filter by fi0 if provided
-        if fi0:
-            query = query.filter(BaseData.fi0 == fi0)
-
-        # Filter by document ID if provided
-        if document_id:
-            query = query.filter(BaseData.id == document_id)
-
-        # Fetch the filtered documents
-        documents = query.all()
-
-        if not documents:
-            return jsonify({"error": "No documents found"}), 404
-
-        # Prepare the response data, converting date_start and date_end to strings
-        document_list = [{
-            'id': doc.id,
-            'name': doc.number_of_doc or f"Document {doc.id}",
-            'workflows': [
-                {
-                    'date_start': workflow.start_date.isoformat() if workflow.start_date else None,
-                    'date_end': workflow.end_date.isoformat() if workflow.end_date else None
-                }
-                for workflow in doc.document_workflows  # Iterate over the document_workflows relationship
-            ]
-        } for doc in documents]
-
-        return jsonify(document_list), 200
-
-    except Exception as e:
-        app.logger.error(f"Error fetching documents: {e}")
-        return jsonify({"error": str(e)}), 500
-'''
 
 @app.route('/api/get_workflows', methods=['GET'])
 @login_required
@@ -6545,48 +6468,6 @@ def get_checklist_status(user_email):
     }
 
 
-# WorkflowDocuments
-@app.route('/documents/new', methods=['GET', 'POST'])
-@login_required
-def new_document():
-   form = MainForm()
-
-   # Populate the document number field with options from BaseData (where area_id=3)
-   form.number_of_doc.choices = [(doc.id, doc.number_of_doc) for doc in BaseData.query.filter_by(area_id=3).all()]
-
-   if form.validate_on_submit():
-       # Handle form submission logic
-       # Here, you'll process both the document data and its related workflows
-       new_doc = BaseData(
-           fi0=form.fi0.data,
-           interval_ord=form.interval_ord.data,
-           subject=form.subject.data,
-           date_of_doc=form.date_of_doc.data,
-           file_path=form.file_path.data,
-           no_action=form.no_action.data,
-           fc2=form.fc2.data,
-           area_id=3
-       )
-       db.session.add(new_doc)
-       db.session.commit()
-
-       # Save workflows related to the document
-       for inline_form in form.inline_workflows.entries:
-           new_workflow = DocumentWorkflow(
-               document_id=new_doc.id,
-               workflow_name=inline_form.workflow_name.data,
-               start_date=inline_form.start_date.data,
-               end_date=inline_form.end_date.data
-           )
-           db.session.add(new_workflow)
-
-       db.session.commit()
-       flash('Document and workflows created successfully!', 'success')
-       return redirect(url_for('new_document'))
-
-   return render_template('new_document_workflow.html', form=form)
-
-
 @app.route('/api/get_document_details_and_workflows/<doc_id>', methods=['GET'])
 @login_required
 def get_document_details_and_workflows(doc_id):
@@ -6646,6 +6527,7 @@ if __name__ == '__main__':
 
     # TODO DEBUG
     logging.basicConfig(filename='app.log', level=logging.DEBUG)
+
     # Set `debug` in app.run based on config
     app.run(debug=app.config['DEBUG'], host='0.0.0.0', port=port, extra_files=['./static/js/menuStructure101.json'])
 
