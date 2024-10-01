@@ -75,7 +75,8 @@ from forms.forms import (AddPlanToCartForm, SignupForm, UpdateAccountForm, Ticke
         UserRoleForm, CompanyUserForm, UserDocumentsForm, DocumentWorkflowInlineForm,
         create_dynamic_form, CustomFileLoaderForm,
         CustomSubjectAjaxLoader, BaseSurveyForm, AuditLogForm, PlanProductsForm,
-                         UpdateCartItemForm, AddProductToCartForm, SubscriptionForm)
+                         UpdateCartItemForm, AddProductToCartForm, SubscriptionForm,
+                         MainForm)
 
 from flask_mail import Mail, Message
 # from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as _
@@ -646,11 +647,14 @@ def get_documents():
         # Log the received parameters for debugging
         app.logger.info(f"Received workflow_id: {workflow_id}, step_id: {step_id}, fi0: {fi0}, document_id: {document_id}")
 
-        # Start building the query from the BaseData table
-        query = db.session.query(BaseData)
+        # Start building the query by using select_from first, before any filters
+        query = db.session.query(BaseData).select_from(BaseData).join(DocumentWorkflow, BaseData.id == DocumentWorkflow.base_data_id)
 
-        # Explicitly define the joins using select_from and join to avoid ambiguity
-        query = query.select_from(BaseData).join(DocumentWorkflow, BaseData.id == DocumentWorkflow.base_data_id)
+        # Apply area_id filter after select_from and join
+        query = query.filter(BaseData.area_id.in_([1, 3]))
+
+        # Log the query for debugging purposes
+        app.logger.info(f"BaseData query after filtering by area_id: {query}")
 
         # Join Workflow if workflow_id is provided
         if workflow_id and workflow_id != 'all':
@@ -696,6 +700,80 @@ def get_documents():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route('/documents_workflow', methods=['GET'])
+@login_required
+def documents_workflow():
+    return render_template('new_document_workflow.html')
+
+
+@app.route('/api/documents_workflow_new', methods=['GET'])
+@login_required
+def get_documents_workflow_new():
+    # Logic to handle the API request
+
+    return jsonify({"status": "API working"}), 200
+'''
+    try:
+        workflow_id = request.args.get('workflow_id')
+        step_id = request.args.get('step_id')
+        fi0 = request.args.get('fi0')
+        document_id = request.args.get('id')  # Now using 'id' to retrieve the document ID
+
+        # Log the received parameters for debugging
+        app.logger.info(f"Received workflow_id: {workflow_id}, step_id: {step_id}, fi0: {fi0}, document_id: {document_id}")
+
+        # Start building the query with select_from and join first
+        query = db.session.query(BaseData).select_from(BaseData).join(DocumentWorkflow, BaseData.id == DocumentWorkflow.base_data_id)
+
+        # Apply area filter
+        query = query.filter(BaseData.area_id.in_([2, 3]))
+
+        # Log the query for debugging purposes
+        app.logger.info(f"BaseData query after filtering by area_id: {query}")
+
+        # Join Workflow if workflow_id is provided
+        if workflow_id and workflow_id != 'all':
+            query = query.join(Workflow, Workflow.id == DocumentWorkflow.workflow_id)
+            query = query.filter(DocumentWorkflow.workflow_id == workflow_id)
+
+        # Join WorkflowSteps if step_id is provided
+        if step_id and step_id != 'all':
+            query = query.join(WorkflowSteps, WorkflowSteps.step_id == DocumentWorkflow.step_id)
+            query = query.filter(DocumentWorkflow.step_id == step_id)
+
+        # Filter by fi0 if provided
+        if fi0:
+            query = query.filter(BaseData.fi0 == fi0)
+
+        # Filter by document ID if provided
+        if document_id:
+            query = query.filter(BaseData.id == document_id)
+
+        # Fetch the filtered documents
+        documents = query.all()
+
+        if not documents:
+            return jsonify({"error": "No documents found"}), 404
+
+        # Prepare the response data, converting date_start and date_end to strings
+        document_list = [{
+            'id': doc.id,
+            'name': doc.number_of_doc or f"Document {doc.id}",
+            'workflows': [
+                {
+                    'date_start': workflow.start_date.isoformat() if workflow.start_date else None,
+                    'date_end': workflow.end_date.isoformat() if workflow.end_date else None
+                }
+                for workflow in doc.document_workflows  # Iterate over the document_workflows relationship
+            ]
+        } for doc in documents]
+
+        return jsonify(document_list), 200
+
+    except Exception as e:
+        app.logger.error(f"Error fetching documents: {e}")
+        return jsonify({"error": str(e)}), 500
+'''
 
 @app.route('/api/get_workflows', methods=['GET'])
 @login_required
@@ -6466,6 +6544,77 @@ def get_checklist_status(user_email):
         'role_requested': role_requested
     }
 
+
+# WorkflowDocuments
+@app.route('/documents/new', methods=['GET', 'POST'])
+@login_required
+def new_document():
+   form = MainForm()
+
+   # Populate the document number field with options from BaseData (where area_id=3)
+   form.number_of_doc.choices = [(doc.id, doc.number_of_doc) for doc in BaseData.query.filter_by(area_id=3).all()]
+
+   if form.validate_on_submit():
+       # Handle form submission logic
+       # Here, you'll process both the document data and its related workflows
+       new_doc = BaseData(
+           fi0=form.fi0.data,
+           interval_ord=form.interval_ord.data,
+           subject=form.subject.data,
+           date_of_doc=form.date_of_doc.data,
+           file_path=form.file_path.data,
+           no_action=form.no_action.data,
+           fc2=form.fc2.data,
+           area_id=3
+       )
+       db.session.add(new_doc)
+       db.session.commit()
+
+       # Save workflows related to the document
+       for inline_form in form.inline_workflows.entries:
+           new_workflow = DocumentWorkflow(
+               document_id=new_doc.id,
+               workflow_name=inline_form.workflow_name.data,
+               start_date=inline_form.start_date.data,
+               end_date=inline_form.end_date.data
+           )
+           db.session.add(new_workflow)
+
+       db.session.commit()
+       flash('Document and workflows created successfully!', 'success')
+       return redirect(url_for('new_document'))
+
+   return render_template('new_document_workflow.html', form=form)
+
+
+@app.route('/api/get_document_details_and_workflows/<doc_id>', methods=['GET'])
+@login_required
+def get_document_details_and_workflows(doc_id):
+   document = BaseData.query.get(doc_id)
+   workflows = DocumentWorkflow.query.filter_by(document_id=doc_id).all()
+
+   if not document:
+       return jsonify({'error': 'Document not found'}), 404
+
+   # Return document details and related workflows
+   return jsonify({
+       'document': {
+           'fi0': document.fi0,
+           'interval_ord': document.interval_ord,
+           'subject': document.subject,
+           'date_of_doc': document.date_of_doc.strftime('%Y-%m-%d') if document.date_of_doc else '',
+           'file_path': document.file_path,
+           'no_action': document.no_action,
+           'fc2': document.fc2
+       },
+       'workflows': [
+           {
+               'workflow_name': wf.workflow_name,
+               'start_date': wf.start_date.strftime('%Y-%m-%d') if wf.start_date else '',
+               'end_date': wf.end_date.strftime('%Y-%m-%d') if wf.end_date else ''
+           } for wf in workflows
+       ]
+   })
 
 @app.route('/checkout_success')
 def checkout_success():

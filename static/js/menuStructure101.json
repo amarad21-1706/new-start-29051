@@ -314,6 +314,15 @@
                     "display": false
                 }
             },
+            "Area di controllo 5.1": {
+                "label": "Documents Test",
+                "url": "/documents_workflow",
+                "protected": true,
+                "allowed_roles": ["Admin", "Employee", "Manager"],
+                "widget": {
+                    "display": false
+                }
+            },
             "Statistics": {
                 "label": "Statistics",
                 "url": "/dashboard/authority/dashboard_a3",

@@ -7,7 +7,7 @@ from flask import Blueprint, render_template
 from flask_admin import Admin, AdminIndexView, expose
 from flask_login import current_user
 from flask import session
-
+from wtforms_sqlalchemy.fields import QuerySelectField
 from flask import current_app as app
 
 from flask_admin.form.rules import FieldSet
@@ -2761,6 +2761,11 @@ class MyIntegerIntervalField(IntegerField):
 class DocumentUploadView(BaseDataViewCommon):
     # Template for creating records
     create_template = 'admin/area_1/create_base_data_8.html'
+    can_create = False
+    can_delete = False
+    can_edit = True
+    can_export = True
+    can_view_details = True
     # Area and subarea identifiers for filtering records
     area_id = 3
     subarea_id = 1
@@ -2892,6 +2897,228 @@ class DocumentUploadView(BaseDataViewCommon):
             # Custom behavior after successful creation
             flash(f'Document uploaded successfully.', 'success')
             print(f"Model created with values: {model.__dict__}")  # Check the model after committing
+
+            return model
+        except Exception as ex:
+            # Capture detailed exception and log it
+            print(f"Error occurred: {ex}")
+            traceback.print_exc()  # Log full traceback
+            flash(f'Failed to create document record: {str(ex)}', 'error')
+            self.session.rollback()
+            return False
+
+    def get_query(self):
+        """
+        Override default query to filter records by area, subarea, and user role.
+        """
+        # Base query filtered by area and subarea
+        query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
+
+        if current_user.is_authenticated:
+            if current_user.has_role('Admin'):
+                # Admins can access all documents, no additional filtering needed
+                print("Admin access: fetching all documents.")
+                return query
+            elif current_user.has_role('Manager'):
+                # Managers can access documents of their own company_id
+                subquery = db.session.query(CompanyUsers.company_id).filter(CompanyUsers.user_id == current_user.id).subquery()
+                query = query.filter(self.model.company_id.in_(subquery))
+                print(f"Manager access: fetching documents for company_id(s) {subquery}.")
+            elif current_user.has_role('Employee'):
+                # Employees can only access their own documents
+                query = query.filter(self.model.user_id == current_user.id)
+                print(f"Employee access: fetching documents for user_id {current_user.id}.")
+        else:
+            print("Unauthenticated access: returning empty query.")
+            # If the user is not authenticated or does not have any specific role, return an empty query
+            query = query.filter(self.model.id < 0)
+
+        return query
+
+
+class DocumentUploadViewExisting(BaseDataViewCommon):
+    # Template for creating records
+    can_delete = False
+    can_export = True
+    can_create = True
+    can_set_page_size = True
+    can_view_details = True
+
+    create_template = 'admin/area_1/create_base_data_8.html'
+
+    def __init__(self, model, session, area_id=3, subarea_id=1, *args, **kwargs):
+        # Initialize with intervals, area_id, and subarea_id passed as kwargs
+        super().__init__(model, session, *args, **kwargs)
+        self.area_id = area_id  # Define area_id as an instance variable
+        self.subarea_id = subarea_id  # Define area_id as an instance variable
+
+    # Override form fields
+    form_overrides = {
+        'number_of_doc': QuerySelectField
+    }
+
+    # form_args for static attributes
+    form_args = {
+        'number_of_doc': {
+            'query_factory': lambda: db.session.query(BaseData).filter(BaseData.area_id.in_([1, 3])).all(),
+            'get_label': lambda x: f"{x.ft1} - {x.number_of_doc}/{x.date_of_doc.strftime('%Y-%m-%d')}",
+            # Combine doc number and date
+            'allow_blank': False
+        }
+    }
+
+    form_args = {
+        'number_of_doc': {
+            'query_factory': lambda: db.session.query(BaseData).filter(BaseData.area_id.in_([1, 3])).all(),
+            'get_label': lambda
+                x: f"{x.ft1} - {x.number_of_doc}/{x.date_of_doc.strftime('%Y-%m-%d') if x.date_of_doc else 'No Date'}/",
+            # Handle None case
+            'allow_blank': False
+        }
+    }
+
+    # Columns to display in the list view
+    column_list = ('company_id', 'fi0', 'interval_ord', 'subject', 'ft1', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
+
+    # Columns to include in the form view
+    form_columns = ('fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
+
+    # Custom labels for columns
+    column_labels = {
+        'company_id': 'Comp.',
+        'fi0': 'Anno di rif.',
+        'interval_ord': 'Periodo di rif.',
+        'subject': 'Oggetto',
+        'number_of_doc': 'Nr. documento',
+        'date_of_doc': 'Data documento',
+        'file_path': 'Allegati',
+        'no_action': 'Conferma assenza doc.',
+        'fc2': 'Note'
+    }
+
+    # Descriptions for form fields
+    column_descriptions = {
+        'company_id': 'Company',
+        'ft1': 'Codice interno documento',
+        'interval_ord': '(inserire il numero; es. 1: primo quadrimestre; 2: secondo ecc.)',
+        'fi0': 'Inserire anno (es. 2024)',
+        'subject_id': 'Seleziona oggetto',
+        'fc2': 'Note',
+        'file_path': 'Allegati',
+        'no_action': 'Dichiarazione di assenza di documenti (1)'
+    }
+
+    # Filters to use in the list view
+    column_filters = ('company_id', 'ft1', 'subject', 'fc2', 'no_action')
+
+    # Fields to exclude from the form view
+    form_excluded_columns = ('user_id', 'status_id', 'created_on', 'updated_on', 'data_type')
+
+    # Define column formatters to display the first 5 letters of the company name
+    column_formatters = {
+        'company_id': lambda view, context, model, name: (
+            model.company.name[:5] if model.company and model.company.name else 'N/A')
+    }
+
+    def on_model_change(self, form, model, is_created):
+        """
+        Override method to add custom logic before saving the object.
+        """
+        try:
+            # Validate no-action checkbox logic
+            self._validate_no_action(model, form)
+            # Uncheck no-action if a document is uploaded
+            self._uncheck_if_document(model, form)
+
+            # Ensure number_of_doc is correctly assigned from the form
+            if form.number_of_doc.data:
+                model.number_of_doc = form.number_of_doc.data.number_of_doc  # Extract the actual value
+
+            for workflow in model.document_workflows:
+                if workflow.start_date is None:
+                    workflow.start_date = datetime.utcnow()  # Set to the current date and time
+                # Set end_date to three months from start_date if it is None
+                if workflow.end_date is None:
+                    workflow.end_date = workflow.start_date + timedelta(days=90)  # 3 months from start_date
+
+            # Custom logic if a new model is created
+            if is_created:
+                # Example: Set some initial values or states for the new record
+                model.created_on = datetime.utcnow()
+                flash(f'New document upload created successfully.', 'success')
+            else:
+                model.updated_on = datetime.utcnow()  # Ensure updated_on is set on update
+                flash(f'Document upload updated successfully.', 'success')
+
+        except Exception as ex:
+            flash(f'Error during model change: {str(ex)}', 'error')
+            raise
+
+    def _validate_no_action(self, model, form):
+        """
+        Validate that the 'no_action' field is appropriately set.
+        """
+        # Custom validation logic here
+        if not form.no_action.data and not form.file_path.data:
+            raise ValueError("You must either upload a document or check 'no_action'.")
+
+    def _uncheck_if_document(self, model, form):
+        """
+        Ensure 'no_action' field is unset if a document is uploaded.
+        """
+        # Custom logic to uncheck 'no_action' if a document is uploaded
+        if form.file_path.data:
+            form.no_action.data = False
+
+    def create_model(self, form):
+        try:
+            # Use session.no_autoflush directly, no import required
+            with self.session.no_autoflush:
+                # Create a new instance of the model
+                model = self.model()
+
+                # Populate the model with form data
+                form.populate_obj(model)
+
+                # Extract number_of_doc from the selected BaseData object
+                if form.number_of_doc.data:
+                    model.number_of_doc = form.number_of_doc.data.number_of_doc  # Extract the actual value
+
+                for workflow in model.document_workflows:
+                    if workflow.start_date is None:
+                        workflow.start_date = datetime.utcnow()  # Set to the current date and time
+                    # Set end_date to three months from start_date if it is None
+                    if workflow.end_date is None:
+                        workflow.end_date = workflow.start_date + timedelta(days=90)  # 3 months from start_date
+
+                # Ensure area_id and subarea_id are set correctly
+                model.area_id = self.area_id
+                model.subarea_id = self.subarea_id
+                model.created_on = datetime.utcnow()
+                model.updated_on = datetime.utcnow()
+                model.user_id = current_user.id
+                model.company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
+                model.record_type = 'document'
+                model.data_type = 'data_type'
+
+                # Convert `no_action` field to boolean
+                model.no_action = bool(form.no_action.data)
+
+                # If the model has `auto_move` or `open_action`, ensure they're booleans
+                if hasattr(model, 'auto_move'):
+                    model.auto_move = bool(form.auto_move.data)
+
+                if hasattr(model, 'open_action'):
+                    model.open_action = bool(form.open_action.data)
+
+                # Add the model to the session (but do not flush yet)
+                self.session.add(model)
+
+            # Commit the changes
+            self.session.commit()
+
+            # Custom behavior after successful creation
+            flash(f'Document uploaded successfully.', 'success')
 
             return model
         except Exception as ex:
@@ -4812,8 +5039,13 @@ def create_admin_views(app, intervals):
 
         # Add views to admin_app2
         admin_app5.add_view(
-            DocumentUploadView(model=BaseData, session=db.session, name='Documents Workflow', intervals=intervals, area_id=3,
+            DocumentUploadViewExisting(model=BaseData, session=db.session, name='Attach Existing Document(s) to Workflow(s)', intervals=intervals, area_id=3,
+                                subarea_id=1, endpoint='upload_documenti_view_existing'))
+        # Add views to admin_app2
+        admin_app5.add_view(
+            DocumentUploadView(model=BaseData, session=db.session, name='List of Document Workflow', intervals=intervals, area_id=3,
                                 subarea_id=1, endpoint='upload_documenti_view'))
+
 
         # EOF app5
         # === = ==================================== === ====================================

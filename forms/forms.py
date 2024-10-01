@@ -13,6 +13,10 @@ from wtforms import (DecimalField, StringField, BooleanField, FloatField, FileFi
                      TimeField, FileField, TextAreaField, PasswordField, SubmitField, EmailField,
                      RadioField, validators
                      )
+from flask_wtf import FlaskForm
+from wtforms import StringField, BooleanField, SelectField, FieldList, FormField
+from wtforms.validators import DataRequired
+
 # Import ColorField
 from wtforms.fields import ColorField  # Correct import
 from wtforms import FieldList
@@ -34,7 +38,8 @@ from models.user import (Users, Company, Event, Subject, Step, Workflow, #StepBa
                          Question, Questionnaire, QuestionnaireQuestions, Status, LegalDocument,
                          Area, Subarea, Lexic, Workflow, Interval, Step,
                          Contract, ContractParty, ContractTerm, ContractDocument,
-                         ContractStatusHistory, ContractArticle, Party
+                         ContractStatusHistory, ContractArticle, Party,
+                         BaseData, DocumentWorkflow
                          )
 from flask_admin.model.form import InlineFormAdmin
 from enum import Enum
@@ -42,6 +47,27 @@ from flask_admin.contrib.sqla.ajax import QueryAjaxModelLoader
 from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as _
 # from werkzeug.security import generate_password_hash, check_password_hash
 
+
+# Document Workflow forms
+
+
+class InlineWorkflowForm(FlaskForm):
+   workflow_name = StringField('Workflow Name')
+   start_date = StringField('Start Date')
+   end_date = StringField('End Date')
+
+class MainForm(FlaskForm):
+   number_of_doc = SelectField('Document Number', validators=[DataRequired()])
+   fi0 = StringField('Anno di rif.', validators=[DataRequired()])
+   interval_ord = StringField('Periodo di rif.', validators=[DataRequired()])
+   subject = StringField('Oggetto', validators=[DataRequired()])
+   date_of_doc = StringField('Data documento', validators=[DataRequired()])
+   file_path = StringField('Allegati')
+   no_action = BooleanField('Conferma assenza doc.')
+   fc2 = StringField('Note')
+
+   # Inline workflows
+   inline_workflows = FieldList(FormField(InlineWorkflowForm), min_entries=1)
 
 
 class TeamForm(FlaskForm):

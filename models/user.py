@@ -702,10 +702,7 @@ class BaseData(db.Model):
     document_workflow_history = db.relationship('DocumentWorkflowHistory', back_populates='base_data')
 
     def __repr__(self):
-        return f'<Data ID: {self.id}>'
-
-    def __repr__(self):
-        return f'<Data ID: {self.id}>'
+        return f'<Data ID> {self.id}'
 
     def workflow(self):
         workflows = []
