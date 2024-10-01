@@ -273,16 +273,6 @@
                     "display": false
                 }
             },
-            "Documents Workflow": {
-                "label": "Workflows",
-                "url": "/open_admin_3",
-                "protected": true,
-                "allowed_roles": [
-                    "Admin", "Employee", "Manager"],
-                "widget": {
-                    "display": false
-                }
-            },
             "Contracts": {
                 "label": "Contract Management",
                 "url": "/open_admin_6",
@@ -306,10 +296,20 @@
                 }
             },
             "Area di controllo 5": {
-                "label": "Documents",
+                "label": "Document Workflow Manager",
                 "url": "/open_admin_5",
                 "protected": true,
                 "allowed_roles": ["Admin", "Employee", "Manager"],
+                "widget": {
+                    "display": false
+                }
+            },
+            "Documents Workflow": {
+                "label": "Workflow Lists",
+                "url": "/open_admin_3",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin", "Employee", "Manager"],
                 "widget": {
                     "display": false
                 }
@@ -546,6 +546,15 @@
                             "display": false
                         }
                     },
+                    "Area di controllo 5 Admin": {
+                        "label": "Document Workflow Manager",
+                        "url": "/open_admin_5",
+                        "protected": true,
+                        "allowed_roles": ["Admin"],
+                        "widget": {
+                            "display": false
+                        }
+                    },
                     "Area 3 - test": {
                         "label": "Workflows Area",
                         "url": "/open_admin_3",
@@ -685,17 +694,8 @@
                                     "display": false
                                 }
                             },
-                            "AI Test": {
-                                "label": "AI Test",
-                                "url": "/analyze_text_view",
-                                "protected": true,
-                                "allowed_roles": ["Admin"],
-                                "widget": {
-                                    "display": false
-                                }
-                            },
                             "Workflow Data": {
-                                "label": "Workflow Data",
+                                "label": "Workflow Timeline Chart",
                                 "url": "/react-page",
                                 "protected": true,
                                 "allowed_roles": ["Admin", "Manager", "Employee"],
@@ -745,6 +745,15 @@
                                             "display": false
                                         }
                                     }
+                                }
+                            },
+                            "AI Test": {
+                                "label": "AI Test",
+                                "url": "/analyze_text_view",
+                                "protected": true,
+                                "allowed_roles": ["Admin"],
+                                "widget": {
+                                    "display": false
                                 }
                             }
                         }

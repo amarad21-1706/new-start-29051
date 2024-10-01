@@ -590,9 +590,8 @@ class UnassignedDocumentsBaseDataView(ModelView):
             # Redirect back to the admin page in case of error
             return redirect(url_for('open_admin_3.index'))  # Replace with the correct admin endpoint
 
-
 class DocumentsBaseDataDetails(ModelView):
-    can_create = True
+    can_create = False
     can_edit = True
     can_delete = False
     can_view_details = True
@@ -608,85 +607,56 @@ class DocumentsBaseDataDetails(ModelView):
     # Adjust the column list
     column_list = [
         'base_data_id',  # Hidden document ID
-        'ft1',  # Added the field from base_data (Document Name)
-        'base_data.file_path', 'base_data.created_on', 'company_name', 'user_name',
-        'step.name', 'status_id', 'auto_move',  # Removed 'workflow.name' from here
-        'start_date', 'deadline_date', 'end_date', 'start_recall', 'deadline_recall',
-        'end_recall', 'recall_unit', 'hidden_data', 'open_action'
+        'ft1',  # Document Name from base_data (ft1 field)
+        'workflow.name',  # Added workflow name from related workflow table
+        'step.name',  # Step name from related step table
+        'status_id',  # Status ID
+        'start_date',  # Start Date
+        'end_date',  # End Date
+        'deadline_date',  # Deadline Date
+        'auto_move',  # Auto Move field (Yes/No)
+        'open_action',  # Open Action field (Yes/No)
+        'base_data.file_path',  # Document file path
+        'base_data.created_on',  # Created date of the base_data
+        'company_name',  # Company name (from base_data)
+        'user_name'  # User name (from base_data)
     ]
 
-    # Updated form_extra_fields to include 'ft1' (Document Name) and fix duplication
-    form_extra_fields = {
-        'ft1': StringField('Document Name'),  # Added ft1 as the first form field for Document Name
-        'base_data_id': HiddenField('Document ID'),  # Hidden field to hold the document ID
-        'document_selection': SelectField('Document', coerce=int),  # Visible dropdown
-        'workflow_id': SelectField('Workflow', coerce=int),  # Dropdown for workflow (this is the second one you want to keep)
-        'step_id': SelectField('Step', coerce=int),  # Dropdown for steps
-        'recall_value': IntegerField('Recall Value', default=0),  # Recall interval value (int)
-        'recall_unit': SelectField('Recall Unit', choices=[(0, 'None'), (1, 'Day'), (2, 'Week'), (3, 'Month')]),  # Recall interval choices
-        'auto_move': BooleanField('Auto Move'),  # Yes/No checkbox for auto_move
-        'open_action': BooleanField('Open Action')
-    }
-
-    # Dropdown choices for auto_move and recall_unit (already updated in form_extra_fields)
-    form_choices = {
-        'auto_move': [
-            (True, 'Yes'),
-            (False, 'No')
-        ],
-        'recall_unit': [
-            (0, 'None'),
-            (1, 'Day'),
-            (2, 'Week'),
-            (3, 'Month')
-        ]
-    }
-
     column_labels = {
-        'ft1': 'Document Name',  # Label for the ft1 field
-        'base_data_id': 'Document ID',
-        'base_data.file_path': 'Document File Path',
-        'base_data.created_on': 'Created',
-        'company_name': 'Company',
-        'user_name': 'User',
-        'workflow_id': 'Workflow',  # Now only the dropdown is displayed
-        'step_id': 'Phase',
-        'recall_value': 'Recall Value',
-        'recall_unit': 'Recall Interval',
+        'ft1': 'Document Name',  # Label for Document Name
+        'workflow.name': 'Workflow Name',  # Label for Workflow Name
+        'step.name': 'Step Name',  # Label for Step Name
         'status_id': 'Status',
-        'auto_move': 'Auto Transition',
         'start_date': 'Start Date',
-        'deadline_date': 'Deadline Date',
         'end_date': 'End Date',
-        'start_recall': 'Start Recall',
-        'deadline_recall': 'Deadline Recall',
-        'end_recall': 'End Recall',
-        'hidden_data': 'Miscellaneous',
-        'open_action': 'Open Action'
+        'deadline_date': 'Deadline Date',
+        'auto_move': 'Auto Transition',
+        'open_action': 'Open Action',
+        'base_data.file_path': 'Document File Path',
+        'base_data.created_on': 'Created On',
+        'company_name': 'Company',
+        'user_name': 'User'
     }
 
-    # Customize form prefilling and fetching base data choices
-    def on_form_prefill(self, form, id):
-        form.document_selection.choices = self.get_base_data_choices()
-        form.workflow_id.choices = self.get_workflow_choices()
-        form.step_id.choices = self.get_step_choices()
-        form.base_data_id.data = form.document_selection.data  # Populate the hidden field with the selected value
+    column_formatters = {
+        'workflow.name': lambda view, context, model, name: model.workflow.name if model.workflow else 'No Workflow',
+        'step.name': lambda view, context, model, name: model.step.name if model.step else 'No Step'
+    }
 
-    def create_form(self, obj=None):
-        form = super().create_form(obj)
-        form.document_selection.choices = self.get_base_data_choices()
-        form.workflow_id.choices = self.get_workflow_choices()
-        form.step_id.choices = self.get_step_choices()
-        form.base_data_id.data = form.document_selection.data  # Set base_data_id from dropdown
-        return form
-
-    def edit_form(self, obj=None):
-        form = super().edit_form(obj)
-        form.document_selection.choices = self.get_base_data_choices()
-        form.workflow_id.choices = self.get_workflow_choices()
-        form.step_id.choices = self.get_step_choices()
-        form.base_data_id.data = form.document_selection.data  # Set base_data_id from dropdown
-        return form
+    # Updated form_extra_fields to include relevant fields for workflow management
+    form_extra_fields = {
+        'ft1': StringField('Document Name'),
+        'base_data_id': HiddenField('Document ID'),
+        'workflow_id': SelectField('Workflow', coerce=int),
+        'step_id': SelectField('Step', coerce=int),
+        'start_date': DateTimeField('Start Date'),
+        'end_date': DateTimeField('End Date'),
+        'deadline_date': DateTimeField('Deadline Date'),
+        'auto_move': BooleanField('Auto Move'),
+        'open_action': BooleanField('Open Action'),
+        'recall_value': IntegerField('Recall Value', default=0),
+        'recall_unit': SelectField('Recall Unit', choices=[(0, 'None'), (1, 'Day'), (2, 'Week'), (3, 'Month')])
+    }
 
     def get_base_data_choices(self):
         """Get the choices for the document_selection dropdown based on user roles and creation date."""
@@ -703,7 +673,6 @@ class DocumentsBaseDataDetails(ModelView):
             user_id = session.get('user_id', current_user.id)
             query = query.filter(BaseData.user_id == user_id)
 
-        # Create a list of tuples with (id, concatenated 'number_of_doc' and 'date_of_doc')
         choices = [
             (
                 base_data.id,
@@ -712,14 +681,6 @@ class DocumentsBaseDataDetails(ModelView):
             for base_data in query.all()
         ]
         return choices
-
-    def get_workflow_choices(self):
-        """Retrieve available workflows."""
-        return [(wf.id, wf.name) for wf in Workflow.query.all()]
-
-    def get_step_choices(self):
-        """Retrieve available steps."""
-        return [(step.id, step.name) for step in Step.query.all()]
 
     def on_model_change(self, form, model, is_created):
         # Populate model fields with form data
@@ -732,12 +693,7 @@ class DocumentsBaseDataDetails(ModelView):
         super().on_model_change(form, model, is_created)
 
         if is_created:
-            # Handle logic for new model creation
             model.created_on = datetime.now()  # Set created_on date
-        else:
-            # Handle logic for editing an existing model
-            pass
-
         return model
 
     # Common action to Flask Admin 'Documents' (attach/detach documents to/from W-S)
