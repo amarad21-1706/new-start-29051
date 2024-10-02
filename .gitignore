@@ -1,4 +1,6 @@
 __pycache__/
+/new-start-29051/
+
 *.py[cod]
 .venv/
 /venv/
