@@ -1,0 +1,7 @@
+{% macro render_field(form, name, kwargs) %}
+    <div>
+        <input type="checkbox" name="{{ name }}_delete" id="{{ form[name].id }}_delete">
+        <label for="{{ form[name].id }}_delete">Delete {{ kwargs.label }}</label>
+        {{ super() }}
+    </div>
+{% endmacro %}

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API - Area di controllo 1 - Tabella 1</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        h1 {
+            color: #007BFF;
+        }
+
+        p {
+            color: #333;
+        }
+
+        /* Add some styling for the buttons */
+        .crud-buttons button {
+            margin-right: 10px;
+        }
+    </style>
+
+    <!-- Include jQuery library -->
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+
+    <!-- Use DataTables from CDN -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/dt-1.12.1/datatables.min.css" />
+    <script type="text/javascript" src="https://cdn.datatables.net/v/dt/dt-1.12.1/datatables.min.js"></script>
+
+    <!-- Include SweetAlert2 library -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+
+<body>
+    <h1>Liberalizzazione del segmento di mercato gestito dal DSO per il settlement fisico</h1>
+    <p>Struttura dell’offerta</p>
+
+    <div id="data-container"></div>
+
+    <div class="crud-buttons">
+        <!-- Placeholder buttons for Create, Update, and Delete -->
+        <button onclick="createRecord()">Create</button>
+        <button onclick="updateRecord()">Update</button>
+        <button onclick="deleteRecord()">Delete</button>
+    </div>
+
+    <script>
+        // Placeholder functions for Create, Update, and Delete actions
+        function createRecord() {
+            // Display a modal for creating a new record
+            Swal.fire({
+                title: 'Create Record',
+                html: `
+                    <form id="createRecordForm">
+                        <label for="company_id">Company ID:</label>
+                        <input type="text" id="company_id" name="company_id" required>
+
+                        <label for="user_id">User ID:</label>
+                        <input type="text" id="user_id" name="user_id" required>
+
+                        <label for="status_id">Status ID:</label>
+                        <input type="text" id="status_id" name="status_id" required>
+
+                        <!-- Add other fields as needed -->
+
+                        <button type="submit">Create</button>
+                    </form>
+                `,
+                showCancelButton: true,
+                focusConfirm: false,
+                preConfirm: () => {
+                    // Handle form submission
+                    const form = document.getElementById('createRecordForm');
+                    const formData = new FormData(form);
+                    const data = {};
+                    formData.forEach((value, key) => {
+                        data[key] = value;
+                    });
+
+                    // Add your logic to send the data to the server for creating a new record
+                    console.log('Data to be sent to the server:', data);
+
+                    // For now, just return a dummy response
+                    return {
+                        success: true,
+                        message: 'Record created successfully',
+                    };
+                }
+            }).then(result => {
+                // Handle the result after the form is submitted
+                if (result.isConfirmed && result.value.success) {
+                    // Refresh the data table or update as needed
+                    console.log('Record created successfully');
+                }
+            });
+        }
+
+        function updateRecord() {
+            console.log('Update record placeholder');
+            // Add your logic to open a modal or navigate to an Update page
+        }
+
+        function deleteRecord() {
+            console.log('Delete record placeholder');
+            // Add your logic to open a modal or confirm deletion
+        }
+    </script>
+</body>
+
+</html>

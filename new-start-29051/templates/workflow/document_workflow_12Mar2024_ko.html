@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Document Workflow</title>
+    {{ figure.head }}
+
+    <style>
+        body {
+            background-color: #001f3f; /* Dark navy blue background color */
+            color: #fff; /* Ice white font color */
+            font-family: 'Cambria', sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #5cdb95; /* Light blue font color for headers */
+            font-size: 16px; /* Font size for headers */
+        }
+
+        p {
+            margin-bottom: 10px; /* Add some space between paragraphs */
+            font-size: 14px; /* Font size for paragraphs */
+        }
+
+        div {
+            color: #5cdb95; /* Light blue font color for the debug message */
+            font-size: 12px; /* Font size for the debug message */
+        }
+
+        button {
+            background-color: #5cdb95; /* Light blue background color for buttons */
+            color: #001f3f; /* Dark navy blue font color for buttons */
+            padding: 10px 15px;
+            margin-right: 10px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px; /* Font size for buttons */
+        }
+
+        /* Add more styles as needed */
+    </style>
+</head>
+<body>
+    <h1>Document Workflow: {{ document.name }}</h1>
+    <p>Current Step: {{ current_step.name if current_step else 'None' }}</p>
+
+    {{ form.hidden_tag() }}
+
+    <form method="POST">
+        {{ form.next_step.label }} {{ form.next_step(size=1) }}<br>
+        {{ form.submit }}
+    </form>
+
+    {{ figure.div }}  {{ figure.script }}
+</body>
+</html>

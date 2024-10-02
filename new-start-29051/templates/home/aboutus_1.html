@@ -1,0 +1,81 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>About Us 1</title>
+    <style>
+        body {
+            background-color: #001f3f; /* Dark navy blue background color */
+            color: #fff; /* Ice white font color */
+            font-family: 'Cambria', sans-serif;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            color: #5cdb95; /* Light blue font color for headers */
+            font-size: 16px; /* Font size for headers */
+        }
+
+        p {
+            margin-bottom: 10px; /* Add some space between paragraphs */
+            font-size: 14px; /* Font size for paragraphs */
+        }
+
+        div {
+            color: #5cdb95; /* Light blue font color for the debug message */
+            font-size: 12px; /* Font size for the debug message */
+        }
+
+        button {
+            background-color: #5cdb95; /* Light blue background color for buttons */
+            color: #001f3f; /* Dark navy blue font color for buttons */
+            padding: 10px 15px;
+            margin-right: 10px;
+            cursor: pointer;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px; /* Font size for buttons */
+        }
+
+        /* Add more styles as needed */
+    </style>
+</head>
+<body>
+    <h1>ILM Group</h1>
+    <p></p>
+    <p></p>
+    <p>   Progettazione di servizi per le imprese che operino in settori sottoposti a regolamentazione, muovendo dai segnali
+        e dalle indicazioni tratte nella diretta esperienza operativa: garantire uno standard di prestazioni di alto profilo,
+        grazie alla competenza interdisciplinare dei professionisti che ILM ha riunito intorno al proprio nucleo.</p>
+
+    <p>   I percorsi istituzionali e professionali maturati da ogni esperto hanno permesso alla società di garantire la massima
+        copertura dei profili tecnici ed economici complementari a quelli giuridici.</p>
+
+    <p>   Grazie alla grande esperienza e capacità di relazione delle proprie risorse, oggi ILM si pone come raccordo indispensabile
+        tra le istituzioni e le imprese regolate.</p>
+
+    <div>
+        <p>{{ debug_message }}</p>
+    </div>
+
+    <!-- Back Button -->
+    <button onclick="goBack()">Back</button>
+
+    <!-- Home Button -->
+    <button onclick="goHome()">Home</button>
+
+    <script>
+        // Function to navigate back
+        function goBack() {
+            window.history.back();
+        }
+
+        // Function to navigate to the home page
+        function goHome() {
+            window.location.href = "{{ url_for('index') }}";  // Replace 'index' with the actual route for your home page
+        }
+    </script>
+</body>
+</html>

@@ -3265,12 +3265,24 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
             # If everything is okay, proceed with the default behavior
             super(DocumentUploadViewExisting, self).on_model_change(form, model, is_created)
 
+        except IntegrityError as e:
+            # Rollback the session to avoid any issues
+            db.session.rollback()
+
+            # Check if it's a duplicate key error (look for your constraint name)
+            if 'uq_base_data_workflow_step' in str(e.orig):
+                flash('Error: The combination of Document, Workflow, and Step must be unique.', 'error')
+                # raise ValidationError('The combination of Base Data, Workflow, and Step must be unique.')
+            else:
+                raise  # Re-raise the error if it's not related to the uniqueness constraint
+
         except ProgrammingError as ex:
             # Capture the exception related to SQL Programming errors
             error_message = f"ProgrammingError: {str(ex)}"
             print(error_message)  # Log the error
             flash(error_message, 'error')  # Show the error message in the UI
             return None
+
         except Exception as ex:
             # Capture any other general exceptions
             error_message = f"Error during model change: {str(ex)}"

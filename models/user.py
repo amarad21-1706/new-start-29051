@@ -1620,13 +1620,13 @@ class DocumentWorkflow(db.Model):
 
     base_data_id = db.Column(db.Integer, db.ForeignKey('base_data.id'))
 
-    # Add unique constraint to ensure a document can only be in one workflow/step combination
-    __table_args__ = (
-        db.UniqueConstraint('base_data_id', 'workflow_id', 'step_id', name='uix_base_workflow_step'),
-    )
-
     # Relationships
     base_data = db.relationship('BaseData', back_populates='document_workflows')
+    # Define the unique constraint on the three keys
+    __table_args__ = (
+        UniqueConstraint('base_data_id', 'workflow_id', 'step_id', name='uq_base_data_workflow_step'),
+    )
+
     workflow = db.relationship('Workflow', back_populates='document_workflows')
     step = db.relationship('Step')
     status = db.relationship('Status')

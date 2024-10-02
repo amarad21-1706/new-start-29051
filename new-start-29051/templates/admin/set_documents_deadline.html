@@ -1,0 +1,109 @@
+<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
+<!-- Button to open the modal -->
+<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#attachModal">
+  Set Deadline
+</button>
+
+<!-- Modal -->
+<div class="modal fade" id="attachModal" tabindex="-1" role="dialog" aria-labelledby="attachModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="attachModalLabel" style="font-size: 14px;">Set deadline for the selected document phases</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="attachForm">
+          <!-- Hidden input field to store selected document IDs -->
+          <input type="hidden" id="documentIds" name="ids" value="{% for document in selected_documents %}{{ document.id }}{% if not loop.last %},{% endif %}{% endfor %}">
+
+          <div class="form-group">
+            <label for="deadlinePicker" style="font-size: 12px;">Select deadline:</label>
+            <input type="date" class="form-control" id="deadlinePicker" name="deadline">
+          </div>
+
+          <!-- Add "Send deadline alert" label and combobox for predefined values -->
+          <div class="form-group">
+            <label for="deadlineAlert" style="font-size: 12px;">Send deadline reminder:</label>
+            <select class="form-control" id="deadlineAlert" name="deadline_alert">
+              <option value="0">0</option>
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="3">3</option>
+              <option value="5">5</option>
+              <option value="7">7</option>
+              <option value="10">10</option>
+              <option value="30">30</option>
+            </select>
+          </div>
+
+          <!-- Add combobox for selecting time unit -->
+          <div class="form-group">
+            <label for="timeUnit" style="font-size: 12px;">Select time unit:</label>
+            <select class="form-control" id="timeUnit" name="time_unit">
+              <option value="hour">hour</option>
+              <option value="day">day</option>
+              <option value="week">week</option>
+            </select>
+          </div>
+
+          <!-- Add "before deadline" label -->
+          <div class="form-group">
+            <label for="beforeDeadline" style="font-size: 12px;">before deadline. Leave '0' for no reminder.</label>
+          </div>
+
+          <!-- Add checkbox for "Automatic transition to the next step" -->
+          <div class="form-check">
+            <input type="checkbox" class="form-check-input" id="automaticTransition" name="automatic_transition" value="on">
+            <label class="form-check-label" for="automaticTransition">Automatic transition to the next step</label>
+          </div>
+
+          <button type="submit" class="btn btn-primary">Set</button>
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        </form>
+          <div id="successMessage" style="display: none;" class="alert alert-success" role="alert">
+          <div id="failureMessage" style="display: none;" class="alert alert-danger" role="alert">
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+  // Handle form submission
+  document.getElementById("attachForm").addEventListener("submit", function(event) {
+    event.preventDefault(); // Prevent default form submission
+    var formData = new FormData(this); // Get form data
+
+    // Remove the 'is-invalid' class from form inputs before making the AJAX request
+    $('.form-control').removeClass('is-invalid');
+
+    // Make AJAX request to update StepBaseData records
+    fetch("/action_manage_dws_deadline", {
+      method: "POST",
+      body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+      // Display success or error messages based on server response
+      $('#successMessage').text(data.success_message).toggle(data.success_message !== '');
+      $('#failureMessage').text(data.error_message).toggle(data.error_message !== '');
+    })
+    .catch(error => {
+      console.error("Error:", error); // Log any errors
+      // Display error message
+      $('#successMessage').hide();
+      $('#failureMessage').show();
+    });
+  });
+
+  // Close the modal after cancel button click
+  $('#cancelButton').on('click', function() {
+    $('#attachModal').modal('hide');
+  });
+</script>

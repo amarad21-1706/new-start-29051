@@ -1,0 +1,126 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+
+    <title>{% block title %}{% endblock %}</title>
+    {% block head %}{% endblock %}
+</head>
+
+<style>
+    /* Add your existing CSS styles here */
+
+    /* Add additional styling for cards with deadline approaching */
+    .card-deadline-approaching {
+        color: brown; /* Set text color to red */
+        background-color: #ffe6e6; /* Very light, pale red */
+        /* You can add more styling as needed */
+        /* You can add more styling as needed */
+    }
+
+    header {
+        background-color: lightgray; /* Gray band background color */
+        text-align: center; /* Center align header text */
+        padding: 20px 0; /* Add padding to the header */
+        margin-bottom: 20px; /* Add margin to separate from navigation */
+    }
+
+    header h1 {
+        font-size: 2rem; /* Reduce font size */
+        margin: 0; /* Remove margin to avoid extra spacing */
+    }
+
+    .card {
+        border: 1px solid #ddd; /* Add border */
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1); /* Add box shadow */
+        margin-bottom: 20px; /* Add margin between cards */
+        transition: transform 0.3s; /* Add transition effect */
+    }
+
+    .card:hover {
+        background-color: #e6f7ff; /* Light blue */
+        transform: translateY(-4px); /* Move the card up slightly on hover */
+        box-shadow: 0 9px 17px rgba(0, 0, 0, 0.2); /* Add larger box shadow on hover */
+    }
+
+    .card-body {
+        padding: 10px; /* Reduce padding */
+    }
+
+    .card-title {
+        font-size: 0.9rem; /* Reduce font size */
+        margin-bottom: 5px; /* Reduce margin bottom */
+    }
+
+    .card-text {
+        font-size: 0.7rem; /* Reduce font size */
+        line-height: 1; /* Reduce line height */
+    }
+
+    .list-group-item {
+        padding: 3px 5px; /* Reduce padding */
+    }
+
+    .small-font {
+        font-size: 10px;
+    }
+
+    /* Adjustments for three cards per row */
+    .col-md-4 {
+        width: calc(33.33% - 30px); /* Adjust width and spacing */
+        float: left;
+        margin-right: 15px;
+    }
+
+    .row::after {
+        content: "";
+        clear: both;
+        display: table;
+    }
+
+    @media (max-width: 992px) {
+        .col-md-4 {
+            width: calc(50% - 30px); /* Adjust width and spacing for smaller screens */
+        }
+    }
+
+    @media (max-width: 768px) {
+        .col-md-4 {
+            width: calc(100% - 30px); /* Adjust width and spacing for smaller screens */
+            margin-right: 0;
+        }
+    }
+</style>
+
+<body>
+    <header>
+        <h1>{% block header %}{% endblock %}</h1>
+        <nav>
+            <ul>
+                <li><a href="{{ url_for('home') }}">Home</a></li>
+                <li><a href="{{ url_for('back') }}">Back</a></li>
+            </ul>
+        </nav>
+    </header>
+    <main>
+
+        {% block content %}
+          <div class="row">
+            {% for card in cards %}
+              <div class="col-md-4">
+                {{ create_card(**card)|safe  }}
+              </div>
+            {% endfor %}
+          </div>
+        {% endblock %}
+
+    </main>
+    <footer>
+        <p class="small-font">&copy; 2024 ILM - all rights reserved</p>
+    </footer>
+</body>
+</html>

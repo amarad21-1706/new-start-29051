@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API - Area di controllo 1 - Tabella 1</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        h1 {
+            color: #007BFF;
+        }
+
+        p {
+            color: #333;
+        }
+
+        /* Add some styling for the buttons */
+        .crud-buttons button {
+            margin-right: 10px;
+        }
+    </style>
+    <style>
+        /* Style for the form */
+        #createRecordForm {
+            max-width: 300px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        #createRecordForm label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: bold;
+            width: 40%;
+            float: left;
+            clear: both;
+        }
+
+        #createRecordForm input {
+            width: 60%;
+            padding: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #ccc;
+            border-radius: 3px;
+            box-sizing: border-box;
+            float: right;
+        }
+
+        #createRecordForm button {
+            width: 100%;
+            padding: 10px;
+            background-color: #007BFF;
+            color: #fff;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            clear: both;
+        }
+
+        #createRecordForm button:hover {
+            background-color: #0056b3;
+        }
+
+        /* Style for the modal */
+        .swal2-modal {
+            max-width: 400px !important;
+        }
+    </style>
+
+
+
+    <!-- Include jQuery library -->
+    <script type="text/javascript" src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+
+    <!-- Use DataTables from CDN -->
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/v/dt/dt-1.12.1/datatables.min.css" />
+    <script type="text/javascript" src="https://cdn.datatables.net/v/dt/dt-1.12.1/datatables.min.js"></script>
+
+    <!-- Include SweetAlert2 library -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+
+<body>
+    <h1>Liberalizzazione del segmento di mercato gestito dal DSO per il settlement fisico</h1>
+    <p>Struttura dell’offerta [{{ user_id }} {{ company_id }} {{ area_id }} {{ subarea_id }}]</p>
+
+    <div id="data-container"></div>
+
+    <div class="crud-buttons">
+        <!-- Placeholder buttons for Create, Update, and Delete -->
+        <button onclick="createRecord()">Create</button>
+        <button onclick="updateRecord()">Update</button>
+        <button onclick="deleteRecord()">Delete</button>
+    </div>
+
+    <script>
+        // Fetch data from the Flask-Restful API and display it on the page
+        //fetch('http://localhost:5000/base_data_rest')  // Replace with your actual URL
+        fetch('http://localhost:5000/open_restful21')  // Replace with your actual URL
+            //    .then(response => response.json())
+            .then(data => {
+                // ... (debugging line remains the same)
+                const container = document.getElementById('data-container');
+                // Add the table container element
+                const tableContainer = document.createElement('div');
+                tableContainer.id = 'data-table-container';
+                container.appendChild(tableContainer);
+
+                // Create the table element
+                const table = document.createElement('table');
+                table.id = 'data-table';
+                tableContainer.appendChild(table);
+
+                // Add table header
+                const thead = document.createElement('thead');
+                table.appendChild(thead);
+                const headerRow = document.createElement('tr');
+                thead.appendChild(headerRow);
+                ['Company', 'User', 'Area', 'Subarea', 'Record Type', 'Data Type', 'Status', 'Interval ID',
+                    'Periodo', 'Nr UDD', 'PdR', 'Note'].forEach(headerText => {
+                    const th = document.createElement('th');
+                    th.textContent = headerText;
+                    headerRow.appendChild(th);
+                });
+
+                // Initialize DataTable with fetched data
+                const dataTable = $('#data-table').DataTable({
+                    data: data.data,
+                    columns: [
+                        { data: 'company_id' },
+                        { data: 'user_id' },
+                        {
+                            data: "area_id",
+                            defaultContent: "<i>0</i>"
+                        },
+                        {
+                            data: "subarea_id",
+                            defaultContent: "<i>n.d.</i>"
+                        },
+                        {
+                            data: "record_type",
+                            defaultContent: "<i>Table 2.1</i>"
+                        },
+                        {
+                            data: "data_type",
+                            defaultContent: "<i>Struttura offerta</i>"
+                        },
+                        {
+                            data: "status_id",
+                            defaultContent: "<i>1</i>"
+                        },
+                        {
+                            data: "interval_id",
+                            defaultContent: "<i>1</i>"
+                        },
+                        {
+                            data: 'fi1',
+                            defaultContent: "<i>0</i>"
+                        },
+                        {
+                            data: 'fi2',
+                            defaultContent: "<i>0</i>"
+                        },
+                        {
+                            data: 'fi3',
+                            defaultContent: "<i>0</i>"
+                        },
+                        {
+                            data: 'fc2',
+                            defaultContent: "<i>0</i>"
+                        },
+                    ]
+                });
+
+                container.appendChild(table);
+            })
+            .catch(error => {
+                console.error('Error fetching data:', error);
+                const container = document.getElementById('data-container');
+                container.innerHTML = '<p>Error fetching data from the API.</p>';
+            });
+
+        function createRecord() {
+            Swal.fire({
+                title: 'Create Record',
+                html: `
+                    <input id="fi1" class="swal2-input" placeholder="Totale" required>
+                    <input id="fi2" class="swal2-input" placeholder="IVI" required>
+                    <input id="fi3" class="swal2-input" placeholder="Altri" required>
+                    <input id="fc1" class="swal2-input" placeholder="Notes">
+                `,
+                showCancelButton: true,
+                focusConfirm: false,
+                preConfirm: () => {
+                    const fi1 = document.getElementById('fi1').value;
+                    const fi2 = document.getElementById('fi2').value;
+                    const fi3 = document.getElementById('fi3').value;
+                    const fc1 = document.getElementById('fc1').value;
+
+                    // Validate input values here (client-side validation)
+                    if (!fi1 || !fi2 || !fi3) {
+                        Swal.showValidationMessage('Please fill in all required fields.');
+                        return false;
+                    }
+
+                    const postData = {
+                        fi1: fi1,
+                        fi2: fi2,
+                        fi3: fi3,
+                        fc1: fc1
+                    };
+
+                    // Send POST request with JSON data
+                    fetch('http://localhost:5000/open_restful21', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(postData)
+                    })
+                    .then(response => {
+                        if (response.ok) {
+                            // Handle successful response
+                            console.log('Record created successfully');
+                        } else {
+                            // Handle error response
+                            throw new Error('Failed to create record');
+                        }
+                    })
+                    .catch(error => {
+                        // Handle fetch or server error
+                        console.error('Error:', error);
+                    });
+                }
+            });
+        }
+
+
+        function updateRecord() {
+            console.log('Update record placeholder'); // Debugging statement
+            // Here you can add the logic to update an existing record
+        }
+
+        function deleteRecord() {
+            console.log('Delete record placeholder'); // Debugging statement
+            // Here you can add the logic to delete an existing record
+        }
+
+    </script>
+</body>
+
+</html>

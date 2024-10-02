@@ -1,0 +1,21 @@
+<!-- crud_update_template.html -->
+{% extends "base.html" %}
+
+{% block content %}
+    <form method="post" action="{{ url_for(model_name|lower + '.update', model_name=model_name, item_id=item.id) }}" class="container">
+        <div class="row">
+            {% for field_name in field_names %}
+                <div class="col-md-4">
+                    <label for="{{ field_name }}">{{ field_name }}:</label>
+                    <input type="text" name="{{ field_name }}" id="{{ field_name }}" class="form-control" value="{{ item[field_name] }}" required>
+                </div>
+            {% endfor %}
+        </div>
+        <div class="row mt-3">
+            <div class="col-md-4">
+                <button type="submit" class="btn btn-primary">Update</button>
+            </div>
+        </div>
+    </form>
+    <a href="{{ url_for(model_name|lower + '.read') }}" class="mt-3">Back to List</a>
+{% endblock %}

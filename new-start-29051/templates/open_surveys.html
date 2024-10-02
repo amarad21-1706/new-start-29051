@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Open Surveys</title>
+    <!-- Link to external CSS file or add inline styles here -->
+    <style>
+        /* Add your CSS styles here */
+        body {
+            font-family: Arial, sans-serif;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .btn {
+            display: inline-block;
+            padding: 8px 16px;
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #007bff;
+            color: #fff;
+        }
+        tr:nth-child(even) {
+            background-color: #f2f2f2;
+        }
+        tr:hover {
+            background-color: #ddd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Open Surveys</h1>
+        <!-- Back and Home buttons -->
+        <a href="{{ url_for('open_admin_10.index') }}" class="btn">Back</a>
+        <a href="{{ url_for('home') }}" class="btn">Home</a>
+
+        {% if open_surveys %}
+        <table>
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Name</th>
+                    <th>Deadline</th>
+                    <th>Status</th>
+                    <!-- Add more columns as needed -->
+                </tr>
+            </thead>
+            <tbody>
+                {% for survey in open_surveys %}
+                <tr onclick="openSurvey('{{ survey.id }}')">
+                    <!-- Hidden input field for id -->
+                    <input type="hidden" name="survey_id" value="{{ survey.id }}">
+
+                    <td>{{ survey.questionnaire_id }}</td>
+                    <td>{{ survey.name }}</td>
+                    <td>{{ survey.deadline_date }}</td>
+                    <td>{{ survey.status }}</td>
+                    <!-- Add more columns as needed -->
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p>No open surveys available</p>
+        {% endif %}
+    </div>
+
+    <script>
+        function openSurvey(surveyId) {
+            // Redirect to the show_questionnaire route with the survey ID as a query parameter
+            // TODO create a show_questionnaire version for the "simpler" 'show_questionnaire' (legacy)
+            window.location.href = `/show_survey?id=${surveyId}`;
+        }
+    </script>
+</body>
+</html>

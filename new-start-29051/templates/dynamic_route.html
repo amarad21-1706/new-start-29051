@@ -1,0 +1,9 @@
+<!-- app/templates/home/dynamic_route.html -->
+{% extends 'base.html' %}
+
+{% block title %}{{ menu_item.label }}{% endblock %}
+
+{% block content %}
+    <h1>{{ menu_item.label }}</h1>
+    <!-- Add other content based on the menu item -->
+{% endblock %}
