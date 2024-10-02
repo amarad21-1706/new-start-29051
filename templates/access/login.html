@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: gray;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+        .form-container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 300px;
+            margin-bottom: 20px;
+        }
+        h2 {
+            text-align: center;
+            color: #333;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin-bottom: 12px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+        button {
+            background-color: #4caf50;
+            color: #fff;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        .signup-link {
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .signup-button {
+            background-color: #007bff;
+            color: #fff;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+        }
+        .signup-button:hover {
+            background-color: #0056b3;
+        }
+        .forgot-password-link {
+            text-align: center;
+        }
+        .flashes {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 20px;
+        }
+        .flashes li {
+            margin-bottom: 10px;
+        }
+        .alert {
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="form-container" id="loginFormContainer">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <ul class="flashes">
+                    {% for category, message in messages %}
+                        <li class="alert alert-{{ category }}">
+                            {{ message }}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
+        {% endwith %}
+        <form id="loginForm" method="POST" action="{{ url_for('login') }}">
+            {{ form.hidden_tag() }}
+            <h2>Login</h2>
+            <label for="username">Username:</label>
+            <input type="text" id="username" name="username" required>
+            <label for="password">Password:</label>
+            <input type="password" id="password" name="password" required>
+
+            <div>
+                <input type="checkbox" name="remember"> Remember Me
+            </div>
+            <!-- Add the <img> tag for the captcha image -->
+            <img src="data:image/png;base64,{{ captcha_image }}" alt="CAPTCHA">
+            <!-- CAPTCHA input field -->
+            <label for="captcha">Please enter this text in the field below:</label>
+            <input type="text" name="captcha" required>
+            <button type="submit">Login</button>
+        </form>
+    </div>
+
+    <div class="form-container" id="signupFormContainer">
+        <div class="signup-link">
+            Don't have an account? <a href="{{ url_for('signup') }}">Signup here</a>
+        </div>
+        <!-- Forgot your password link -->
+        <div class="forgot-password-link">
+            <a href="/forgot_password">Forgot your password?</a>
+        </div>
+    </div>
+
+</body>
+</html>

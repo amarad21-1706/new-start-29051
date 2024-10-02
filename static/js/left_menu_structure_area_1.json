@@ -1,0 +1,27 @@
+{
+    "Area di controllo 1": {
+        "label": "Area 1",
+        "url": "control_area_1",
+        "protected": true,
+        "allowed_roles": ["Admin", "Employee", "Manager"],
+        "submenus": {
+            "Flussi di pre-complaint": {
+                "label": "Flussi, atti e iniziative",
+                "url": "open_admin_app",
+                "protected": true,
+                "allowed_roles": ["Admin", "Employee", "Manager"]
+            },
+            "Gestione di settlement fisico": {
+                "label": "Settlement fisico",
+                "url": "show_questionnaire",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin",
+                    "Employee",
+                    "Manager"
+                ]
+            }
+        }
+    }
+}
+

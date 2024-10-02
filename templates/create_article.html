@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Create New Article
+{% endblock %}
+
+{% block content %}
+<h1>Create New Article for Contract {{ contract_id }}</h1>
+
+<form method="POST" action="{{ url_for('contract_bp.create_article', contract_id=contract_id) }}">
+    {{ csrf_token }}
+    <div class="form-group">
+        <label for="article_id">Article ID (Optional)</label>
+        <input type="text" class="form-control" id="article_id" name="article_id">
+    </div>
+    <div class="form-group">
+        <label for="article_title">Article Title</label>
+        <input type="text" class="form-control" id="article_title" name="article_title" required>
+    </div>
+    <div class="form-group">
+        <label for="article_body">Article Body</label>
+        <textarea class="form-control" id="article_body" name="article_body" rows="5" required></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Create Article</button>
+</form>
+
+<a href="{{ url_for('contract_bp.contract_articles', contract_id=contract_id) }}">Back to Articles</a>
+{% endblock %}

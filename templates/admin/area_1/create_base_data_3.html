@@ -1,0 +1,82 @@
+<!-- File: templates/admin/create_base_data.html -->
+
+{% extends 'admin/model/create.html' %}
+
+<head>
+    <script src="/open-admin/static/vendor/jquery.min.js?v=3.5.1" type="text/javascript"></script>
+</head>
+
+{% block javascript %}
+    <script>
+        $(document).ready(function() {
+            $('.form-control.fc2').click(function() {
+                $(this).select();
+            });
+
+            // Function to load workflow controls
+            function loadWorkflowControls(controlsHtml) {
+                $('#dynamic-controls').html(controlsHtml);
+            }
+
+            // Function to handle AJAX errors
+            function handleAjaxError(xhr, status, error) {
+                console.error("AJAX Error:", error);
+            }
+
+            // Ajax request to load workflow controls
+            function fetchWorkflowControls() {
+                $.ajax({
+                    url: '/load_workflow_controls',
+                    type: 'GET',
+                    success: function(response) {
+                        loadWorkflowControls(response.controls);
+                    },
+                    error: handleAjaxError
+                });
+            }
+
+            // Load workflow controls when Next Step button is clicked
+            $('#next-step-btn').on('click', function() {
+                console.log("Next Step button clicked.");
+                fetchWorkflowControls();
+            });
+        });
+    </script>
+{% endblock javascript %}
+
+{% block body %}
+  {{ super() }}
+  <style>
+    /* Add your custom CSS here */
+    .form-horizontal .form-group {
+        margin-bottom: 0;
+    }
+
+    .form-horizontal .control-label {
+        float: left;
+        width: 150px; /* Adjust the width as needed */
+        text-align: right;
+        margin-right: 10px; /* Adjust the margin as needed */
+    }
+
+    .form-horizontal .controls {
+        overflow: hidden;
+    }
+
+    .form-horizontal .controls input,
+    .form-horizontal .controls select,
+    .form-horizontal .controls textarea {
+        width: auto;
+        float: left;
+        margin-right: 10px; /* Adjust the margin as needed */
+    }
+
+    .form-control.fc2 {
+      opacity: 0.5; /* Sets initial opacity to 50% */
+      transition: opacity 0.5s ease-in-out; /* Smooth fade-in on focus */
+    }
+
+  </style>
+  <!-- Placeholder for dynamic controls -->
+  <div id="dynamic-controls"></div>
+{% endblock %}

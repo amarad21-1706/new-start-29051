@@ -1,0 +1,36 @@
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Site Map</title>
+</head>
+
+<body>
+    <h1>Site Map</h1>
+
+    <pre>{{ menu_tree | safe }}</pre>
+
+    <!-- Back Button -->
+    <button onclick="goBack()">Back</button>
+
+    <!-- Home Button -->
+    <button onclick="goHome()">Home</button>
+
+    <script>
+        // Function to navigate back
+        function goBack() {
+            window.history.back();
+        }
+
+        // Function to navigate to the home page
+        function goHome() {
+            window.location.href = "{{ url_for('index') }}";  // Replace 'index' with the actual route for your home page
+        }
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>News Form</h2>
+<form method="POST">
+    <input type="text" name="headline" value="{{ news_item.content.headline }}" required>
+    <hr>
+    <input type="text" name="short_text" value="{{ news_item.content.short_text }}" required>
+    <input type="text" id="image_url" name="image_url" value="{{ news_item.content.image_url }}" required>
+    <button type="button" onclick="openImageModal()">Browse Images</button>
+    <input type="radio" name="link_type" value="internal" {% if news_item.content.link_type == 'internal' %}checked{% endif %}> Internal
+    <input type="radio" name="link_type" value="external" {% if news_item.content.link_type == 'external' %}checked{% endif %}> External
+    <input type="text" name="more_link" value="{{ news_item.content.more_link }}" required>
+    <hr>
+    <textarea name="body" placeholder="Detailed content for internal link" rows="5">{{ news_item.content.body }}</textarea>
+    <hr>
+    <button type="submit">Update News Item</button>
+</form>
+
+<!-- Modal to display images -->
+<div id="imageModal" style="display:none;">
+    <div>
+        <h2>Select an Image</h2>
+        <div id="imageList"></div>
+        <button type="button" onclick="closeImageModal()">Close</button>
+    </div>
+</div>
+
+<script>
+    function openImageModal() {
+        fetch('/list_images')
+            .then(response => response.json())
+            .then(images => {
+                let imageList = document.getElementById('imageList');
+                imageList.innerHTML = '';
+                images.forEach(image => {
+                    let img = document.createElement('img');
+                    img.src = image;
+                    img.style.width = '100px';
+                    img.style.margin = '10px';
+                    img.onclick = function() {
+                        document.getElementById('image_url').value = image;
+                        closeImageModal();
+                    };
+                    imageList.appendChild(img);
+                });
+            });
+
+        document.getElementById('imageModal').style.display = 'block';
+    }
+
+    function closeImageModal() {
+        document.getElementById('imageModal').style.display = 'none';
+    }
+</script>
+{% endblock %}

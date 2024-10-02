@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+
+{% block title %}Edit Question - {{ super() }}{% endblock %}
+
+{% block content %}
+    <h1>Edit Question</h1>
+    <form method="post" action="{{ url_for('edit_question', id=question.id) }}">
+        <label for="text">Text:</label>
+        <textarea name="text" id="text" rows="4" cols="50" required>{{ question.text }}</textarea>
+
+        <label for="answer_type">Answer Type:</label>
+        <input type="text" name="answer_type" id="answer_type" value="{{ question.answer_type }}" required>
+
+        <!-- Add other form fields as needed -->
+
+        <button type="submit">Save Changes</button>
+    </form>
+
+    <a href="{{ url_for('questions') }}">Cancel</a>
+{% endblock %}

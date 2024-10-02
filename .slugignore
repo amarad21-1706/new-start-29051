@@ -1,0 +1,11 @@
+venv/
+.git/
+*.log
+*.csv
+*.sqlite3
+*.pdf
+static/uploads/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>{% block title %}{% endblock %}</title>
+  {% block head %}
+  <link href="{{ url_for('static', filename='fullcalendar/fullcalendar/main.min.css') }}" rel="stylesheet" />
+  <script src="{{ url_for('static', filename='fullcalendar/jquery/jquery.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='fullcalendar/moment/moment.js') }}"></script>
+  <script src="{{ url_for('static', filename='fullcalendar/moment/moment-with-locales.js') }}"></script>
+  <script src="{{ url_for('static', filename='fullcalendar/fullcalendar/index.global.js') }}"></script>
+  <script src="{{ url_for('static', filename='fullcalendar/interaction/index.global.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='fullcalendar/daygrid/index.global.js') }}"></script>
+  {% endblock %}
+</head>
+<body>
+  <header>
+  </header>
+  <main>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flashes">
+      {% for category, message in messages %}
+      <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <button id="add-event-btn">Add Event</button>
+    <div id="calendar"></div>
+    {% block content %}
+    {% endblock %}
+  </main>
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      const calendarEl = document.getElementById('calendar');
+
+      if (calendarEl) {
+        const calendar = new FullCalendar.Calendar(calendarEl, {
+          initialView: 'dayGridMonth',
+          headerToolbar: {
+            left: 'prev,next today',
+            center: 'title',
+            right: 'dayGridMonth,timeGridWeek,timeGridDay'
+          },
+          events: '/api/events', // Replace with your API endpoint
+          editable: true,
+          selectable: true,
+          eventClick: function(info) {
+            const eventId = info.event.id;
+            console.log('Event ID:', eventId); // Debugging line to ensure the event ID is present
+            window.location.href = `/edit-event/${eventId}`;
+          },
+          eventDrop: function(info) {
+            updateEvent(info.event.id, info.event.startStr, info.event.endStr);
+          },
+          eventResize: function(info) {
+            updateEvent(info.event.id, info.event.startStr, info.event.endStr);
+          },
+          eventColor: '#378006',
+          dateClick: function(info) {
+            handleDateClick(info);
+          }
+        });
+        calendar.render();
+      } else {
+        console.error('Calendar element not found');
+      }
+
+      const addEventButton = document.getElementById('add-event-btn');
+      if (addEventButton) {
+        addEventButton.addEventListener('click', function() {
+          window.location.href = '/add-event'; // Replace with your add event route
+        });
+      }
+    });
+
+    let clickTimeout;
+
+    function handleDateClick(info) {
+      if (clickTimeout) {
+        clearTimeout(clickTimeout);
+        clickTimeout = null;
+        onDateDblClick(info);
+      } else {
+        clickTimeout = setTimeout(() => {
+          clickTimeout = null;
+          // Single click action here (if needed)
+        }, 300); // Adjust the delay as needed for double-click detection
+      }
+    }
+
+    function onDateDblClick(info) {
+      const selectedDate = info.dateStr.split('T')[0];
+      let selectedTime = info.dateStr.includes('T') ? info.dateStr.split('T')[1].split('+')[0] : '00:00:00';
+
+      const currentTime = new Date();
+      const nextHour = new Date(currentTime.setHours(currentTime.getHours() + 1));
+      selectedTime = nextHour.toTimeString().split(' ')[0];
+
+      console.log('Selected Date:', selectedDate); // Debugging line to ensure the selected date is correct
+      console.log('Selected Time:', selectedTime); // Debugging line to ensure the selected time is correct
+      window.location.href = `/add-event?date=${selectedDate}&time=${selectedTime}`;
+    }
+
+    // Function to update event data on the server (replace with your implementation)
+    function updateEvent(eventId, newStart, newEnd) {
+      $.ajax({
+        url: '/update-event/' + eventId,
+        type: 'POST',
+        data: {
+          start: newStart,
+          end: newEnd
+        },
+        success: function(response) {
+          // Handle success response (e.g., update calendar)
+          console.log('Event updated:', response);
+        },
+        error: function(error) {
+          console.error('Error updating event:', error);
+        }
+      });
+    }
+  </script>
+</body>
+</html>

@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f4;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        .container {
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        h2 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-label {
+            color: #555;
+            font-size: 14px;
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+        }
+
+        button {
+            background-color: #007bff;
+            color: #fff;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 150px;
+            transition: background-color 0.3s ease;
+            margin-bottom: 10px;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .flag {
+            margin-right: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Sign Up</h2>
+        <p style="text-align: center; font-weight: bold;">Please enter your data</p>
+
+        <!-- Form -->
+        <form method="post" action="{{ url_for('signup') }}">
+
+            <div class="row">
+                <div class="col-md-6">
+                    <!-- Username -->
+                    <div class="form-group">
+                        <label class="form-label" for="username">Username:</label>
+                        <input class="input" type="text" id="username" name="username">
+                    </div>
+
+                    <!-- Email -->
+                    <div class="form-group">
+                        <label class="form-label" for="email">Email:</label>
+                        <input class="input" type="email" id="email" name="email">
+                    </div>
+
+                    <!-- Password -->
+                    <div class="form-group">
+                        <label class="form-label" for="password">Password:</label>
+                        <input class="input" type="password" id="password" name="password">
+                    </div>
+
+                    <!-- Repeat Password -->
+                    <div class="form-group">
+                        <label class="form-label" for="confirm_password">Repeat Password:</label>
+                        <input class="input" type="password" id="confirm_password" name="confirm_password">
+                    </div>
+
+                    <!-- First Name -->
+                    <div class="form-group">
+                        <label class="form-label" for="first_name">First Name:</label>
+                        <input class="input" type="text" id="first_name" name="first_name">
+                    </div>
+
+                    <!-- Middle Name -->
+                    <div class="form-group">
+                        <label class="form-label" for="mid_name">Middle Name:</label>
+                        <input class="input" type="text" id="mid_name" name="mid_name">
+                    </div>
+
+                    <!-- Last Name -->
+                    <div class="form-group">
+                        <label class="form-label" for="last_name">Last Name:</label>
+                        <input class="input" type="text" id="last_name" name="last_name">
+                    </div>
+
+                    <!-- Address -->
+                    <div class="form-group">
+                        <label class="form-label" for="address">Address:</label>
+                        <input class="input" type="text" id="address" name="address">
+                    </div>
+
+                    <!-- Address 1 -->
+                    <div class="form-group">
+                        <label class="form-label" for="address1">Address 1:</label>
+                        <input class="input" type="text" id="address1" name="address1">
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <!-- Country -->
+                    <div class="form-group">
+                        <label class="form-label" for="country">Country:</label>
+                        <select class="input" id="country" name="country"></select>
+                    </div>
+
+                    <!-- Region -->
+                    <div class="form-group">
+                        <label class="form-label" for="region">Region:</label>
+                        <select class="input" id="region" name="region"></select>
+                    </div>
+
+                    <!-- City -->
+                    <div class="form-group">
+                        <label class="form-label" for="city">City:</label>
+                        <select class="input" id="city" name="city"></select>
+                    </div>
+
+                    <!-- Zip Code -->
+                    <div class="form-group">
+                        <label class="form-label" for="zip_code">Zip Code:</label>
+                        <select class="input" id="zip_code" name="zip_code"></select>
+                    </div>
+
+                    <!-- Street -->
+                    <div class="form-group">
+                        <label class="form-label" for="street">Street:</label>
+                        <select class="input" id="street" name="street"></select>
+                    </div>
+
+                    <!-- Phone Prefix -->
+                    <div class="form-group">
+                        <label class="form-label" for="phone_prefix">Phone Prefix:</label>
+                        <select class="input" id="phone_prefix" name="phone_prefix"></select>
+                    </div>
+
+                    <!-- Mobile Phone -->
+                    <div class="form-group">
+                        <label class="form-label" for="mobile_phone">Mobile Phone:</label>
+                        <input class="input" type="text" id="mobile_phone" name="mobile_phone">
+                    </div>
+
+                    <!-- Work Phone -->
+                    <div class="form-group">
+                        <label class="form-label" for="work_phone">Work Phone:</label>
+                        <input class="input" type="text" id="work_phone" name="work_phone">
+                    </div>
+
+                    <!-- Province -->
+                    <div class="form-group">
+                        <label class="form-label" for="province">Province:</label>
+                        <input class="input" type="text" id="province" name="province">
+                    </div>
+
+                    <!-- Tax Code -->
+                    <div class="form-group">
+                        <label class="form-label" for="tax_code">Tax Code:</label>
+                        <input class="input" type="text" id="tax_code" name="tax_code">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sign Up Button -->
+            <div class="form-group text-center">
+                <button type="submit">Sign Up</button>
+            </div>
+
+        </form>
+    </div>
+
+    <!-- Back Button -->
+    <button onclick="goBack()">Back</button>
+
+    <!-- Home Button -->
+    <button onclick="goHome()">Home</button>
+
+    <script>
+        // Function to navigate back
+        function goBack() {
+            window.history.back();
+        }
+
+        // Function to navigate to the home page
+        function goHome() {
+            window.location.href = "{{ url_for('index') }}";
+        }
+
+        // Fetch countries on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            fetch('/countries')
+                .then(response => response.json())
+                .then(data => {
+                    const countrySelect = document.getElementById('country');
+                    countrySelect.innerHTML = '<option value="">Select Country</option>';
+                    data.forEach(country => {
+                        countrySelect.innerHTML += `<option value="${country.code}">${country.name}</option>`;
+                    });
+                });
+
+            // Fetch regions when country is selected
+            document.getElementById('country').addEventListener('change', function() {
+                const countryCode = this.value;
+                fetch(`/regions?country_code=${countryCode}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const regionSelect = document.getElementById('region');
+                        regionSelect.innerHTML = '<option value="">Select Region</option>';
+                        data.forEach(region => {
+                            regionSelect.innerHTML += `<option value="${region.name}">${region.name}</option>`;
+                        });
+                    });
+
+                // Fetch phone prefix
+                fetch(`/phone_prefix?country_code=${countryCode}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const phonePrefixSelect = document.getElementById('phone_prefix');
+                        phonePrefixSelect.innerHTML = '<option value="">Select Phone Prefix</option>';
+                        phonePrefixSelect.innerHTML += `<option value="${data.phone_prefix}">${data.phone_prefix}</option>`;
+                    });
+            });
+
+            // Fetch cities when region is selected
+            document.getElementById('region').addEventListener('change', function() {
+                const regionName = this.value;
+                fetch(`/cities?region_name=${regionName}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const citySelect = document.getElementById('city');
+                        citySelect.innerHTML = '<option value="">Select City</option>';
+                        data.forEach(city => {
+                            citySelect.innerHTML += `<option value="${city.geonameId}">${city.name}</option>`;
+                        });
+                    });
+            });
+
+            // Fetch ZIP codes and streets when city is selected
+            document.getElementById('city').addEventListener('change', function() {
+                const cityName = this.options[this.selectedIndex].text;
+                const cityId = this.value;
+                fetch(`/zip_codes?city_name=${cityName}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const zipSelect = document.getElementById('zip_code');
+                        zipSelect.innerHTML = '<option value="">Select ZIP Code</option>';
+                        data.forEach(zip => {
+                            zipSelect.innerHTML += `<option value="${zip.postalCode}">${zip.postalCode}</option>`;
+                        });
+                    });
+
+                fetch(`/streets?city_id=${cityId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const streetSelect = document.getElementById('street');
+                        streetSelect.innerHTML = '<option value="">Select Street</option>';
+                        data.forEach(street => {
+                            streetSelect.innerHTML += `<option value="${street.name}">${street.name}</option>`;
+                        });
+                    });
+            });
+
+            // Fetch phone prefixes on page load
+            fetch('/phone_prefixes')
+                .then(response => response.json())
+                .then(data => {
+                    const phonePrefixSelect = document.getElementById('phone_prefix');
+                    phonePrefixSelect.innerHTML = '<option value="">Select Phone Prefix</option>';
+                    data.forEach(prefix => {
+                        phonePrefixSelect.innerHTML += `<option value="${prefix.prefix}">${prefix.prefix} (${prefix.country})</option>`;
+                    });
+                });
+        });
+    </script>
+</body>
+</html>

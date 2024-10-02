@@ -1,0 +1,1099 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>First Audit</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <style>
+        /* Ensure the top bar and menu items have the same background */
+        .navbar, .navbar .nav-link {
+            background-color: #333; /* Change to your top bar background color */
+            color: #bcbcbc; /* Change to your preferred text color */
+        }
+
+        /* Change background color on hover */
+        .navbar .nav-link:hover,
+        .navbar .nav-link:focus,
+        .navbar .nav-link:active {
+            background-color: #1f8aa7; /* Change to your desired hover background color */
+            color: #fff; /* Ensure text color remains readable */
+        }
+
+        /* Apply the same styles to sub-menus and children */
+        .navbar .dropdown-menu,
+        .navbar .dropdown-item,
+        .navbar .dropdown-menu .dropdown-item {
+            background-color: #333; /* Match the top bar background color */
+            color: #fff; /* Ensure text color matches */
+        }
+
+        /* Change background color on hover for sub-menus and children */
+        .navbar .dropdown-item:hover,
+        .navbar .dropdown-item:focus,
+        .navbar .dropdown-item:active,
+        .navbar .dropdown-menu .dropdown-item:hover,
+        .navbar .dropdown-menu .dropdown-item:focus,
+        .navbar .dropdown-menu .dropdown-item:active {
+            background-color: #333; /* Match the hover background color */
+            color: #fff; /* Ensure text color remains readable */
+        }
+
+        /* Ensure menu items inherit the correct color */
+        .navbar .nav-link a {
+            color: inherit;
+            text-decoration: none; /* Remove underline from links */
+        }
+
+        /* Ensure sub-menu items have no extra padding or margin */
+        .navbar .dropdown-menu,
+        .navbar .dropdown-item {
+            padding: 0;
+            margin: 0;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr;
+            grid-gap: 10px;
+        }
+
+        .content-block {
+            color: #999;
+            background-color: #333;
+            padding: 10px;
+            border-radius: 5px;
+            text-shadow: 1px 1px 2px #000;
+        }
+
+        @font-face {
+            font-family: 'Geneve';
+            src: url('{{ url_for('static', filename='fonts/Geneve.ttf') }}') format('truetype');
+        }
+
+        body {
+            font-family: 'Geneve', sans-serif;
+            background-color: #000044; /* Set a fallback background color */
+            color: lightgrey;
+            margin: 0;
+            padding: 0;
+        }
+
+        #tsparticles {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: -1; /* Ensure particles are behind other elements */
+        }
+
+        .flashes {
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+
+        .flashes li {
+            margin-bottom: 5px;
+        }
+
+        .alert {
+            padding: 8px 12px;
+            font-size: 14px;
+            border-radius: 4px;
+        }
+
+        .alert-success {
+            background-color: #35c9be;
+            color: #0546aa;
+        }
+
+        .alert-danger {
+            background-color: #f8d7da;
+            color: #ad1d28;
+        }
+
+        .alert-info {
+            background-color: #cce5ff;
+            color: #153420;
+        }
+
+        .alert-warning {
+            background-color: #fff3cd;
+            color: #ff0000;
+        }
+
+        .general-content {
+            color: #fff3cd;
+        }
+
+        .gray-text {
+            color: lightgray;
+        }
+
+        .blue-text {
+            color: lightblue;
+        }
+
+        .white-text {
+            color: white;
+        }
+
+        .dark-text {
+            color: #333;
+        }
+
+        h1 {
+            color: lightgrey;
+        }
+
+        p {
+            color: white;
+        }
+
+        .main-menu {
+            list-style: none;
+            display: flex;
+            margin: 0;
+            padding: 0;
+            position: relative;
+            background-color: #333;
+        }
+
+        .navbar-nav>li {
+            position: relative;
+        }
+
+        .navbar-nav>li:not(:last-child) {
+            margin-right: 10px;
+            background-color: lightgray;
+        }
+
+        .submenu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background-color: #333;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            display: none;
+            z-index: 1000;
+        }
+
+        .navbar-nav>li:hover>.submenu {
+            display: block;
+        }
+
+        .has-submenu .submenu-indicator::after {
+            content: '\25B6';
+            margin-left: 5px;
+            display: inline-block;
+            transform: rotate(90deg);
+            transition: transform 0.3s ease;
+        }
+
+        .submenu .submenu {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 100%;
+        }
+
+        .submenu.show {
+            display: block;
+        }
+
+        .has-submenu.active .submenu-indicator::after {
+            transform: rotate(0deg);
+        }
+
+        .sticky-top {
+            position: sticky;
+            top: 0;
+        }
+
+        .navbar.shrink {
+            transition: padding 0.3s;
+            padding-top: 10px;
+            padding-bottom: 10px;
+        }
+
+        .left-menu {
+            border-right: 1px solid #eeb800;
+            float: left;
+            width: 20%;
+            background-color: #aaeeef;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .left-menu h3 {
+            margin-top: 0;
+            margin-bottom: 15px;
+        }
+
+        .left-menu ul li {
+            margin-bottom: 10px;
+        }
+
+        .left-menu ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .sidebar {
+            padding: 20px;
+        }
+
+        #greeting-section {
+            text-align: right;
+        }
+
+        @media (max-width: 992px) {
+            .card-column {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .card-column {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .fit-image {
+            width: 100%;
+            height: auto;
+            max-height: 200px;
+            object-fit: cover;
+            object-position: center;
+        }
+
+        .carousel-item {
+            display: none;
+            position: relative;
+            width: 100%;
+            transition: transform 0.8s ease-in-out;
+            align-items: center;
+        }
+        .carousel-item.active {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #myCarousel {
+            padding-bottom: 50px; /* Adjust as needed */
+        }
+        .card {
+            color: #333;
+            width: 80%;
+            margin: 0 10px;
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 5px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            padding: 10px;
+            text-align: center;
+            transition: transform 0.6s ease-in-out;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+            font-size: 0.9em;
+            z-index: 1; /* Added to ensure cards are above indicators */
+        }
+        .card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 12px 24px rgba(0, 0, 0, 0.3);
+            color: darkblue;
+        }
+
+        .card-header {
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+        .card-body {
+            padding: 10px 0;
+            flex: 1;
+        }
+        .card-footer {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .carousel-indicators-bottom .carousel-indicators {
+            position: static;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            margin: 0 auto;
+        }
+
+        .video-fixed-dimensions {
+            width: 640px;
+            height: 360px;
+            max-width: 100%;
+        }
+
+        .app-box {
+            border-radius: 8px;
+            overflow: hidden;
+            cursor: pointer;
+            text-align: center;
+            font-size: 1em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s, box-shadow 0.3s;
+        }
+
+        .app-box:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .cookie-banner {
+            position: fixed;
+            bottom: 0;
+            width: 100%;
+            background-color: #19a1a1;
+            padding: 5px;
+            text-align: center;
+            border-top: 1px solid #ccc;
+            color: #cccbb6;
+            font-size: 12px;
+        }
+
+        .cookie-banner p {
+            margin: 0;
+            padding: 0;
+        }
+
+        .cookie-banner form {
+            display: inline-block;
+            margin: 5px;
+        }
+
+        .cookie-banner button {
+            margin: 3px;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+
+        .footer-section {
+            background-color: #001133;
+            border-top: 4px solid darkred; /* Turquoise line separator */
+            padding: 10px 20px; /* Footer padding */
+            color: #92A75C;
+            padding: 20px 0;
+        }
+
+        .footer-section .footer-links {
+            margin-bottom: 10px;
+        }
+
+        .footer-section .footer-links .top-row {
+            font-size: 1.1em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .footer-section .footer-links a {
+            color: #a0a2a1;
+            text-decoration: none;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .footer-section .footer-links a:hover {
+            text-decoration: underline;
+        }
+
+        .footer-section .footer-links .column-title {
+            font-size: 1.1em;
+            font-weight: bold;
+        }
+
+        .footer-section .footer-links .column-content a {
+            font-size: 0.9em;
+            font-weight: normal;
+        }
+
+        .footer-logo {
+            height: 100px;
+        }
+
+        .icons-container {
+            display: flex;
+            align-items: center;
+            margin-left: auto; /* Ensures the container aligns to the right */
+        }
+        .navbar-logo img, .calendar-icon img {
+            height: 50px;
+        }
+        .calendar-icon {
+            margin-right: 20px; /* Adjust margin as needed for spacing */
+        }
+
+        .calendar-icon img.grayed {
+            filter: grayscale(100%);
+        }
+
+        .calendar-icon img.colored {
+            filter: none;
+        }
+
+        #refresh-config {
+          bottom: 5px;
+          left: 5px;
+          position: fixed;
+          z-index: 1000;
+        }
+
+        .github {
+          z-index: 10000;
+          bottom: 10px;
+          right: 10px;
+          position: fixed;
+          border-radius: 10px;
+          background: #fff;
+          padding: 0 12px 6px 12px;
+          border: 1px solid #000;
+        }
+
+        .github a:hover,
+        .github a:link,
+        .github a:visited,
+        .github a:active {
+          color: #000;
+          text-decoration: none;
+        }
+
+        .github img {
+          height: 30px;
+        }
+
+        .github #gh-project {
+          font-size: 20px;
+          padding-left: 5px;
+          font-weight: bold;
+          vertical-align: bottom;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div id="tsparticles"></div> <!-- Add the particles container -->
+
+    {% macro render_menu(menu_items, user_roles, level=1) %}
+        {% for menu_item in menu_items %}
+            {% if menu_item_allowed(menu_item, user_roles) %}
+                <!-- Only render menu items that are not widgets -->
+                {% if not menu_item.get('widget', {}).get('display', False) %}
+                    <li class="nav-item{% if menu_item.submenus %} has-submenu{% endif %}">
+                        <a class="nav-link" href="{{ menu_item.url }}">
+                            {{ menu_item.label }}
+                            {% if menu_item.submenus %}
+                                <span class="submenu-indicator"></span>
+                            {% endif %}
+                        </a>
+                        {% if menu_item.submenus %}
+                            <ul class="submenu">
+                                {{ render_menu(menu_item.submenus, user_roles, level+1) }}
+                            </ul>
+                        {% endif %}
+                    </li>
+                {% endif %}
+            {% endif %}
+        {% endfor %}
+    {% endmacro %}
+
+    <!-- Greeting message -->
+    <div id="greeting-section" class="gray-text">
+        <!-- Display personalized greeting if the user is authenticated -->
+        {% if is_authenticated %}
+            {% set role_initials = {'Admin': 'A', 'Authority': 'Au', 'Manager': 'M', 'Employee': 'E', 'Provider': 'P', 'Guest': 'G'} %}
+            {% set role_initial = '' %}
+            {% for role in user_roles %}
+                {% if role in role_initials %}
+                    {% set role_initial = role_initials[role] %}
+                {% endif %}
+            {% endfor %}
+            {% if unread_notices_count > 0 %}
+                <a href="/noticeboard">
+                    <img src="{{ url_for('static', filename='images/mail-unread-outline.svg') }}" alt="Messages Icon" id="messages-icon">
+                    <span>You have {{ unread_notices_count }} new messages</span>
+                </a>
+            {% endif %}
+        {% else %}
+            Please <a href="{{ url_for('login') }}">log in</a> or <a href="{{ url_for('signup') }}">sign up</a>.
+        {% endif %}
+    </div>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-dark sticky-top">
+        <a class="navbar-brand" href="{{ url_for('index') }}"></a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <!-- Main menu -->
+            <ul class="navbar-nav main-menu">
+                {{ render_menu(main_menu_items, user_roles) }}
+            </ul>
+        </div>
+
+        <!-- Icons container -->
+        <div class="d-flex align-items-center ml-auto icons-container">
+            <!-- Calendar Icon -->
+            <div class="calendar-icon mr-2">
+                <a href="/calendar">
+                    <img src="{{ url_for('static', filename='icons/calendar-icon-2.png') }}" alt="Calendar Icon" class="{{ 'colored' if has_events else 'grayed' }}">
+                </a>
+            </div>
+            <!-- Logo Icon -->
+            <div class="navbar-logo">
+                <img src="{{ url_for('static', filename='ilm_logo_1.png') }}" alt="My Logo">
+            </div>
+        </div>
+    </nav>
+
+
+    <!-- Flash messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="container mt-4 general-content">
+                <div class="row">
+                    <div class="col-md-12">
+                        <ul class="flashes">
+                            {% for category, message in messages %}
+                                <li>
+                                    <div class="alert alert-{{ category }}">
+                                        {{ message }}
+                                    </div>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+            <script>
+                $(document).ready(function() {
+                    setTimeout(function() {
+                        $('.flashes').fadeOut('fast');
+                    }, 2000);
+                });
+            </script>
+        {% endif %}
+    {% endwith %}
+
+
+    <div class="container mt-4 general-content">
+        <div class="row">
+            <div class="col-md-9">
+                <h2>D.E.R.E. - Digital Environment for Regulated Energy Sector</h2>
+                <h3>Energy going Digital</h3>
+
+                <!-- Render Widgets Section -->
+                <div class="container mt-4">
+                    <div class="row">
+
+                        {% for widget in widgets_to_display %}
+                            <div class="col-md-4 mb-4">
+                                {% set widget_type = widget.widget.get('type', 'button') if widget.widget else 'button' %}
+                                {% set display = widget.widget.get('display', False) if widget.widget else False %}
+
+                                {% if display %}
+                                    {% if widget_type == 'button' %}
+                                        <!-- Button Widget: Set default color and font if attributes are missing -->
+                                        {% set button_style = widget.widget.get('style', 'btn-light') %}
+                                        {% set button_size = widget.widget.get('size', '') %}
+                                        {% set button_color = widget.widget.get('color', '#ADD8E6') %}
+                                        {% set button_font_color = widget.widget.get('font_color', 'dark') %}
+                                        <a href="{{ widget.url }}" class="btn {{ button_style }} {{ button_size }}" style="background-color: {{ button_color }}; color: {{ button_font_color }};">
+                                            <i class="{{ widget.widget.icon }}"></i> {{ widget.label }}
+                                        </a>
+
+                                    {% elif widget_type == 'form' %}
+                                        <!-- Form Widget -->
+                                        <form action="{{ widget.widget.submit_url }}" method="post" class="{{ widget.widget.style }}">
+                                            {% for field in widget.widget.fields %}
+                                                <input type="text" name="{{ field }}" placeholder="{{ field }}">
+                                            {% endfor %}
+                                            <button type="submit">Submit</button>
+                                        </form>
+
+                                    {% elif widget_type == 'chart' %}
+                                        <!-- Chart Widget -->
+                                        <div class="chart-widget" style="background-color: {{ widget.widget.get('background_color', '#FFFFFF') }};">
+                                            <h5>{{ widget.label }}</h5>
+                                            <img src="{{ widget.widget.chart_url }}" alt="{{ widget.label }} Chart" style="width: 100%;">
+                                        </div>
+
+                                    {% elif widget_type == 'icon' %}
+                                        <!-- Icon Widget -->
+                                        <div class="icon-widget" style="font-size: {{ widget.widget.get('size', '24px') }}; color: {{ widget.widget.get('color', '#333') }};">
+                                            <i class="{{ widget.widget.icon }}"></i> {{ widget.label }}
+                                        </div>
+
+                                    {% elif widget_type == 'image' %}
+                                        <!-- Image Widget -->
+                                        <div class="image-widget">
+                                            <a href="{{ widget.url }}">
+                                                <img src="{{ widget.widget.image_url }}" alt="{{ widget.label }}" style="width: 100%; object-fit: cover;">
+                                            </a>
+                                        </div>
+
+                                    {% elif widget_type == 'text' %}
+                                        <!-- Text Widget -->
+                                        <div class="text-widget" style="color: {{ widget.widget.get('color', '#333') }}; font-size: {{ widget.widget.get('font_size', '16px') }};">
+                                            {{ widget.widget.content }}
+                                        </div>
+
+                                    {% elif widget_type == 'video' %}
+                                        <!-- Video Widget -->
+                                        <div class="video-widget">
+                                            <video controls width="100%">
+                                                <source src="{{ widget.widget.video_url }}" type="video/mp4">
+                                                Your browser does not support the video tag.
+                                            </video>
+                                        </div>
+
+                                    {% elif widget_type == 'link' %}
+                                        <!-- Link Widget -->
+                                        <div class="link-widget">
+                                            <a href="{{ widget.widget.url }}" target="_blank" style="color: {{ widget.widget.get('color', '#007BFF') }};">
+                                                {{ widget.label }}
+                                            </a>
+                                        </div>
+
+                                    {% else %}
+                                        <!-- Default Case for Unsupported Widget Types -->
+                                        <p>Unsupported widget type: {{ widget_type }}</p>
+
+                                    {% endif %}
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+
+                    </div>
+                </div>
+
+                {% if unread_notices_count > 0 %}
+                    <a href="/noticeboard">
+                        <span>You have {{ unread_notices_count }} new messages</span>
+                    </a>
+                {% endif %}
+
+                {% if "Admin" in user_roles %}
+                    <p>(Admin)</p>
+                    {% if admin_tickets_count > 0 %}
+                        <a href="/admin_tickets">
+                            <span>You have {{ admin_tickets_count }} open tickets</span>
+                        </a>
+                    {% endif %}
+                    <p>This is the Admin landing page - to be customized as needed (v.1.3.2).</p>
+                {% else %}
+
+                {% endif %}
+                {% if "Authority" in user_roles %}
+                    <p>(Authority)</p>
+                    {% if open_tickets_count > 0 %}
+                        <a href="/view_tickets">
+                            <span>You have {{ open_tickets_count }} open tickets</span>
+                        </a>
+                    {% endif %}
+                {% endif %}
+                {% if "Manager" in user_roles %}
+                    <p>(Manager)</p>
+                    {% if open_tickets_count > 0 %}
+                        <a href="/view_tickets">
+                            <span>You have {{ open_tickets_count }} open tickets</span>
+                        </a>
+                    {% endif %}
+                {% endif %}
+                {% if "Employee" in user_roles %}
+                    <p>(Employee)</p>
+                    {% if open_tickets_count > 0 %}
+                        <a href="/view_tickets">
+                            <span>You have {{ open_tickets_count }} open tickets</span>
+                        </a>
+                    {% endif %}
+                {% endif %}
+
+                <!-- Your Apps Section -->
+                <h2>Your Apps</h2>
+                <div class="container mt-4">
+                    <div class="row">
+                        {% if containers %}
+                            {% for container in containers %}
+                                {% if container.content_type == 'card' %}
+                                    <div class="col-md-3 mb-4">
+                                        <a href="{{ container.content.url }}" style="text-decoration: none;">
+                                            <div class="app-box" style="position: relative; padding-bottom: 75%; background-color: {% if container.content.image_url %}transparent{% else %}{{ ["#5a6268", "#6c757d", "#adb5bd", "#ced4da"]|random }}{% endif %}; color: lightslategray;">
+                                                {% if container.content.image_url %}
+                                                    <img src="{{ container.content.image_url }}" alt="{{ container.content.header }}" style="width: 100%; height: 100%; object-fit: cover; position: absolute; top: 0; left: 0;">
+                                                {% else %}
+                                                    <div class="d-flex align-items-center justify-content-center" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%;">
+                                                        <span>{{ container.content.header or 'App' }}</span>
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                        </a>
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            <p>No apps found.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- News Section -->
+                <h2>News</h2>
+                <div class="container mt-4">
+                    {% if containers %}
+                        {% for container in containers %}
+                            {% if container.content_type == 'news' %}
+                                <li>
+                                    <strong>{{ container.content.headline }}</strong>
+                                    <p>{{ container.content.short_text }}</p>
+                                    <img src="{{ container.content.image_url }}" alt="{{ container.content.headline }}" style="width: 100px; height: auto;">
+                                    {% if container.content.link_type == 'internal' %}
+                                        <a href="{{ url_for('detailed_news', id=container.id) }}">More</a>
+                                    {% else %}
+                                        <a href="{{ container.content.more_link }}" target="_blank">More</a>
+                                    {% endif %}
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <p>No news found.</p>
+                    {% endif %}
+                </div>
+
+                {% if cards %}
+                <div id="myCarousel" class="carousel slide mt-5" data-bs-ride="carousel">
+                    {% if cards|length > 1 %}
+                    <div class="carousel-indicators">
+                        {% for card in cards %}
+                        <button type="button" data-bs-target="#myCarousel" data-bs-slide-to="{{ loop.index0 }}" class="{% if loop.index == 1 %}active{% endif %}" aria-current="{% if loop.index == 1 %}true{% else %}false{% endif %}" aria-label="Slide {{ loop.index }}"></button>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+
+                    <div class="carousel-inner">
+                        {% for card in cards %}
+                        <div class="carousel-item {% if loop.index == 1 %}active{% endif %}">
+                            <div class="d-flex justify-content-center align-items-center" style="height: 100%;">
+                                <div class="card">
+                                    <div class="card-header">{{ card.title }}</div>
+                                    <div class="card-body dark-text">
+                                        {% if card.image %}
+                                        <img src="{{ card.image }}" class="card-img-top fit-image" alt="Card Image" onerror="this.onerror=null; this.src='{{ url_for('static', filename='images/placeholder.png') }}';">
+                                        {% endif %}
+                                        {% if card.body %}
+                                        <p class="card-text dark-text">{{ card.body }}</p>
+                                        {% endif %}
+                                        {% if card.description %}
+                                        <p class="card-text dark-text">{{ card.description }}</p>
+                                        {% endif %}
+                                    </div>
+                                    {% if card.footer %}
+                                    <div class="card-footer dark-text">
+                                        {{ card.footer }}
+                                    </div>
+                                    {% endif %}
+                                    {% if card.action_text %}
+                                    <div class="card-footer dark-text">
+                                        {% if card.action_type == 'button' %}
+                                        <button class="card-button" onclick="window.location.href='{{ card.url }}'">{{ card.action_text }}</button>
+                                        {% else %}
+                                        <a href="{{ card.url }}" class="card-link" target="_blank">{{ card.action_text }}</a>
+                                        {% endif %}
+                                    </div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    {% if cards|length > 1 %}
+                    <button class="carousel-control-prev" type="button" data-bs-target="#myCarousel" data-bs-slide="prev">
+                        <span class="carousel-control-prev-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Previous</span>
+                    </button>
+                    <button class="carousel-control-next" type="button" data-bs-target="#myCarousel" data-bs-slide="next">
+                        <span class="carousel-control-next-icon" aria-hidden="true"></span>
+                        <span class="visually-hidden">Next</span>
+                    </button>
+                    {% endif %}
+                </div>
+                {% endif %}
+
+                <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.11.7/dist/umd/popper.min.js"></script>
+                <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js"></script>
+
+                <div class="container mt-4">
+                    <p>"[...] content" (text, documents, multimedia files, charts, cards etc.) to be placed here.</p>
+                    {% if containers %}
+                        {% for container in containers %}
+                            {% if container.content_type == 'text' %}
+                                <div class="content-block">{{ container.content['content'] }}</div>
+                            {% endif %}
+                            {% if container.content_type == 'documents' %}
+                                <a class="content-block" href="{{ url_for('static', filename=container.content['files']) }}">Download</a>
+                            {% endif %}
+                            {% if container.content_type == 'images' %}
+                                <img class="content-block" src="{{ url_for('static', filename='images/' ~ container.content['images']) }}" alt="Image">
+                            {% endif %}
+                            {% if container.content_type == 'gallery' %}
+                                <video class="video-fixed-dimensions" src="{{ url_for('static', filename=container.content['file_name']) }}" controls></video>
+                            {% endif %}
+                            {% if container.content_type == 'chart' %}
+                                <img class="content-block" src="{{ url_for('static', filename=container.content['charts']) }}" alt="Chart">
+                            {% endif %}
+                            {% if container.content_type == 'link' %}
+                                <a class="content-block" href="{{ container.content['url'] }}" target="_blank">{{ container.content['title'] }}</a>
+                            {% endif %}
+                        {% endfor %}
+                    {% else %}
+                        <p>[...]</p>
+                    {% endif %}
+            </div>
+
+            </div>
+
+        </div>
+    </div>
+
+    <footer class="footer-section">
+        <div class="container">
+            <div class="row footer-links">
+                <div class="col">
+                    <div class="column-title">About</div>
+                    <div class="column-content">
+                        <a href="{{ url_for('aboutus_1') }}">Who we are</a>
+                        <a href="{{ url_for('history') }}">Our history</a>
+                        <a href="{{ url_for('public_news') }}">News and insights</a>
+                        <a href="#">Events</a>
+                        <a href="{{ url_for('site_map') }}">Sitemap</a>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="column-title">Legal</div>
+                    <div class="column-content">
+                        <a href="#">Disclaimer</a>
+                        <a href="{{ url_for('privacy_policy') }}">Privacy Statement</a>
+                        <a href="{{ url_for('cookie_settings') }}">Cookie Settings</a>
+                        <a href="{{ url_for('terms_of_use') }}">Terms of Use</a>
+                        <a href="#">Cookie Statement</a>
+                        <a href="#">Accessibility</a>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="column-title">Contact</div>
+                    <div class="column-content">
+                        <a href="{{ url_for('create_ticket') }}">Report an issue</a>
+                        <a href="{{ url_for('contact_us') }}">Contact</a>
+                        <a href="#">Report a page</a>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="column-title">Explore</div>
+                    <div class="column-content">
+                        <a href="https://www.ilmgroup.net" target="_blank">ILM Group</a>
+                        <a href="https://www.arera.it" target="_blank">ARERA</a>
+                        <a href="https://www.agcm.it" target="_blank">AGCM</a>
+                        <a href="https://competition-policy.ec.europa.eu/index_en" target="_blank">European Competition Policy</a>
+                        <a href="https://documents.acer.europa.eu/en/remit" target="_blank">REMIT</a>
+                        <a href="https://www.acer.europa.eu" target="_blank">ACER</a>
+                        <a href="#">Site [...]</a>
+                    </div>
+                </div>
+                <div class="col-auto d-flex align-items-center justify-content-end">
+                    <img src="{{ url_for('static', filename='ilm_logo_1.png') }}" alt="My Logo" class="footer-logo">
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Cookie Consent Banner -->
+    {% if show_cookie_banner %}
+        <div id="cookie-consent-banner" class="cookie-banner">
+            <p>We use cookies to enhance your experience. By continuing to visit this site you agree to our use of cookies.</p>
+            <form method="POST" action="{{ url_for('set_cookies') }}">
+                <button type="submit" name="consent" value="allow_all">Allow All</button>
+                <button type="submit" name="consent" value="reject_all">Reject All</button>
+                <button type="button" onclick="showCustomizeOptions()">Customize</button>
+            </form>
+            <div id="customize-options" style="display:none;">
+                <form method="POST" action="{{ url_for('set_cookies') }}">
+                    <input type="hidden" name="consent" value="customize">
+                    <label>
+                        <input type="checkbox" name="analytics" value="true" checked> Analytics
+                    </label>
+                    <label>
+                        <input type="checkbox" name="marketing" value="true" checked> Marketing
+                    </label>
+                    <button type="submit">Save Preferences</button>
+                </form>
+            </div>
+        </div>
+    {% endif %}
+
+    <script>
+        function showCustomizeOptions() {
+            document.getElementById('customize-options').style.display = 'block';
+        }
+
+        var analytics = "{{ analytics }}";
+        var marketing = "{{ marketing }}";
+
+        console.log("Analytics consent: " + analytics);
+        console.log("Marketing consent: " + marketing);
+
+        if (analytics === 'true') {
+            console.log("Including analytics scripts");
+        }
+
+        if (marketing === 'true') {
+            console.log("Including marketing scripts");
+        }
+    </script>
+
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script type="module">
+        import { tsParticles } from "https://cdn.jsdelivr.net/npm/@tsparticles/engine@3.1.0/+esm";
+        import { loadAll } from "https://cdn.jsdelivr.net/npm/@tsparticles/all@3.1.0/+esm";
+
+        async function loadParticles(options) {
+          await loadAll(tsParticles);
+          await tsParticles.load({ id: "tsparticles", options });
+        }
+
+        const configs = {
+          particles: {
+            number: {
+              value: 10
+            },
+            color: {
+              value: "#77ccdd"
+            },
+            links: {
+              enable: true,
+              distance: 200
+            },
+            shape: {
+              type: "diamond"
+            },
+            opacity: {
+              value: .33
+            },
+            size: {
+              value: {
+                min: 4,
+                max: 12
+              }
+            },
+            move: {
+              enable: true,
+              speed: 1
+            }
+          },
+          background: {
+            color: "#000003"
+          },
+          poisson: {
+            enable: true
+          }
+        };
+
+        loadParticles(configs);
+    </script>
+    <script>
+        $(document).ready(function() {
+            function toggleImmediateChildren(submenu) {
+                submenu.children('.has-submenu').toggleClass('show');
+            }
+
+            function toggleSubmenu(submenu) {
+                var parentSubMenu = submenu.closest('.has-submenu');
+                var siblings = parentSubMenu.siblings('.has-submenu');
+                siblings.removeClass('active').find('.submenu').removeClass('show');
+                toggleImmediateChildren(submenu);
+                parentSubMenu.toggleClass('active').find('.submenu').toggleClass('show');
+            }
+
+            $('.has-submenu > a').click(function(e) {
+                var submenu = $(this).siblings('.submenu');
+                if (submenu.length) {
+                    e.preventDefault();
+                    toggleSubmenu(submenu);
+                }
+            });
+
+            $('.has-submenu').each(function() {
+                var submenu = $(this).children('.submenu');
+                if (submenu.length) {
+                    var topPosition = $(this).position().top + $(this).outerHeight();
+                    submenu.css('top', topPosition);
+                }
+            });
+
+            $(document).on('click', function(e) {
+                if (!$(e.target).closest('.has-submenu').length) {
+                    $('.has-submenu.active').removeClass('active').find('.submenu').removeClass('show');
+                }
+            });
+
+            $('.submenu a').click(function(e) {
+                var submenu = $(this).siblings('.submenu');
+                if (submenu.length) {
+                    e.preventDefault();
+                }
+            });
+
+            var navbar = $(".navbar");
+            var sticky = navbar.offset().top;
+
+            $(window).scroll(function() {
+                if (window.pageYOffset >= sticky) {
+                    navbar.addClass("sticky-top shrink");
+                } else {
+                    navbar.removeClass("sticky-top shrink");
+                }
+            });
+
+            var username = "{{ username }}";
+
+            if (username && username !== "Guest") {
+                $("#greeting-section").html("W e l c o m e,  " + username + "!");
+                $("#greeting-section").show();
+            } else {
+                $("#greeting-section").html("Please <a href='{{ url_for('login') }}'>log in</a> or <a href='{{ url_for('signup') }}'>sign up</a>");
+                $("#greeting-section").show();
+            }
+
+            if (document.getElementById("messages-icon")) {
+                document.getElementById("messages-icon").addEventListener("click", function() {
+                    document.getElementById("noticeboard-modal").style.display = "block";
+                });
+            }
+
+            if (document.getElementsByClassName("close").length > 0) {
+                document.getElementsByClassName("close")[0].addEventListener("click", function() {
+                    document.getElementById("noticeboard-modal").style.display = "none";
+                });
+            }
+        });
+    </script>
+
+</body>
+
+</html>

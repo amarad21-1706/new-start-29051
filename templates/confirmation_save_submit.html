@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Confirm Overwrite</title>
+</head>
+<body>
+    <h1>Existing record found for this questionnaire n. {{ questionnaire_id }}</h1>
+    <p>Do you want to overwrite the existing answers?</p>
+    <form action="{{ url_for('submit_confirmed') }}" method="post">
+        <input type="hidden" name="company_id" value="{{ company_id }}">
+        <input type="hidden" name="user_id" value="{{ user_id }}">
+        <input type="hidden" name="questionnaire_id" value="{{ questionnaire_id }}">
+        <input type="hidden" name="answer_data" value="{{ answer_data }}">
+        <input type="hidden" name="action_id" value="save">
+        <input type="hidden" name="confirmed_overwrite" value="Yes">
+        <button type="submit" name="submit_button" value="overwrite">Confirm Overwrite</button>
+        <button type="submit" name="submit_button" value="cancel">Cancel</button>
+    </form>
+</body>
+</html>

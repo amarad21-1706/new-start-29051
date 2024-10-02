@@ -1,0 +1,220 @@
+
+{% macro render_menu(menu_items, user_roles) %}
+    <ul>
+        {% for menu_item in menu_items %}
+            <li>
+                <a href="{{ url_for(menu_item.url) }}">{{ menu_item.label }}</a>
+                {% if menu_item.submenus %}
+                    {{ render_menu(menu_item.submenus, user_roles) }}
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+{% endmacro %}
+
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <!-- Add meta tag for responsive design -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Dashboard - Company</title>
+
+    <!-- Bootstrap CSS -->
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+
+    <!-- Optional: Your custom styles -->
+
+    <style>
+        /* Add your custom styles here */
+
+        /* Style for the main navigation items */
+        .main-menu {
+            list-style: none;
+            display: flex;
+            margin: 0;
+            padding: 0;
+        }
+
+        .navbar-nav > li {
+            position: relative;
+        }
+
+        .navbar-nav > li:not(:last-child) {
+            margin-right: 10px; /* Adjust as needed */
+        }
+
+        /* Style for the submenus */
+        .submenu {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            background-color: #f8f9fa; /* Adjust as needed */
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Add a box shadow for a subtle effect */
+            display: none;
+        }
+
+        /* Show the submenu when hovering over the main navigation item */
+        .navbar-nav > li:hover > .submenu {
+            display: block;
+        }
+
+        /* Style for the indicator (triangle) */
+        .has-submenu .submenu-indicator::after {
+            content: '\25B6'; /* Unicode character for a right-pointing triangle */
+            margin-left: 5px;
+            display: inline-block;
+            transform: rotate(90deg);
+            transition: transform 0.3s ease; /* Add a smooth transition effect */
+        }
+
+        /* Hide level 3 submenus by default */
+        .submenu .submenu {
+            display: none;
+            position: absolute;
+            top: 0;
+            left: 100%; /* Adjust to position level 3 menus to the right of level 2 items */
+        }
+
+        /* Show level 3 submenu on click */
+        .submenu.show {
+            display: block;
+        }
+
+        /* Rotate the triangle indicator when level 3 submenu is shown */
+        .has-submenu.active .submenu-indicator::after {
+            transform: rotate(0deg);
+        }
+
+        .sticky-top {
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .navbar.shrink {
+            transition: padding 0.3s;
+            padding-top: 10px;
+            padding-bottom: 10px;
+            background-color: #ffffff; /* Add your desired background color when shrunk */
+        }
+
+        /* Add styles for the left-side menu */
+        .left-menu {
+            border-right: 1px solid #dee2e6; /* Add a border to separate the left menu from the content */
+            float: left;
+            width: 20%; /* Adjust the width as needed */
+            background-color: #f8f9fa; /* Adjust as needed */
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); /* Add a box shadow for a subtle effect */
+        }
+
+        .left-menu h3 {
+            margin-top: 0;
+            margin-bottom: 15px; /* Add some spacing below the heading */
+        }
+
+        .left-menu ul li {
+            margin-bottom: 10px;
+        }
+
+        .left-menu ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .sidebar {
+            padding: 20px; /* Add padding to the sidebar */
+        }
+
+        /* Adjust left menu width for smaller screens */
+        @media (max-width: 768px) {
+            .left-menu {
+                width: 100%; /* Full width on smaller screens */
+                border-right: none; /* Remove the border on smaller screens */
+                padding-right: 0; /* Remove right padding on smaller screens */
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light sticky-top">
+        <a class="navbar-brand" href="{{ url_for('index') }}">[Logo]</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav"
+            aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <!-- Main menu -->
+            <ul class="navbar-nav main-menu">
+                <!-- Include the main menu items here -->
+                {{ render_menu(main_menu_items, user_roles) }}
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Left-side menu (conditionally displayed based on user role) -->
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="sidebar">
+                    <h3>Atti di pre-complaint</h3>
+                    <ul class="nav flex-column">
+                        {% if left_menu_items and left_menu_items|length > 0 %}
+                            {% for key, item in left_menu_items.items() %}
+                                <li class="nav-item">
+                                    <a class="nav-link" href="{{ url_for('dashboard_company', parameter=key) }}">{{ item.label }}</a>
+                                    {% if item.submenus %}
+                                        <!-- Submenus -->
+                                        <ul class="submenu">
+                                            {{ render_submenu(item.submenus) }}
+                                        </ul>
+                                    {% endif %}
+                                </li>
+                            {% endfor %}
+                        {% else %}
+                            <p>No left menu items defined.</p>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Main content area -->
+            <div class="col-md-9">
+                <!-- Add your content specific to the dashboard_company page -->
+                <h1>Dashboard - Company</h1>
+                <!-- Add more content as needed -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS and jQuery -->
+    <script src="https://code.jquery.com/jquery-3.7.1.slim.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.7/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
+    <!-- JavaScript to handle submenu visibility and click events -->
+    <script>
+        // Your existing JavaScript code for handling submenus and other interactions
+        // ...
+
+        // Display personalized greeting if the user is authenticated
+        var username = "{{ current_user.username }}"; // Use the username from the Flask route
+        if (username && username !== "Guest") {
+            $("#greeting-section").html("Welcome, " + username + "!");
+            $("#greeting-section").show(); // Show the greeting section
+        } else {
+            $("#greeting-section").html("Please <a href='{{ url_for('login') }}'>log in</a> or <a href='{{ url_for('signup') }}'>sign up</a>");
+            $("#greeting-section").show(); // Show the greeting section
+        }
+    </script>
+
+</body>
+
+</html>
+l>

@@ -1,0 +1,117 @@
+{
+    "Area di controllo 2": {
+        "label": "Area 2",
+        "url": "control_area_2",
+        "protected": true,
+        "allowed_roles": ["Admin", "Employee", "Manager"],
+        "submenus": {
+            "Primo livello di analisi": {
+                "label": "Primo livello",
+                "url": "open_admin_app",
+                "protected": false,
+                "allowed_roles": [
+                    "Admin",
+                    "Employee",
+                    "Manager"
+                ],
+                "submenus": {
+                    "Tabella 1": {
+                        "label": "Tabella 1",
+                        "url": "open_admin_app_2",
+                        "protected": false,
+                        "allowed_roles": [
+                            "Admin",
+                            "Employee",
+                            "Manager"
+                        ]
+                    },
+                    "Tabella 2": {
+                        "label": "Tabella 2",
+                        "url": "open_admin_app_2",
+                        "protected": false,
+                        "allowed_roles": [
+                            "Admin",
+                            "Employee",
+                            "Manager"
+                        ]
+                    },
+                    "Tabella 3": {
+                        "label": "Tabella 3",
+                        "url": "open_admin_app_2",
+                        "protected": false,
+                        "allowed_roles": [
+                            "Admin",
+                            "Employee",
+                            "Manager"
+                        ]
+                    },
+                    "Tabella 4": {
+                        "label": "Tabella 4",
+                        "url": "open_admin_app_2",
+                        "protected": false,
+                        "allowed_roles": [
+                            "Admin",
+                            "Employee",
+                            "Manager"
+                        ]
+                    }
+                }
+            },
+            "Secondo livello di analisi": {
+                "label": "Secondo livello",
+                "url": "open_admin_app_2",
+                "protected": false,
+                "allowed_roles": [
+                    "Admin",
+                    "Employee",
+                    "Manager"
+                ],
+                "submenus": {
+                    "Tabella 5": {
+                        "label": "Tabella 5",
+                        "url": "open_admin_app_2",
+                        "protected": false,
+                        "allowed_roles": [
+                            "Admin",
+                            "Employee",
+                            "Manager"
+                        ]
+                    },
+                    "Tabella 6": {
+                        "label": "Tabella 6",
+                        "url": "open_admin_app_2",
+                        "protected": false,
+                        "allowed_roles": [
+                            "Admin",
+                            "Employee",
+                            "Manager"
+                        ]
+                    }
+                }
+            },
+            "Terzo livello di analisi": {
+                "label": "Livello 3",
+                "url": "open_admin_app_2",
+                "protected": false,
+                "allowed_roles": [
+                    "Admin",
+                    "Employee",
+                    "Manager"
+                ],
+                "submenus": {
+                    "Workflow livello 3": {
+                        "label": "Workflow",
+                        "url": "open_admin_app_2",
+                        "protected": false,
+                        "allowed_roles": [
+                            "Admin",
+                            "Employee",
+                            "Manager"
+                        ]
+                    }
+                }
+            }
+        }
+    }
+}
+

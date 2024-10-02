@@ -1,0 +1,63 @@
+<!-- templates/home/auditlog.html -->
+
+{% extends "base.html" %}
+
+{% block title %}
+    <title>Audit Log</title>
+{% endblock %}
+
+{% block content %}
+    <h1>Audit Log</h1>
+
+    <!-- Home Link -->
+    <a href="{{ url_for('home') }}">Home</a>
+    <!-- Back Link -->
+    <a href="javascript:history.back()">Back</a>
+
+    <table class="audit-log-table">
+        <!-- Table Header -->
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Timestamp</th>
+                <th>Company ID</th>
+                <th>User ID</th>
+                <th>Base Data ID</th>
+                <th>Workflow ID</th>
+                <th>Step ID</th>
+                <th>Action</th>
+                <th>Details</th>
+            </tr>
+        </thead>
+        <!-- Table Body -->
+        <tbody>
+            {% for log_entry in audit_log %}
+            <tr>
+                <td>{{ log_entry.id }}</td>
+                <td>{{ log_entry.timestamp }}</td>
+                <td>{{ log_entry.company_id }}</td>
+                <td>{{ log_entry.user_id }}</td>
+                <td>{{ log_entry.base_data_id }}</td>
+                <td>{{ log_entry.workflow_id }}</td>
+                <td>{{ log_entry.step_id }}</td>
+                <td>{{ log_entry.action }}</td>
+                <td>{{ log_entry.details }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <!-- Pagination -->
+    <div class="pagination">
+        <!-- Previous Page Link -->
+        {% if audit_log.has_prev %}
+            <a href="{{ url_for('auditlog', page=audit_log.prev_num) }}">Previous</a>
+        {% endif %}
+
+        <!-- Next Page Link -->
+        {% if audit_log.has_next %}
+            <a href="{{ url_for('auditlog', page=audit_log.next_num) }}">Next</a>
+        {% endif %}
+    </div>
+
+{% endblock %}

@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Articles for Contract {{ contract_id }}
+{% endblock %}
+
+{% block content %}
+<h1>Articles for Contract {{ contract_id }}</h1>
+
+{% if articles %}
+    <table>
+        <thead>
+            <tr>
+                <th>Article Title</th>
+                <th>Content</th>
+                <th>Order</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for article in articles %}
+                <tr>
+                    <td>{{ article.article_title }}</td>
+                    <td>{{ article.article_body }}</td>
+                    <td>{{ article.article_order }}</td>
+                    <td>
+                        <a href="{{ url_for('contract_bp.edit_article', contract_id=contract_id, article_id=article.article_id) }}">Edit</a>
+                        <a href="#" onclick="if(confirm('Are you sure you want to delete this article?')) { document.getElementById('delete-form-{{ article.article_id }}').submit(); }">Delete</a>
+                        <form id="delete-form-{{ article.article_id }}" action="{{ url_for('contract_bp.delete_article', contract_id=contract_id, article_id=article.article_id) }}" method="POST" style="display: none;">
+                            {{ csrf_token }}
+                        </form>
+                    </td>
+                </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% else %}
+    <p>No articles found for this contract.</p>
+{% endif %}
+
+<a href="{{ url_for('contract_bp.create_article', contract_id=contract_id) }}">Create New Article</a>
+{% endblock %}

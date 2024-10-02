@@ -1,0 +1,52 @@
+<!-- File: templates/admin/create_base_data.html -->
+
+{% extends 'admin/model/create.html' %}
+
+<head>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
+</head>
+
+{% block javascript %}
+    <script>
+        $(document).ready(function() {
+          $('.form-control.fc2').click(function() {
+            $(this).select();
+          });
+        });
+    </script>
+
+{% endblock javascript %}
+
+{% block body %}
+  {{ super() }}
+  <style>
+    /* Add your custom CSS here */
+    .form-horizontal .form-group {
+        margin-bottom: 0;
+    }
+
+    .form-horizontal .control-label {
+        float: left;
+        width: 150px; /* Adjust the width as needed */
+        text-align: right;
+        margin-right: 10px; /* Adjust the margin as needed */
+    }
+
+    .form-horizontal .controls {
+        overflow: hidden;
+    }
+
+    .form-horizontal .controls input,
+    .form-horizontal .controls select,
+    .form-horizontal .controls textarea {
+        width: auto;
+        float: left;
+        margin-right: 10px; /* Adjust the margin as needed */
+    }
+
+    .form-control.fc2 {
+      opacity: 0.5; /* Sets initial opacity to 50% */
+      transition: opacity 0.5s ease-in-out; /* Smooth fade-in on focus */
+    }
+  </style>
+{% endblock %}

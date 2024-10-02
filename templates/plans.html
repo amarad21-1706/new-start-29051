@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block title %}
+    Plans
+{% endblock %}
+
+{% block content %}
+    <div class="container">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="alert-container">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">{{ message }}</div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        <h1>Plans</h1>
+        <ul class="list-group">
+            {% for plan in plans %}
+                <li class="list-group-item">
+                    {{ plan.name }} - {{ plan.description }}
+                    <form action="{{ url_for('add_plan_to_cart', plan_id=plan.id) }}" method="POST" class="d-flex align-items-center">
+                        {{ form.hidden_tag() }}
+                        {{ form.submit(class="btn btn-primary") }}
+                    </form>
+                </li>
+            {% endfor %}
+        </ul>
+        <a href="{{ url_for('cart') }}" class="btn btn-secondary mt-3">View Cart</a>
+    </div>
+{% endblock %}

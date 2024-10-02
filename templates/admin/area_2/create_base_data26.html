@@ -1,0 +1,48 @@
+{% extends 'admin/model/create.html' %}
+
+{% block body %}
+  {{ super() }}
+  <style>
+    /* Add your custom CSS here */
+    .form-horizontal .form-group {
+        margin-bottom: 0;
+    }
+
+    .form-horizontal .control-label {
+        float: left;
+        width: 150px; /* Adjust the width as needed */
+        text-align: right;
+        margin-right: 10px; /* Adjust the margin as needed */
+    }
+
+    .form-horizontal .controls {
+        overflow: hidden;
+    }
+
+    .form-horizontal .controls input,
+    .form-horizontal .controls select,
+    .form-horizontal .controls textarea {
+        width: auto;
+        float: left;
+        margin-right: 10px; /* Adjust the margin as needed */
+    }
+
+    /* Add custom CSS for labels containing '%' */
+    .form-horizontal .control-label.contains-percent {
+        color: #ff0099; /* Change color as needed */
+    }
+  </style>
+
+  <script>
+    $(document).ready(function() {
+      // Loop through each control-label
+      $('.control-label').each(function() {
+        // Check if the label text contains '%'
+        if ($(this).text().indexOf('%') !== -1) {
+          // Add class to label
+          $(this).addClass('contains-percent');
+        }
+      });
+    });
+  </script>
+{% endblock %}

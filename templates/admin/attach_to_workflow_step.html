@@ -1,0 +1,134 @@
+<link href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" rel="stylesheet">
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/js/bootstrap.min.js"></script>
+
+<!-- Button to open the modal -->
+<button type="button" class="btn btn-primary" data-toggle="modal" data-target="#attachModal">
+  Attach to Workflow
+</button>
+
+<!-- Modal -->
+<div class="modal fade" id="attachModal" tabindex="-1" role="dialog" aria-labelledby="attachModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="attachModalLabel">Attach Documents to Workflow and Step</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="attachForm">
+          <!-- Hidden input field to store selected document IDs -->
+          <input type="hidden" id="documentIds" name="ids" value="{% for document in selected_documents %}{{ document.id }}{% if not loop.last %},{% endif %}{% endfor %}">
+
+          <div class="form-group">
+            <label for="workflowSelect">Select Workflow:</label>
+            <select class="form-control" id="workflowSelect" name="workflow">
+              <!-- Populate options dynamically from the passed workflows -->
+              {% for workflow in workflows %}
+                <option value="{{ workflow.id }}">{{ workflow.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="form-group">
+            <label for="stepSelect">Select Step:</label>
+            <select class="form-control" id="stepSelect" name="step">
+              <!-- Populate options dynamically from the passed steps -->
+              {% for step in steps %}
+                <option value="{{ step.id }}">{{ step.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+            <button type="submit" class="btn btn-primary">Attach</button>
+            <button type="button" class="btn btn-danger" id="deleteButton">Delete</button>
+            <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+        </form>
+          <div id="successMessage" style="display: none;" class="alert alert-success" role="alert">
+          <div id="failureMessage" style="display: none;" class="alert alert-danger" role="alert">
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+    // Handle form submission
+    document.getElementById("attachForm").addEventListener("submit", function(event) {
+      event.preventDefault(); // Prevent default form submission
+      var formData = new FormData(this); // Get form data
+
+    // Remove the 'is-invalid' class from form inputs before making the AJAX request
+      $('.form-control').removeClass('is-invalid');
+
+      // Make AJAX request to update StepBaseData records
+          fetch("/attach_documents_to_workflow_step", {
+            method: "POST",
+            body: formData
+          })
+          .then(response => response.json())
+          .then(data => {
+            // Display success or error messages based on server response
+            $('#successMessage').text(data.success_message).toggle(data.success_message !== '');
+            $('#failureMessage').text(data.error_message).toggle(data.error_message !== '');
+
+            // Close the modal after form submission
+            // $('#attachModal').modal('hide');
+          })
+          .catch(error => {
+            console.error("Error:", error); // Log any errors
+            // Display error message
+            $('#successMessage').hide();
+            $('#failureMessage').show();
+          });
+        });
+
+    // Handle delete button click event
+        $('#deleteButton').on('click', function() {
+            // Get the selected document IDs, workflow ID, and step ID
+            var documentIds = $('#documentIds').val();
+            var workflowId = $('#workflowSelect').val();
+            var stepId = $('#stepSelect').val();
+
+            // Create JSON data to send in the request body
+            var requestData = {
+                ids: documentIds.split(','),  // Convert documentIds to an array
+                workflow_id: workflowId,
+                step_id: stepId
+            };
+
+            // Make AJAX request to delete the documents link
+            $.ajax({
+                url: '/detach_documents_from_workflow_step',
+                type: 'POST',
+                contentType: 'application/json',  // Set Content-Type header to JSON
+                data: JSON.stringify(requestData),  // Convert requestData to JSON string
+                success: function(response) {
+                    // Hide both success and error messages
+                    $('#successMessage').hide();
+                    $('#failureMessage').hide();
+
+                    // Display success message if available
+                    if (response.success_message) {
+                        $('#successMessage').text(response.success_message).show();
+                    }
+                    // Display error message if available
+                    if (response.error_message) {
+                        $('#failureMessage').text(response.error_message).show();
+                    }
+                },
+                error: function(xhr, status, error) {
+                    // Log error to console
+                    console.error('Error:', error);
+                    // Display generic error message
+                    $('#successMessage').hide();
+                    $('#failureMessage').text('Failed to delete documents link.').show();
+                }
+            });
+        });
+
+    // Close the modal after cancel button click
+    $('#cancelButton').on('click', function() {
+      $('#attachModal').modal('hide');
+    });
+
+</script>
