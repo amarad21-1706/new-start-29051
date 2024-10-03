@@ -239,7 +239,7 @@ class CompanyUsers(db.Model):
     def readable_format(self):
         company_name = self.company.name if self.company else "N/A"
         user_name = self.user.username if self.user else "N/A"
-        return f"ID: {self.id}, Company: {company_name}, User: {user_name}"
+        return f"User {self.id}, Company: {company_name}, Name: {user_name}"
 
         #return self
     def __str__(self):
@@ -702,7 +702,7 @@ class BaseData(db.Model):
     document_workflow_history = db.relationship('DocumentWorkflowHistory', back_populates='base_data')
 
     def __repr__(self):
-        return f'<Data ID> {self.id}'
+        return f"{self.id}-{self.ft1}"
 
     def workflow(self):
         workflows = []
@@ -951,7 +951,7 @@ class StepQuestionnaire(db.Model):
     status = relationship("Status", foreign_keys=[status_id])
 
     def __repr__(self):
-        return f"Quesionnaire ID {self.id}: quest {self.questionnaire_id} in wf {self.workflow_id}, step {self.step_id}, status {self.status_id}"
+        return f"Quesionnaire {self.id}: quest {self.questionnaire_id} in wf {self.workflow_id}, step {self.step_id}, status {self.status_id}"
 
     @classmethod
     def create(cls, **kwargs):
@@ -1147,7 +1147,7 @@ class AuditLog(db.Model):
 
         '''
         # Return the string representation
-        return (f"Audit log: {self.id}, user {self.user_id}, company {self.company_id}, "
+        return (f"Audit: {self.id}, user {self.user_id}, company {self.company_id}, "
                 f"doc {self.base_data_id}, workflow {self.workflow_id}, step {self.step_id}, "
                 f"action {self.action}, details ...")
 
@@ -1240,7 +1240,7 @@ class Plan(db.Model):
         self.description = description
 
     def __repr__(self):
-        return f"<Plan(id={self.id}, name={self.name})>"
+        return f"<Plan {self.id} ({self.name})>"
 
 class Product(db.Model):
     __tablename__ = 'product'
@@ -1260,7 +1260,7 @@ class Product(db.Model):
         self.description = description
 
     def __repr__(self):
-        return f"<Product(id={self.id}, name={self.name})>"
+        return f"<Product {self.id} ({self.name})>"
 
 class PlanProducts(db.Model):
     __tablename__ = 'plan_products'
@@ -1689,7 +1689,7 @@ class Workflow(db.Model):
     def to_dict(self):
         return {'id': self.id, 'name': self.name}
     def __repr__(self):
-        return f'<Workflow ID: {self.id}, Name: {self.name}>'
+        return f'<Workflow {self.id} ({self.name})>'
 
 
 '''
