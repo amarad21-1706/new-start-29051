@@ -16,7 +16,8 @@ from wtforms import (DecimalField, StringField, BooleanField, FloatField, FileFi
 from flask_wtf import FlaskForm
 from wtforms import StringField, BooleanField, SelectField, FieldList, FormField
 from wtforms.validators import DataRequired
-
+from wtforms_components import DateTimeField
+from wtforms.widgets import DateTimeInput
 # Import ColorField
 from wtforms.fields import ColorField  # Correct import
 from wtforms import FieldList
@@ -279,7 +280,10 @@ class DocumentWorkflowInlineForm(InlineFormAdmin):
         super(DocumentWorkflowInlineForm, self).__init__(model, **kwargs)
         self.form_data = form_data  # Store the form data
 
-    form_columns = ['id', 'workflow', 'step', 'status', 'deadline_date', 'auto_move', 'open_action']
+    form_columns = [
+        'id', 'workflow', 'step', 'status', 'start_date',
+        'end_date', 'deadline_date', 'auto_move', 'open_action'
+    ]
 
     # Assuming the relationship fields are populated with query data
     form_extra_fields = {
@@ -302,6 +306,28 @@ class DocumentWorkflowInlineForm(InlineFormAdmin):
             get_label='name',
             allow_blank=False
         ),
+        '''
+        
+        'start_date': DateTimeField(
+            'Start Date',
+            format='%Y-%m-%d %H:%M:%S',
+            widget=DateTimeInput(),
+            description='The starting date of this workflow step',
+            validators=[DataRequired()]  # Make this field required
+        ),
+        'end_date': DateTimeField(
+            'End Date',
+            format='%Y-%m-%d %H:%M:%S',
+            widget=DateTimeInput(),
+            description='The ending date of this workflow step (optional)'
+        ),
+        'deadline_date': DateTimeField(
+            'Deadline Date',
+            format='%Y-%m-%d %H:%M:%S',
+            widget=DateTimeInput(),
+            description='The deadline for completing this step'
+        ),
+        '''
         'auto_move': SelectField(
             'Auto Move',
             choices=[(True, 'Yes'), (False, 'No')],
@@ -321,6 +347,8 @@ class DocumentWorkflowInlineForm(InlineFormAdmin):
         'workflow_id': 'Workflow the document is assigned to',
         'step_id': 'Step in the Workflow',
         'status_id': 'Initial Status',
+        'start_date': 'Start Date of the Step',
+        'end_date': 'End Date of the Step',
         'deadline_date': 'Deadline of the Step',
         'auto_move': 'Automatic transition to next Step'
     }

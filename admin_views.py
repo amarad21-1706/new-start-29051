@@ -2998,635 +2998,232 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
         )
         return query
 
-    def on_model_change_one(self, form, model, is_created):
-        """
-        Override method to add custom logic before saving the object.
-        This method handles form data assignment and ensures relationships are set correctly.
-        """
-        try:
-            # Use no_autoflush to prevent autoflush during validation
-            with self.session.no_autoflush:
-
-                # Validate no-action checkbox logic
-                self._validate_no_action(model, form)
-                # Ensure 'no_action' is unchecked if a document is uploaded
-                self._uncheck_if_document(model, form)
-
-                # Ensure number_of_doc is correctly assigned from the form
-                if form.number_of_doc.data:
-                    selected_document = form.number_of_doc.data  # Get the selected BaseData object
-                    model.number_of_doc = str(selected_document.number_of_doc)  # Ensure this is a string or scalar
-                    model.base_data_id = int(selected_document.id)  # Ensure this is an integer (the ID)
-
-                # Check for uniqueness of base_data_id, workflow_id, and step_id
-                if hasattr(model, 'document_workflows'):
-                    for dwf_item in model.document_workflows:
-                        # Query to get all matching entries
-                        results = self.session.query(DocumentWorkflow).filter_by(
-                            base_data_id=model.base_data_id,
-                            workflow_id=dwf_item.workflow_id,
-                            step_id=dwf_item.step_id
-                        ).all()
-
-                        # Handle case with multiple results
-                        if len(results) > 1:
-                            flash(
-                                'Warning: Multiple workflows found with the same Document, Workflow, and Step. '
-                                'Please verify your selection.',
-                                'error'
-                            )
-                            # return redirect(url_for('attach_documents_to_workflow'))
-                            # Stop further execution and raise an exception
-                            # raise Exception('Multiple workflows with the same combination detected. Change not saved.')
-                            return None
-
-                        # If exactly one result is found, set existing_entry
-                        existing_entry = results[0] if len(results) == 1 else None
-
-                        # If a duplicate is found, flash a message and return early to prevent saving
-                        if existing_entry and existing_entry.id != model.id:
-                            flash(
-                                'Warning: The combination of Document, Workflow, and Step must be unique. '
-                                'Please verify your selection.',
-                                'error'
-                            )
-                            return redirect(url_for('attach_documents_to_workflow'))
-
-                        # Ensure start_date is always set to avoid NotNullViolation
-                        if dwf_item.start_date is None:
-                            print('start date is none')
-                            dwf_item.start_date = datetime.utcnow()  # Set start date to current time
-                        else:
-                            print('start date is NOT none')
-
-                        # Ensure end_date is set to one month after start_date if not provided
-                        if dwf_item.end_date is None:
-                            dwf_item.end_date = dwf_item.start_date + timedelta(days=30)
-
-                # Custom logic if a new model is created
-                if is_created:
-                    model.created_on = datetime.utcnow()  # Set created_on timestamp
-                    model.user_id = current_user.id  # Set the user_id to the current user
-                    flash('New document upload created successfully.', 'success')
-                else:
-                    model.updated_on = datetime.utcnow()  # Update the updated_on timestamp
-                    flash('Document upload updated successfully.', 'success')
-
-                # Log the state of the model (useful for debugging)
-                print(f"Model after changes: {model}")
-
-        except Exception as ex:
-            # Capture the exception and log the error with a detailed message
-            error_message = f"Error during model change: {str(ex)}"
-            print(error_message)  # Log the error
-            flash(error_message, 'error')  # Show the error message in the UI
-            raise  # Reraise the exception to ensure it's properly handled by Flask
-
-    def on_model_change_two(self, form, model, is_created):
-        try:
-            # Use no_autoflush to prevent autoflush during validation
-            with self.session.no_autoflush:
-
-                # Validate no-action checkbox logic
-                self._validate_no_action(model, form)
-                # Ensure 'no_action' is unchecked if a document is uploaded
-                self._uncheck_if_document(model, form)
-
-                # Ensure number_of_doc is correctly assigned from the form
-                if form.number_of_doc.data:
-                    selected_document = form.number_of_doc.data  # Get the selected BaseData object
-                    model.number_of_doc = str(selected_document.number_of_doc)  # Ensure this is a string or scalar
-                    model.base_data_id = int(selected_document.id)  # Ensure this is an integer (the ID)
-
-                # Check for uniqueness of base_data_id, workflow_id, and step_id
-                if hasattr(model, 'document_workflows'):
-                    for dwf_item in model.document_workflows:
-                        # Query to get all matching entries
-                        results = self.session.query(DocumentWorkflow).filter_by(
-                            base_data_id=model.base_data_id,
-                            workflow_id=dwf_item.workflow_id,
-                            step_id=dwf_item.step_id
-                        ).all()
-
-                        # Handle case with multiple results
-                        if len(results) > 1:
-                            flash(
-                                'Warning: Multiple workflows found with the same Document, Workflow, and Step. '
-                                'Please verify your selection. The change was not saved.',
-                                'error'
-                            )
-                            # Return early to stop saving but allow the user to continue
-                            return None
-
-                        # If exactly one result is found, set existing_entry
-                        existing_entry = results[0] if len(results) == 1 else None
-
-                        # If a duplicate is found, flash a message and return early to prevent saving
-                        if existing_entry and existing_entry.id != model.id:
-                            flash(
-                                'Warning: The combination of Document, Workflow, and Step must be unique. '
-                                'Please verify your selection. The change was not saved.',
-                                'error'
-                            )
-                            return None
-
-                        # Ensure start_date is always set to avoid NotNullViolation
-                        if dwf_item.start_date is None:
-                            dwf_item.start_date = datetime.utcnow()  # Set start date to current time
-
-                        # Ensure end_date is set to one month after start_date if not provided
-                        if dwf_item.end_date is None:
-                            dwf_item.end_date = dwf_item.start_date + timedelta(days=30)
-
-                # Custom logic if a new model is created
-                if is_created:
-                    model.created_on = datetime.utcnow()  # Set created_on timestamp
-                    model.user_id = current_user.id  # Set the user_id to the current user
-                    flash('New document upload created successfully.', 'success')
-                else:
-                    model.updated_on = datetime.utcnow()  # Update the updated_on timestamp
-                    flash('Document upload updated successfully.', 'success')
-
-                # Log the state of the model (useful for debugging)
-                print(f"Model after changes: {model}")
-
-        except Exception as ex:
-            # Capture the exception and log the error with a detailed message
-            error_message = f"Error during model change: {str(ex)}"
-            print(error_message)  # Log the error
-            flash(error_message, 'error')  # Show the error message in the UI
-            raise  # Reraise the exception to ensure it's properly handled by Flask
-
-    def on_model_change_three(self, form, model, is_created):
-        """
-        Override to add custom logic before saving the object.
-        If validation fails (e.g., duplicate entry), we skip saving.
-        """
-        # Custom logic to detect duplicate workflows
-        if hasattr(model, 'document_workflows'):
-            for dwf_item in model.document_workflows:
-                results = self.session.query(DocumentWorkflow).filter_by(
-                    base_data_id=model.base_data_id,
-                    workflow_id=dwf_item.workflow_id,
-                    step_id=dwf_item.step_id
-                ).all()
-
-                # If duplicates are found, flash a message and stop the save process
-                if len(results) > 1:
-                    flash(
-                        'Warning: Multiple workflows found with the same Document, Workflow, and Step. '
-                        'Please verify your selection. The change was not saved.',
-                        'error'
-                    )
-                    # Returning early to prevent saving
-                    return None
-
-                existing_entry = results[0] if len(results) == 1 else None
-                if existing_entry and existing_entry.id != model.id:
-                    flash(
-                        'Warning: The combination of Document, Workflow, and Step must be unique. '
-                        'Please verify your selection. The change was not saved.',
-                        'error'
-                    )
-                    return None
-
-                # Ensure start_date is set
-                if dwf_item.start_date is None:
-                    dwf_item.start_date = datetime.utcnow()
-
-                # Ensure end_date is set to one month after start_date
-                if dwf_item.end_date is None:
-                    dwf_item.end_date = dwf_item.start_date + timedelta(days=30)
-
-        # If everything is okay, proceed with the default behavior
-        super(DocumentUploadViewExisting, self).on_model_change(form, model, is_created)
-
     def on_model_change(self, form, model, is_created):
         """
         Override method to add custom logic before saving the object.
-        If validation fails (e.g., duplicate entry or missing required fields), we skip saving.
+        """
+        try:
+            # Ensure number_of_doc is selected
+            if not form.number_of_doc.data:
+                flash('Error: Document number is required.', 'error')
+                form.number_of_doc.errors.append('Document number cannot be empty.')
+                return None
+
+            selected_document = form.number_of_doc.data
+
+            # Ensure document date is present
+            if not selected_document.date_of_doc:
+                flash('Error: Document date is required.', 'error')
+                form.number_of_doc.errors.append('Document date cannot be empty.')
+                return None
+
+            # Assign values to the model
+            model.number_of_doc = str(selected_document.number_of_doc)
+            model.base_data_id = int(selected_document.id)
+
+            # Debugging: Check the document workflows entries
+            if hasattr(form, 'document_workflows'):
+                for i, dwf_item in enumerate(form.document_workflows.entries):  # Use entries from the inline form
+
+                    # Access workflow and step objects
+                    workflow = dwf_item.workflow.data  # This accesses the selected workflow object
+                    step = dwf_item.step.data  # This accesses the selected step object
+
+                    # Print to debug what's happening
+                    print(f"Workflow Object: {workflow}")
+                    print(f"Step Object: {step}")
+
+                    # Get the workflow_id and step_id from the selected objects
+                    workflow_id = workflow.id if workflow else None
+                    step_id = step.id if step else None
+
+                    # Debugging: Check the IDs we are passing to the query
+                    print(f"Workflow ID: {workflow_id}, Step ID: {step_id}")
+
+                    if not workflow_id or not step_id:
+                        flash('Error: Workflow and Step are required.', 'error')
+                        return None
+
+                    # Query for potential duplicates
+                    results = self.session.query(DocumentWorkflow).filter_by(
+                        base_data_id=model.base_data_id,
+                        workflow_id=workflow_id,
+                        step_id=step_id
+                    ).all()
+
+                    if len(results) > 1:
+                        flash('Warning: Duplicate workflow/step detected.', 'error')
+                        return None  # Prevent further saving
+
+                    # Ensure start_date is set
+                    if dwf_item.start_date.data is None:
+                        dwf_item.start_date.data = datetime.utcnow()
+
+                    # Set end_date to one month after start_date if not set
+                    if dwf_item.end_date.data is None:
+                        dwf_item.end_date.data = dwf_item.start_date.data + timedelta(days=30)
+
+            # Proceed with the default behavior if all checks pass
+            return super(DocumentUploadViewExisting, self).on_model_change(form, model, is_created)
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error during save: {str(e)}', 'error')
+            print(f"Error during save: {e}")  # Log the error for debugging
+            return None
+
+    def handle_view_exception(self, exc):
+        """
+        Handle view exceptions and ensure rollback of the session.
+        """
+        # Rollback the session in case of IntegrityError or general errors
+        if isinstance(exc, IntegrityError) or isinstance(exc, ValidationError):
+            db.session.rollback()
+            flash("The transaction was rolled back due to an error.", 'error')
+            return True  # Suppress Flask-Admin's default behavior for this error
+        return super(DocumentUploadViewExisting, self).handle_view_exception(exc)
+
+    def create_model(self, form):
+        """
+        Override create_model to handle errors and suppress success message on validation failure.
         """
         try:
             # Ensure number_of_doc and date_of_doc are present
             if not form.number_of_doc.data:
                 flash('Error: Document number is required.', 'error')
                 form.number_of_doc.errors.append('Document number cannot be empty.')
-                return None  # Prevent saving
+                raise ValidationError('Document number is missing')
 
             selected_document = form.number_of_doc.data
 
             if not selected_document.date_of_doc:
                 flash('Error: Document date is required.', 'error')
                 form.number_of_doc.errors.append('Document date cannot be empty.')
-                return None  # Prevent saving
+                raise ValidationError('Document date is missing')
 
-            # Assign values to the model
+            # Proceed with creating the model
+            model = self.model()
             model.number_of_doc = str(selected_document.number_of_doc)
             model.base_data_id = int(selected_document.id)
 
-            # Check for uniqueness of base_data_id, workflow_id, and step_id
-            if hasattr(model, 'document_workflows'):
-                for dwf_item in model.document_workflows:
-                    results = self.session.query(DocumentWorkflow).filter_by(
-                        base_data_id=model.id,
-                        workflow_id=dwf_item.workflow_id,
-                        step_id=dwf_item.step_id
-                    ).all()
+            # Handle document workflows validation
+            if hasattr(form, 'document_workflows'):
+                for dwf_item in form.document_workflows.entries:
+                    # Access workflow and step objects
+                    workflow = dwf_item.workflow.data
+                    step = dwf_item.step.data
 
-                    # If duplicates are found, flash a message and prevent saving
-                    if len(results) > 1:
-                        flash(
-                            'Warning: Multiple workflows found with the same Document, Workflow, and Step. '
-                            'Please verify your selection. The change was not saved.',
-                            'error'
-                        )
-                        form.number_of_doc.errors.append('Multiple workflows found. The record was not saved.')
-                        return None  # Prevent further saving actions
+                    # Get workflow_id and step_id from the selected objects
+                    workflow_id = workflow.id if workflow else None
+                    step_id = step.id if step else None
 
-                    # Handle unique entry validation
-                    existing_entry = results[0] if len(results) == 1 else None
-                    if existing_entry and existing_entry.id != model.id:
-                        flash(
-                            'Warning: The combination of Document, Workflow, and Step must be unique. '
-                            'Please verify your selection.',
-                            'error'
-                        )
-                        form.number_of_doc.errors.append('Duplicate workflow found. The record was not saved.')
-                        return None  # Prevent further saving actions
+                    if not workflow_id or not step_id:
+                        flash('Error: Workflow and Step are required.', 'error')
+                        raise ValidationError('Workflow and Step are required')
 
-                    # Ensure start_date is set
-                    if dwf_item.start_date is None:
-                        dwf_item.start_date = datetime.utcnow()
-
-                    # Ensure end_date is set to one month after start_date
-                    if dwf_item.end_date is None:
-                        dwf_item.end_date = dwf_item.start_date + timedelta(days=30)
-
-            # If everything is okay, proceed with the default behavior
-            super(DocumentUploadViewExisting, self).on_model_change(form, model, is_created)
-
-        except IntegrityError as e:
-            # Rollback the session to avoid any issues
-            db.session.rollback()
-
-            # Check if it's a duplicate key error (look for your constraint name)
-            if 'uq_base_data_workflow_step' in str(e.orig):
-                flash('Error: The combination of Document, Workflow, and Step must be unique.', 'error')
-                # raise ValidationError('The combination of Base Data, Workflow, and Step must be unique.')
-            else:
-                raise  # Re-raise the error if it's not related to the uniqueness constraint
-
-        except ProgrammingError as ex:
-            # Capture the exception related to SQL Programming errors
-            error_message = f"ProgrammingError: {str(ex)}"
-            print(error_message)  # Log the error
-            flash(error_message, 'error')  # Show the error message in the UI
-            return None
-
-        except Exception as ex:
-            # Capture any other general exceptions
-            error_message = f"Error during model change: {str(ex)}"
-            print(error_message)  # Log the error
-            flash(error_message, 'error')  # Show the error message in the UI
-            return None
-
-    def on_model_change_five(self, form, model, is_created):
-        """
-        Override method to add custom logic before saving the object.
-        Ensure that required fields are valid and no duplicates exist.
-        """
-        try:
-            # Ensure number_of_doc and date_of_doc are not None
-            if not form.number_of_doc.data:
-                flash('Error: Document number is required.', 'error')
-                form.number_of_doc.errors.append('Document number cannot be empty.')
-                return None  # Prevent saving due to missing required field
-
-            selected_document = form.number_of_doc.data
-
-            if not selected_document.date_of_doc:
-                flash('Error: Document date is required.', 'error')
-                form.number_of_doc.errors.append('Document date cannot be empty.')
-                return None  # Prevent saving due to missing required field
-
-            # Ensure number_of_doc is correctly assigned
-            model.number_of_doc = str(selected_document.number_of_doc)
-            model.base_data_id = int(selected_document.id)
-
-            # Check for uniqueness of base_data_id, workflow_id, and step_id
-            if hasattr(model, 'document_workflows'):
-                for dwf_item in model.document_workflows:
-                    # Validate if the workflow_id and step_id are not None
-                    if dwf_item.workflow_id is None or dwf_item.step_id is None:
-                        flash('Error: Workflow and Step IDs are required.', 'error')
-                        return None  # Prevent saving due to missing required field
-
-                    # Query to get all matching entries
-                    results = self.session.query(DocumentWorkflow).filter_by(
-                        base_data_id=model.id,
-                        workflow_id=dwf_item.workflow_id,
-                        step_id=dwf_item.step_id
-                    ).all()
-
-                    # If duplicates are found, flash a message and prevent saving
-                    if len(results) > 1:
-                        flash(
-                            'Warning: Multiple workflows found with the same Document, Workflow, and Step. '
-                            'Please verify your selection. The change was not saved.',
-                            'error'
-                        )
-                        form.number_of_doc.errors.append('Multiple workflows found. The record was not saved.')
-                        return None  # Prevent further saving actions
-
-                    # Handle unique entry validation
-                    existing_entry = results[0] if len(results) == 1 else None
-                    if existing_entry and existing_entry.id != model.id:
-                        flash(
-                            'Warning: The combination of Document, Workflow, and Step must be unique. '
-                            'Please verify your selection. The change was not saved.',
-                            'error'
-                        )
-                        form.number_of_doc.errors.append('Duplicate workflow found. The record was not saved.')
-                        return None  # Prevent further saving actions
-
-                    # Ensure start_date is set
-                    if dwf_item.start_date is None:
-                        dwf_item.start_date = datetime.utcnow()
-
-                    # Ensure end_date is set to one month after start_date
-                    if dwf_item.end_date is None:
-                        dwf_item.end_date = dwf_item.start_date + timedelta(days=30)
-
-            # If everything is okay, proceed with the default behavior
-            super(DocumentUploadViewExisting, self).on_model_change(form, model, is_created)
-
-        except ProgrammingError as ex:
-            # Capture SQL-related errors
-            error_message = f"SQL ProgrammingError: {str(ex)}"
-            print(error_message)  # Log the error for debugging
-            flash(error_message, 'error')  # Show the error message in the UI
-            return None
-        except Exception as ex:
-            # Capture any other exceptions
-            error_message = f"Error during model change: {str(ex)}"
-            print(error_message)
-            flash(error_message, 'error')
-            return None
-
-    def validate_model(self, form, model):
-        """
-        This method is responsible for checking if the form has errors before saving.
-        If errors are present, Flask-Admin will skip the save process.
-        """
-        if form.errors:
-            # If there are any errors in the form, do not save the record
-            flash('There were validation errors. The record was not saved.', 'error')
-            return False  # Returning False will stop the save process
-
-        # Proceed with normal validation if no errors are present
-        return super(DocumentUploadViewExisting, self).validate_model(form, model)
-
-    def on_model_change_six(self, form, model, is_created):
-        """
-        Override method to add custom logic before saving the object.
-        Ensure that required fields are valid and no duplicates exist.
-        """
-        try:
-            # Ensure number_of_doc and date_of_doc are not None
-            if not form.number_of_doc.data:
-                flash('Error: Document number is required.', 'error')
-                form.number_of_doc.errors.append('Document number cannot be empty.')
-                return None  # Prevent saving due to missing required field
-
-            # `form.number_of_doc.data` is expected to be a `BaseData` object
-            selected_document = form.number_of_doc.data
-            # Add print to debug the actual data being returned from the form
-            print(f"Form number_of_doc data: {selected_document}")
-
-            # Ensure date_of_doc is present
-            if not selected_document.date_of_doc:
-                flash('Error: Document date is required.', 'error')
-                form.number_of_doc.errors.append('Document date cannot be empty.')
-                return None  # Prevent saving due to missing required field
-
-            # Ensure `number_of_doc` and `base_data_id` are correctly assigned
-            model.number_of_doc = str(selected_document.number_of_doc)  # Extract number_of_doc from the BaseData object
-            model.base_data_id = int(selected_document.id)  # Extract `id` from the BaseData object
-
-            print(f"Extracted Base Data ID: {model.base_data_id}, Number of Doc: {model.number_of_doc}")
-
-            # Check for uniqueness of base_data_id, workflow_id, and step_id
-            if hasattr(model, 'document_workflows'):
-                for dwf_item in model.document_workflows:
-                    # Validate if the workflow_id and step_id are not None
-                    if dwf_item.workflow_id is None or dwf_item.step_id is None:
-                        flash('Error: Workflow and Step IDs are required.', 'error')
-                        return None  # Prevent saving due to missing required field
-
-                    # Ensure you're passing scalar values, not objects
-                    print(f"Checking workflow: workflow_id={dwf_item.workflow_id}, step_id={dwf_item.step_id}")
-
-                    # Query to get all matching entries
-                    results = self.session.query(DocumentWorkflow).filter_by(
-                        base_data_id=model.base_data_id,  # Ensure base_data_id is a scalar (integer)
-                        workflow_id=dwf_item.workflow_id,  # Ensure this is an integer or scalar value
-                        step_id=dwf_item.step_id  # Ensure this is an integer or scalar value
-                    ).all()
-
-                    print(f"Query results: {results}")  # Debug to check what the query returns
-
-                    # If duplicates are found, flash a message and prevent saving
-                    if len(results) > 1:
-                        flash(
-                            'Warning: Multiple workflows found with the same Document, Workflow, and Step. '
-                            'Please verify your selection. The change was not saved.',
-                            'error'
-                        )
-                        # Add an error to the form to stop the commit process
-                        form.number_of_doc.errors.append('Duplicate workflow found. The record was not saved.')
-                        return None  # Prevent further saving actions
-
-                    # Ensure start_date is set
-                    if dwf_item.start_date is None:
-                        dwf_item.start_date = datetime.utcnow()
-
-                    # Ensure end_date is set to one month after start_date
-                    if dwf_item.end_date is None:
-                        dwf_item.end_date = dwf_item.start_date + timedelta(days=30)
-
-            # If everything is okay, proceed with normal behavior
-            super(DocumentUploadViewExisting, self).on_model_change(form, model, is_created)
-
-        except ProgrammingError as ex:
-            # Log SQL-related errors in detail
-            error_message = f"SQL ProgrammingError: {str(ex)}"
-            print(error_message)  # Log the error for debugging
-            flash("An error occurred while saving the record. Please review your input and try again.", 'error')
-            return None
-        except Exception as ex:
-            # Capture and log any other exceptions
-            error_message = f"Error during model change: {str(ex)}"
-            print(error_message)
-            flash("An unexpected error occurred. Please try again.", 'error')
-            return None
-
-    def on_model_change_seven(self, form, model, is_created):
-        """
-        Override method to add custom logic before saving the object.
-        Ensure that required fields are valid and no duplicates exist.
-        """
-        try:
-            # Ensure number_of_doc is selected in the form
-            if not form.number_of_doc.data:
-                flash('Error: Document number is required.', 'error')
-                form.number_of_doc.errors.append('Document number cannot be empty.')
-                return None  # Prevent saving due to missing required field
-
-            # The form is returning an ID, so we need to fetch the actual BaseData object from the database
-            selected_document_id = form.number_of_doc.data
-
-            # Replace `.get()` with `.filter_by().one_or_none()` to avoid recursion or deprecated usage
-            selected_document = db.session.query(BaseData).filter_by(id=selected_document_id).one_or_none()
-
-            if selected_document is None:
-                flash('Error: Selected document does not exist.', 'error')
-                return None  # Prevent saving if no document is found
-
-            print(f"Selected document object: {selected_document}")
-
-            # Ensure date_of_doc is present
-            if not selected_document.date_of_doc:
-                flash('Error: Document date is required.', 'error')
-                form.number_of_doc.errors.append('Document date cannot be empty.')
-                return None  # Prevent saving due to missing required field
-
-            # Ensure `number_of_doc` and `base_data_id` are correctly assigned
-            model.number_of_doc = str(selected_document.number_of_doc)  # Extract number_of_doc from the BaseData object
-            model.base_data_id = int(selected_document.id)  # Extract `id` from the BaseData object
-
-            print(f"Extracted Base Data ID: {model.base_data_id}, Number of Doc: {model.number_of_doc}")
-
-            # Check for uniqueness of base_data_id, workflow_id, and step_id
-            if hasattr(model, 'document_workflows'):
-                for dwf_item in model.document_workflows:
-                    # Validate if the workflow_id and step_id are not None
-                    if dwf_item.workflow_id is None or dwf_item.step_id is None:
-                        flash('Error: Workflow and Step IDs are required.', 'error')
-                        return None  # Prevent saving due to missing required field
-
-                    # Query to get all matching entries
+                    # Check for duplicate workflows
                     results = self.session.query(DocumentWorkflow).filter_by(
                         base_data_id=model.base_data_id,
-                        workflow_id=dwf_item.workflow_id,
-                        step_id=dwf_item.step_id
+                        workflow_id=workflow_id,
+                        step_id=step_id
                     ).all()
 
-                    # If duplicates are found, flash a message and prevent saving
-                    if len(results) > 1:
-                        flash(
-                            'Warning: Multiple workflows found with the same Document, Workflow, and Step. '
-                            'Please verify your selection. The change was not saved.',
-                            'error'
-                        )
-                        # Add an error to the form to stop the commit process
-                        form.number_of_doc.errors.append('Duplicate workflow found. The record was not saved.')
-                        return None  # Prevent further saving actions
+                    if len(results) > 0:
+                        flash('Warning: Duplicate workflow/step detected.', 'error')
+                        raise ValidationError('Duplicate workflow/step found')
 
-                    # Ensure start_date is set
-                    if dwf_item.start_date is None:
-                        dwf_item.start_date = datetime.utcnow()
+                    # Ensure start_date and end_date are set
+                    if dwf_item.start_date.data is None:
+                        dwf_item.start_date.data = datetime.utcnow()
 
-                    # Ensure end_date is set to one month after start_date
-                    if dwf_item.end_date is None:
-                        dwf_item.end_date = dwf_item.start_date + timedelta(days=30)
+                    if dwf_item.end_date.data is None:
+                        dwf_item.end_date.data = dwf_item.start_date.data + timedelta(days=30)
 
-            # If everything is okay, proceed with normal behavior
-            super(DocumentUploadViewExisting, self).on_model_change(form, model, is_created)
+            return super(DocumentUploadViewExisting, self).create_model(form)
 
-        except ProgrammingError as ex:
-            # Capture SQL-related errors
-            error_message = f"SQL ProgrammingError: {str(ex)}"
-            print(error_message)  # Log the error for debugging
-            flash("An error occurred while saving the record. Please review your input and try again.", 'error')
-            return None
-        except Exception as ex:
-            # Capture and log any other exceptions
-            error_message = f"Error during model change: {str(ex)}"
-            print(error_message)
-            flash("An unexpected error occurred. Please try again.", 'error')
-            return None
+        except ValidationError as e:
+            flash(str(e), 'error')
+            return False
 
-    def on_model_change_val_err(self, form, model, is_created):
+        except IntegrityError as e:
+            db.session.rollback()
+            if 'uq_base_data_workflow_step' in str(e.orig):
+                flash('Error: The combination of Document, Workflow, and Step must be unique.', 'error')
+            else:
+                flash('Error: A database error occurred.', 'error')
+            return False
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f'An unexpected error occurred: {str(e)}', 'error')
+            return False
+
+    def update_model(self, form, model):
         """
-        Override method to add custom logic before saving the object.
-        This method handles form data assignment and ensures relationships are set correctly.
+        Override update_model to handle errors and suppress success message on validation failure.
         """
         try:
-            # Validate no-action checkbox logic
-            print('one')
-            self._validate_no_action(model, form)
-            # Ensure 'no_action' is unchecked if a document is uploaded
-            self._uncheck_if_document(model, form)
+            if not form.number_of_doc.data:
+                flash('Error: Document number is required.', 'error')
+                form.number_of_doc.errors.append('Document number cannot be empty.')
+                raise ValidationError('Document number is missing')
 
-            print('two')
-            # Ensure number_of_doc is correctly assigned from the form
-            if form.number_of_doc.data:
-                selected_document = form.number_of_doc.data  # Get the selected BaseData object
-                model.number_of_doc = str(selected_document.number_of_doc)  # Ensure this is a string or scalar
-                model.base_data_id = int(selected_document.id)  # Ensure this is an integer (the ID)
+            selected_document = form.number_of_doc.data
 
-            print('data', selected_document, model.number_of_doc, model.base_data_id)
+            if not selected_document.date_of_doc:
+                flash('Error: Document date is required.', 'error')
+                form.number_of_doc.errors.append('Document date cannot be empty.')
+                raise ValidationError('Document date is missing')
 
-            print('three')
-            # Add debug prints to check what you're assigning to the model
-            print(f"Assigned number_of_doc: {model.number_of_doc}")
-            print(f"Assigned base_data_id: {model.base_data_id}")
+            model.number_of_doc = str(selected_document.number_of_doc)
+            model.base_data_id = int(selected_document.id)
 
-            # Check if there is already a record with the same base_data_id, workflow_id, and step_id in DocumentWorkflow
-            # Ensure we're working with the document_workflows model
-            if hasattr(model, 'document_workflows'):
-                for workflow in model.document_workflows:
-                    # Perform uniqueness check for workflow_id, step_id, and base_data_id combination
-                    existing_entry = self.session.query(DocumentWorkflow).filter_by(
-                        base_data_id=model.base_data_id,  # Corrected field name
-                        workflow_id=workflow.workflow_id,  # Check workflow_id inside document_workflows
-                        step_id=workflow.step_id  # Check step_id inside document_workflows
-                    ).one_or_none()
+            if hasattr(form, 'document_workflows'):
+                for dwf_item in form.document_workflows.entries:
+                    workflow = dwf_item.workflow.data
+                    step = dwf_item.step.data
 
-                    # If a record exists and it is not the current one, raise a validation error or return early
-                    if existing_entry and existing_entry.id != model.id:
-                        # Flash a message to the user about the uniqueness constraint
-                        flash(
-                            'The combination of Document, Workflow, and Step must be unique. Please choose another combination.',
-                            'error')
-                        return
-                        # raise ValueError('The combination of base_data_id, workflow_id, and step_id must be unique.')
+                    workflow_id = workflow.id if workflow else None
+                    step_id = step.id if step else None
 
-                    # Handle workflow dates
-                    if workflow.start_date is None:
-                        workflow.start_date = datetime.utcnow()  # Set start date to current time
-                    if workflow.end_date is None:
-                        workflow.end_date = workflow.start_date + timedelta(days=90)  # 3 months from start_date
+                    if not workflow_id or not step_id:
+                        flash('Error: Workflow and Step are required.', 'error')
+                        raise ValidationError('Workflow and Step are required')
 
-            print('four')
-            # Custom logic if a new model is created
-            if is_created:
-                model.created_on = datetime.utcnow()  # Set created_on timestamp
-                model.user_id = current_user.id  # Set the user_id to the current user
-                flash('New document upload created successfully.', 'success')
+                    results = self.session.query(DocumentWorkflow).filter_by(
+                        base_data_id=model.base_data_id,
+                        workflow_id=workflow_id,
+                        step_id=step_id
+                    ).all()
+
+                    if len(results) > 0 and results[0].id != model.id:
+                        flash('Warning: Duplicate workflow/step detected.', 'error')
+                        raise ValidationError('Duplicate workflow/step found')
+
+                    if dwf_item.start_date.data is None:
+                        dwf_item.start_date.data = datetime.utcnow()
+
+                    if dwf_item.end_date.data is None:
+                        dwf_item.end_date.data = dwf_item.start_date.data + timedelta(days=30)
+
+            return super(DocumentUploadViewExisting, self).update_model(form, model)
+
+        except ValidationError as e:
+            flash(str(e), 'error')
+            return False
+
+        except IntegrityError as e:
+            db.session.rollback()
+            if 'uq_base_data_workflow_step' in str(e.orig):
+                flash('Error: The combination of Document, Workflow, and Step must be unique.', 'error')
             else:
-                model.updated_on = datetime.utcnow()  # Update the updated_on timestamp
-                flash('Document upload updated successfully.', 'success')
+                flash('Error: A database error occurred.', 'error')
+            return False
 
-            # Log the state of the model (useful for debugging)
-            print(f"Model after changes: {model}")
-
-        except Exception as ex:
-            # Capture the exception and log the error with detailed message
-            error_message = f"Error during model change: {str(ex)}"
-            print(error_message)  # Log the error
-            flash(error_message, 'error')  # Show the error message in the UI
-            raise  # Reraise the exception to ensure it's properly handled by Flask
+        except Exception as e:
+            db.session.rollback()
+            flash(f'An unexpected error occurred: {str(e)}', 'error')
+            return False
 
     def _validate_no_action(self, model, form):
         """
@@ -3643,68 +3240,6 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
         # Custom logic to uncheck 'no_action' if a document is uploaded
         if form.file_path.data:
             form.no_action.data = False
-
-    '''
-    def create_model(self, form):
-        try:
-            # Use session.no_autoflush directly, no import required
-            with self.session.no_autoflush:
-                # Create a new instance of the model
-                model = self.model()
-
-                # Populate the model with form data
-                form.populate_obj(model)
-
-                # Extract number_of_doc from the selected BaseData object
-                if form.number_of_doc.data:
-                    model.number_of_doc = form.number_of_doc.data.number_of_doc  # Extract the actual value
-
-                for workflow in model.document_workflows:
-                    if workflow.start_date is None:
-                        workflow.start_date = datetime.utcnow()  # Set to the current date and time
-                    # Set end_date to three months from start_date if it is None
-                    if workflow.end_date is None:
-                        workflow.end_date = workflow.start_date + timedelta(days=90)  # 3 months from start_date
-
-                # Ensure area_id and subarea_id are set correctly
-                model.area_id = self.area_id
-                model.subarea_id = self.subarea_id
-                model.created_on = datetime.utcnow()
-                model.updated_on = datetime.utcnow()
-                model.user_id = current_user.id
-                model.company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-                model.record_type = 'document'
-                model.data_type = 'data_type'
-
-                # Convert `no_action` field to boolean
-                model.no_action = bool(form.no_action.data)
-
-                # If the model has `auto_move` or `open_action`, ensure they're booleans
-                if hasattr(model, 'auto_move'):
-                    model.auto_move = bool(form.auto_move.data)
-
-                if hasattr(model, 'open_action'):
-                    model.open_action = bool(form.open_action.data)
-
-                # Add the model to the session (but do not flush yet)
-                self.session.add(model)
-
-            # Commit the changes
-            self.session.commit()
-
-            # Custom behavior after successful creation
-            flash(f'Document uploaded successfully.', 'success')
-
-            return model
-        except Exception as ex:
-            # Capture detailed exception and log it
-            print(f"Error occurred: {ex}")
-            traceback.print_exc()  # Log full traceback
-            flash(f'Failed to create document record: {str(ex)}', 'error')
-            self.session.rollback()
-            return False
-    '''
-
 
 class AttiDataView(BaseDataView):
     create_template = 'admin/area_1/create_base_data_2.html'
