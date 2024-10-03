@@ -357,6 +357,7 @@ wsproto==1.2.0
 WTForms==3.1.1
 WTForms-Ext==0.5
 WTForms-SQLAlchemy==0.4.1
+wtforms-components
 wtforms_extras==1.1.4
 yarg==0.1.9
 yarl==1.9.2
