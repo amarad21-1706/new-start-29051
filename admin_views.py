@@ -3007,7 +3007,7 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
             if not form.number_of_doc.data:
                 flash('Error: Document number is required.', 'error')
                 form.number_of_doc.errors.append('Document number cannot be empty.')
-                return None
+                return False
 
             selected_document = form.number_of_doc.data
 
@@ -3015,11 +3015,21 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
             if not selected_document.date_of_doc:
                 flash('Error: Document date is required.', 'error')
                 form.number_of_doc.errors.append('Document date cannot be empty.')
-                return None
+                return False
 
             # Assign values to the model
             model.number_of_doc = str(selected_document.number_of_doc)
             model.base_data_id = int(selected_document.id)
+
+            # Handle deletions first by manually checking if each entry is marked for deletion
+            if hasattr(form, 'document_workflows'):
+                for dwf_item in form.document_workflows.entries:
+                    if hasattr(dwf_item, 'delete') and dwf_item.delete.data:  # Check for deletion flag
+                        if dwf_item.data.id:  # If it has an ID, delete it from the database
+                            dwf_to_delete = self.session.query(DocumentWorkflow).get(dwf_item.data.id)
+                            if dwf_to_delete:
+                                self.session.delete(dwf_to_delete)
+                        continue  # Skip to the next item
 
             # Debugging: Check the document workflows entries
             if hasattr(form, 'document_workflows'):
@@ -3042,7 +3052,7 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
 
                     if not workflow_id or not step_id:
                         flash('Error: Workflow and Step are required.', 'error')
-                        return None
+                        return False
 
                     # Query for potential duplicates
                     results = self.session.query(DocumentWorkflow).filter_by(
@@ -3052,8 +3062,8 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
                     ).all()
 
                     if len(results) > 1:
-                        flash('Warning: Duplicate workflow/step detected.', 'error')
-                        return None  # Prevent further saving
+                        flash(f'Warning: Duplicate workflow/step detected ({len(results)}).', 'error')
+                        return False  # Prevent further saving
 
                     # Ensure start_date is set
                     if dwf_item.start_date.data is None:
@@ -3070,7 +3080,7 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
             db.session.rollback()
             flash(f'Error during save: {str(e)}', 'error')
             print(f"Error during save: {e}")  # Log the error for debugging
-            return None
+            return False
 
     def handle_view_exception(self, exc):
         """
@@ -3080,7 +3090,7 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
         if isinstance(exc, IntegrityError) or isinstance(exc, ValidationError):
             db.session.rollback()
             flash("The transaction was rolled back due to an error.", 'error')
-            return True  # Suppress Flask-Admin's default behavior for this error
+            return False  # Suppress Flask-Admin's default behavior for this error
         return super(DocumentUploadViewExisting, self).handle_view_exception(exc)
 
     def create_model(self, form):
@@ -3106,6 +3116,16 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
             model.number_of_doc = str(selected_document.number_of_doc)
             model.base_data_id = int(selected_document.id)
 
+            # Handle deletions first by manually checking if each entry is marked for deletion
+            if hasattr(form, 'document_workflows'):
+                for dwf_item in form.document_workflows.entries:
+                    if hasattr(dwf_item, 'delete') and dwf_item.delete.data:  # Check for deletion flag
+                        if dwf_item.data.id:  # If it has an ID, delete it from the database
+                            dwf_to_delete = self.session.query(DocumentWorkflow).get(dwf_item.data.id)
+                            if dwf_to_delete:
+                                self.session.delete(dwf_to_delete)
+                        continue  # Skip to the next item
+
             # Handle document workflows validation
             if hasattr(form, 'document_workflows'):
                 for dwf_item in form.document_workflows.entries:
@@ -3128,8 +3148,8 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
                         step_id=step_id
                     ).all()
 
-                    if len(results) > 0:
-                        flash('Warning: Duplicate workflow/step detected.', 'error')
+                    if len(results) > 1:
+                        flash(f'Warning: Duplicate workflow/step detected ({len(results)}).', 'error')
                         raise ValidationError('Duplicate workflow/step found')
 
                     # Ensure start_date and end_date are set
@@ -3160,6 +3180,90 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
 
     def update_model(self, form, model):
         """
+        Override update_model to handle inline form deletions and prevent saving when duplicates are detected.
+        """
+        try:
+            with self.session.no_autoflush:
+                # Ensure number_of_doc and date_of_doc are present
+                if not form.number_of_doc.data:
+                    flash('Error: Document number is required.', 'error')
+                    form.number_of_doc.errors.append('Document number cannot be empty.')
+                    raise ValidationError('Document number is missing')
+
+                selected_document = form.number_of_doc.data
+
+                if not selected_document.date_of_doc:
+                    flash('Error: Document date is required.', 'error')
+                    form.number_of_doc.errors.append('Document date cannot be empty.')
+                    raise ValidationError('Document date is missing')
+
+                # **Extract number_of_doc or id instead of assigning the whole object**
+                model.number_of_doc = str(selected_document.number_of_doc)  # Assign the number_of_doc value
+                model.base_data_id = int(selected_document.id)  # Assign the document's ID
+
+                # Check for duplicate workflows/steps
+                if hasattr(form, 'document_workflows'):
+                    for dwf_item in form.document_workflows.entries:
+                        if hasattr(dwf_item, 'delete') and dwf_item.delete.data:
+                            # If the form entry is marked for deletion, delete it from the database
+                            if dwf_item.data.id:
+                                dwf_to_delete = self.session.query(DocumentWorkflow).get(dwf_item.data.id)
+                                if dwf_to_delete:
+                                    self.session.delete(dwf_to_delete)
+                            form.document_workflows.entries.remove(dwf_item)
+
+                        else:
+                            # Check for duplicates
+                            workflow = dwf_item.workflow.data
+                            step = dwf_item.step.data
+                            workflow_id = workflow.id if workflow else None
+                            step_id = step.id if step else None
+
+                            if not workflow_id or not step_id:
+                                flash('Error: Workflow and Step are required.', 'error')
+                                return False
+
+                            # Query for potential duplicates
+                            results = self.session.query(DocumentWorkflow).filter_by(
+                                base_data_id=model.base_data_id,
+                                workflow_id=workflow_id,
+                                step_id=step_id
+                            ).all()
+
+                            if len(results) > 1:
+                                flash(f'Warning: Duplicate workflow/step detected ({len(results)}).', 'error')
+                                return False  # Prevent saving the record if duplicates are found
+
+                            # Ensure start_date is set
+                            if dwf_item.start_date.data is None:
+                                dwf_item.start_date.data = datetime.utcnow()
+
+                            # Set end_date to one month after start_date if not set
+                            if dwf_item.end_date.data is None:
+                                dwf_item.end_date.data = dwf_item.start_date.data + timedelta(days=30)
+
+                # Commit the session to delete the marked entries
+                self.session.commit()
+
+                # Proceed with updating the remaining model only if no duplicates are found
+                return super(DocumentUploadViewExisting, self).update_model(form, model)
+
+        except ValidationError as e:
+            flash(str(e), 'error')
+            return False
+
+        except IntegrityError as e:
+            db.session.rollback()
+            flash('Error: A database error occurred.', 'error')
+            return False
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f'An unexpected error occurred: {str(e)}', 'error')
+            return False
+
+    def update_model_two(self, form, model):
+        """
         Override update_model to handle errors and suppress success message on validation failure.
         """
         try:
@@ -3177,6 +3281,16 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
 
             model.number_of_doc = str(selected_document.number_of_doc)
             model.base_data_id = int(selected_document.id)
+
+            # Handle deletions first by manually checking if each entry is marked for deletion
+            if hasattr(form, 'document_workflows'):
+                for dwf_item in form.document_workflows.entries:
+                    if hasattr(dwf_item, 'delete') and dwf_item.delete.data:  # Check for deletion flag
+                        if dwf_item.data.id:  # If it has an ID, delete it from the database
+                            dwf_to_delete = self.session.query(DocumentWorkflow).get(dwf_item.data.id)
+                            if dwf_to_delete:
+                                self.session.delete(dwf_to_delete)
+                        continue  # Skip to the next item
 
             if hasattr(form, 'document_workflows'):
                 for dwf_item in form.document_workflows.entries:
@@ -3196,8 +3310,8 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
                         step_id=step_id
                     ).all()
 
-                    if len(results) > 0 and results[0].id != model.id:
-                        flash('Warning: Duplicate workflow/step detected.', 'error')
+                    if len(results) > 1 and results[0].id != model.id:
+                        flash(f'Warning: Duplicate workflow/step detected ({len(results)}).', 'error')
                         raise ValidationError('Duplicate workflow/step found')
 
                     if dwf_item.start_date.data is None:

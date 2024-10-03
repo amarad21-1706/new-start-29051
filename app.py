@@ -72,7 +72,7 @@ from forms.forms import (AddPlanToCartForm, SignupForm, UpdateAccountForm, Ticke
          QuestionnaireCompanyForm, CustomBaseDataForm,
         QuestionnaireQuestionForm, WorkflowStepForm, WorkflowBaseDataForm,
          BaseDataWorkflowStepForm,
-        UserRoleForm, CompanyUserForm, UserDocumentsForm, DocumentWorkflowInlineForm,
+        UserRoleForm, CompanyUserForm, UserDocumentsForm,
         create_dynamic_form, CustomFileLoaderForm,
         CustomSubjectAjaxLoader, BaseSurveyForm, AuditLogForm, PlanProductsForm,
                          UpdateCartItemForm, AddProductToCartForm, SubscriptionForm,
@@ -486,11 +486,11 @@ hostname = result.hostname
 port = result.port if result.port else 5432
 database = result.path[1:]  # Removes the leading "/"
 
-print(f"Username: {username[:5]}")
+print(f"Username: {username[:3]}...")
 print(f"Password: {password[:5]}")
-print(f"Host: {hostname[:5]}")
-print(f"Port: {port}")
-print(f"Database: {database}")
+print(f"Host: {hostname[:4]}...")
+print(f"Port: ...{port}")
+print(f"Database: {database[:3]}...")
 
 # Configure error logging to a file
 
@@ -1900,11 +1900,6 @@ def document_workflow(company_id, base_data_id, workflow_id):
 
     # ... (rest of the route logic)
     return render_template('workflow/document_workflow.html', document=document, figure=fig)
-
-
-# TODO unused?
-class CustomStepQuestionnaireForm(Form):
-    inline_form = None
 
 
 @app.route('/file-upload', methods=['POST'])
