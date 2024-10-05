@@ -4950,7 +4950,6 @@ def subscriptions():
         return "An error occurred", 500
 
 
-
 @app.route('/subscribe', methods=['POST'])
 @login_required
 @roles_required('Manager', 'Employee')

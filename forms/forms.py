@@ -274,18 +274,12 @@ class CustomSubjectAjaxLoader(QueryAjaxModelLoader):
         # Execute the query and return the results
         return query.all()
 
-
 class DocumentWorkflowInlineForm(InlineFormAdmin):
-    def __init__(self, model, form_data=None, **kwargs):
-        super(DocumentWorkflowInlineForm, self).__init__(model, **kwargs)
-        self.form_data = form_data  # Store the form data
-
     form_columns = [
         'id', 'workflow', 'step', 'status', 'start_date',
         'end_date', 'deadline_date', 'auto_move', 'open_action'
     ]
 
-    # Assuming the relationship fields are populated with query data
     form_extra_fields = {
         'id': HiddenField(),  # Ensure the 'id' field is included but hidden
         'workflow': QuerySelectField(
@@ -306,41 +300,19 @@ class DocumentWorkflowInlineForm(InlineFormAdmin):
             get_label='name',
             allow_blank=False
         ),
-        '''
-        
-        'start_date': DateTimeField(
-            'Start Date',
-            format='%Y-%m-%d %H:%M:%S',
-            widget=DateTimeInput(),
-            description='The starting date of this workflow step',
-            validators=[DataRequired()]  # Make this field required
-        ),
-        'end_date': DateTimeField(
-            'End Date',
-            format='%Y-%m-%d %H:%M:%S',
-            widget=DateTimeInput(),
-            description='The ending date of this workflow step (optional)'
-        ),
-        'deadline_date': DateTimeField(
-            'Deadline Date',
-            format='%Y-%m-%d %H:%M:%S',
-            widget=DateTimeInput(),
-            description='The deadline for completing this step'
-        ),
-        '''
-        'auto_move': SelectField(
-            'Auto Move',
-            choices=[(True, 'Yes'), (False, 'No')],
-            coerce=bool,
-            description='Automatically move to the next step (Yes/No)'
-        ),
-        'open_action': SelectField(
-            'Open Action',
-            choices=[(True, 'Yes'), (False, 'No')],
-            coerce=bool,
-            description='Open action allowed'
-        )
+        # This sets up a delete action similar to your working method
+        'delete': HiddenField()
     }
+
+    form_edit_rules = ('id', rules.FieldSet(
+        ('workflow', 'step', 'status', 'start_date', 'end_date', 'deadline_date', 'auto_move', 'open_action', 'delete'),
+        'Workflow Data'
+    ))
+
+    def postprocess_form(self, form_class):
+        form_class.id = HiddenField()
+        form_class.delete = HiddenField(default=False)  # Set default delete field behavior
+        return form_class
 
     column_labels = {
         'id': 'ID',

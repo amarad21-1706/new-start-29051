@@ -698,6 +698,7 @@ class BaseData(db.Model):
     # Define relationship with Step Base Data
     base_data_inlines = db.relationship('BaseDataInline', backref='parent_base_data', lazy=True, cascade="all, delete-orphan")
 
+    # Assuming a one-to-many relationship from BaseData to DocumentWorkflow
     document_workflows = db.relationship('DocumentWorkflow', back_populates='base_data', cascade="all, delete-orphan")
     document_workflow_history = db.relationship('DocumentWorkflowHistory', back_populates='base_data')
 
@@ -1599,6 +1600,7 @@ class ContractTeam(db.Model):
     contract = relationship('Contract', back_populates='contract_teams')
     team = relationship('Team', back_populates='contract_teams')
 
+
 class DocumentWorkflow(db.Model):
     __tablename__ = 'document_workflow'
 
@@ -1606,22 +1608,24 @@ class DocumentWorkflow(db.Model):
     workflow_id = db.Column(db.Integer, db.ForeignKey('workflow.id'))
     step_id = db.Column(db.Integer, db.ForeignKey('step.id'))
     status_id = db.Column(db.Integer, db.ForeignKey('status.id'))  # Remove the duplicate declaration
-    deadline_date = db.Column(db.DateTime)
+    deadline_date = db.Column(db.Date, nullable=True)  # Change to db.Date
     auto_move = db.Column(db.Boolean, default=False)
-    start_date = db.Column(DateTime, nullable=False)
-    end_date = db.Column(DateTime, nullable=True)
-
+    start_date = db.Column(db.Date, nullable=True)  # Change to db.Date
+    end_date = db.Column(db.Date, nullable=True)  # Change to db.Date
     hidden_data = db.Column(db.String(255), default='default_value')
     start_recall = db.Column(db.Integer, default=0)
     deadline_recall = db.Column(db.Integer, default=0)
     end_recall = db.Column(db.Integer, default=0)
     recall_unit = db.Column(db.String(24), default='day')
+    recall_value = db.Column(db.Integer, default=1)
     open_action = db.Column(db.Boolean, default=False)
-
+    comments = db.Column(db.Text, nullable=True)  # Add the comments field
+\
+    # Foreign Key
     base_data_id = db.Column(db.Integer, db.ForeignKey('base_data.id'))
-
-    # Relationships
+    # Relationship
     base_data = db.relationship('BaseData', back_populates='document_workflows')
+
     # Define the unique constraint on the three keys
     __table_args__ = (
         UniqueConstraint('base_data_id', 'workflow_id', 'step_id', name='uq_base_data_workflow_step'),

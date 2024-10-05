@@ -8,6 +8,8 @@ from flask_admin import Admin, AdminIndexView, expose
 from flask_login import current_user
 from flask import session
 from wtforms_sqlalchemy.fields import QuerySelectField
+from wtforms.widgets import Input
+
 from flask import current_app as app
 from flask import get_flashed_messages
 from flask_admin.form.rules import FieldSet
@@ -23,13 +25,13 @@ from wtforms.validators import Email, InputRequired, NumberRange
 from sqlalchemy.ext.hybrid import hybrid_property
 from flask_wtf.csrf import CSRFProtect, generate_csrf
 from flask_admin.model.widgets import XEditableWidget
-from wtforms.fields import DateField
+from wtforms.fields import DateField, DateTimeField, DateTimeLocalField
 from flask_admin import BaseView
 from flask_admin.base import expose
 from wtforms import IntegerField, FileField, HiddenField
 from datetime import datetime, date, timedelta
+from sqlalchemy import and_, desc
 
-from sqlalchemy import and_
 from flask_wtf import FlaskForm
 from flask_admin.form import rules
 from flask import current_app
@@ -597,75 +599,131 @@ class DocumentsBaseDataDetails(ModelView):
     can_view_details = True
 
     name = 'Manage Document Flow'
-    menu_icon_type = 'glyph'
-    menu_icon_value = 'glyphicon-list-alt'
 
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.class_name = self.__class__.__name__
+    # Exclude document number, date, and name since they shouldn't be editable
+    form_excluded_columns = ['base_data_id', 'ft1', 'number_of_doc', 'date_of_doc', 'hidden_data']
 
-    # Adjust the column list
-    column_list = [
-        'base_data_id',  # Hidden document ID
-        'ft1',  # Document Name from base_data (ft1 field)
-        'workflow.name',  # Added workflow name from related workflow table
-        'step.name',  # Step name from related step table
-        'status_id',  # Status ID
-        'start_date',  # Start Date
-        'end_date',  # End Date
-        'deadline_date',  # Deadline Date
-        'auto_move',  # Auto Move field (Yes/No)
-        'open_action',  # Open Action field (Yes/No)
-        'base_data.file_path',  # Document file path
-        'base_data.created_on',  # Created date of the base_data
-        'company_name',  # Company name (from base_data)
-        'user_name'  # User name (from base_data)
+    # Only include changeable fields
+    form_columns = [
+        'workflow_id',
+        'step_id',
+        'status_id',
+        'start_date',
+        'end_date',
+        'deadline_date',
+        'auto_move',
+        'open_action',
+        'recall_value',
+        'recall_unit',
+        'comments'  # Add other fields if necessary
     ]
 
-    column_labels = {
-        'ft1': 'Document Name',  # Label for Document Name
-        'workflow.name': 'Workflow Name',  # Label for Workflow Name
-        'step.name': 'Step Name',  # Label for Step Name
-        'status_id': 'Status',
-        'start_date': 'Start Date',
-        'end_date': 'End Date',
-        'deadline_date': 'Deadline Date',
-        'auto_move': 'Auto Transition',
-        'open_action': 'Open Action',
-        'base_data.file_path': 'Document File Path',
-        'base_data.created_on': 'Created On',
-        'company_name': 'Company',
-        'user_name': 'User'
-    }
-
-    column_formatters = {
-        'workflow.name': lambda view, context, model, name: model.workflow.name if model.workflow else 'No Workflow',
-        'step.name': lambda view, context, model, name: model.step.name if model.step else 'No Step'
-    }
-
-    # Updated form_extra_fields to include relevant fields for workflow management
+    # Form customization for only changeable attributes
     form_extra_fields = {
-        'ft1': StringField('Document Name'),
-        'base_data_id': HiddenField('Document ID'),
-        'workflow_id': SelectField('Workflow', coerce=int),
-        'step_id': SelectField('Step', coerce=int),
-        'start_date': DateTimeField('Start Date'),
-        'end_date': DateTimeField('End Date'),
-        'deadline_date': DateTimeField('Deadline Date'),
+        'workflow_id': QuerySelectField(
+            'Workflow',
+            query_factory=lambda: Workflow.query.all(),
+            get_label='name'
+        ),
+        'step_id': QuerySelectField(
+            'Step',
+            query_factory=lambda: Step.query.all(),
+            get_label='name'
+        ),
+        'status_id': QuerySelectField(
+            'Status',
+            query_factory=lambda: Status.query.all(),  # Fetch all statuses from Status model
+            get_label='name',  # Assuming the field to display is 'status_name'
+            allow_blank=False
+        ),
+        'start_date': DateField('Start Date', format='%Y-%m-%d'),
+        'end_date': DateField('End Date', format='%Y-%m-%d'),
+        'deadline_date': DateField('Deadline Date', format='%Y-%m-%d'),
         'auto_move': BooleanField('Auto Move'),
         'open_action': BooleanField('Open Action'),
         'recall_value': IntegerField('Recall Value', default=0),
-        'recall_unit': SelectField('Recall Unit', choices=[(0, 'None'), (1, 'Day'), (2, 'Week'), (3, 'Month')])
+        'recall_unit': SelectField('Recall Unit', choices=[(0, 'None'), (1, 'Day'), (2, 'Week'), (3, 'Month')]),
+        'comments': TextAreaField('Comments')
+    }
+
+    def on_model_change(self, form, model, is_created):
+        # Populate model fields with form data
+        form.populate_obj(model)
+
+        # Make sure to save only the IDs for workflow_id and step_id
+        model.workflow_id = form.workflow_id.data.id if form.workflow_id.data else None
+        model.step_id = form.step_id.data.id if form.step_id.data else None
+        model.status_id = form.status_id.data.id if form.status_id.data else None
+
+        # Other logic if necessary
+        super().on_model_change(form, model, is_created)
+
+        if is_created:
+            model.created_on = datetime.now()  # Set created_on date if this is a new record
+        return model
+
+    def create_form(self):
+        form = super(DocumentsBaseDataDetails, self).create_form()
+        return form
+
+    def edit_form(self, obj=None):
+        form = super(DocumentsBaseDataDetails, self).edit_form(obj)
+        return form
+
+class DocumentsBaseDataDetails_two(ModelView):
+    can_create = False
+    can_edit = True
+    can_delete = False
+    can_view_details = True
+
+    name = 'Manage Document Flow'
+
+    # Exclude document number, date, and name
+    form_excluded_columns = ['base_data_id', 'ft1', 'number_of_doc', 'date_of_doc', 'hidden_data']
+
+    # Only include changeable fields
+    form_columns = [
+        'workflow_id',
+        'step_id',
+        'status_id',
+        'start_date',
+        'end_date',
+        'deadline_date',
+        'auto_move',
+        'open_action',
+        'recall_value',
+        'recall_unit',
+        'comments'  # Add other fields if necessary
+    ]
+
+    # Form customization for only changeable attributes
+    form_extra_fields = {
+        'workflow_id': QuerySelectField(
+            'Workflow',
+            query_factory=lambda: Workflow.query.all(),
+            get_label='name'
+        ),
+        'step_id': QuerySelectField(
+            'Step',
+            query_factory=lambda: Step.query.all(),
+            get_label='name'
+        ),
+        'start_date': DateField('Start Date', format='%Y-%m-%d'),
+        'end_date': DateField('End Date', format='%Y-%m-%d'),
+        'deadline_date': DateField('Deadline Date', format='%Y-%m-%d'),
+        'auto_move': BooleanField('Auto Move'),
+        'open_action': BooleanField('Open Action'),
+        'recall_value': IntegerField('Recall Value', default=0),
+        'recall_unit': SelectField('Recall Unit', choices=[(0, 'None'), (1, 'Day'), (2, 'Week'), (3, 'Month')]),
+        'comments': TextAreaField('Comments')
     }
 
     def get_base_data_choices(self):
-        """Get the choices for the document_selection dropdown based on user roles and creation date."""
         one_year_ago = datetime.utcnow() - timedelta(days=365)
         query = BaseData.query.filter(BaseData.created_on >= one_year_ago)
 
-        # Role-based filtering
         if current_user.has_role('Admin'):
-            pass  # Admin sees all documents
+            pass
         elif current_user.has_role('Manager'):
             company_id = session.get('company_id')
             query = query.filter(BaseData.company_id == company_id)
@@ -673,51 +731,62 @@ class DocumentsBaseDataDetails(ModelView):
             user_id = session.get('user_id', current_user.id)
             query = query.filter(BaseData.user_id == user_id)
 
-        choices = [
-            (
-                base_data.id,
-                f"{base_data.number_of_doc} - {base_data.date_of_doc.strftime('%Y-%m-%d') if base_data.date_of_doc else 'No Date'}"
-            )
-            for base_data in query.all()
-        ]
+        choices = [(base_data.id, f"{base_data.number_of_doc} - {base_data.date_of_doc.strftime('%Y-%m-%d') if base_data.date_of_doc else 'No Date'}") for base_data in query.all()]
         return choices
 
     def on_model_change(self, form, model, is_created):
         # Populate model fields with form data
         form.populate_obj(model)
 
-        # Explicitly assign the selected document ID from the dropdown to the base_data_id field
-        model.base_data_id = form.document_selection.data
-
-        # Call the parent method for additional processing (if any)
+        # Other logic if necessary
         super().on_model_change(form, model, is_created)
 
         if is_created:
             model.created_on = datetime.now()  # Set created_on date
         return model
 
-    # Common action to Flask Admin 'Documents' (attach/detach documents to/from W-S)
-    @action('action_manage_dws_deadline', 'Deadline Setting',
-            'Are you sure you want to change documents deadline?')
+    def create_form(self):
+        form = super(DocumentsBaseDataDetails, self).create_form()
+        # Ensure document_selection field is added to the form manually
+        form.document_selection = QuerySelectField(
+            'Select Document',
+            query_factory=lambda: BaseData.query.all(),
+            get_label='number_of_doc',
+            allow_blank=True
+        )
+        return form
+
+    def edit_form(self, obj=None):
+        form = super(DocumentsBaseDataDetails, self).edit_form(obj)
+        # Ensure document_selection field is added to the form manually
+        form.document_selection = QuerySelectField(
+            'Select Document',
+            query_factory=lambda: BaseData.query.all(),
+            get_label='number_of_doc',
+            allow_blank=True
+        )
+        return form
+
+    @action('action_manage_dws_deadline', 'Deadline Setting', 'Are you sure you want to change the document deadline?')
     def action_manage_dws_deadline(self, ids):
-        # Parse the list of IDs
         id_list = [int(id_1) for id_1 in ids]
-
-        # Define the selected columns you want to retrieve
-        column_list = [DocumentWorkflow.base_data_id, DocumentWorkflow.workflow_id,
-                       DocumentWorkflow.step_id, DocumentWorkflow.status_id, DocumentWorkflow.auto_move,
-                       DocumentWorkflow.start_date, DocumentWorkflow.deadline_date, DocumentWorkflow.end_date,
-                       DocumentWorkflow.hidden_data, DocumentWorkflow.start_recall, DocumentWorkflow.deadline_recall,
-                       DocumentWorkflow.end_recall, DocumentWorkflow.recall_unit]  # Add or remove columns as needed
-        # Select specific columns
+        column_list = [
+            DocumentWorkflow.base_data_id,
+            DocumentWorkflow.workflow_id,
+            DocumentWorkflow.step_id,
+            DocumentWorkflow.status_id,
+            DocumentWorkflow.auto_move,
+            DocumentWorkflow.start_date,
+            DocumentWorkflow.deadline_date,
+            DocumentWorkflow.end_date,
+            DocumentWorkflow.hidden_data,
+            DocumentWorkflow.start_recall,
+            DocumentWorkflow.deadline_recall,
+            DocumentWorkflow.end_recall,
+            DocumentWorkflow.recall_unit
+        ]
         selected_documents = DocumentWorkflow.query.with_entities(*column_list).filter(DocumentWorkflow.base_data_id.in_(id_list)).all()
-
-        # Pass the lists of workflows, steps, and selected documents to the template
-        return render_template('admin/set_documents_deadline.html',
-                               selected_documents=selected_documents)
-
-# BASE PER LE View 2, 3, 4, 6, 7 e 8 (NO FLUSSI PRE-COMPLAINT!)
-# ==================================
+        return render_template('admin/set_documents_deadline.html', selected_documents=selected_documents)
 
 class BaseDataViewCommon(ModelView):
     can_view_details = True
@@ -2962,10 +3031,12 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
         # Base query filtered by area and subarea
         # query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
         # Base query filtered by area_id in [1, 3] and specific subarea_id
+
         query = self.session.query(self.model).filter(
             self.model.area_id.in_([1, 3]),  # Filtering for area_id in [1, 3]
             self.model.subarea_id == self.subarea_id  # Filtering by exact subarea_id
-        )
+        ).order_by(desc(self.model.updated_on),
+                   desc(self.model.created_on))  # Order by updated_on DESC, then created_on DESC
 
         if current_user.is_authenticated:
             if current_user.has_role('Admin'):
@@ -3043,6 +3114,9 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
                         flash('Error: Workflow and Step are required.', 'error')
                         return False
 
+                    # Before querying for potential duplicates, ensure the session is flushed
+                    self.session.flush()  # This ensures changes are reflected in the database
+
                     # Query for potential duplicates
                     results = self.session.query(DocumentWorkflow).filter_by(
                         base_data_id=model.base_data_id,
@@ -3051,7 +3125,7 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
                     ).all()
 
                     if len(results) > 1:
-                        flash(f'Warning: Duplicate workflow/step detected ({len(results)}).', 'error')
+                        flash(f'Warning: Duplicate workflow/step detected ({len(results)}-C).', 'error')
                         return False  # Prevent further saving
 
                     # Ensure start_date is set
@@ -3073,81 +3147,89 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
 
     def create_model(self, form):
         """
-        Override create_model to handle errors, prevent duplicates, and clear old messages on form submission.
+        Override create_model to handle deletions, prevent saving duplicates, and handle errors.
         """
         try:
-            # Clear any existing duplicate warning messages first
-            for message in get_flashed_messages():
-                if 'Duplicate workflow/step detected' in message:
-                    continue  # Skip the duplicate message
+            with self.session.no_autoflush:
+                # Handle deletions first by checking the hidden 'delete' field
+                if hasattr(form, 'document_workflows'):
+                    to_remove = []
+                    for dwf_item in form.document_workflows.entries:
+                        if dwf_item.delete.data:
+                            # Ensure dwf_item.data is an object and not a dictionary
+                            if isinstance(dwf_item.data, DocumentWorkflow) and dwf_item.data.id:
+                                dwf_to_delete = self.session.query(DocumentWorkflow).get(dwf_item.data.id)
+                                if dwf_to_delete:
+                                    self.session.delete(dwf_to_delete)
+                            to_remove.append(dwf_item)
 
-            # Ensure number_of_doc and date_of_doc are present
-            if not form.number_of_doc.data:
-                flash('Error: Document number is required.', 'error')
-                form.number_of_doc.errors.append('Document number cannot be empty.')
-                raise ValidationError('Document number is missing')
+                    # Remove the deleted entries from the form's entries after processing
+                    for dwf_item in to_remove:
+                        form.document_workflows.entries.remove(dwf_item)
 
-            selected_document = form.number_of_doc.data
+                # Ensure number_of_doc and date_of_doc are present
+                if not form.number_of_doc.data:
+                    flash('Error: Document number is required.', 'error')
+                    form.number_of_doc.errors.append('Document number cannot be empty.')
+                    raise ValidationError('Document number is missing')
 
-            if not selected_document.date_of_doc:
-                flash('Error: Document date is required.', 'error')
-                form.number_of_doc.errors.append('Document date cannot be empty.')
-                raise ValidationError('Document date is missing')
+                selected_document = form.number_of_doc.data
 
-            # Proceed with creating the model
-            model = self.model()
-            model.number_of_doc = str(selected_document.number_of_doc)
-            model.base_data_id = int(selected_document.id)
+                if not selected_document.date_of_doc:
+                    flash('Error: Document date is required.', 'error')
+                    form.number_of_doc.errors.append('Document date cannot be empty.')
+                    raise ValidationError('Document date is missing')
 
-            # Handle deletions first by manually checking if each entry is marked for deletion
-            if hasattr(form, 'document_workflows'):
-                for dwf_item in form.document_workflows.entries:
-                    if hasattr(dwf_item, 'delete') and dwf_item.delete.data:  # Check for deletion flag
-                        if dwf_item.data.id:  # If it has an ID, delete it from the database
-                            dwf_to_delete = self.session.query(DocumentWorkflow).get(dwf_item.data.id)
-                            if dwf_to_delete:
-                                self.session.delete(dwf_to_delete)
-                        continue  # Skip to the next item
+                # Proceed with creating the model
+                model = self.model()
+                model.number_of_doc = str(selected_document.number_of_doc)
+                model.base_data_id = int(selected_document.id)
 
-            # Handle document workflows validation
-            if hasattr(form, 'document_workflows'):
-                for dwf_item in form.document_workflows.entries:
-                    workflow = dwf_item.workflow.data
-                    step = dwf_item.step.data
+                # Validate document workflows after deletions
+                if hasattr(form, 'document_workflows'):
+                    for dwf_item in form.document_workflows.entries:
+                        workflow = dwf_item.workflow.data
+                        step = dwf_item.step.data
 
-                    workflow_id = workflow.id if workflow else None
-                    step_id = step.id if step else None
+                        # Check if workflow and step are objects and not dicts
+                        if isinstance(workflow, dict) or isinstance(step, dict):
+                            flash('Error: Invalid workflow or step selection.', 'error')
+                            raise ValidationError('Invalid workflow or step')
 
-                    if not workflow_id or not step_id:
-                        flash('Error: Workflow and Step are required.', 'error')
-                        raise ValidationError('Workflow and Step are required')
+                        workflow_id = workflow.id if workflow else None
+                        step_id = step.id if step else None
 
-                    # Check for duplicate workflows
-                    results = self.session.query(DocumentWorkflow).filter_by(
-                        base_data_id=model.base_data_id,
-                        workflow_id=workflow_id,
-                        step_id=step_id
-                    ).all()
+                        if not workflow_id or not step_id:
+                            flash('Error: Workflow and Step are required.', 'error')
+                            raise ValidationError('Workflow and Step are required')
 
-                    if len(results) > 1:
-                        flash(f'Warning: Duplicate workflow/step detected ({len(results)}).', 'error')
-                        raise ValidationError('Duplicate workflow/step found')
+                        # Query for potential duplicates
+                        results = self.session.query(DocumentWorkflow).filter_by(
+                            base_data_id=model.base_data_id,
+                            workflow_id=workflow_id,
+                            step_id=step_id
+                        ).all()
 
-                    # Ensure start_date and end_date are set
-                    if dwf_item.start_date.data is None:
-                        dwf_item.start_date.data = datetime.utcnow()
+                        if len(results) > 1:
+                            flash(f'Warning: Duplicate workflow/step detected ({len(results)}-CM).', 'error')
+                            raise ValidationError('Duplicate workflow/step found')
 
-                    if dwf_item.end_date.data is None:
-                        dwf_item.end_date.data = dwf_item.start_date.data + timedelta(days=30)
+                        # Ensure start_date and end_date are set
+                        if dwf_item.start_date.data is None:
+                            dwf_item.start_date.data = datetime.utcnow()
 
-            return super(DocumentUploadViewExisting, self).create_model(form)
+                        if dwf_item.end_date.data is None:
+                            dwf_item.end_date.data = dwf_item.start_date.data + timedelta(days=30)
+
+                # Commit all changes at the end
+                return super(DocumentUploadViewExisting, self).create_model(form)
 
         except ValidationError as e:
             flash(str(e), 'error')
             return False
 
         except IntegrityError as e:
-            db.session.rollback()
+            self.session.rollback()
             if 'uq_base_data_workflow_step' in str(e.orig):
                 flash('Error: The combination of Document, Workflow, and Step must be unique.', 'error')
             else:
@@ -3155,7 +3237,7 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
             return False
 
         except Exception as e:
-            db.session.rollback()
+            self.session.rollback()
             flash(f'An unexpected error occurred: {str(e)}', 'error')
             return False
 
@@ -3164,7 +3246,6 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
         Override update_model to handle inline form deletions, prevent saving when duplicates are detected, and clear old messages.
         """
         try:
-            # Use session.no_autoflush to prevent premature autoflushes
             with self.session.no_autoflush:
                 # Clear any existing duplicate warning messages first
                 for message in get_flashed_messages():
@@ -3185,54 +3266,64 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
                     raise ValidationError('Document date is missing')
 
                 # Extract number_of_doc or id instead of assigning the whole object
-                model.number_of_doc = str(selected_document.number_of_doc)  # Assign the number_of_doc value
-                model.base_data_id = int(selected_document.id)  # Assign the document's ID
+                model.number_of_doc = str(selected_document.number_of_doc)
+                model.base_data_id = int(selected_document.id)
 
-                # Check for duplicate workflows/steps
+                # Handle deletions first by checking the delete flag
                 if hasattr(form, 'document_workflows'):
+                    to_remove = []
                     for dwf_item in form.document_workflows.entries:
-                        if hasattr(dwf_item, 'delete') and dwf_item.delete.data:
-                            # If the form entry is marked for deletion, delete it from the database
-                            if dwf_item.data.id:
+                        if dwf_item.delete.data:
+                            # Ensure dwf_item.data is an object and not a dictionary
+                            if isinstance(dwf_item.data, DocumentWorkflow) and dwf_item.data.id:
                                 dwf_to_delete = self.session.query(DocumentWorkflow).get(dwf_item.data.id)
                                 if dwf_to_delete:
                                     self.session.delete(dwf_to_delete)
-                            form.document_workflows.entries.remove(dwf_item)
+                            to_remove.append(dwf_item)
 
-                        else:
-                            workflow = dwf_item.workflow.data
-                            step = dwf_item.step.data
+                    for dwf_item in to_remove:
+                        form.document_workflows.entries.remove(dwf_item)
 
-                            workflow_id = workflow.id if workflow else None
-                            step_id = step.id if step else None
+                # Flush all deletions to the database
+                self.session.flush()
 
-                            if not workflow_id or not step_id:
-                                flash('Error: Workflow and Step are required.', 'error')
-                                return False
+                # Validate document workflows after deletions
+                if hasattr(form, 'document_workflows'):
+                    for dwf_item in form.document_workflows.entries:
+                        workflow = dwf_item.workflow.data
+                        step = dwf_item.step.data
 
-                            # Query for potential duplicates
-                            results = self.session.query(DocumentWorkflow).filter_by(
-                                base_data_id=model.base_data_id,
-                                workflow_id=workflow_id,
-                                step_id=step_id
-                            ).all()
+                        # Check if workflow and step are objects and not dicts
+                        if isinstance(workflow, dict) or isinstance(step, dict):
+                            flash('Error: Invalid workflow or step selection.', 'error')
+                            raise ValidationError('Invalid workflow or step')
 
-                            if len(results) > 1:
-                                flash(f'Warning: Duplicate workflow/step detected ({len(results)}).', 'error')
-                                return False  # Prevent saving the record if duplicates are found
+                        workflow_id = workflow.id if workflow else None
+                        step_id = step.id if step else None
 
-                            # Ensure start_date is set
-                            if dwf_item.start_date.data is None:
-                                dwf_item.start_date.data = datetime.utcnow()
+                        if not workflow_id or not step_id:
+                            flash('Error: Workflow and Step are required.', 'error')
+                            return False
 
-                            # Set end_date to one month after start_date if not set
-                            if dwf_item.end_date.data is None:
-                                dwf_item.end_date.data = dwf_item.start_date.data + timedelta(days=30)
+                        # Query for potential duplicates
+                        results = self.session.query(DocumentWorkflow).filter_by(
+                            base_data_id=model.base_data_id,
+                            workflow_id=workflow_id,
+                            step_id=step_id
+                        ).all()
 
-                # Commit the session to delete the marked entries
-                self.session.commit()
+                        if len(results) > 1:
+                            flash(f'Warning: Duplicate workflow/step detected ({len(results)}-UM).', 'error')
+                            return False  # Prevent saving the record if duplicates are found
 
-                # Proceed with updating the remaining model only if no duplicates are found
+                        # Ensure start_date is set
+                        if dwf_item.start_date.data is None:
+                            dwf_item.start_date.data = datetime.utcnow()
+
+                        if dwf_item.end_date.data is None:
+                            dwf_item.end_date.data = dwf_item.start_date.data + timedelta(days=30)
+
+                # Commit all changes
                 return super(DocumentUploadViewExisting, self).update_model(form, model)
 
         except ValidationError as e:
@@ -3240,7 +3331,7 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
             return False
 
         except IntegrityError as e:
-            db.session.rollback()
+            self.session.rollback()
             if 'uq_base_data_workflow_step' in str(e.orig):
                 flash('Error: The combination of Document, Workflow, and Step must be unique.', 'error')
             else:
@@ -3248,7 +3339,7 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
             return False
 
         except Exception as e:
-            db.session.rollback()
+            self.session.rollback()
             flash(f'An unexpected error occurred: {str(e)}', 'error')
             return False
 
@@ -4571,9 +4662,6 @@ def create_admin_views(app, intervals):
                     flash(f'Failed to create record. {str(ex)}', 'error')
                     self.session.rollback()
                     return False
-
-
-
 
             def on_model_change(self, form, model, is_created):
                 super().on_model_change(form, model, is_created)
