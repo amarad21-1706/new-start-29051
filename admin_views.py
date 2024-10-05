@@ -603,6 +603,21 @@ class DocumentsBaseDataDetails(ModelView):
     # Exclude document number, date, and name since they shouldn't be editable
     form_excluded_columns = ['base_data_id', 'ft1', 'number_of_doc', 'date_of_doc', 'hidden_data']
 
+    column_list = [
+        'base_data.number_of_doc',  # Display the document number
+        'workflow.name',  # Display workflow name
+        'step.name',  # Display step name
+        'company_name',  # Company name
+        'user_name',  # User name
+        'status_id',  # Status ID (dropdown)
+        'start_date',
+        'end_date',
+        'deadline_date',
+        'auto_move',
+        'open_action',
+        'comments'
+    ]
+
     # Only include changeable fields
     form_columns = [
         'workflow_id',
@@ -618,6 +633,44 @@ class DocumentsBaseDataDetails(ModelView):
         'comments'  # Add other fields if necessary
     ]
 
+    column_labels = {
+        'base_data.number_of_doc': 'Document Number',
+        'workflow.name': 'Workflow',
+        'step.name': 'Step',
+        'company_name': 'Company',
+        'user_name': 'User',
+        'status_id': 'Status',
+        'start_date': 'Start Date',
+        'end_date': 'End Date',
+        'deadline_date': 'Deadline Date',
+        'auto_move': 'Auto Transition',
+        'open_action': 'Open Action',
+        'comments': 'Comments'
+    }
+
+    # Use column_formatters to display the company and user names
+    column_formatters = {
+        'name': lambda view, context, model, name: model.base_data.company.name if model.base_data and model.base_data.company else 'No Company',
+        'username': lambda view, context, model, name: model.base_data.user.name if model.base_data and model.base_data.user else 'No User'
+    }
+
+    # Add filters for company_id, user_id, comments, workflow, step, and document number
+    column_filters = [
+        'base_data.company_id',  # Company filter by ID
+        'base_data.user_id',  # User filter by ID
+        'comments',  # Search by comments
+        'workflow.name',  # Search by workflow name
+        'step.name',  # Search by step name
+        'base_data.number_of_doc'  # Filter by document number
+    ]
+
+    # Define how the filters are displayed
+    column_searchable_list = [
+        'comments',  # Make comments searchable
+        'workflow.name',  # Allow search by workflow name
+        'step.name',  # Allow search by step name
+        'base_data.number_of_doc'  # Allow search by document number
+    ]
     # Form customization for only changeable attributes
     form_extra_fields = {
         'workflow_id': QuerySelectField(
@@ -645,6 +698,33 @@ class DocumentsBaseDataDetails(ModelView):
         'recall_unit': SelectField('Recall Unit', choices=[(0, 'None'), (1, 'Day'), (2, 'Week'), (3, 'Month')]),
         'comments': TextAreaField('Comments')
     }
+
+    def get_query(self):
+        query = super(DocumentsBaseDataDetails, self).get_query()
+
+        if current_user.is_authenticated:
+            if current_user.has_role('Admin'):
+                # Admins can access all records
+                query = query
+            elif current_user.has_role('Manager'):
+                # Managers can access records from their own company
+                company_id = current_user.company_id  # Assuming current_user has a company_id attribute
+                query = query.filter(BaseData.company_id == company_id)
+            elif current_user.has_role('Employee'):
+                # Employees can only access their own records
+                user_id = current_user.id
+                query = query.filter(BaseData.user_id == user_id)
+
+        # Use select_from() to join DocumentWorkflow explicitly with the ON clause
+        query = query.select_from(BaseData).join(
+            DocumentWorkflow,
+            DocumentWorkflow.base_data_id == BaseData.id
+        )
+
+        # Apply sorting: First by 'DocumentWorkflow.updated_on' DESC, then by 'BaseData.date_of_doc' DESC
+        query = query.order_by(BaseData.date_of_doc.desc())
+
+        return query
 
     def on_model_change(self, form, model, is_created):
         # Populate model fields with form data
