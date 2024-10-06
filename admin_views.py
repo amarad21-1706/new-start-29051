@@ -1,5 +1,8 @@
 # admin_views.py
 # You can continue defining other ModelViews for your models
+import os
+from werkzeug.utils import secure_filename
+
 from db import db
 from flask_admin import Admin
 from flask import Blueprint, render_template
@@ -30,7 +33,7 @@ from flask_admin import BaseView
 from flask_admin.base import expose
 from wtforms import IntegerField, FileField, HiddenField
 from datetime import datetime, date, timedelta
-from sqlalchemy import and_, desc
+from sqlalchemy import and_, desc, or_
 from wtforms.fields import DateField
 from wtforms.widgets import DateInput
 from flask_wtf import FlaskForm
@@ -75,6 +78,11 @@ from models.user import (Users, UserRoles, Role, Table, Questionnaire, Question,
                                 get_config_values)
 
 from wtforms.widgets import DateTimeInput
+from wtforms.fields import StringField, BooleanField, FileField
+from wtforms.validators import DataRequired
+from flask_admin.form import DatePickerWidget
+from wtforms.fields import StringField, BooleanField, FileField
+from wtforms_sqlalchemy.fields import QuerySelectField  # Correct import for QuerySelectField
 
 from forms.forms import (LoginForm, ForgotPasswordForm, ResetPasswordForm101, RegistrationForm,
                 QuestionnaireCompanyForm, CustomBaseDataForm,
@@ -145,11 +153,40 @@ class DocumentsView(ModelView):
     can_create = True
 
     # Limit fields displayed to specific fields
-    column_list = ['nr_of_doc', 'date_of_doc', 'ft1', 'company_id', 'user_id', 'fc1', 'file_path', 'no_action']
+    column_list = ['number_of_doc', 'date_of_doc', 'ft1', 'subject', 'lexic', 'fc1', 'file_path', 'no_action']
+
+    # Limit fields displayed to specific fields in forms
+    form_columns = ['number_of_doc', 'date_of_doc', 'ft1', 'subject', 'lexic', 'fc1', 'file_path', 'no_action']
+
+    form_excluded_columns = (
+        'company_id', 'status_id', 'created_by', 'created_on', 'updated_on', 'user_id',
+        # You can add more columns that should be excluded here
+    )
+
+    # Columns that can be filtered
+    column_filters = ['number_of_doc', 'date_of_doc', 'ft1', 'fc1']
+
+    # Add search functionality
+    column_searchable_list = ['number_of_doc', 'date_of_doc', 'ft1', 'fc1']
+
+    # Define custom labels for columns
+    column_labels = {
+        'number_of_doc': 'Document Number',
+        'date_of_doc': 'Document Date',
+        'ft1': 'Document Name',
+        'fc1': 'Comments',
+        'subject': 'Subject',
+        'lexic': 'Source',
+    }
 
     # Only show base_data records with area_id in [1, 3]
     def get_query(self):
-        return super(DocumentsView, self).get_query().filter(BaseData.area_id.in_([1, 3]))
+        return super(DocumentsView, self).get_query().filter(
+            or_(
+                BaseData.area_id.in_([1, 3]),
+                BaseData.record_type == 'document'
+            )
+        ).order_by(BaseData.updated_on.desc())
 
     # Filtering based on user roles
     def get_list(self, page, sort_field, sort_desc, search, filters, execute=True, **kwargs):
@@ -166,16 +203,23 @@ class DocumentsView(ModelView):
         count = query.count()
         return count, query.all()
 
-    # Add file_path with a file upload widget and no_action boolean, and add date_of_doc with date picker widget
+    # Add file_path with a file upload widget and no_action boolean, add date_of_doc with date picker widget
     form_extra_fields = {
-        'file_path': FileUploadField('File Path', base_path='/path/to/save/files'),
+        'number_of_doc': StringField('Document Number', validators=[DataRequired()]),
+        'ft1': StringField('Document Name', validators=[DataRequired()]),
+        'fc1': StringField('Comments'),
+        'file_path': FileField('File Path'),  # Removed base_path
         'no_action': BooleanField('No Action'),
-        'date_of_doc': DateField('Document Date', widget=DateInput(), format='%Y-%m-%d')
+        'date_of_doc': DateField('Document Date', widget=DatePickerWidget(), validators=[DataRequired()]),
+        'subject': QuerySelectField('Subject', query_factory=lambda: Subject.query.all(), get_label='name',
+                                    allow_blank=True),
+        'lexic': QuerySelectField('Source', query_factory=lambda: Lexic.query.all(), get_label='name',
+                                  allow_blank=True),
     }
 
     def is_accessible(self):
         return current_user.is_authenticated and (
-                current_user.has_role('Admin') or current_user.has_role('Employee') or current_user.has_role('Manager')
+            current_user.has_role('Admin') or current_user.has_role('Employee') or current_user.has_role('Manager')
         )
 
     def _handle_view(self, name, **kwargs):
@@ -185,9 +229,17 @@ class DocumentsView(ModelView):
     def inaccessible_callback(self, name, **kwargs):
         return redirect(url_for('login', next=request.url))
 
+
     def on_model_change(self, form, model, is_created):
         if is_created:
+            # Automatically set the company_id and user_id based on the current user's data
+            model.user_id = session.get('user_id')
+            model.company_id = session.get('company_id')  # Assuming company_id is stored in session
             model.created_on = datetime.utcnow()
+            model.area_id = 3
+            model.subarea_id = 1
+            model.record_type = 'document'
+
         model.updated_on = datetime.utcnow()
 
         # Example of ensuring correct types
@@ -201,9 +253,39 @@ class DocumentsView(ModelView):
             elif isinstance(form.date_of_doc.data, date):
                 model.date_of_doc = datetime.combine(form.date_of_doc.data, datetime.min.time())
             elif isinstance(form.date_of_doc.data, str):
-                model.date_of_doc = datetime.strptime(form.date_of_doc.data, '%Y-%m-%d %H:%M:%S')
+                model.date_of_doc = datetime.strptime(form.date_of_doc.data, '%Y-%m-%d')
             else:
                 raise ValidationError("Invalid date format for date_of_doc.")
+
+        # Handle file upload
+        if form.file_path.data:
+            file = form.file_path.data
+            if file.filename != '':
+                # Generate a secure filename
+                filename = secure_filename(file.filename)
+
+                print('File path etc to be defined etc.')
+                '''
+                
+                # Define the directory to save the file
+                file_dir = '/path/to/save/files'
+                if not os.path.exists(file_dir):
+                    os.makedirs(file_dir)  # Ensure the directory exists
+                # Save the file to the specified folder
+                file_path = os.path.join(file_dir, filename)
+                file.save(file_path)
+                # Store the filename (or the relative path) in the model
+                '''
+                model.file_path = filename
+
+        else:
+            model.file_path = None
+
+        # Validate exclusive behavior between file_path and no_action
+        if model.file_path and form.no_action.data:
+            raise ValidationError("You cannot select both 'No Action' and upload a file at the same time.")
+        if not model.file_path and not form.no_action.data:
+            raise ValidationError("You must either upload a file or select 'No Action'.")
 
     def create_form(self, obj=None):
         form = super(DocumentsView, self).create_form(obj)
@@ -3191,10 +3273,14 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
         # Base query filtered by area_id in [1, 3] and specific subarea_id
 
         query = self.session.query(self.model).filter(
-            self.model.area_id.in_([1, 3]),  # Filtering for area_id in [1, 3]
+            or_(
+                self.model.area_id.in_([1, 3]),  # Filtering for area_id in [1, 3]
+                self.model.record_type == 'document'  # Additional condition for record_type
+            ),
             self.model.subarea_id == self.subarea_id  # Filtering by exact subarea_id
-        ).order_by(desc(self.model.updated_on),
-                   desc(self.model.created_on))  # Order by updated_on DESC, then created_on DESC
+        ).order_by(
+            desc(self.model.updated_on)  # Then order by created_on DESC
+        )
 
         if current_user.is_authenticated:
             if current_user.has_role('Admin'):
@@ -5353,6 +5439,7 @@ def create_admin_views(app, intervals):
                                                      model=BaseData,
                                                      session=db.session,
                                                     endpoint='new_documents'))
+
         admin_app3.add_view(ModelView(name='Workflows Dictionary',
                                       model=Workflow,
                                       session=db.session))
