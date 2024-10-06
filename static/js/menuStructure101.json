@@ -664,6 +664,15 @@
                                     "display": false
                                 }
                             },
+                            "Workflow Tree": {
+                                "label": "Workflow Tree",
+                                "url": "/workflow_tree",
+                                "protected": true,
+                                "allowed_roles": ["Admin", "Manager", "Employee"],
+                                "widget": {
+                                    "display": false
+                                }
+                            },
                             "Contract-Management": {
                                 "label": "Contract Management",
                                 "url": "/team",

@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Workflow Tree</title>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $.getJSON("/api/get_workflow_data", function(data) {
+                let html = "<ul>";
+                data.forEach(item => {
+                    html += `<li>${item.workflow_name} - ${item.step_name} (${item.document_number})</li>`;
+                });
+                html += "</ul>";
+                $("#workflow-tree").html(html);
+            });
+        });
+    </script>
+</head>
+<body>
+    <h1>Workflow Tree</h1>
+    <div id="workflow-tree">Loading...</div>
+</body>
+</html>

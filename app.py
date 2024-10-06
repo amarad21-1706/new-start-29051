@@ -309,7 +309,6 @@ def serve_react(path):
         return jsonify({"error": str(e)}), 500
 
 
-
 @app.route('/test_relationship')
 def test_relationship():
     try:
@@ -784,9 +783,54 @@ def get_steps333():
 
     return jsonify(steps=steps_list)
 
-@app.route('/api/workflow-data', methods=['GET'])
+
+@app.route('/workflow_tree')
 @login_required
+def workflow_tree():
+    return render_template('workflow_tree.html')
+
+
+from datetime import datetime, timedelta
+from flask import jsonify
+
+@app.route('/api/get_workflow_data', methods=['GET'])
 def get_workflow_data():
+    two_years_ago = datetime.utcnow() - timedelta(days=2*365)
+
+    # Query across relationships: Workflow, Step, BaseData, and DocumentWorkflow
+    workflow_steps = db.session.query(
+        BaseData, Workflow, Step, DocumentWorkflow
+    ).join(
+        DocumentWorkflow, DocumentWorkflow.base_data_id == BaseData.id
+    ).join(
+        Workflow, DocumentWorkflow.workflow_id == Workflow.id
+    ).join(
+        Step, DocumentWorkflow.step_id == Step.id
+    ).filter(
+        DocumentWorkflow.end_date >= two_years_ago
+    ).all()
+
+    # Construct a response with related document, workflow, and step data
+    workflow_data = []
+    for base_data, workflow, step, document_workflow in workflow_steps:
+        workflow_data.append({
+            "document_id": base_data.id,
+            "document_number": base_data.number_of_doc,  # Adjust this field based on your BaseData model
+            "document_name": base_data.ft1,  # Adjust this field based on your BaseData model
+            "workflow_id": workflow.id,
+            "workflow_name": workflow.name,  # Assuming Workflow has 'name' field
+            "step_id": step.id,
+            "step_name": step.name,  # Assuming Step has 'name' field
+            "start_date": document_workflow.start_date.isoformat() if document_workflow.start_date else None,  # Convert date to string
+            "end_date": document_workflow.end_date.isoformat() if document_workflow.end_date else None,        # Convert date to string
+        })
+
+    return jsonify(workflow_data)
+
+
+@app.route('/api/workflow-data_bad', methods=['GET'])
+@login_required
+def get_workflow_data_bad():
     print('Get workflows data')
     try:
         base_data_id = request.args.get('base_data_id')
