@@ -306,6 +306,24 @@
                     "display": false
                 }
             },
+            "Workflow Data": {
+                "label": "Workflow Timeline Chart",
+                "url": "/react-page",
+                "protected": true,
+                "allowed_roles": ["Admin", "Manager", "Employee"],
+                "widget": {
+                    "display": false
+                }
+            },
+            "Workflow Tree": {
+                "label": "Workflow Tree",
+                "url": "/workflow_tree",
+                "protected": true,
+                "allowed_roles": ["Admin", "Manager", "Employee"],
+                "widget": {
+                    "display": false
+                }
+            },
             "Statistics": {
                 "label": "Statistics",
                 "url": "/dashboard/authority/dashboard_a3",
@@ -659,7 +677,7 @@
                                 "label": "Workflow Timeline Chart",
                                 "url": "/react-page",
                                 "protected": true,
-                                "allowed_roles": ["Admin", "Manager", "Employee"],
+                                "allowed_roles": ["Admin"],
                                 "widget": {
                                     "display": false
                                 }
@@ -668,7 +686,7 @@
                                 "label": "Workflow Tree",
                                 "url": "/workflow_tree",
                                 "protected": true,
-                                "allowed_roles": ["Admin", "Manager", "Employee"],
+                                "allowed_roles": ["Admin"],
                                 "widget": {
                                     "display": false
                                 }

@@ -790,15 +790,16 @@ def workflow_tree():
     return render_template('workflow_tree.html')
 
 
-from datetime import datetime, timedelta
-from flask import jsonify
-
 @app.route('/api/get_workflow_data', methods=['GET'])
+@login_required
 def get_workflow_data():
-    two_years_ago = datetime.utcnow() - timedelta(days=2*365)
+    from flask_login import current_user
+    from datetime import datetime, timedelta
 
-    # Query across relationships: Workflow, Step, BaseData, and DocumentWorkflow
-    workflow_steps = db.session.query(
+    two_years_ago = datetime.utcnow() - timedelta(days=365 * 2)
+
+    # Base query with joins
+    query = db.session.query(
         BaseData, Workflow, Step, DocumentWorkflow
     ).join(
         DocumentWorkflow, DocumentWorkflow.base_data_id == BaseData.id
@@ -807,7 +808,89 @@ def get_workflow_data():
     ).join(
         Step, DocumentWorkflow.step_id == Step.id
     ).filter(
-        DocumentWorkflow.end_date >= two_years_ago
+        BaseData.area_id.in_([1, 3]),  # Filter area_id in [1, 3]
+        DocumentWorkflow.end_date >= two_years_ago  # Filter for end_date in the last 2 years
+    )
+
+    # Apply filtering based on user role
+    if current_user.has_role('Admin'):
+        pass  # Admins can see everything
+    elif current_user.has_role('Manager'):
+        company_id = session.get('company_id')  # Assume company_id is stored in the session
+        query = query.filter(BaseData.company_id == company_id)
+    elif current_user.has_role('Employee'):
+        user_id = current_user.id  # Assume user_id is associated with BaseData
+        query = query.filter(BaseData.user_id == user_id)
+
+    # Order by workflow_id, step_id, and date_of_doc descending
+    workflow_steps = query.order_by(
+        DocumentWorkflow.workflow_id,
+        DocumentWorkflow.step_id,
+        BaseData.date_of_doc.desc()
+    ).all()
+
+    # Construct the response
+    workflow_data = []
+    for base_data, workflow, step, document_workflow in workflow_steps:
+        workflow_data.append({
+            "document_id": base_data.id,
+            "document_number": base_data.number_of_doc,
+            "document_date": base_data.date_of_doc.isoformat() if base_data.date_of_doc else None,
+            "document_name": base_data.ft1,
+            "company_id": base_data.company_id,
+            "user_id": base_data.user_id,
+            "workflow_id": workflow.id,
+            "workflow_name": workflow.name,
+            "step_id": step.id,
+            "step_name": step.name,
+            "start_date": document_workflow.start_date.isoformat() if document_workflow.start_date else None,
+            "end_date": document_workflow.end_date.isoformat() if document_workflow.end_date else None,
+        })
+
+    return jsonify(workflow_data)
+
+
+@app.route('/api/get_workflow_data', methods=['GET'])
+@login_required
+def get_workflow_data_two():
+    from flask_login import current_user
+    from datetime import datetime, timedelta
+
+    # Assume two_years_ago is already calculated
+    two_years_ago = datetime.utcnow() - timedelta(days=365 * 2)
+
+    # Base query
+    query = db.session.query(
+        BaseData, Workflow, Step, DocumentWorkflow
+    ).join(
+        DocumentWorkflow, DocumentWorkflow.base_data_id == BaseData.id
+    ).join(
+        Workflow, DocumentWorkflow.workflow_id == Workflow.id
+    ).join(
+        Step, DocumentWorkflow.step_id == Step.id
+    ).filter(
+        BaseData.area_id.in_([1, 3]),  # Filter area_id in [1, 3]
+        DocumentWorkflow.end_date >= two_years_ago  # Filter for end_date in the last 2 years
+    )
+
+    # Apply filtering based on user role
+    if current_user.has_role('Admin'):
+        # Admins can see everything, no additional filtering
+        pass
+    elif current_user.has_role('Manager'):
+        # Managers can only see records associated with their company
+        company_id = session.get('company_id')  # Assume company_id is stored in the session
+        query = query.filter(BaseData.company_id == company_id)
+    elif current_user.has_role('Employee'):
+        # Employees can only see their own records
+        user_id = current_user.id  # Assume user_id is associated with BaseData
+        query = query.filter(BaseData.user_id == user_id)
+
+    # Order by workflow_id, step_id, and date_of_doc descending
+    workflow_steps = query.order_by(
+        DocumentWorkflow.workflow_id,  # Order by workflow_id
+        DocumentWorkflow.step_id,  # Then order by step_id
+        BaseData.date_of_doc.desc()  # Then order by date_of_doc in descending order
     ).all()
 
     # Construct a response with related document, workflow, and step data
@@ -816,7 +899,10 @@ def get_workflow_data():
         workflow_data.append({
             "document_id": base_data.id,
             "document_number": base_data.number_of_doc,  # Adjust this field based on your BaseData model
+            "document_date": base_data.date_of_doc.isoformat() if base_data.date_of_doc else None, # Convert date to string
             "document_name": base_data.ft1,  # Adjust this field based on your BaseData model
+            "company_id": base_data.company_id,  # Adjust this field based on your BaseData model
+            "user_id": base_data.user_id,  # Adjust this field based on your BaseData model
             "workflow_id": workflow.id,
             "workflow_name": workflow.name,  # Assuming Workflow has 'name' field
             "step_id": step.id,
@@ -827,6 +913,20 @@ def get_workflow_data():
 
     return jsonify(workflow_data)
 
+
+@app.route('/document/edit/<int:document_id>')
+@login_required
+def edit_document(document_id):
+    # Logic to edit the document
+    print('Logic to edit the document')
+    pass
+
+@app.route('/workflow/manage/<int:workflow_id>')
+@login_required
+def manage_workflow(workflow_id):
+    # Logic to manage the workflow
+    print('Logic to manage the workflow of the document')
+    pass
 
 @app.route('/api/workflow-data_bad', methods=['GET'])
 @login_required

@@ -28,20 +28,8 @@
         <!-- Document Details Box -->
         <div id="document-box" class="alert alert-info">
             <h3>Document Details</h3>
-            <!-- Use Bootstrap grid to organize the data in two columns -->
-            <div id="document-details" class="row">
-                <div class="col-md-6">
-                    <p><strong>Document ID:</strong> <span id="doc-id"></span></p>
-                    <p><strong>Document Number:</strong> <span id="doc-number"></span></p>
-                    <p><strong>Document Name:</strong> <span id="doc-name"></span></p>
-                </div>
-                <div class="col-md-6">
-                    <p><strong>Document Date:</strong> <span id="doc-date"></span></p>
-                    <p><strong>Company ID:</strong> <span id="doc-company"></span></p>
-                    <p><strong>User ID:</strong> <span id="doc-user"></span></p>
-                </div>
-            </div>
-            <div id="modal-buttons" class="mt-3"></div>  <!-- For action buttons like Edit, Manage -->
+            <div id="document-details"></div>
+            <div id="modal-buttons"></div>  <!-- For action buttons like Edit, Manage -->
         </div>
     </div>
 
@@ -92,15 +80,17 @@
                 $('#workflow-tree').on("select_node.jstree", function (e, data) {
                     const selectedData = data.node.data;
 
-                    // Populate document details box with two columns layout
-                    $('#doc-id').text(selectedData.document_id);
-                    $('#doc-number').text(selectedData.document_number);
-                    $('#doc-name').text(selectedData.document_name || 'N/A');
-                    $('#doc-date').text(selectedData.document_date || 'N/A');
-                    $('#doc-company').text(selectedData.company_id);
-                    $('#doc-user').text(selectedData.user_id);
+                    // Populate document details box
+                    $('#document-details').html(`
+                        <p><strong>Document ID:</strong> ${selectedData.document_id}</p>
+                        <p><strong>Document Number:</strong> ${selectedData.document_number}</p>
+                        <p><strong>Document Name:</strong> ${selectedData.document_name || 'N/A'}</p>
+                        <p><strong>Document Date:</strong> ${selectedData.document_date || 'N/A'}</p>
+                        <p><strong>Company ID:</strong> ${selectedData.company_id}</p>
+                        <p><strong>User ID:</strong> ${selectedData.user_id}</p>
+                    `);
 
-                    // Add action buttons (Edit, Manage Workflow)
+                    <!-- Edit and Manage Workflow buttons with correct URLs -->
                     $('#modal-buttons').html(`
                         <a href="/open_admin_4/bdocuments_view/edit/?id=${selectedData.document_id}&url=%2Fopen_admin_4%2Fbdocuments_view%2F" class="btn btn-primary">Edit</a>
                         <a href="/workflow/manage/${selectedData.workflow_id}" class="btn btn-warning">Manage Workflow</a>

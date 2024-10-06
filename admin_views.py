@@ -31,7 +31,8 @@ from flask_admin.base import expose
 from wtforms import IntegerField, FileField, HiddenField
 from datetime import datetime, date, timedelta
 from sqlalchemy import and_, desc
-
+from wtforms.fields import DateField
+from wtforms.widgets import DateInput
 from flask_wtf import FlaskForm
 from flask_admin.form import rules
 from flask import current_app
@@ -134,6 +135,83 @@ def check_record_exists(form, company_id):
         company_id=company_id,
     )
     return query.first() is not None
+
+
+class DocumentsView(ModelView):
+    can_view_details = True
+    can_export = True
+    can_edit = True
+    can_delete = False
+    can_create = True
+
+    # Limit fields displayed to specific fields
+    column_list = ['nr_of_doc', 'date_of_doc', 'ft1', 'company_id', 'user_id', 'fc1', 'file_path', 'no_action']
+
+    # Only show base_data records with area_id in [1, 3]
+    def get_query(self):
+        return super(DocumentsView, self).get_query().filter(BaseData.area_id.in_([1, 3]))
+
+    # Filtering based on user roles
+    def get_list(self, page, sort_field, sort_desc, search, filters, execute=True, **kwargs):
+        query = self.get_query()
+        if current_user.has_role('Admin'):
+            return super(DocumentsView, self).get_list(page, sort_field, sort_desc, search, filters, execute, **kwargs)
+        elif current_user.has_role('Manager'):
+            company_id = session.get('company_id')
+            query = query.filter(BaseData.company_id == company_id)
+        elif current_user.has_role('Employee'):
+            user_id = current_user.id
+            query = query.filter(BaseData.user_id == user_id)
+
+        count = query.count()
+        return count, query.all()
+
+    # Add file_path with a file upload widget and no_action boolean, and add date_of_doc with date picker widget
+    form_extra_fields = {
+        'file_path': FileUploadField('File Path', base_path='/path/to/save/files'),
+        'no_action': BooleanField('No Action'),
+        'date_of_doc': DateField('Document Date', widget=DateInput(), format='%Y-%m-%d')
+    }
+
+    def is_accessible(self):
+        return current_user.is_authenticated and (
+                current_user.has_role('Admin') or current_user.has_role('Employee') or current_user.has_role('Manager')
+        )
+
+    def _handle_view(self, name, **kwargs):
+        if not self.is_accessible():
+            return redirect(url_for('login', next=request.url))
+
+    def inaccessible_callback(self, name, **kwargs):
+        return redirect(url_for('login', next=request.url))
+
+    def on_model_change(self, form, model, is_created):
+        if is_created:
+            model.created_on = datetime.utcnow()
+        model.updated_on = datetime.utcnow()
+
+        # Example of ensuring correct types
+        if form.number_of_doc.data:
+            model.number_of_doc = str(form.number_of_doc.data)
+
+        # Handling date fields correctly
+        if form.date_of_doc.data:
+            if isinstance(form.date_of_doc.data, datetime):
+                model.date_of_doc = form.date_of_doc.data
+            elif isinstance(form.date_of_doc.data, date):
+                model.date_of_doc = datetime.combine(form.date_of_doc.data, datetime.min.time())
+            elif isinstance(form.date_of_doc.data, str):
+                model.date_of_doc = datetime.strptime(form.date_of_doc.data, '%Y-%m-%d %H:%M:%S')
+            else:
+                raise ValidationError("Invalid date format for date_of_doc.")
+
+    def create_form(self, obj=None):
+        form = super(DocumentsView, self).create_form(obj)
+        return form
+
+    def edit_form(self, obj=None):
+        form = super(DocumentsView, self).edit_form(obj)
+        return form
 
 
 class BaseDataView(ModelView):
@@ -5308,6 +5386,7 @@ def create_admin_views(app, intervals):
         admin_app4.add_view(PostView(Post, db.session, name='Posts', endpoint='posts_data_view'))
         admin_app4.add_view(TicketView(Ticket, db.session, name='Tickets', endpoint='tickets_data_view'))
         admin_app4.add_view(BaseDataView(BaseData, db.session, name='Database', endpoint='base_data_view'))
+        admin_app4.add_view(DocumentsView(BaseData, db.session, name='Documents', endpoint='bdocuments_view'))
         admin_app4.add_view(ContainerView(Container, db.session, name='Container', endpoint='container_view'))
         admin_app4.add_view(PlanView(Plan, db.session, name='Plans', endpoint='plan_view'))
         admin_app4.add_view(ProductView(Product, db.session, name='Products', endpoint='product_view'))
