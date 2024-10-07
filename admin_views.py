@@ -672,25 +672,34 @@ class UnassignedDocumentsBaseDataView(ModelView):
     form_excluded_columns = ('company_id', 'status_id', 'created_by', 'updated_on')
 
     def get_query(self):
-        # Query documents that are not yet assigned to any workflow
-        query = db.session.query(BaseData)
+        query = super(UnassignedDocumentsBaseDataView, self).get_query()
 
-        # Filter documents with no workflows assigned
-        query = query.outerjoin(DocumentWorkflow).filter(DocumentWorkflow.id is None)
-        # Filter for documents with workflows
-
-        # Filter based on user roles
         if current_user.is_authenticated:
-            if current_user.has_role('Admin') or current_user.has_role('Authority'):
-                return query
+            if current_user.has_role('Admin'):
+                # Admins can access all records
+                query = query
             elif current_user.has_role('Manager'):
-                subquery = session.query(CompanyUsers.company_id).filter(
-                    CompanyUsers.user_id == current_user.id
-                ).subquery()
-                query = query.filter(BaseData.company_id.in_(subquery))
+                # Managers can access records from their own company
+                company_id = current_user.company_id  # Assuming current_user has a company_id attribute
+                query = query.filter(BaseData.company_id == company_id)
             elif current_user.has_role('Employee'):
-                query = query.filter(BaseData.user_id == current_user.id)
-                return query
+                # Employees can only access their own records
+                user_id = current_user.id
+                query = query.filter(BaseData.user_id == user_id)
+
+        # Perform a LEFT OUTER JOIN to get BaseData without associated DocumentWorkflow
+        query = query.select_from(BaseData).outerjoin(
+            DocumentWorkflow,
+            DocumentWorkflow.base_data_id == BaseData.id
+        ).filter(DocumentWorkflow.base_data_id == None)  # Filter for records without a linked DocumentWorkflow
+
+        # Apply additional filters: area_id in [1, 3] or record_type='document'
+        query = query.filter(
+            (BaseData.area_id.in_([1, 3])) | (BaseData.record_type == 'document')
+        )
+
+        # Sort by BaseData.updated_on DESC (if BaseData has an updated_on field) or date_of_doc DESC
+        query = query.order_by(BaseData.updated_on.desc(), BaseData.date_of_doc.desc())
 
         return query
 
@@ -751,6 +760,45 @@ class UnassignedDocumentsBaseDataView(ModelView):
 
             # Redirect back to the admin page in case of error
             return redirect(url_for('open_admin_3.index'))  # Replace with the correct admin endpoint
+
+
+class WorkflowStepsTreeView(ModelView):
+    # Display the columns you want (workflow name, step name, order, and next_step)
+    column_list = ('workflow', 'step', 'step_order', 'next_step_id')
+
+    # Rename the columns for clarity
+    column_labels = {
+        'workflow': 'Workflow Name',
+        'step': 'Step Name',
+        'step_order': 'Step Order',
+        'next_step_id': 'Next Step'
+    }
+
+    # Format the foreign key relationships to show their names instead of IDs
+    column_formatters = {
+        'workflow': lambda v, c, m, p: m.workflow.name if m.workflow else 'N/A',  # Assuming Workflow has a 'name' field
+        'step': lambda v, c, m, p: m.step.name if m.step else 'N/A',  # Assuming Step has a 'name' field
+        'step_order': lambda v, c, m, p: m.step.order if m.step else 'N/A',
+        'next_step_id': lambda v, c, m, p: m.step.next_step_id if m.step and m.step.next_step_id else 'N/A'
+    }
+
+    # Optional: Filter columns for better search functionality
+    column_filters = ['workflow.name', 'step.name']
+
+    # Control which fields appear in the form for creating/updating
+    form_columns = ['workflow', 'step']
+
+    # Add default sorting by workflow.id, step.id, and step.order
+    column_default_sort = [('workflow.id', False), ('step.order', False)]
+
+    # Optional: Scaffold sortable columns for custom sorting
+    def scaffold_sortable_columns(self):
+        return {
+            'workflow': 'workflow_id',
+            'step': 'step_id',
+            'step_order': 'step.order'
+        }
+
 
 class DocumentsBaseDataDetails(ModelView):
     can_create = False
@@ -875,14 +923,19 @@ class DocumentsBaseDataDetails(ModelView):
                 user_id = current_user.id
                 query = query.filter(BaseData.user_id == user_id)
 
-        # Use select_from() to join DocumentWorkflow explicitly with the ON clause
+        # Use select_from() and explicitly define the ON clause for the join
         query = query.select_from(BaseData).join(
             DocumentWorkflow,
             DocumentWorkflow.base_data_id == BaseData.id
         )
 
-        # Apply sorting: First by 'DocumentWorkflow.updated_on' DESC, then by 'BaseData.date_of_doc' DESC
-        query = query.order_by(BaseData.date_of_doc.desc())
+        # Apply additional filters: area_id in [1, 3] or record_type='document'
+        query = query.filter(
+            (BaseData.area_id.in_([1, 3])) | (BaseData.record_type == 'document')
+        )
+
+        # Sort by updated_on from DocumentWorkflow and date_of_doc from BaseData
+        query = query.order_by(BaseData.updated_on.desc(), DocumentWorkflow.deadline_date.desc())
 
         return query
 
@@ -909,124 +962,6 @@ class DocumentsBaseDataDetails(ModelView):
     def edit_form(self, obj=None):
         form = super(DocumentsBaseDataDetails, self).edit_form(obj)
         return form
-
-class DocumentsBaseDataDetails_two(ModelView):
-    can_create = False
-    can_edit = True
-    can_delete = False
-    can_view_details = True
-
-    name = 'Manage Document Flow'
-
-    # Exclude document number, date, and name
-    form_excluded_columns = ['base_data_id', 'ft1', 'number_of_doc', 'date_of_doc', 'hidden_data']
-
-    # Only include changeable fields
-    form_columns = [
-        'workflow_id',
-        'step_id',
-        'status_id',
-        'start_date',
-        'end_date',
-        'deadline_date',
-        'auto_move',
-        'open_action',
-        'recall_value',
-        'recall_unit',
-        'comments'  # Add other fields if necessary
-    ]
-
-    # Form customization for only changeable attributes
-    form_extra_fields = {
-        'workflow_id': QuerySelectField(
-            'Workflow',
-            query_factory=lambda: Workflow.query.all(),
-            get_label='name'
-        ),
-        'step_id': QuerySelectField(
-            'Step',
-            query_factory=lambda: Step.query.all(),
-            get_label='name'
-        ),
-        'start_date': DateField('Start Date', format='%Y-%m-%d'),
-        'end_date': DateField('End Date', format='%Y-%m-%d'),
-        'deadline_date': DateField('Deadline Date', format='%Y-%m-%d'),
-        'auto_move': BooleanField('Auto Move'),
-        'open_action': BooleanField('Open Action'),
-        'recall_value': IntegerField('Recall Value', default=0),
-        'recall_unit': SelectField('Recall Unit', choices=[(0, 'None'), (1, 'Day'), (2, 'Week'), (3, 'Month')]),
-        'comments': TextAreaField('Comments')
-    }
-
-    def get_base_data_choices(self):
-        one_year_ago = datetime.utcnow() - timedelta(days=365)
-        query = BaseData.query.filter(BaseData.created_on >= one_year_ago)
-
-        if current_user.has_role('Admin'):
-            pass
-        elif current_user.has_role('Manager'):
-            company_id = session.get('company_id')
-            query = query.filter(BaseData.company_id == company_id)
-        elif current_user.has_role('Employee'):
-            user_id = session.get('user_id', current_user.id)
-            query = query.filter(BaseData.user_id == user_id)
-
-        choices = [(base_data.id, f"{base_data.number_of_doc} - {base_data.date_of_doc.strftime('%Y-%m-%d') if base_data.date_of_doc else 'No Date'}") for base_data in query.all()]
-        return choices
-
-    def on_model_change(self, form, model, is_created):
-        # Populate model fields with form data
-        form.populate_obj(model)
-
-        # Other logic if necessary
-        super().on_model_change(form, model, is_created)
-
-        if is_created:
-            model.created_on = datetime.now()  # Set created_on date
-        return model
-
-    def create_form(self):
-        form = super(DocumentsBaseDataDetails, self).create_form()
-        # Ensure document_selection field is added to the form manually
-        form.document_selection = QuerySelectField(
-            'Select Document',
-            query_factory=lambda: BaseData.query.all(),
-            get_label='number_of_doc',
-            allow_blank=True
-        )
-        return form
-
-    def edit_form(self, obj=None):
-        form = super(DocumentsBaseDataDetails, self).edit_form(obj)
-        # Ensure document_selection field is added to the form manually
-        form.document_selection = QuerySelectField(
-            'Select Document',
-            query_factory=lambda: BaseData.query.all(),
-            get_label='number_of_doc',
-            allow_blank=True
-        )
-        return form
-
-    @action('action_manage_dws_deadline', 'Deadline Setting', 'Are you sure you want to change the document deadline?')
-    def action_manage_dws_deadline(self, ids):
-        id_list = [int(id_1) for id_1 in ids]
-        column_list = [
-            DocumentWorkflow.base_data_id,
-            DocumentWorkflow.workflow_id,
-            DocumentWorkflow.step_id,
-            DocumentWorkflow.status_id,
-            DocumentWorkflow.auto_move,
-            DocumentWorkflow.start_date,
-            DocumentWorkflow.deadline_date,
-            DocumentWorkflow.end_date,
-            DocumentWorkflow.hidden_data,
-            DocumentWorkflow.start_recall,
-            DocumentWorkflow.deadline_recall,
-            DocumentWorkflow.end_recall,
-            DocumentWorkflow.recall_unit
-        ]
-        selected_documents = DocumentWorkflow.query.with_entities(*column_list).filter(DocumentWorkflow.base_data_id.in_(id_list)).all()
-        return render_template('admin/set_documents_deadline.html', selected_documents=selected_documents)
 
 class BaseDataViewCommon(ModelView):
     can_view_details = True
@@ -5438,7 +5373,13 @@ def create_admin_views(app, intervals):
         admin_app3.add_view(UnassignedDocumentsBaseDataView(name='Documents Unassigned To Workflows',
                                                      model=BaseData,
                                                      session=db.session,
-                                                    endpoint='new_documents'))
+                                                     endpoint='new_documents'))
+
+        admin_app3.add_view(WorkflowStepsTreeView(name='Workflows Steps Tree',
+                                      model=WorkflowSteps,
+                                      session=db.session,
+                                      endpoint='workflow_steps_tree'))
+
 
         admin_app3.add_view(ModelView(name='Workflows Dictionary',
                                       model=Workflow,
@@ -5862,7 +5803,6 @@ class QuestionnaireCompaniesForm(ModelView):
     column_default_sort = ('questionnaire_id', True)  # Sort by question_id (ascending)
     pass
 
-
 class TicketForm(ModelView):
     pass  # No custom form needed for Questionnaire
 
@@ -5900,6 +5840,8 @@ class StatusForm(ModelView):
 class LexicForm(ModelView):
     pass  # No custom form needed for Lexic
 
+class WorkflowStepsView(ModelView):
+    pass
 
 class UsersView(ModelView):
 
@@ -6245,9 +6187,6 @@ class WorkflowView(WorkflowForm):
 
 class StepView(StepForm):
     pass  # No customizations needed for StepView
-
-class WorkflowStepsView(WorkflowStepsForm):
-    pass
 
 class QuestionnaireQuestionsView(QuestionnaireQuestionsForm):
     pass
