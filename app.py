@@ -850,68 +850,67 @@ def get_workflow_data():
     return jsonify(workflow_data)
 
 
-@app.route('/api/get_workflow_data', methods=['GET'])
+@app.route('/company_tree')
 @login_required
-def get_workflow_data_two():
+def company_tree():
+    return render_template('company_tree.html')
+
+@app.route('/api/get_company_data', methods=['GET'])
+@login_required
+def get_company_data():
     from flask_login import current_user
-    from datetime import datetime, timedelta
+    import logging
 
-    # Assume two_years_ago is already calculated
-    two_years_ago = datetime.utcnow() - timedelta(days=365 * 2)
-
-    # Base query
+    # Base query with joins for Company, Users (through CompanyUsers), and Roles (through UserRoles)
     query = db.session.query(
-        BaseData, Workflow, Step, DocumentWorkflow
+        Company, Users, Role
     ).join(
-        DocumentWorkflow, DocumentWorkflow.base_data_id == BaseData.id
+        CompanyUsers, CompanyUsers.company_id == Company.id  # Join CompanyUsers model on company_id
     ).join(
-        Workflow, DocumentWorkflow.workflow_id == Workflow.id
+        Users, CompanyUsers.user_id == Users.id  # Join Users through CompanyUsers model on user_id
     ).join(
-        Step, DocumentWorkflow.step_id == Step.id
-    ).filter(
-        BaseData.area_id.in_([1, 3]),  # Filter area_id in [1, 3]
-        DocumentWorkflow.end_date >= two_years_ago  # Filter for end_date in the last 2 years
+        UserRoles, UserRoles.user_id == Users.id  # Join Users to UserRoles
+    ).join(
+        Role, UserRoles.role_id == Role.id  # Join Role through UserRoles
     )
 
     # Apply filtering based on user role
     if current_user.has_role('Admin'):
-        # Admins can see everything, no additional filtering
-        pass
+        pass  # Admins can see everything
     elif current_user.has_role('Manager'):
-        # Managers can only see records associated with their company
         company_id = session.get('company_id')  # Assume company_id is stored in the session
-        query = query.filter(BaseData.company_id == company_id)
+        query = query.filter(Company.id == company_id)
     elif current_user.has_role('Employee'):
-        # Employees can only see their own records
-        user_id = current_user.id  # Assume user_id is associated with BaseData
-        query = query.filter(BaseData.user_id == user_id)
+        user_id = current_user.id  # Filter for current employee user
+        query = query.filter(Users.id == user_id)
 
-    # Order by workflow_id, step_id, and date_of_doc descending
-    workflow_steps = query.order_by(
-        DocumentWorkflow.workflow_id,  # Order by workflow_id
-        DocumentWorkflow.step_id,  # Then order by step_id
-        BaseData.date_of_doc.desc()  # Then order by date_of_doc in descending order
+    # Order by company, user, and role
+    company_users_roles = query.order_by(
+        Company.id, Users.id, Role.id
     ).all()
 
-    # Construct a response with related document, workflow, and step data
-    workflow_data = []
-    for base_data, workflow, step, document_workflow in workflow_steps:
-        workflow_data.append({
-            "document_id": base_data.id,
-            "document_number": base_data.number_of_doc,  # Adjust this field based on your BaseData model
-            "document_date": base_data.date_of_doc.isoformat() if base_data.date_of_doc else None, # Convert date to string
-            "document_name": base_data.ft1,  # Adjust this field based on your BaseData model
-            "company_id": base_data.company_id,  # Adjust this field based on your BaseData model
-            "user_id": base_data.user_id,  # Adjust this field based on your BaseData model
-            "workflow_id": workflow.id,
-            "workflow_name": workflow.name,  # Assuming Workflow has 'name' field
-            "step_id": step.id,
-            "step_name": step.name,  # Assuming Step has 'name' field
-            "start_date": document_workflow.start_date.isoformat() if document_workflow.start_date else None,  # Convert date to string
-            "end_date": document_workflow.end_date.isoformat() if document_workflow.end_date else None,        # Convert date to string
+    # Construct the response
+    company_data = []
+    for company, user, role in company_users_roles:
+        logging.info(f"Processing record: Company {company.name}, User {user.username}, Role {role.name}")
+        company_data.append({
+            "company_id": company.id,
+            "company_name": company.name,
+            "user_id": user.id,
+            "user_name": user.username,  # Assuming user has a 'username' field
+            "title": user.title,  # Assuming user has a 'username' field
+            "name": user.first_name,  # Assuming user has a 'username' field
+            "last_name": user.last_name,  # Assuming user has a 'username' field
+            "mobile": user.mobile_phone,  # Assuming user has a 'username' field
+            "email": user.email,  # Assuming user has a 'username' field
+            "role_id": role.id,
+            "role_name": role.name
         })
 
-    return jsonify(workflow_data)
+    # Ensure the data is being sent as JSON
+    response = jsonify(company_data)
+
+    return response
 
 
 @app.route('/document/edit/<int:document_id>')
@@ -3295,7 +3294,6 @@ def company_overview_historical():
         f.write(html_cards)
 
     return render_template('admin_cards_progression.html', html_cards=html_cards, user_roles=user_roles)
-
 
 
 @app.route('/company_overview_historical222')
@@ -5811,8 +5809,6 @@ def set_cookies():
 
     return response
 
-
-
 def generate_event_instances(event):
     instances = []
     if event.recurrence and event.recurrence_end:
@@ -6555,7 +6551,6 @@ def opt_plan():
     except Exception as e:
         flash(f"An error occurred while subscribing to the plan: {e}", "danger")
         return redirect(url_for('checklist'))
-
 
 
 def get_checklist_status(user_email):

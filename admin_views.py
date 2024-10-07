@@ -5375,11 +5375,21 @@ def create_admin_views(app, intervals):
                                                      session=db.session,
                                                      endpoint='new_documents'))
 
+        # Add views to admin_app2
+        admin_app3.add_view(
+            DocumentUploadViewExisting(model=BaseData, session=db.session, name='Attach Existing Document(s) to Workflow(s)',
+                                       intervals=intervals, area_id=3,
+                                subarea_id=1, endpoint='upload_documenti_view_existing'))
+        # Add views to admin_app2
+        admin_app3.add_view(
+            DocumentUploadView(model=BaseData, session=db.session, name='List of Document Workflow',
+                               intervals=intervals, area_id=3,
+                                subarea_id=1, endpoint='upload_documenti_view'))
+
         admin_app3.add_view(WorkflowStepsTreeView(name='Workflows Steps Tree',
                                       model=WorkflowSteps,
                                       session=db.session,
                                       endpoint='workflow_steps_tree'))
-
 
         admin_app3.add_view(ModelView(name='Workflows Dictionary',
                                       model=Workflow,
@@ -5435,12 +5445,12 @@ def create_admin_views(app, intervals):
 
         # Add views to admin_app2
         admin_app5.add_view(
-            DocumentUploadViewExisting(model=BaseData, session=db.session, name='Attach Existing Document(s) to Workflow(s)', intervals=intervals, area_id=3,
-                                subarea_id=1, endpoint='upload_documenti_view_existing'))
+            DocumentUploadViewExisting(model=BaseData, session=db.session, name='Attach Existing Document(s) to Workflow(s) 5', intervals=intervals, area_id=3,
+                                subarea_id=1, endpoint='upload_documenti_view_existing5'))
         # Add views to admin_app2
         admin_app5.add_view(
-            DocumentUploadView(model=BaseData, session=db.session, name='List of Document Workflow', intervals=intervals, area_id=3,
-                                subarea_id=1, endpoint='upload_documenti_view'))
+            DocumentUploadView(model=BaseData, session=db.session, name='List of Document Workflow 5', intervals=intervals, area_id=3,
+                                subarea_id=1, endpoint='upload_documenti_view5'))
 
 
         # EOF app5

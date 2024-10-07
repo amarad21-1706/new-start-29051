@@ -598,6 +598,17 @@
                                     "display": false
                                 }
                             },
+                            "Company Tree": {
+                                "label": "Company User Role Tree",
+                                "url": "/company_tree",
+                                "protected": true,
+                                "allowed_roles": [
+                                    "Admin"
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
+                            },
                             "Manage Documents": {
                                 "label": "Documents",
                                 "url": "/model_document",
