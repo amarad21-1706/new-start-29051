@@ -899,7 +899,7 @@ def get_company_data():
             "user_id": user.id,
             "user_name": user.username,  # Assuming user has a 'username' field
             "title": user.title,  # Assuming user has a 'username' field
-            "name": user.first_name,  # Assuming user has a 'username' field
+            "first_name": user.first_name,  # Assuming user has a 'username' field
             "last_name": user.last_name,  # Assuming user has a 'username' field
             "mobile": user.mobile_phone,  # Assuming user has a 'username' field
             "email": user.email,  # Assuming user has a 'username' field

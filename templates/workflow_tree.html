@@ -11,6 +11,12 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.12/themes/default/style.min.css" />
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
+        /* Set Home and Back buttons text color */
+        .navbar .nav-link, .btn {
+            color: #05FF05 !important;  /* Light salmon for Home and Back */
+            background-color: transparent !important;  /* Transparent background */
+        }
+
         /* Background and text colors to ensure readability */
         body {
             background-color: #f8f9fa;  /* Light background color */
@@ -44,17 +50,27 @@
             border-radius: 5px;
             background-color: #77ddee;  /* Light background for the document box */
         }
+
+        /* Darker background for buttons in the details box */
+        .btn-primary {
+            background-color: #0056b3 !important;  /* Darker blue for Edit button */
+            border-color: #004494 !important;  /* Matching border color */
+        }
+
+        .btn-warning {
+            background-color: #008899 !important;  /* Darker orange for Manage Workflow button */
+            border-color: #004494 !important;  /* Matching border color */
+        }
+
+        .btn-primary:hover, .btn-warning:hover {
+            background-color: #003d80 !important;  /* Even darker on hover for Edit button */
+            border-color: #003060 !important;  /* Even darker border on hover */
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>Workflow Tree</h1>
-
-        <!-- Home and Back buttons -->
-        <div class="mt-3">
-            <a href="/" class="btn btn-primary">Home</a>
-            <button onclick="history.back()" class="btn btn-secondary">Back</button>
-        </div>
 
         <!-- Workflow Tree container -->
         <div id="workflow-tree" class="mt-4"></div>

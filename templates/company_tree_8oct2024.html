@@ -14,7 +14,7 @@
     <style>
         /* Set Home and Back buttons text color */
         .navbar .nav-link, .btn {
-            color: #05FF05 !important;  /* Light salmon for Home and Back */
+            color: #FFA59A !important;  /* Light salmon for Home and Back */
             background-color: transparent !important;  /* Transparent background */
         }
 
@@ -22,44 +22,19 @@
             color: #ADD8E6 !important;  /* Light blue on hover */
         }
 
-        /* Ensure the tree text is clearly visible */
-        company-tree {
-            color: #212529;  /* Dark color for the tree text */
-        }
-
+        /* Set tree elements font color to light salmon */
         .jstree-anchor {
-            color: #00ffff !important;  /* Blue color for the links */
+            color: #FFA07A !important;  /* Light salmon for tree text */
         }
-
 
         .jstree-anchor:hover {
-            color: #00a1f1 !important;  /* Darker blue on hover for better contrast */
+            color: #FF8C66 !important;  /* Darker salmon on hover */
         }
 
+        /* Set the title font color to light salmon and make it smaller */
         h1 {
-            font-size: 1.5rem;  /* Adjust title font size */
-            color: #00ffff;  /* Blue color for the title */
-        }
-
-        /* Darker background for buttons in the details box */
-        .btn-primary {
-            background-color: #0056b3 !important;  /* Darker blue for Edit button */
-            border-color: #004494 !important;  /* Matching border color */
-        }
-
-        .btn-warning {
-            background-color: #008899 !important;  /* Darker orange for Manage Workflow button */
-            border-color: #004494 !important;  /* Matching border color */
-        }
-
-        .btn-primary:hover, .btn-warning:hover {
-            background-color: #003d80 !important;  /* Even darker on hover for Edit button */
-            border-color: #003060 !important;  /* Even darker border on hover */
-        }
-
-        /* Initially hide the details box */
-        #details-box {
-            display: none;
+            color: #FFA07A;  /* Light salmon color */
+            font-size: 1.25rem;  /* Smaller font size for the title */
         }
     </style>
 
@@ -89,8 +64,6 @@
                     <p><strong>Email:</strong> <span id="email"></span></p>
                 </div>
             </div>
-            <!-- Edit Button -->
-            <div id="edit-buttons" class="mt-3"></div> <!-- Edit button will be dynamically added here -->
         </div>
     </div>
 
@@ -117,7 +90,6 @@
                             company_id: item.company_id,
                             company_name: item.company_name,
                             user_name: item.user_name,
-                            user_id: item.user_id,  // Add user ID for the Edit button
                             role_name: item.role_name,
                             title: item.title,
                             first_name: item.first_name,
@@ -154,10 +126,6 @@
                     $('#last-name').text(selectedData.last_name || 'N/A');
                     $('#mobile-phone').text(selectedData.mobile_phone || 'N/A');
                     $('#email').text(selectedData.email || 'N/A');
-
-                    // Create the Edit button dynamically
-                    const editButton = `<a href="/open_admin_4/users_data_view/edit/?id=${selectedData.user_id}&url=%2Fopen_admin_4%2Fusers_data_view%2F" class="btn btn-primary">Edit</a>`;
-                    $('#edit-buttons').html(editButton);  // Add the Edit button to the #edit-buttons div
 
                     // Show the details box
                     $('#details-box').show();
