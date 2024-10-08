@@ -920,12 +920,15 @@ def edit_document(document_id):
     print('Logic to edit the document')
     pass
 
-@app.route('/workflow/manage/<int:workflow_id>')
+
+
+@app.route('/workflow/manage/<int:workflow_id>', methods=['GET'])
 @login_required
+@roles_required(['Employee', 'Manager', 'Admin'])
 def manage_workflow(workflow_id):
-    # Logic to manage the workflow
-    print('Logic to manage the workflow of the document')
-    pass
+    # You can replace this with the actual URL of your admin view
+    return redirect(f'/open_admin_3/upload_documenti_view_existing/edit/?id={workflow_id}&url=%2Fopen_admin_3%2Fupload_documenti_view_existing%2F')
+
 
 @app.route('/api/workflow-data_bad', methods=['GET'])
 @login_required

@@ -11,10 +11,13 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jstree/3.3.12/themes/default/style.min.css" />
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
     <style>
-        /* Set Home and Back buttons text color */
         .navbar .nav-link, .btn {
-            color: #05FF05 !important;  /* Light salmon for Home and Back */
+            color: #00E0E0 !important;  /* Light salmon for Home and Back */
             background-color: transparent !important;  /* Transparent background */
+        }
+
+        .navbar .nav-link:hover, .btn:hover {
+            color: #339090 !important;  /* Light blue on hover */
         }
 
         /* Background and text colors to ensure readability */
@@ -152,7 +155,7 @@
                     // Add action buttons (Edit, Manage Workflow)
                     $('#modal-buttons').html(`
                         <a href="/open_admin_4/bdocuments_view/edit/?id=${selectedData.document_id}&url=%2Fopen_admin_4%2Fbdocuments_view%2F" class="btn btn-primary">Edit</a>
-                        <a href="/workflow/manage/${selectedData.workflow_id}" class="btn btn-warning">Manage Workflow</a>
+                        <a href="/open_admin_3/upload_documenti_view_existing/edit/?id=${selectedData.document_id}&url=%2Fopen_admin_3%2Fupload_documenti_view_existing%2F" class="btn btn-warning">Manage Workflow</a>
                     `);
 
                     // Show the document details box

@@ -8,3 +8,4 @@ app = Flask(__name__)
 def increment():
    # Process request and return response
    return jsonify({"message": "Incremented successfully"})
+
