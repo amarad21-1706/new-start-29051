@@ -189,6 +189,15 @@
                     "display": true
                 }
             },
+            "Cards One": {
+                "label": "My Actions",
+                "url": "/show_cards",
+                "protected": true,
+                "allowed_roles": ["Admin", "Authority", "Employee", "Manager"],
+                "widget": {
+                    "display": false
+                }
+            },
             "Area di controllo 1": {
                 "label": "Area 1",
                 "url": "/area_di_controllo_1",
@@ -251,57 +260,11 @@
                     "size": "medium"
                 }
             },
-            "Area di controllo 3": {
-                "label": "Area 3",
+            "Workflows Admin View - Reserved": {
+                "label": "Area 3 - Document Workflows",
                 "url": "/open_admin_3",
                 "protected": true,
                 "allowed_roles": ["Admin", "Employee", "Manager"],
-                "widget": {
-                    "display": false
-                }
-            },
-            "Area di controllo 10": {
-                "label": "Surveys and Questionnaires",
-                "url": "/open_admin_10",
-                "protected": true,
-                "allowed_roles": ["Admin", "Manager", "Employee", "Provider"],
-                "widget": {
-                    "display": false
-                }
-            },
-            "Contracts": {
-                "label": "Contract Management",
-                "url": "/open_admin_6",
-                "protected": true,
-                "allowed_roles": ["Admin", "Employee", "Manager", "Authority", "Provider"],
-                "widget": {
-                    "display": true
-                }
-            },
-            "Cards One": {
-                "label": "My Actions",
-                "url": "/show_cards",
-                "protected": true,
-                "allowed_roles": ["Admin", "Authority", "Employee", "Manager"],
-                "widget": {
-                    "display": false
-                }
-            },
-            "Area di controllo 5": {
-                "label": "Document Workflow Manager",
-                "url": "/open_admin_5",
-                "protected": true,
-                "allowed_roles": ["Admin", "Employee", "Manager"],
-                "widget": {
-                    "display": true
-                }
-            },
-            "Documents Workflow": {
-                "label": "Workflow Lists",
-                "url": "/open_admin_3",
-                "protected": true,
-                "allowed_roles": [
-                    "Admin", "Employee", "Manager"],
                 "widget": {
                     "display": false
                 }
@@ -322,6 +285,24 @@
                 "allowed_roles": ["Admin", "Manager", "Employee"],
                 "widget": {
                     "display": false
+                }
+            },
+            "Area di controllo 10": {
+                "label": "Surveys and Questionnaires",
+                "url": "/open_admin_10",
+                "protected": true,
+                "allowed_roles": ["Admin", "Manager", "Employee", "Provider"],
+                "widget": {
+                    "display": false
+                }
+            },
+            "Contracts": {
+                "label": "Contract Management",
+                "url": "/open_admin_6",
+                "protected": true,
+                "allowed_roles": ["Admin", "Employee", "Manager", "Authority", "Provider"],
+                "widget": {
+                    "display": true
                 }
             },
             "Statistics": {
@@ -492,6 +473,17 @@
                             "display": false
                         }
                     },
+                    "Workflows Admin View": {
+                        "label": "Document Workflows",
+                        "url": "/open_admin_3",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin"
+                        ],
+                        "widget": {
+                            "display": false
+                        }
+                    },
                     "Audit": {
                         "label": "Audit",
                         "url": "/dashboard_company_audit",
@@ -528,26 +520,6 @@
                     "Deadlines": {
                         "label": "Deadlines",
                         "url": "/dashboard/company/dashboard_deadlines",
-                        "protected": true,
-                        "allowed_roles": [
-                            "Admin"
-                        ],
-                        "widget": {
-                            "display": false
-                        }
-                    },
-                    "Area di controllo 3": {
-                        "label": "Document Workflow Manager",
-                        "url": "/open_admin_5",
-                        "protected": true,
-                        "allowed_roles": ["Admin"],
-                        "widget": {
-                            "display": false
-                        }
-                    },
-                    "Area 3 - test": {
-                        "label": "Workflows List",
-                        "url": "/open_admin_3",
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
@@ -610,12 +582,31 @@
                                 }
                             },
                             "Manage Documents": {
-                                "label": "Documents",
-                                "url": "/model_document",
+                                "label": "Documents Manager",
+                                "url": "/open_admin_3",
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"
                                 ],
+                                "widget": {
+                                    "display": false
+                                }
+                            },
+
+                            "Workflow Data": {
+                                "label": "Workflow Timeline Chart",
+                                "url": "/react-page",
+                                "protected": true,
+                                "allowed_roles": ["Admin"],
+                                "widget": {
+                                    "display": false
+                                }
+                            },
+                            "Workflow Tree": {
+                                "label": "Workflow Tree",
+                                "url": "/workflow_tree",
+                                "protected": true,
+                                "allowed_roles": ["Admin"],
                                 "widget": {
                                     "display": false
                                 }
@@ -678,24 +669,6 @@
                             "Calendar-2": {
                                 "label": "Agenda",
                                 "url": "/calendar",
-                                "protected": true,
-                                "allowed_roles": ["Admin"],
-                                "widget": {
-                                    "display": false
-                                }
-                            },
-                            "Workflow Data": {
-                                "label": "Workflow Timeline Chart",
-                                "url": "/react-page",
-                                "protected": true,
-                                "allowed_roles": ["Admin"],
-                                "widget": {
-                                    "display": false
-                                }
-                            },
-                            "Workflow Tree": {
-                                "label": "Workflow Tree",
-                                "url": "/workflow_tree",
                                 "protected": true,
                                 "allowed_roles": ["Admin"],
                                 "widget": {

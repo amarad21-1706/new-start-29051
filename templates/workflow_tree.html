@@ -115,7 +115,9 @@
 
                     // Add step and document details to the workflow's children
                     workflows[item.workflow_name].children.push({
-                        text: `${item.step_name} - Document: ${item.document_number}`,
+                        // Update the text property to include document number, name, and date
+                        text: `${item.step_name} - Document: ${item.document_number} - ${item.document_name} (Date: ${item.document_date || 'N/A'})`,
+
                         data: {
                             document_id: item.document_id,
                             workflow_id: item.workflow_id,
