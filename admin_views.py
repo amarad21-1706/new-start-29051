@@ -3094,6 +3094,107 @@ def get_query(self):
         )
 
     return query
+class CombinedDocumentAdminView(BaseDataViewCommon):
+    can_create = False
+    can_edit = True
+    can_delete = True
+    can_export = True
+    can_set_page_size = True
+    can_view_details = True
+    create_template = 'admin/area_1/create_base_data_8.html'
+
+    column_list = [
+        'id', 'company_name', 'user_name', 'interval_name', 'interval_ord', 'fi0',
+        'record_type', 'area_name', 'subarea_name', 'data_type', 'subject_name',
+        'legal_name', 'file_path', 'created_on', 'number_of_doc', 'fc1', 'no_action'
+    ]
+
+    column_labels = {
+        'id': 'Document ID', 'company_name': 'Company', 'user_name': 'User',
+        'interval_name': 'Interval', 'interval_ord': 'Interv.#', 'fi0': 'Year',
+        'record_type': 'Type', 'area_name': 'Area', 'subarea_name': 'Subarea',
+        'data_type': 'Data Type', 'subject_name': 'Subject', 'legal_name': 'Doc Type',
+        'file_path': 'File', 'created_on': 'Date created', 'number_of_doc': 'Doc. #',
+        'fc1': 'Note', 'no_action': 'No doc.'
+    }
+
+    column_searchable_list = ('company_id', 'user_id', 'fi0', 'subject_id', 'legal_document_id', 'file_path')
+    column_filters = ('company_id', 'user_id', 'fi0', 'subject_id', 'legal_document_id', 'file_path')
+
+    def get_query(self):
+        query = self.session.query(self.model).filter(
+            or_(
+                self.model.area_id.in_([1, 3]),
+                self.model.record_type == 'document'
+            )
+        ).order_by(desc(self.model.updated_on))
+
+        if current_user.is_authenticated:
+            if current_user.has_role('Admin'):
+                return query
+            elif current_user.has_role('Manager'):
+                subquery = db.session.query(CompanyUsers.company_id).filter(CompanyUsers.user_id == current_user.id).subquery()
+                query = query.filter(self.model.company_id.in_(subquery))
+            elif current_user.has_role('Employee'):
+                query = query.filter(self.model.user_id == current_user.id)
+        return query
+
+    @action('attach_to_workflow', 'Attach to Workflow', 'Are you sure you want to attach these documents to a workflow?')
+    def action_attach_to_workflow(self, ids):
+        document_ids = [int(id_1) for id_1 in ids]
+        selected_documents = BaseData.query.filter(BaseData.id.in_(document_ids)).all()
+        workflows = Workflow.query.all()
+        steps = Step.query.all()
+        return render_template('admin/attach_to_workflow.html', workflows=workflows, steps=steps, selected_documents=selected_documents)
+
+    @action('transition_to_next_step',
+            'Transition to Next Step',
+            'Are you sure you want to transition selected documents to the next step?')
+    def action_transition_to_next_step(self, ids):
+        try:
+            document_ids = [int(id_1) for id_1 in ids]
+            selected_documents = BaseData.query.filter(BaseData.id.in_(document_ids)).all()
+
+            for document in selected_documents:
+                # Fetch the current document workflow
+                current_workflow = DocumentWorkflow.query.filter_by(base_data_id=document.id).first()
+
+                if current_workflow:
+                    current_step = current_workflow.step
+                    # Fetch the next step using next_step_id
+                    next_step = Step.query.filter_by(id=current_step.next_step_id).first()
+
+                    if next_step:
+                        # Update the current workflow to the next step
+                        current_workflow.step_id = next_step.id
+                        current_workflow.updated_on = datetime.utcnow()
+                        db.session.commit()
+                        flash(f"Document {document.id} transitioned to next step {next_step.name}.", 'success')
+                    else:
+                        flash(f"No next step found for document {document.id}.", 'error')
+                else:
+                    flash(f"No workflow found for document {document.id}.", 'error')
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error transitioning to next step: {str(e)}", 'error')
+
+    # Action to list workflows of selected documents
+    @action('list_workflow', 'List Workflow of Documents', 'View workflow history of selected documents?')
+    def action_list_workflow(self, ids):
+        pass  # Implement workflow listing logic here
+
+    def get_list(self, page, sort_column, sort_desc, search, filters, page_size=None):
+        count, data = super().get_list(page, sort_column, sort_desc, search, filters, page_size)
+        for item in data:
+            item.company_name = item.company.name if item.company else 'n.a.'
+            item.user_name = item.user.last_name if item.user else 'n.a.'
+        return count, data
+
+    def is_accessible(self):
+        return current_user.is_authenticated and (
+            current_user.has_role('Admin') or current_user.has_role('Authority') or current_user.has_role('Manager') or current_user.has_role('Employee')
+        )
 
 
 class DocumentUploadViewExisting(BaseDataViewCommon):
@@ -5376,6 +5477,12 @@ def create_admin_views(app, intervals):
                                                      endpoint='new_documents'))
 
         # Add views to admin_app2
+
+        admin_app3.add_view(
+            CombinedDocumentAdminView(model=BaseData, session=db.session, name='Document Workflow Actions',
+                                       intervals=intervals, area_id=3,
+                                subarea_id=1, endpoint='combined_document_view'))
+
         admin_app3.add_view(
             DocumentUploadViewExisting(model=BaseData, session=db.session, name='Attach Existing Document(s) to Workflow(s)',
                                        intervals=intervals, area_id=3,
