@@ -94,7 +94,7 @@ from config.config import (get_current_intervals,
         generate_workflow_document_report_data, generate_document_step_report_data, get_cet_time)
 
 #from contract_routes import user_has_access_to_contract
-
+from routes.routes import geonames_bp, fetch_phone_prefixes
 from mail_service import send_simple_message, send_simple_message333
 from wtforms import Form
 
@@ -160,9 +160,6 @@ from werkzeug.datastructures import ImmutableMultiDict
 from flask_login import login_user, logout_user, current_user
 
 from flask_caching import Cache
-import geocoder
-
-from opencage.geocoder import OpenCageGeocode
 
 from urllib.parse import urlparse
 import logging
@@ -182,11 +179,6 @@ from custom_encoder import CustomJSONEncoder
 # Use the custom JSON encoder
 
 from admin_views import create_admin_views  # Import the admin views module
-
-import pycountry
-import phonenumbers
-from phonenumbers.phonenumberutil import region_code_for_country_code
-from phonenumbers.phonenumberutil import NumberParseException, PhoneNumberType
 
 from cachetools import TTLCache, cached
 
@@ -210,7 +202,10 @@ GEONAMES_USERNAME = os.getenv('GEONAMES_USERNAME')
 NOMINATIM_URL = os.getenv('NOMINATIM_URL')
 cache = TTLCache(maxsize=100, ttl=86400)  # Adjust cache size and TTL as needed
 
-print('geo-names on')
+# Register the geonames blueprint
+app.register_blueprint(geonames_bp, url_prefix='/api')  # Add a prefix if needed
+
+print('geo-names blueprint registered')
 # Create a cache with a TTL of 600 seconds and a max size of 100 items
 
 # Load API key from environment variable
@@ -239,7 +234,6 @@ stripe.publishable_key = app.config['STRIPE_PUBLISHABLE_KEY']
 # Register the password reset route
 # app.add_url_rule('/admin_reset_password', 'admin_reset_password', admin_reset_password, methods=['GET', 'POST'])
 # print('url rule set')
-
 
 # TODO (in)activate LOGGER LOGGING ETC
 # Create a custom logger
@@ -517,7 +511,6 @@ json_file_path = os.path.join(os.path.dirname(__file__), 'static', 'js', 'menuSt
 # json_file_path = get_current_directory() + "/static/js/menuStructure101.json"
 with open(Path(json_file_path), 'r') as file:
     main_menu_items = json.load(file)
-
 
 def is_user_role(session, user_id, role_name):
     # Get user roles for the specified user ID
@@ -2516,118 +2509,6 @@ def invalidate_cache():
 # prefixes = [{'country': region_code_for_country_code(country_code), 'prefix': f'+{country_code}'}
 #             for country_code in phonenumbers.SUPPORTED_REGIONS]
 
-
-
-# Function to fetch phone prefixes
-# @cached(cache)
-def fetch_phone_prefixes():
-    prefixes = []
-    for country in pycountry.countries:
-        try:
-            example_number = phonenumbers.example_number_for_type(country.alpha_2, PhoneNumberType.MOBILE)
-            phone_prefix = f"+{example_number.country_code}" if example_number else None
-            if phone_prefix:
-                prefixes.append({'prefix': phone_prefix, 'country': country.name})
-        except (NumberParseException, AttributeError, KeyError) as e:
-            print(f"Error with country {country.name}: {e}")
-            continue  # Skip countries that cause exceptions
-    return prefixes
-
-@app.route('/phone_prefixes', methods=['GET'])
-def get_phone_prefixes():
-    return jsonify(fetch_phone_prefixes())
-
-# Function to fetch regions
-@app.route('/regions')
-# @cached(cache)
-def get_regions():
-    country_code = request.args.get('country_code')
-    if not country_code:
-        return jsonify({'error': 'Country code is required'}), 400
-
-    url = f'http://api.geonames.org/countryInfoJSON?country={country_code}&username=amarad21'
-    response = requests.get(url)
-    data = response.json()
-
-    if 'geonames' not in data:
-        return jsonify({'error': 'Invalid response from GeoNames API'}), 500
-
-    country_geoname_id = data['geonames'][0].get('geonameId', None)
-    if not country_geoname_id:
-        return jsonify({'error': 'Could not find geonameId for the country'}), 500
-
-    url = f'http://api.geonames.org/childrenJSON?geonameId={country_geoname_id}&username=amarad21'
-    response = requests.get(url)
-    data = response.json()
-
-    if 'geonames' not in data:
-        return jsonify({'error': 'Invalid response from GeoNames API'}), 500
-
-    regions = [{'code': region.get('geonameId', 'No geonameId'), 'name': region.get('name', 'No name')} for region in data.get('geonames', [])]
-    return jsonify(regions)
-
-
-@app.route('/provinces')
-def get_provinces():
-    region_code = request.args.get('region_code')
-    if not region_code:
-        return jsonify({'error': 'Region code is required'}), 400
-
-    url = f'http://api.geonames.org/childrenJSON?geonameId={region_code}&username=amarad21'
-    response = requests.get(url)
-    data = response.json()
-
-    if 'geonames' not in data:
-        return jsonify({'error': 'Invalid response from GeoNames API'}), 500
-
-    provinces = [{'code': province.get('geonameId', 'No geonameId'), 'name': province.get('name', 'No name')} for province in data.get('geonames', [])]
-    return jsonify(provinces)
-
-@app.route('/cities')
-def get_cities():
-    province_code = request.args.get('province_code')
-    if not province_code:
-        return jsonify({'error': 'Province code is required'}), 400
-
-    url = f'http://api.geonames.org/childrenJSON?geonameId={province_code}&username=amarad21'
-    response = requests.get(url)
-    data = response.json()
-
-    if 'geonames' not in data:
-        return jsonify({'error': 'Invalid response from GeoNames API'}), 500
-
-    cities = [{'name': city.get('name', 'No name'), 'geonameId': city.get('geonameId', 'No geonameId')} for city in data.get('geonames', [])]
-    return jsonify(cities)
-
-@app.route('/streets')
-def get_streets():
-    city_id = request.args.get('city_id')
-    if not city_id:
-        return jsonify({'error': 'City ID is required'}), 400
-
-    url = f'http://api.geonames.org/streetSearchJSON?geonameId={city_id}&maxRows=1000&username=amarad21'
-    response = requests.get(url)
-    data = response.json()
-    streets = [{'name': place.get('street', 'Undefined')} for place in data.get('streets', [])]
-    return jsonify(streets)
-
-@app.route('/zip_codes')
-def get_zip_codes():
-    city_name = request.args.get('city_name')
-    if not city_name:
-        return jsonify({'error': 'City name is required'}), 400
-
-    url = f'http://api.geonames.org/postalCodeSearchJSON?placename={city_name}&maxRows=1000&username=amarad21'
-    response = requests.get(url)
-    data = response.json()
-    zip_codes = [{'postalCode': place.get('postalCode', 'Undefined')} for place in data.get('postalCodes', [])]
-    return jsonify(zip_codes)
-
-
-@app.route('/countries', methods=['GET'])
-def get_countries():
-    countries = [{'alpha2Code': country.alpha_2, 'name': country.name} for country in pycountry.countries]
-    return jsonify(countries)
 
 
 @app.route('/access/signup', methods=['GET', 'POST'])

@@ -56,8 +56,8 @@
             background-color: #007bff;
             color: #fff;
             border: none;
-            padding: 10px 20px; /* Increased padding for smaller buttons */
-            margin: 5px;  /* Added margin for spacing */
+            padding: 10px 20px;
+            margin: 5px;
             border-radius: 4px;
             cursor: pointer;
             width: 150px;
@@ -84,11 +84,11 @@
         }
 
         .terms {
-          display: flex;
-          flex-wrap: wrap; /* Wrap terms and checkbox on separate lines */
-          align-items: center;
-          justify-content: flex-start;
-          margin-top: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: flex-start;
+            margin-top: 10px;
         }
 
         hr {
@@ -101,8 +101,8 @@
 <body>
     <div class="container">
         <div class="top-buttons">
-            <button onclick="goHome()">Home</button>
-            <button onclick="goBack()">Back</button>
+            <button type="button" onclick="goHome()">Home</button>
+            <button type="button" onclick="goBack()">Back</button>
         </div>
         <h2>Sign Up</h2>
 
@@ -114,8 +114,32 @@
         <!-- Thin Line -->
         <hr class="my-4">
 
+        <!-- Flash Messages -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            <div class="alert-container">
+              {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                  {{ message }}
+                  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
         <!-- Form -->
         <form method="post" action="{{ url_for('signup') }}">
+
+            {% if form.errors %}
+                <ul class="errors">
+                    {% for field, errors in form.errors.items() %}
+                        <li for="{{ field }}">
+                            <b>{{ field }}</b>: {{ errors[0] }}
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
 
             <div class="row">
                 <div class="col-md-6">
@@ -143,6 +167,12 @@
                         <input class="input" type="password" id="confirm_password" name="confirm_password" required>
                     </div>
 
+                    <!-- Title -->
+                    <div class="form-group">
+                        <label class="form-label" for="title">Title:</label>
+                        {{ form.title(class="input") }}
+                    </div>
+
                     <!-- First Name -->
                     <div class="form-group">
                         <label class="form-label" for="first_name">First Name:</label>
@@ -159,18 +189,6 @@
                     <div class="form-group">
                         <label class="form-label" for="last_name">Last Name:</label>
                         <input class="input" type="text" id="last_name" name="last_name" required>
-                    </div>
-
-                    <!-- Address -->
-                    <div class="form-group">
-                        <label class="form-label" for="address">Address:</label>
-                        <input class="input" type="text" id="address" name="address" required>
-                    </div>
-
-                    <!-- Address 1 -->
-                    <div class="form-group">
-                        <label class="form-label" for="address1">Address 1:</label>
-                        <input class="input" type="text" id="address1" name="address1">
                     </div>
                 </div>
                 <div class="col-md-6">
@@ -189,7 +207,7 @@
                     <!-- Province -->
                     <div class="form-group">
                         <label class="form-label" for="province">Province:</label>
-                        <input class="input" type="text" id="province" name="province">
+                        <select class="input" id="province" name="province" required></select>
                     </div>
 
                     <!-- City -->
@@ -198,18 +216,29 @@
                         <select class="input" id="city" name="city" required></select>
                     </div>
 
-                    <!-- Zip Code -->
-                    <div class="form-group">
-                        <label class="form-label" for="zip_code">Zip Code:</label>
-                        <select class="input" id="zip_code" name="zip_code" required></select>
-                    </div>
-
                     <!-- Street -->
                     <div class="form-group">
                         <label class="form-label" for="street">Street:</label>
-                        <select class="input" id="street" name="street" required></select>
+                        <input class="input" id="street" name="street">
                     </div>
 
+                    <!-- Address -->
+                    <div class="form-group">
+                        <label class="form-label" for="address">Address 1:</label>
+                        <input class="input" type="text" id="address" name="address" required>
+                    </div>
+
+                    <!-- Address 1 -->
+                    <div class="form-group">
+                        <label class="form-label" for="address1">Address 2:</label>
+                        <input class="input" type="text" id="address1" name="address1">
+                    </div>
+
+                    <!-- Zip Code -->
+                    <div class="form-group">
+                        <label class="form-label" for="zip_code">Zip Code:</label>
+                        <input class="input" id="zip_code" name="zip_code">
+                    </div>
                     <!-- Phone Prefix -->
                     <div class="form-group">
                         <label class="form-label" for="phone_prefix">Phone Prefix:</label>
@@ -241,9 +270,17 @@
 
             <!-- Terms of Use -->
             <div class="form-group terms full-width text-center">
-                <input type="checkbox" id="terms" name="terms" required>
-                <label class="form-label" for="terms">
+                <input type="checkbox" id="terms_accepted" name="terms_accepted" required>
+                <label class="form-label" for="terms_accepted">
                     I accept the <a href="{{ url_for('terms_of_use') }}" target="_blank">Terms of Use</a>
+                </label>
+            </div>
+
+            <!-- Privacy Policy -->
+            <div class="form-group terms full-width text-center">
+                <input type="checkbox" id="privacy_policy_accepted" name="privacy_policy_accepted" required>
+                <label class="form-label" for="privacy_policy_accepted">
+                    I agree with the <a href="{{ url_for('privacy_policy') }}" target="_blank">Privacy Policy</a>
                 </label>
             </div>
 
@@ -280,6 +317,16 @@
             document.getElementById('country').addEventListener('change', function() {
                 const countryCode = this.value;
                 console.log(`Selected country code: ${countryCode}`);
+
+                // Reset dependent dropdowns
+                document.getElementById('region').innerHTML = '<option value="">Select Region</option>';
+                document.getElementById('province').innerHTML = '<option value="">Select Province</option>';
+                document.getElementById('city').innerHTML = '<option value="">Select City</option>';
+                document.getElementById('street').innerHTML = '<option value="">Select Street</option>';
+                document.getElementById('zip_code').innerHTML = '<option value="">Select ZIP Code</option>';
+                document.getElementById('address').value = '';
+                document.getElementById('address1').value = '';
+
                 fetch(`/regions?country_code=${countryCode}`)
                     .then(response => response.json())
                     .then(data => {
@@ -297,6 +344,15 @@
             document.getElementById('region').addEventListener('change', function() {
                 const regionCode = this.value;
                 console.log(`Selected region code: ${regionCode}`);
+
+                // Reset dependent dropdowns
+                document.getElementById('province').innerHTML = '<option value="">Select Province</option>';
+                document.getElementById('city').innerHTML = '<option value="">Select City</option>';
+                document.getElementById('street').innerHTML = '<option value="">Select Street</option>';
+                document.getElementById('zip_code').innerHTML = '<option value="">Select ZIP Code</option>';
+                document.getElementById('address').value = '';
+                document.getElementById('address1').value = '';
+
                 fetch(`/provinces?region_code=${regionCode}`)
                     .then(response => response.json())
                     .then(data => {
@@ -314,6 +370,14 @@
             document.getElementById('province').addEventListener('change', function() {
                 const provinceCode = this.value;
                 console.log(`Selected province code: ${provinceCode}`);
+
+                // Reset dependent dropdowns
+                document.getElementById('city').innerHTML = '<option value="">Select City</option>';
+                document.getElementById('street').innerHTML = '<option value="">Select Street</option>';
+                document.getElementById('zip_code').innerHTML = '<option value="">Select ZIP Code</option>';
+                document.getElementById('address').value = '';
+                document.getElementById('address1').value = '';
+
                 fetch(`/cities?province_code=${provinceCode}`)
                     .then(response => response.json())
                     .then(data => {
@@ -329,18 +393,14 @@
             });
 
             document.getElementById('city').addEventListener('change', function() {
-                const cityName = this.options[this.selectedIndex].text;
                 const cityId = this.value;
-                console.log(`Selected city: ${cityName}, ID: ${cityId}`);
-                fetch(`/zip_codes?city_name=${cityName}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        const zipSelect = document.getElementById('zip_code');
-                        zipSelect.innerHTML = '<option value="">Select ZIP Code</option>';
-                        data.forEach(zip => {
-                            zipSelect.innerHTML += `<option value="${zip.postalCode}">${zip.postalCode}</option>`;
-                        });
-                    });
+                console.log(`Selected city ID: ${cityId}`);
+
+                // Reset dependent dropdowns
+                document.getElementById('street').innerHTML = '<option value="">Select Street</option>';
+                document.getElementById('zip_code').innerHTML = '<option value="">Select ZIP Code</option>';
+                document.getElementById('address').value = '';
+                document.getElementById('address1').value = '';
 
                 fetch(`/streets?city_id=${cityId}`)
                     .then(response => response.json())
@@ -350,6 +410,24 @@
                         data.forEach(street => {
                             streetSelect.innerHTML += `<option value="${street.name}">${street.name}</option>`;
                         });
+                    })
+                    .catch(error => {
+                        console.error('Error fetching streets:', error);
+                    });
+
+                const cityName = this.options[this.selectedIndex].text;
+                console.log(`Selected city: ${cityName}`);
+                fetch(`/zip_codes?city_name=${cityName}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const zipSelect = document.getElementById('zip_code');
+                        zipSelect.innerHTML = '<option value="">Select ZIP Code</option>';
+                        data.forEach(zip => {
+                            zipSelect.innerHTML += `<option value="${zip.postalCode}">${zip.postalCode}</option>`;
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error fetching zip codes:', error);
                     });
             });
 
@@ -363,8 +441,6 @@
                     });
                 });
         });
-
-
     </script>
 </body>
 </html>
