@@ -1,0 +1,22 @@
+{% extends 'argon-dashboard/questionnaire_base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>Questionnaire Details</h2>
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">{{ questionnaire.name }}</h5>
+
+            <p class="card-text"><strong>Type:</strong> {{ questionnaire.questionnaire_id }}</p>
+            <p class="card-text"><strong>Type:</strong> {{ questionnaire.questionnaire_type }}</p>
+            <p class="card-text"><strong>Interval:</strong> {{ questionnaire.interval }}</p>
+            <p class="card-text"><strong>Deadline Date:</strong> {{ questionnaire.deadline_date }}</p>
+            <p class="card-text"><strong>Status:</strong> {{ questionnaire.status_id }}</p>
+            <a href="{{ url_for('argon.edit_questionnaire', id=questionnaire.id) }}" class="btn btn-warning">Edit Questionnaire</a>
+            <form action="{{ url_for('argon.delete_questionnaire', id=questionnaire.id) }}" method="POST" style="display:inline;">
+                <button type="submit" class="btn btn-danger">Delete Questionnaire</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

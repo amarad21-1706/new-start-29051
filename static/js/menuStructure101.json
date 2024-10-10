@@ -451,6 +451,74 @@
                     }
                 }
             },
+            "Commercial": {
+                "label": "Commercial Settings",
+                "url": "/argon",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin"
+                ],
+                "widget": {
+                    "display": false
+                },
+                "submenus": {
+                    "Commercial": {
+                        "label": "Plans, Contracts, Questionnaires",
+                        "url": "/argon",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin"
+                        ],
+                        "widget": {
+                            "display": false
+                        }
+                    },
+                    "Manage Plans": {
+                        "label": "Manage Plans List",
+                        "url": "/open_admin_4/plan_view",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin"
+                        ],
+                        "widget": {
+                            "display": false
+                        }
+                    },
+                    "Manage Products": {
+                        "label": "Manage Products Offer",
+                        "url": "/open_admin_4/product_view",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin"
+                        ],
+                        "widget": {
+                            "display": false
+                        }
+                    },
+                    "Assign Products to Plans": {
+                        "label": "Associate Products to Plans",
+                        "url": "/manage_plan_products",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin"
+                        ],
+                        "widget": {
+                            "display": false
+                        }
+                    },
+                    "Plans with Products": {
+                        "label": "Show Plans & Products",
+                        "url": "/plans_with_products",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin"
+                        ],
+                        "widget": {
+                            "display": false
+                        }
+                    }
+                }
+            },
             "Clients": {
                 "label": "Clients",
                 "url": "/dashboard_clients",
@@ -644,28 +712,6 @@
                                     "display": false
                                 }
                             },
-                            "Manage Plans": {
-                                "label": "Manage Plans",
-                                "url": "/admin/manage_plans",
-                                "protected": true,
-                                "allowed_roles": [
-                                    "Admin"
-                                ],
-                                "widget": {
-                                    "display": false
-                                }
-                            },
-                            "Manage Products": {
-                                "label": "Manage Products",
-                                "url": "/admin/manage_products",
-                                "protected": true,
-                                "allowed_roles": [
-                                    "Admin"
-                                ],
-                                "widget": {
-                                    "display": false
-                                }
-                            },
                             "Calendar-2": {
                                 "label": "Agenda",
                                 "url": "/calendar",
@@ -806,28 +852,6 @@
                             "Assign Documents to Steps": {
                                 "label": "Documents-workflow-steps management",
                                 "url": "/manage_base_data_workflow_step",
-                                "protected": true,
-                                "allowed_roles": [
-                                    "Admin"
-                                ],
-                                "widget": {
-                                    "display": false
-                                }
-                            },
-                            "Assign Products to Plans": {
-                                "label": "Associate Products to Plans",
-                                "url": "/manage_plan_products",
-                                "protected": true,
-                                "allowed_roles": [
-                                    "Admin"
-                                ],
-                                "widget": {
-                                    "display": false
-                                }
-                            },
-                            "Plans with Products": {
-                                "label": "Show Plans and Products",
-                                "url": "/plans_with_products",
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"

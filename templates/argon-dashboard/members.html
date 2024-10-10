@@ -1,0 +1,39 @@
+{% extends 'argon-dashboard/argon_base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>Team Members</h2>
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Member Name</th>
+                <th>Email</th>
+                <th>Teams</th>
+                <th>Role in Teams</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for member in members %}
+            <tr>
+                <td>{{ member.name }}</td>
+                <td>{{ member.email }}</td>
+                <td>
+                    <ul>
+                        {% for membership in member.team_memberships %}
+                        <li>{{ membership.team.name }}</li>
+                        {% endfor %}
+                    </ul>
+                </td>
+                <td>
+                    <ul>
+                        {% for membership in member.team_memberships %}
+                        <li>{{ membership.role }} (Access: {{ membership.access_level }})</li>
+                        {% endfor %}
+                    </ul>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

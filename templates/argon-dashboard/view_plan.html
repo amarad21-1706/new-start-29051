@@ -1,0 +1,36 @@
+{% extends 'argon-dashboard/plan_base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>Plan Details</h2>
+    <div class="card mb-4">
+        <div class="card-body">
+            <!-- Plan Name -->
+            <h5 class="card-title">{{ plan.name }}</h5>
+
+            <!-- Plan Description -->
+            <p class="card-text">{{ plan.description }}</p>
+
+            <!-- Plan Price -->
+            <p class="card-text"><strong>Price:</strong> {{ plan.price }}</p>
+
+            <!-- Billing Cycle -->
+            <p class="card-text"><strong>Billing Cycle:</strong> {{ plan.billing_cycle }}</p>
+
+            <!-- Stripe Plan ID -->
+            <p class="card-text"><strong>Stripe Plan ID:</strong> {{ plan.stripe_plan_id }}</p>
+
+            <!-- Stripe Price ID -->
+            <p class="card-text"><strong>Stripe Price ID:</strong> {{ plan.stripe_price_id }}</p>
+
+            <!-- Edit Plan Button -->
+            <a href="{{ url_for('argon.edit_plan', id=plan.id) }}" class="btn btn-warning">Edit Plan</a>
+
+            <!-- Delete Plan Button -->
+            <form action="{{ url_for('argon.delete_plan', id=plan.id) }}" method="POST" style="display:inline;">
+                <button type="submit" class="btn btn-danger">Delete Plan</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

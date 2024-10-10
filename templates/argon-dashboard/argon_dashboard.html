@@ -1,0 +1,46 @@
+{% extends 'argon-dashboard/argon_base.html' %}
+
+{% block content %}
+<div class="container">
+    <h3>Welcome</h3>
+    <p>Manage contracts, teams, and members here.</p>
+
+    <div class="row">
+        <div class="col-md-4">
+            <a href="/argon/teams" class="btn btn-primary btn-block">Manage Teams</a>
+        </div>
+        <div class="col-md-4">
+            <a href="/argon/contracts" class="btn btn-info btn-block">Manage Contracts</a>
+        </div>
+        <div class="col-md-4">
+            <a href="/argon/members" class="btn btn-success btn-block">Manage Members</a>
+        </div>
+    </div>
+
+    <hr style="border: 0; height: 1px; background-color: #ccc; margin: 20px 0;">
+
+    <p>Manage plans, products, and services here. Plans contain pricing and billing cycle. Please have stripe plans and prices IDs ready.</p>
+
+    <div class="row">
+        <div class="col-md-4">
+            <a href="/argon/plans" class="btn btn-primary btn-block">Manage Plans</a>
+        </div>
+        <div class="col-md-4">
+            <a href="/argon/products" class="btn btn-info btn-block">Manage Services</a>
+        </div>
+    </div>
+
+    <hr style="border: 0; height: 1px; background-color: #ccc; margin: 20px 0;">
+
+    <p>Manage questionnaires and questions here.</p>
+
+    <div class="row">
+        <div class="col-md-4">
+            <a href="/argon/questionnaires" class="btn btn-primary btn-block">Manage Questionnaires</a>
+        </div>
+        <div class="col-md-4">
+            <a href="/argon/questions" class="btn btn-info btn-block">Manage Questions</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

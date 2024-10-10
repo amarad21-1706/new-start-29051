@@ -1236,9 +1236,13 @@ class Plan(db.Model):
     #                         primaryjoin='PlanProducts.plan_id == Plan.id',
     #                         secondaryjoin='PlanProducts.product_id == Product.id')
 
-    def __init__(self, name, description):
+    def __init__(self, name, description, stripe_plan_id, stripe_price_id, price, billing_cycle):
         self.name = name
         self.description = description
+        self.stripe_plan_id = stripe_plan_id
+        self.stripe_price_id = stripe_price_id
+        self.price = price
+        self.billing_cycle = billing_cycle
 
     def __repr__(self):
         return f"<Plan {self.id} ({self.name})>"
@@ -1282,8 +1286,6 @@ class PlanProducts(db.Model):
 
     def __repr__(self):
         return f"<PlanProducts(plan_id={self.plan_id}, product_id={self.product_id})>"
-
-
 
 class UserPlans(db.Model):
     __tablename__ = 'user_plans'

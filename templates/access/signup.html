@@ -287,7 +287,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', function() {
-            fetch('/api/countries')
+            fetch('/geonames-api/countries')
                 .then(response => response.json())
                 .then(data => {
                     const countrySelect = document.getElementById('country');
@@ -301,7 +301,7 @@
                 const countryCode = this.value;
                 resetDependentFields(['region', 'province', 'city', 'street', 'zip_code']);
 
-                fetch(`/api/regions?country_code=${countryCode}`)
+                fetch(`/geonames-api/regions?country_code=${countryCode}`)
                     .then(response => response.json())
                     .then(data => {
                         const regionSelect = document.getElementById('region');
@@ -316,7 +316,7 @@
                 const regionCode = this.value;
                 resetDependentFields(['province', 'city', 'street', 'zip_code']);
 
-                fetch(`/api/provinces?region_code=${regionCode}`)
+                fetch(`/geonames-api/provinces?region_code=${regionCode}`)
                     .then(response => response.json())
                     .then(data => {
                         const provinceSelect = document.getElementById('province');
@@ -331,7 +331,7 @@
                 const provinceCode = this.value;
                 resetDependentFields(['city', 'street', 'zip_code']);
 
-                fetch(`/api/cities?province_code=${provinceCode}`)
+                fetch(`/geonames-api/cities?province_code=${provinceCode}`)
                     .then(response => response.json())
                     .then(data => {
                         const citySelect = document.getElementById('city');
@@ -351,7 +351,7 @@
                 document.getElementById('address').value = '';
                 document.getElementById('address1').value = '';
 
-                fetch(`/api/streets?city_name=${cityName}`)
+                fetch(`/geonames-api/streets?city_name=${cityName}`)
                     .then(response => response.json())
                     .then(data => {
                         const streetSelect = document.getElementById('street');
@@ -364,7 +364,7 @@
                         console.error('Error fetching streets:', error);
                     });
 
-                fetch(`/api/zip_codes?city_name=${cityName}`)
+                fetch(`/geonames-api/zip_codes?city_name=${cityName}`)
                     .then(response => response.json())
                     .then(data => {
                         const zipSelect = document.getElementById('zip_code');
@@ -378,7 +378,7 @@
                     });
             });
 
-            fetch('/api/phone_prefixes')
+            fetch('/geonames-api/phone_prefixes')
                 .then(response => response.json())
                 .then(data => {
                     const phonePrefixSelect = document.getElementById('phone_prefix');

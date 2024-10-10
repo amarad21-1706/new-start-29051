@@ -51,6 +51,64 @@ from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as
 
 # Document Workflow forms
 
+class PlanForm(FlaskForm):
+    name = StringField('Plan Name', validators=[DataRequired()])
+    description = TextAreaField('Description')
+    price = IntegerField('Price', validators=[DataRequired()])
+
+    # Stripe plan and price IDs
+    stripe_plan_id = StringField('Stripe Plan ID', validators=[DataRequired()])
+    stripe_price_id = StringField('Stripe Price ID', validators=[DataRequired()])
+
+    # Billing cycle dropdown
+    billing_cycle = SelectField('Billing Cycle', choices=[
+        ('none', 'None'),
+        ('one-off', 'One-off'),
+        ('daily', 'Daily'),
+        ('monthly', 'Monthly'),
+        ('quarterly', 'Quarterly'),
+        ('yearly', 'Yearly')
+    ], validators=[DataRequired()])
+
+    submit = SubmitField('Save Plan')
+
+
+class QuestionnaireFormArgon(FlaskForm):
+    # Fields based on the `Questionnaire` model
+    questionnaire_id = StringField('Questionnaire ID', validators=[DataRequired()])
+    name = StringField('Name', validators=[DataRequired()])
+    questionnaire_type = SelectField('Type', choices=[
+        ('Questionnaire', 'Questionnaire'),
+        ('Survey', 'Survey'),
+        ('Assessment', 'Assessment')
+    ], validators=[DataRequired()])
+
+    interval = StringField('Interval')  # If it's numeric, you could use IntegerField instead
+    deadline_date = DateTimeField('Deadline Date', format='%Y-%m-%d %H:%M:%S', validators=[Optional()])
+    status_id = IntegerField('Status ID', validators=[DataRequired()])
+
+    # JSON headers field, to be handled as text input for now
+    headers = TextAreaField('Headers (JSON)', validators=[Optional()])
+
+    submit = SubmitField('Save Questionnaire')
+
+
+class QuestionFormArgon(FlaskForm):
+    question_id = StringField('Question ID', validators=[DataRequired()])
+    text = StringField('Question Text', validators=[DataRequired()])
+    answer_type = SelectField('Answer Type', choices=[
+        ('TLT', 'Text Long Type'),
+        ('SHT', 'Short Text Type'),
+        ('NUM', 'Number Type')
+    ], validators=[DataRequired()])
+
+    answer_width = IntegerField('Column Width (in pixels)', validators=[Optional()])
+    # Handling JSON answer fields
+    answer_fields = TextAreaField('Answer Fields (JSON)', validators=[Optional()])
+
+    submit = SubmitField('Create Question')
+
+
 
 class InlineWorkflowForm(FlaskForm):
    workflow_name = StringField('Workflow Name')

@@ -1,0 +1,348 @@
+from flask import Flask, jsonify
+import requests
+from models.user import (Users, UserRoles, Event,
+        Questionnaire, Question, QuestionnaireQuestions, Questionnaire_psf, Response_psf,
+        Contract, ContractParty, ContractTerm, ContractDocument, ContractStatusHistory,
+        ContractArticle, Party,
+        Team, TeamMembership, ContractTeam,
+        Plan, Product, PlanProducts, UserPlans
+        )
+
+from flask import Blueprint, render_template, jsonify
+from flask import render_template, request, redirect, url_for, flash
+from db import db
+from forms.forms import MainForm, PlanForm, QuestionnaireFormArgon, QuestionFormArgon  # Assuming your form is in forms.py
+from flask_login import login_required
+from sqlalchemy.exc import IntegrityError
+
+app = Flask(__name__)
+
+# Create the blueprint object
+argon_bp = Blueprint('argon', __name__)
+
+#@argon_bp.route('/argon')
+@argon_bp.route('/', endpoint='argon_dashboard')
+@login_required
+def argon_dashboard():
+    print("Argon Dashboard route hit")
+    return render_template('argon-dashboard/argon_dashboard.html')
+
+
+@argon_bp.route('/teams')
+@login_required
+def argon_teams_view():
+
+    print("Teams route hit")
+    teams = Team.query.all()  # Get all teams
+    return render_template('argon-dashboard/teams.html', teams=teams)
+
+
+@argon_bp.route('/contracts')
+@login_required
+def contracts_view():
+    contracts = Contract.query.all()  # Fetch all contracts
+    return render_template('argon-dashboard/contracts.html', contracts=contracts)
+
+
+@argon_bp.route('/members')
+@login_required
+def members_view():
+    members = Users.query.join(TeamMembership).all()  # Fetch users with team memberships
+    return render_template('argon-dashboard/members.html', members=members)
+
+
+@argon_bp.route('/', endpoint='plan_dashboard')
+def plan_dashboard():
+    print("Plan dashboard route hit")
+    return render_template('argon-dashboard/plan_dashboard.html')
+
+
+@argon_bp.route('/plans', methods=['GET', 'POST'])
+@login_required
+def plans_view():
+    form = PlanForm()  # Initialize the form
+    plans = Plan.query.all()  # Fetch the plans
+
+    # Pass the form to the template along with the plans
+    return render_template('argon-dashboard/plans.html', plans=plans, form=form)
+
+
+@argon_bp.route('/products')
+@login_required
+def products_view():
+    products = Product.query.order_by(
+        Product.id.asc()).all()  # Fetch questions ordered by question_id
+
+    return render_template('argon-dashboard/products.html', products=products)
+
+
+@argon_bp.route('/plan/<int:id>', methods=['GET'])
+@login_required
+def view_plan(id):
+    plan = Plan.query.get_or_404(id)  # Fetch the plan or return 404 if not found
+    return render_template('argon-dashboard/view_plan.html', plan=plan)
+
+
+@argon_bp.route('/create_plan', methods=['GET', 'POST'])
+@login_required
+def create_plan():
+    form = PlanForm()
+    if form.validate_on_submit():
+        # Get form data and create a new plan
+        name = form.name.data
+        description = form.description.data
+        stripe_plan_id = form.stripe_plan_id.data
+        stripe_price_id = form.stripe_price_id.data
+        price = form.price.data
+        billing_cycle = form.billing_cycle.data
+
+        # Create new plan object
+        new_plan = Plan(
+            name=name,
+            description=description,
+            stripe_plan_id=stripe_plan_id,
+            stripe_price_id=stripe_price_id,
+            price=price,
+            billing_cycle=billing_cycle
+        )
+
+        try:
+            # Attempt to add the new plan to the database
+            db.session.add(new_plan)
+            db.session.commit()
+
+            flash('Plan created successfully!', 'success')
+            return redirect(url_for('argon.plans_view'))
+
+        except IntegrityError:
+            # Rollback the session in case of an error
+            db.session.rollback()
+            flash('Error: A plan with this name already exists. Please choose a different name.', 'danger')
+            return redirect(url_for('argon.create_plan'))
+
+    # Render the create plan template
+    return render_template('argon-dashboard/create_plan.html', form=form)
+
+
+@argon_bp.route('/edit_plan/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_plan(id):
+    plan = Plan.query.get_or_404(id)
+    form = PlanForm(obj=plan)  # Instantiate the form with the plan data
+    if request.method == 'POST':
+        # Update plan details from form
+        plan.name = request.form['name']
+        plan.description = request.form['description']
+        plan.price = request.form['price']
+        plan.billing_cycle = request.form['billing_cycle']
+        try:
+            db.session.commit()
+            flash('Plan updated successfully!', 'success')
+            return redirect(url_for('argon.view_plan', id=plan.id))
+        except:
+            flash('Error updating plan', 'danger')
+            return redirect(url_for('argon.edit_plan', id=plan.id))
+    return render_template('argon-dashboard/edit_plan.html', plan=plan, form=form)
+
+
+@argon_bp.route('/delete_plan/<int:id>', methods=['POST'])
+@login_required
+def delete_plan(id):
+    plan = Plan.query.get_or_404(id)
+
+    try:
+        db.session.delete(plan)
+        db.session.commit()
+        flash('Plan deleted successfully!', 'success')
+        return redirect(url_for('argon.plans_view'))  # Redirect to the plans view
+    except Exception as e:
+        db.session.rollback()
+        flash('Error deleting the plan. Please try again.', 'danger')
+        return redirect(url_for('argon.plans_view'))  # Redirect back to the plans view
+
+# Questionnaires
+
+@argon_bp.route('/', endpoint='questionnaire_dashboard')
+def questionnaire_dashboard():
+    print("Questionnaire dashboard route hit")
+    return render_template('argon-dashboard/questionnaire_dashboard.html')
+
+
+@argon_bp.route('/questionnaires', methods=['GET', 'POST'])
+@login_required
+def questionnaires_view():
+    form = QuestionnaireFormArgon()  # Initialize the form
+    questionnaires = Questionnaire.query.order_by(Questionnaire.questionnaire_id.asc()).all()  # Fetch questions ordered by question_id
+    # Pass the form to the template along with the questionnaires
+    return render_template('argon-dashboard/questionnaires.html', questionnaires=questionnaires, form=form)
+
+
+@argon_bp.route('/questionnaire/<int:id>', methods=['GET'])
+@login_required
+def view_questionnaire(id):
+    questionnaire = Questionnaire.query.get_or_404(id)  # Fetch the questionnaire or return 404 if not found
+    return render_template('argon-dashboard/view_questionnaire.html', questionnaire=questionnaire)
+
+
+@argon_bp.route('/create_questionnaire', methods=['GET', 'POST'])
+@login_required
+def create_questionnaire():
+    form = QuestionnaireFormArgon()
+
+    if form.validate_on_submit():
+        # Create a new questionnaire instance
+        new_questionnaire = Questionnaire(
+            questionnaire_id=form.questionnaire_id.data,
+            name=form.name.data,
+            questionnaire_type=form.questionnaire_type.data,
+            interval=form.interval.data,
+            deadline_date=form.deadline_date.data,
+            status_id=form.status_id.data,
+        )
+
+        try:
+            # Try to add and commit the new questionnaire
+            db.session.add(new_questionnaire)
+            db.session.commit()
+            flash('Questionnaire created successfully!', 'success')
+            return redirect(url_for('argon.questionnaires_view'))
+
+        except IntegrityError:
+            # Rollback the session in case of an integrity error
+            db.session.rollback()
+            flash('Error: A questionnaire with the same ID or name already exists.', 'danger')
+            return redirect(url_for('argon.create_questionnaire'))
+
+    # Render the form if GET request or if the form is not valid
+    return render_template('argon-dashboard/create_questionnaire.html', form=form)
+
+
+@argon_bp.route('/edit_questionnaire/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_questionnaire(id):
+    questionnaire = Questionnaire.query.get_or_404(id)
+    form = QuestionnaireFormArgon(obj=questionnaire)  # Populate form with existing data
+
+    if form.validate_on_submit():  # Validate the form submission
+        # Use form.data to populate the model
+        form.populate_obj(questionnaire)
+
+        try:
+            db.session.commit()
+            flash('Questionnaire updated successfully!', 'success')
+            return redirect(url_for('argon.view_questionnaire', id=questionnaire.id))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error updating questionnaire: {str(e)}', 'danger')
+            return redirect(url_for('argon.edit_questionnaire', id=questionnaire.id))
+
+    return render_template('argon-dashboard/edit_questionnaire.html', form=form, questionnaire=questionnaire)
+
+
+@argon_bp.route('/delete_questionnaire/<int:id>', methods=['POST'])
+@login_required
+def delete_questionnaire(id):
+    questionnaire = Questionnaire.query.get_or_404(id)
+
+    try:
+        db.session.delete(questionnaire)
+        db.session.commit()
+        flash('Questionnaire deleted successfully!', 'success')
+        return redirect(url_for('argon.questionnaires_view'))  # Redirect to the questionnaires view
+    except Exception as e:
+        db.session.rollback()
+        flash('Error deleting the questionnaire. Please try again.', 'danger')
+        return redirect(url_for('argon.questionnaires_view'))  # Redirect back to the questionnaires view
+
+
+# Question
+
+@argon_bp.route('/', endpoint='question_dashboard')
+def question_dashboard():
+    print("Questions dashboard route hit")
+    return render_template('argon-dashboard/question_dashboard.html')
+
+
+@argon_bp.route('/questions', methods=['GET', 'POST'])
+@login_required
+def questions_view():
+    form = QuestionFormArgon()  # Initialize the form
+    page = request.args.get('page', 1, type=int)  # Get the current page from the query string (default to 1)
+    per_page = 12  # Set the number of records per page
+    questions = Question.query.order_by(Question.question_id.asc()).paginate(page=page, per_page=per_page)
+
+    return render_template('argon-dashboard/questions.html', questions=questions, form=form)
+
+
+@argon_bp.route('/create_question', methods=['GET', 'POST'])
+@login_required
+def create_question():
+    form = QuestionFormArgon()  # Instantiate the form for a new question
+    if form.validate_on_submit():  # If the form is submitted and validated
+        # Create a new Question object using the form data
+        new_question = Question(
+            question_id=form.question_id.data,
+            text=form.text.data,
+            answer_type=form.answer_type.data,
+            answer_width=form.answer_width.data,
+            answer_fields=form.answer_fields.data
+        )
+        try:
+            # Add the new question to the database
+            db.session.add(new_question)
+            db.session.commit()
+
+            flash('Question created successfully!', 'success')
+            return redirect(url_for('argon.questions_view'))  # Redirect to the question list view
+        except IntegrityError:
+            db.session.rollback()  # Rollback the session in case of error
+            flash('Question ID already exists. Please try a different one.', 'danger')
+            return redirect(url_for('argon.create_question'))  # Redirect back to the create page
+    return render_template('argon-dashboard/create_question.html', form=form)  # Render the create form
+
+
+@argon_bp.route('/edit_question/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_question(id):
+    question = Question.query.get_or_404(id)  # Fetch the question by ID or return 404
+    form = QuestionFormArgon(obj=question)  # Pre-fill the form with question data
+
+    if form.validate_on_submit():  # If the form is submitted and valid
+        # Update the question with the form data
+        question.question_id = form.question_id.data
+        question.text = form.text.data
+        question.answer_type = form.answer_type.data
+        question.answer_width = form.answer_width.data
+        question.answer_fields = form.answer_fields.data
+
+        try:
+            db.session.commit()  # Commit changes to the database
+            flash('Question updated successfully!', 'success')
+            return redirect(url_for('argon.questions_view'))  # Redirect to the question list view
+        except IntegrityError:
+            db.session.rollback()  # Rollback the session in case of error
+            flash('Error updating question. Please try again.', 'danger')
+            return redirect(url_for('argon.edit_question', id=id))  # Redirect back to the edit page
+    return render_template('argon-dashboard/edit_question.html', form=form, question=question)  # Render the edit form
+
+
+@argon_bp.route('/question/<int:id>', methods=['GET'])
+@login_required
+def view_question(id):
+    question = Question.query.get_or_404(id)  # Fetch the question by ID or return 404
+    return render_template('argon-dashboard/view_question.html', question=question)  # Render the view template
+
+
+@argon_bp.route('/delete_question/<int:id>', methods=['POST'])
+@login_required
+def delete_question(id):
+    question = Question.query.get_or_404(id)  # Fetch the question by ID or return 404
+    try:
+        db.session.delete(question)  # Delete the question from the database
+        db.session.commit()
+        flash('Question deleted successfully!', 'success')
+    except:
+        db.session.rollback()  # Rollback in case of error
+        flash('Error deleting question. Please try again.', 'danger')
+    return redirect(url_for('argon.questions_view'))  # Redirect back to the questions list
+

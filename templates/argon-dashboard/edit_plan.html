@@ -1,0 +1,48 @@
+{% extends 'argon-dashboard/plan_base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>Edit Plan</h2>
+    <form action="{{ url_for('argon.edit_plan', id=plan.id) }}" method="POST">
+        {{ form.hidden_tag() }}  <!-- CSRF Token -->
+
+        <!-- Plan Name -->
+        <div class="form-group">
+            {{ form.name.label }}
+            {{ form.name(class="form-control") }}  <!-- Correct usage of form field -->
+        </div>
+
+        <!-- Description -->
+        <div class="form-group">
+            {{ form.description.label }}
+            {{ form.description(class="form-control") }}  <!-- Correct usage of form field -->
+        </div>
+
+        <!-- Price -->
+        <div class="form-group">
+            {{ form.price.label }}
+            {{ form.price(class="form-control") }}  <!-- Correct usage of form field -->
+        </div>
+
+        <!-- Stripe Plan ID -->
+        <div class="form-group">
+            {{ form.stripe_plan_id.label }}
+            {{ form.stripe_plan_id(class="form-control") }}  <!-- Correct usage of form field -->
+        </div>
+
+        <!-- Stripe Price ID -->
+        <div class="form-group">
+            {{ form.stripe_price_id.label }}
+            {{ form.stripe_price_id(class="form-control") }}  <!-- Correct usage of form field -->
+        </div>
+
+        <!-- Billing Cycle Dropdown -->
+        <div class="form-group">
+            {{ form.billing_cycle.label }}
+            {{ form.billing_cycle(class="form-control") }}  <!-- Correct usage of form field -->
+        </div>
+
+        <button type="submit" class="btn btn-primary">Update Plan</button>
+    </form>
+</div>
+{% endblock %}

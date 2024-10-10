@@ -1,0 +1,60 @@
+{% extends 'argon-dashboard/plan_base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>Project Plans</h2>
+
+    <!-- Create new plan button -->
+    <a href="/argon/create_plan" class="btn btn-success mb-3">Create New Plan</a>
+
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Plan Name</th>
+                <th>Description</th>
+                <th>Price</th>
+                <th>Billing Cycle</th>
+                <th>Products</th>
+                <th>Users</th>
+                <th>Actions</th> <!-- New column for actions -->
+            </tr>
+        </thead>
+        <tbody>
+            {% for plan in plans %}
+            <tr>
+                <td>{{ plan.name }}</td>
+                <td>{{ plan.description }}</td>
+                <td>{{ plan.price }}</td>
+                <td>{{ plan.billing_cycle }}</td>
+                <td>
+                    <ul>
+                        {% for plan_product in plan.plan_products %}
+                        <li>{{ plan_product.product.name }} (ID: {{ plan_product.product.stripe_product_id }})</li>
+                        {% endfor %}
+                    </ul>
+                </td>
+                <td>
+                    <ul>
+                        {% for user_plan in plan.user_plans %}
+                        <li>{{ user_plan.user.first_name }} {{ user_plan.user.last_name }} (Status: {{ user_plan.status }})</li>
+                        {% endfor %}
+                    </ul>
+                </td>
+                <td> <!-- New Actions column -->
+                    <!-- View button -->
+                    <a href="/argon/plan/{{ plan.id }}" class="btn btn-info btn-sm">View</a>
+                    <!-- Edit button -->
+                    <a href="/argon/edit_plan/{{ plan.id }}" class="btn btn-warning btn-sm">Edit</a>
+                    <!-- Delete button -->
+                    <form action="{{ url_for('argon.delete_plan', id=plan.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this plan?');" style="display:inline;">
+                        {{ form.hidden_tag() }}
+                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                    </form>
+
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

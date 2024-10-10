@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>{% block title %}Dashboard{% endblock %}</title>
+    <link href="{{ url_for('static', filename='argon-dashboard/css/argon-dashboard.css') }}" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet">
+</head>
+<body>
+    <!-- Top Navbar with Home and Back links -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">Home</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <!-- Back Button -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="javascript:history.back()">Back</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-wrapper">
+            <ul class="nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="/argon/teams">
+                        <i class="ni ni-single-02 text-yellow"></i> Project Teams
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/argon/contracts">
+                        <i class="ni ni-paper-diploma text-blue"></i> Contracts
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/argon/members">
+                        <i class="ni ni-circle-08 text-gray"></i> Team Members
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="header bg-primary pb-6 pt-5">
+            <div class="container-fluid">
+                <div class="header-body">
+                    <h1 class="text-white">Admin Dashboard</h1>
+                </div>
+            </div>
+        </div>
+        <div class="container-fluid mt--6">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='argon-dashboard/js/argon-dashboard.js') }}"></script>
+</body>
+</html>

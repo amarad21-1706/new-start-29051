@@ -1,0 +1,18 @@
+{% extends 'argon-dashboard/plan_base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>Welcome to the Plans and Services Dashboard</h2>
+    <p>This is the landing page for managing plans, products etc.</p>
+    
+    <!-- Add links or cards to navigate to different sections -->
+    <div class="row">
+        <div class="col-md-4">
+            <a href="/argon/plans" class="btn btn-primary btn-block">Manage Plans</a>
+        </div>
+        <div class="col-md-4">
+            <a href="/argon/products" class="btn btn-info btn-block">Manage Services</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

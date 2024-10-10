@@ -1,0 +1,24 @@
+{% extends 'argon-dashboard/question_base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>Question Details</h2>
+    <div class="card mb-4">
+        <div class="card-body">
+            <h5 class="card-title">{{ question.text }}</h5>
+
+            <p class="card-text"><strong>Question ID:</strong> {{ question.question_id }}</p>
+            <p class="card-text"><strong>Answer Text:</strong> {{ question.answer_text }}</p>
+            <p class="card-text"><strong>Answer Type:</strong> {{ question.answer_type }}</p>
+            <p class="card-text"><strong>Answer Width:</strong> {{ question.answer_width }}</p>
+            <p class="card-text"><strong>Answer Fields (JSON):</strong> {{ question.answer_fields }}</p>
+
+            <!-- Edit and Delete buttons -->
+            <a href="{{ url_for('argon.edit_question', id=question.id) }}" class="btn btn-warning">Edit Question</a>
+            <form action="{{ url_for('argon.delete_question', id=question.id) }}" method="POST" style="display:inline;">
+                <button type="submit" class="btn btn-danger">Delete Question</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

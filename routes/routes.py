@@ -15,7 +15,7 @@ from phonenumbers.phonenumberutil import NumberParseException, PhoneNumberType
 app = Flask(__name__)
 
 # Create the blueprint object
-geonames_bp = Blueprint('main', __name__)
+geonames_bp = Blueprint('geonames', __name__)
 
 @app.route('/api/increment', methods=['POST'])
 def increment():

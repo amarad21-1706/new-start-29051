@@ -95,6 +95,8 @@ from config.config import (get_current_intervals,
 
 #from contract_routes import user_has_access_to_contract
 from routes.routes import geonames_bp, fetch_phone_prefixes
+from routes.argon_routes import argon_bp
+from routes.plan_routes import plan_bp
 from mail_service import send_simple_message, send_simple_message333
 from wtforms import Form
 
@@ -203,10 +205,20 @@ NOMINATIM_URL = os.getenv('NOMINATIM_URL')
 cache = TTLCache(maxsize=100, ttl=86400)  # Adjust cache size and TTL as needed
 
 # Register the geonames blueprint
-app.register_blueprint(geonames_bp, url_prefix='/api')  # Add a prefix if needed
-
+app.register_blueprint(geonames_bp, url_prefix='/geonames-api')  # Add a prefix if needed
 print('geo-names blueprint registered')
 # Create a cache with a TTL of 600 seconds and a max size of 100 items
+
+# Register the Argon blueprint
+app.register_blueprint(argon_bp, url_prefix='/argon') # Add a prefix if needed
+
+print('Argon blueprint registered')
+
+# Register the Argon blueprint
+# app.register_blueprint(plan_bp, url_prefix='/plan') # Add a prefix if needed
+# print('plan blueprint registered')
+
+#print(app.url_map)
 
 # Load API key from environment variable
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -282,7 +294,6 @@ def set_language(language=None):
     session['lang'] = language
     return redirect(request.referrer or '/')
 '''
-
 
 # Serve the React app
 
@@ -366,6 +377,7 @@ def get_session():
     value = session.get('key')
     return f'Session value: {value}'
 
+
 # TODO use it for the landing page
 def check_internet():
     url = "https://www.google.com"
@@ -429,7 +441,6 @@ bootstrap = Bootstrap(app)
 # Serializer for generating tokens
 serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
-
 # TODO - eliminati tutti i blueprint per i quali c'è Admin?
 # pyobjc
 with app.app_context():
@@ -479,15 +490,9 @@ hostname = result.hostname
 port = result.port if result.port else 5432
 database = result.path[1:]  # Removes the leading "/"
 
-print(f"Username: {username[:3]}...")
-print(f"Password: {password[:5]}")
-print(f"Host: {hostname[:4]}...")
-print(f"Port: ...{port}")
-print(f"Database: {database[:3]}...")
-
 # Configure error logging to a file
 
-print('app.debug is', app.debug)
+print('app.debug mode is', app.debug)
 
 # Basic logging configuration
 if not app.debug:
@@ -517,7 +522,6 @@ def is_user_role(session, user_id, role_name):
     user_roles = get_user_roles(session, user_id)
     # Check if the specified role name (in lowercase) is in the user's roles
     return role_name in user_roles
-
 
 def generate_reset_token(email):
     serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
@@ -6020,6 +6024,7 @@ def plans_page():
     except Exception as e:
         print(f"Error occurred: {e}")
         return "An error occurred while fetching plans", 500
+
 
 @app.route('/add_plan_to_cart/<int:plan_id>', methods=['POST'])
 @login_required
