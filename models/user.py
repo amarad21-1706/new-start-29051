@@ -376,9 +376,10 @@ class QuestionnaireQuestions(db.Model):
     questionnaire_id = db.Column(db.Integer, db.ForeignKey('questionnaire.id'))
     question_id = db.Column(db.Integer, db.ForeignKey('question.id'))
     extra_data = db.Column(db.String(600))
+
     # Define the relationships
-    questionnaire = relationship('Questionnaire', backref='questionnaire_questions')
-    question = relationship('Question', backref='questionnaire_questions')
+    questionnaire = db.relationship('Questionnaire', backref='questionnaire_questions')
+    question = db.relationship('Question', backref='questionnaire_questions')
 
     def readable_format(self):
         if self.questionnaire:

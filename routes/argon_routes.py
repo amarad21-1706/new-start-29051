@@ -11,7 +11,8 @@ from models.user import (Users, UserRoles, Event,
 from flask import Blueprint, render_template, jsonify
 from flask import render_template, request, redirect, url_for, flash
 from db import db
-from forms.forms import MainForm, PlanForm, QuestionnaireFormArgon, QuestionFormArgon  # Assuming your form is in forms.py
+from forms.forms import (MainForm, PlanForm, QuestionnaireFormArgon, QuestionFormArgon,
+                         AddQuestionFormArgon) # Assuming your form is in forms.py
 from flask_login import login_required
 from sqlalchemy.exc import IntegrityError
 
@@ -345,4 +346,99 @@ def delete_question(id):
         db.session.rollback()  # Rollback in case of error
         flash('Error deleting question. Please try again.', 'danger')
     return redirect(url_for('argon.questions_view'))  # Redirect back to the questions list
+
+
+@argon_bp.route('/surveys_two')
+@login_required
+def surveys_view_two():
+    # Fetch all the questionnaire-question relationships along with the relevant fields
+    questionnaire_questions = db.session.query(
+        QuestionnaireQuestions,
+        Questionnaire.questionnaire_id.label('questionnaire_code'),
+        Questionnaire.name.label('questionnaire_name'),
+        Questionnaire.questionnaire_type.label('questionnaire_type'),
+        Question.question_id.label('question_code'),
+        Question.text.label('question_text')
+    ).join(Questionnaire, QuestionnaireQuestions.questionnaire_id == Questionnaire.id) \
+     .join(Question, QuestionnaireQuestions.question_id == Question.id) \
+     .order_by(Questionnaire.questionnaire_id.asc(), Question.question_id.asc()) \
+     .all()
+
+    # Optionally, fetch all questionnaires and questions separately for further use
+    surveys = Questionnaire.query.order_by(Questionnaire.questionnaire_id.asc()).all()
+    questions = Question.query.order_by(Question.question_id.asc()).all()
+
+    # Render the template, passing the questionnaire-question relationships
+    return render_template('argon-dashboard/surveys.html',
+                           questionnaire_questions=questionnaire_questions,
+                           surveys=surveys,
+                           questions=questions)
+
+
+@argon_bp.route('/surveys')
+@login_required
+def surveys_view():
+    # Fetch all the questionnaire-question relationships, ordered by the actual `questionnaire_id` and `question_id`
+    questionnaire_questions = db.session.query(QuestionnaireQuestions) \
+        .join(Question).join(Questionnaire) \
+        .order_by(Questionnaire.questionnaire_id.asc(), Question.question_id.asc()) \
+        .all()
+
+    # Render the template, passing the questionnaire-question relationships
+    return render_template('argon-dashboard/surveys.html', questionnaire_questions=questionnaire_questions)
+
+
+@argon_bp.route('/surveys_three')
+@login_required
+def surveys_view_three():
+    # Fetch all the questionnaire-question relationships
+    questionnaire_questions = db.session.query(QuestionnaireQuestions).join(Question).join(Questionnaire).all()
+
+    # Render the template, passing the questionnaire-question relationships
+    # Optionally, fetch all questionnaires and questions separately for further use
+    surveys = Questionnaire.query.order_by(Questionnaire.questionnaire_id.asc()).all()
+    questions = Question.query.order_by(Question.question_id.asc()).all()
+
+    return render_template('argon-dashboard/surveys.html',
+                           questionnaire_questions=questionnaire_questions,
+                           surveys=surveys,
+                           questions=questions)
+
+
+
+@argon_bp.route('/add_question_to_survey/<int:questionnaire_id>', methods=['GET', 'POST'])
+@login_required
+def add_question_to_survey(questionnaire_id):
+    questionnaire = Questionnaire.query.get_or_404(questionnaire_id)
+    form = AddQuestionFormArgon()
+
+    if form.validate_on_submit():
+        question_id = form.question_id.data
+        question = Question.query.get_or_404(question_id)
+
+        # Create a new relationship in QuestionnaireQuestions
+        new_link = QuestionnaireQuestions(questionnaire_id=questionnaire_id, question_id=question_id)
+        db.session.add(new_link)
+        db.session.commit()
+
+        flash('Question successfully added to the questionnaire!', 'success')
+        return redirect(url_for('argon.surveys_view'))
+
+    questions = Question.query.all()  # Fetch all questions
+    return render_template('argon-dashboard/add_question_to_survey.html', form=form, questionnaire=questionnaire, questions=questions)
+
+
+
+@argon_bp.route('/remove_question_from_survey/<int:id>', methods=['POST'])
+@login_required
+def remove_question_from_survey(id):
+    # Find the relationship entry in QuestionnaireQuestions using the ID
+    relationship = QuestionnaireQuestions.query.get_or_404(id)
+
+    # Delete the relationship (not the question itself)
+    db.session.delete(relationship)
+    db.session.commit()
+
+    flash('Question removed from the survey successfully!', 'success')
+    return redirect(url_for('argon.surveys_view'))
 

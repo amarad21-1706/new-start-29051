@@ -108,6 +108,13 @@ class QuestionFormArgon(FlaskForm):
 
     submit = SubmitField('Create Question')
 
+class AddQuestionFormArgon(FlaskForm):
+    question_id = SelectField('Select Question', coerce=int, validators=[DataRequired()])
+    submit = SubmitField('Add Question')
+
+    def __init__(self, *args, **kwargs):
+        super(AddQuestionFormArgon, self).__init__(*args, **kwargs)
+        self.question_id.choices = [(q.id, q.text) for q in Question.query.all()]
 
 
 class InlineWorkflowForm(FlaskForm):

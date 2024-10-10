@@ -228,7 +228,7 @@ print('openAI ready')
 limiter = Limiter(
     get_remote_address,
     app=app,
-    default_limits=["200 per day", "50 per hour"],
+    default_limits=["360 per day", "90 per hour"],
     storage_uri="memory://",
 )
 print('limiter active')
@@ -1852,6 +1852,7 @@ def show_cards():
 @app.route('/document_workflow_visualization_d3js')
 @login_required
 def workflow_visualization():
+    print('d3js triggered')
     return render_template('document_workflow_visualization_d3js.html')
 
 
