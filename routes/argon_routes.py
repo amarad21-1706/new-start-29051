@@ -480,9 +480,10 @@ def remove_question_from_survey(id):
     flash('Question removed from the survey successfully!', 'success')
     return redirect(url_for('argon.surveys_view'))
 
-@argon_bp.route('/multi_format_dashboard_data', methods=['GET'])
+
+@argon_bp.route('/multi_format_dashboard_data_two', methods=['GET'])
 @login_required
-def multi_format_dashboard_data():
+def multi_format_dashboard_data_two():
     print("Fetching multi-format dashboard data...")
 
     # Get filter parameters from request arguments
@@ -529,4 +530,76 @@ def multi_format_dashboard_data():
 
     return jsonify({
         'candlestick_data': candlestick_data  # Send candlestick data to frontend
+    })
+
+
+@argon_bp.route('/multi_format_dashboard_data', methods=['GET'])
+@login_required
+def multi_format_dashboard_data():
+    print("Fetching multi-format dashboard data...")
+
+    # Get filter parameters from request arguments
+    company_id = request.args.get('company_id')
+    area_id = request.args.get('area_id')
+    subarea_id = request.args.get('subarea_id')
+    year = request.args.get('year')
+    record_type = request.args.get('record_type')
+
+    query = BaseData.query
+
+    if company_id and company_id != "":
+        query = query.filter(BaseData.company_id == company_id)
+    if area_id and area_id != "":
+        query = query.filter(BaseData.area_id == area_id)
+    if subarea_id and subarea_id != "":
+        query = query.filter(BaseData.subarea_id == subarea_id)
+    if year and year != "":
+        query = query.filter(BaseData.fi0 == year)
+    if record_type and record_type != "":
+        query = query.filter(BaseData.record_type == record_type)
+
+    records = query.all()
+    print(f"Number of records found: {len(records)}")
+
+    # Prepare dynamic candlestick data for fi* fields, excluding fi0
+    candlestick_data_fi = []
+    for i in range(1, 10):  # Start from fi1 to fi9, skipping fi0
+        fi_values = [getattr(record, f'fi{i}', None) for record in records if
+                     getattr(record, f'fi{i}', None) not in [None, 0]]
+        if fi_values:
+            min_fi = min(fi_values)
+            max_fi = max(fi_values)
+            avg_fi = sum(fi_values) / len(fi_values)
+            candlestick_data_fi.append({
+                'x': f'fi{i}',
+                'f': min_fi,  # Open (use min as open)
+                'h': max_fi,  # High
+                'l': min_fi,  # Low
+                's': avg_fi  # Close (use average as close)
+            })
+
+    print(f"Candlestick Data (fi): {candlestick_data_fi}")
+
+    # Prepare dynamic candlestick data for fn* fields
+    candlestick_data_fn = []
+    for i in range(1, 10):  # Assuming fn1 to fn9
+        fn_values = [getattr(record, f'fn{i}', None) for record in records if
+                     getattr(record, f'fn{i}', None) not in [None, 0]]
+        if fn_values:
+            min_fn = min(fn_values)
+            max_fn = max(fn_values)
+            avg_fn = sum(fn_values) / len(fn_values)
+            candlestick_data_fn.append({
+                'x': f'fn{i}',
+                'f': min_fn,  # Open (use min as open)
+                'h': max_fn,  # High
+                'l': min_fn,  # Low
+                's': avg_fn  # Close (use average as close)
+            })
+
+    print(f"Candlestick Data (fn): {candlestick_data_fn}")
+
+    return jsonify({
+        'candlestick_data_fi': candlestick_data_fi,  # Send fi* data to frontend
+        'candlestick_data_fn': candlestick_data_fn  # Send fn* data to frontend
     })
