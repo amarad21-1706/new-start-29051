@@ -178,30 +178,13 @@
             updateDashboard();
         });
 
-        // Combined function to fetch data and update both table and chart
-        function updateDashboard() {
-            const company = document.getElementById('company').value;
-            const area = document.getElementById('area').value;
-            const subarea = document.getElementById('subarea').value;
-            const year = document.getElementById('year').value;
-            const recordType = document.getElementById('record_type').value;
-
-            // Fetch the filtered data once and update both table and chart
-            fetch(`/argon/multi_format_dashboard_data?company_id=${company}&area_id=${area}&subarea_id=${subarea}&year=${year}&record_type=${recordType}`)
-                .then(response => response.json())
-                .then(data => {
-                    updateTable(data);
-                    updateCandlestickChart(data);
-                })
-                .catch(error => console.error('Error fetching dashboard data:', error));
-        }
-
-        // Table update function
         function updateTable(data) {
-            const tbody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
-            tbody.innerHTML = '';
+            // Check if valid data is received
+            if (data && data.num_records !== undefined) {
+                const tbody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
+                tbody.innerHTML = '';  // Clear the table
 
-            if (data.num_records !== undefined) {
+                // Insert data into the table
                 const row = `
                     <tr>
                         <td>${data.num_records}</td>
@@ -213,8 +196,31 @@
                 tbody.innerHTML = row;
             } else {
                 console.log("No data available to populate the table.");
+                const tbody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
                 tbody.innerHTML = '<tr><td colspan="4">No data available</td></tr>';
             }
+        }
+
+        // Update both the table and chart in one fetch call
+        function updateDashboard() {
+            const company = document.getElementById('company').value;
+            const area = document.getElementById('area').value;
+            const subarea = document.getElementById('subarea').value;
+            const year = document.getElementById('year').value;
+            const recordType = document.getElementById('record_type').value;
+
+            console.log(`Fetching data with filters: company=${company}, area=${area}, subarea=${subarea}, year=${year}, record_type=${recordType}`);
+
+            fetch(`/argon/multi_format_dashboard_data?company_id=${company}&area_id=${area}&subarea_id=${subarea}&year=${year}&record_type=${recordType}`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Data received:", data);
+
+                    // Update both table and chart
+                    updateTable(data);
+                    updateCandlestickChart(data);
+                })
+                .catch(error => console.error('Error fetching dashboard data:', error));
         }
 
         // Candlestick chart update function using ECharts
@@ -259,6 +265,29 @@
             e.preventDefault();
             updateDashboard();
         });
+
+
+        document.getElementById('area').addEventListener('change', function() {
+            const areaId = this.value;
+
+            if (areaId) {
+                fetch(`/argon/api/subareas/${areaId}`)  // Corrected URL
+                    .then(response => response.json())
+                    .then(subareas => {
+                        const subareaSelect = document.getElementById('subarea');
+                        subareaSelect.innerHTML = '<option value="">All Subareas</option>';  // Reset subarea options
+
+                        subareas.forEach(subarea => {
+                            const option = document.createElement('option');
+                            option.value = subarea.id;
+                            option.textContent = subarea.name;
+                            subareaSelect.appendChild(option);
+                        });
+                    })
+                    .catch(error => console.error('Error fetching subareas:', error));
+            }
+        });
+
     </script>
 
 </body>

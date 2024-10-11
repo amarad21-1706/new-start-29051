@@ -45,17 +45,6 @@ def multi_format_dashboard():
                            record_types=record_types,
                            years=years)
 
-@argon_bp.route('/api/subareas/<int:area_id>', methods=['GET'])
-@login_required
-def get_subareas(area_id):
-    # Join AreaSubareas and Subarea to get both ID and name
-    subareas = db.session.query(AreaSubareas, Subarea).join(Subarea, AreaSubareas.subarea_id == Subarea.id).filter(AreaSubareas.area_id == area_id).all()
-
-    # Extract subarea ID and name from the joined query
-    subareas_data = [{'id': subarea.Subarea.id, 'name': subarea.Subarea.name} for subarea in subareas]
-
-    print('subareas', subareas_data)
-    return jsonify(subareas_data)
 
 
 #@argon_bp.route('/argon')
@@ -464,6 +453,18 @@ def add_question_to_survey(questionnaire_id):
     questions = Question.query.all()  # Fetch all questions
     return render_template('argon-dashboard/add_question_to_survey.html', form=form, questionnaire=questionnaire, questions=questions)
 
+
+@argon_bp.route('/api/subareas/<int:area_id>', methods=['GET'])
+@login_required
+def get_subareas(area_id):
+    # Join AreaSubareas and Subarea to get both ID and name
+    subareas = db.session.query(AreaSubareas, Subarea).join(Subarea, AreaSubareas.subarea_id == Subarea.id).filter(AreaSubareas.area_id == area_id).all()
+
+    # Extract subarea ID and name from the joined query
+    subareas_data = [{'id': subarea.Subarea.id, 'name': subarea.Subarea.name} for subarea in subareas]
+
+    print('subareas', subareas_data)
+    return jsonify(subareas_data)
 
 
 @argon_bp.route('/remove_question_from_survey/<int:id>', methods=['POST'])
