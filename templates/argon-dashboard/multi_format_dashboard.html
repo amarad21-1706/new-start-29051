@@ -179,25 +179,33 @@
         });
 
         function updateTable(data) {
-            // Check if valid data is received
-            if (data && data.num_records !== undefined) {
-                const tbody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
-                tbody.innerHTML = '';  // Clear the table
+            console.log("Received data for table:", data);  // Debugging line to check the data received
 
-                // Insert data into the table
+            // Clear the table body first
+            const tbody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
+            tbody.innerHTML = '';  // Reset the table content
+
+            // Check if the candlestick data exists
+            if (data.candlestick_data && data.candlestick_data.length > 0) {
+                const numRecords = data.candlestick_data.length;  // Number of records
+                const numFiNonNull = data.candlestick_data.filter(item => item.f !== null).length;  // Non-null 'fi*' values
+
+                // Calculate the min and max for 'fi' values
+                const minFi = Math.min(...data.candlestick_data.map(item => item.f));
+                const maxFi = Math.max(...data.candlestick_data.map(item => item.f));
+
+                // Populate the table with these computed values
                 const row = `
                     <tr>
-                        <td>${data.num_records}</td>
-                        <td>${data.num_fi_non_null}</td>
-                        <td>${data.num_fn_non_null}</td>
-                        <td>Min FI: ${data.min_fi}, Max FI: ${data.max_fi}, Min FN: ${data.min_fn}, Max FN: ${data.max_fn}</td>
+                        <td>${numRecords}</td>
+                        <td>${numFiNonNull}</td>
+                        <td>Min: ${minFi}, Max: ${maxFi}</td>
                     </tr>
                 `;
-                tbody.innerHTML = row;
+                tbody.innerHTML = row;  // Insert the row into the table body
             } else {
                 console.log("No data available to populate the table.");
-                const tbody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
-                tbody.innerHTML = '<tr><td colspan="4">No data available</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="4">No data available</td></tr>';  // Display 'no data available' if data is empty
             }
         }
 
