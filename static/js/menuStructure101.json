@@ -585,6 +585,17 @@
                             "display": false
                         }
                     },
+                    "Multi Format Dashboard": {
+                        "label": "Combo Dashboard",
+                        "url": "/argon/multi_format_dashboard",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin"
+                        ],
+                        "widget": {
+                            "display": false
+                        }
+                    },
                     "Subscriptions Dashboard": {
                         "label": "Subscriptions Dashboard",
                         "url": "/subscription_overview",

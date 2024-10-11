@@ -1,9 +1,10 @@
 from flask import Flask, jsonify
 import requests
-from models.user import (Users, UserRoles, Event,
+from models.user import (BaseData, Users, UserRoles, Event,
         Questionnaire, Question, QuestionnaireQuestions, Questionnaire_psf, Response_psf,
         Contract, ContractParty, ContractTerm, ContractDocument, ContractStatusHistory,
         ContractArticle, Party,
+        Company, CompanyUsers, Area, Subarea, AreaSubareas, Answer,
         Team, TeamMembership, ContractTeam,
         Plan, Product, PlanProducts, UserPlans
         )
@@ -20,6 +21,40 @@ app = Flask(__name__)
 
 # Create the blueprint object
 argon_bp = Blueprint('argon', __name__)
+
+
+@argon_bp.route('/multi_format_dashboard')
+@login_required
+def multi_format_dashboard():
+    companies = Company.query.all()
+    areas = Area.query.all()
+    subareas = AreaSubareas.query.all()
+
+    years = BaseData.query.with_entities(BaseData.fi0).distinct().order_by(BaseData.fi0.asc()).all()
+    years = [year.fi0 for year in years]
+
+    record_types = BaseData.query.with_entities(BaseData.record_type).distinct().all()
+    record_types = [record_type.record_type for record_type in record_types]
+
+    return render_template('argon-dashboard/multi_format_dashboard.html',
+                           companies=companies,
+                           areas=areas,
+                           subareas=subareas,
+                           record_types=record_types,
+                           years=years)
+
+@argon_bp.route('/api/subareas/<int:area_id>', methods=['GET'])
+@login_required
+def get_subareas(area_id):
+    # Join AreaSubareas and Subarea to get both ID and name
+    subareas = db.session.query(AreaSubareas, Subarea).join(Subarea, AreaSubareas.subarea_id == Subarea.id).filter(AreaSubareas.area_id == area_id).all()
+
+    # Extract subarea ID and name from the joined query
+    subareas_data = [{'id': subarea.Subarea.id, 'name': subarea.Subarea.name} for subarea in subareas]
+
+    print('subareas', subareas_data)
+    return jsonify(subareas_data)
+
 
 #@argon_bp.route('/argon')
 @argon_bp.route('/', endpoint='argon_dashboard')
@@ -442,3 +477,70 @@ def remove_question_from_survey(id):
     flash('Question removed from the survey successfully!', 'success')
     return redirect(url_for('argon.surveys_view'))
 
+
+@argon_bp.route('/multi_format_dashboard_data', methods=['GET'])
+@login_required
+def multi_format_dashboard_data():
+    # Debug: Log incoming request
+    print("Fetching multi-format dashboard data...")
+
+    # Get filter parameters from request arguments
+    company_id = request.args.get('company_id')
+    area_id = request.args.get('area_id')
+    subarea_id = request.args.get('subarea_id')
+    year = request.args.get('year')
+    record_type = request.args.get('record_type')
+
+    # Debug: Log the filter inputs
+    print(f"Company ID: {company_id}, Area ID: {area_id}, Subarea ID: {subarea_id}, Year: {year}, Record Type: {record_type}")
+
+    # Build the query with filters
+    query = BaseData.query
+
+    if company_id and company_id != "":
+        print(f"Filtering by Company ID: {company_id}")
+        query = query.filter(BaseData.company_id == company_id)
+    if area_id and area_id != "":
+        print(f"Filtering by Area ID: {area_id}")
+        query = query.filter(BaseData.area_id == area_id)
+    if subarea_id and subarea_id != "":
+        print(f"Filtering by Subarea ID: {subarea_id}")
+        query = query.filter(BaseData.subarea_id == subarea_id)
+    if year and year != "":
+        print(f"Filtering by Year: {year}")
+        query = query.filter(BaseData.fi0 == year)
+    if record_type and record_type != "":
+        print(f"Filtering by Record Type: {record_type}")
+        query = query.filter(BaseData.record_type == record_type)
+
+    # Execute the query
+    try:
+        records = query.all()
+        print(f"Number of records found: {len(records)}")
+    except Exception as e:
+        print(f"Error executing query: {e}")
+        return jsonify({'error': 'Failed to execute query'}), 500
+
+    # Calculate the required statistics
+    num_records = len(records)
+    num_fi_non_null = sum(1 for record in records if any(getattr(record, f'fi{i}', None) not in [None, 0] for i in range(10)))  # Assuming fi0-fi9
+    num_fn_non_null = sum(1 for record in records if any(getattr(record, f'fn{i}', None) not in [None, 0] for i in range(10)))  # Assuming fn0-fn9
+
+    min_fi = min((getattr(record, f'fi{i}') for record in records for i in range(10) if getattr(record, f'fi{i}', None) not in [None, 0]), default=None)
+    max_fi = max((getattr(record, f'fi{i}') for record in records for i in range(10) if getattr(record, f'fi{i}', None) not in [None, 0]), default=None)
+    min_fn = min((getattr(record, f'fn{i}') for record in records for i in range(10) if getattr(record, f'fn{i}', None) not in [None, 0]), default=None)
+    max_fn = max((getattr(record, f'fn{i}') for record in records for i in range(10) if getattr(record, f'fn{i}', None) not in [None, 0]), default=None)
+
+    # Debug: Print the calculated statistics
+    print(f"Statistics - num_records: {num_records}, num_fi_non_null: {num_fi_non_null}, num_fn_non_null: {num_fn_non_null}, min_fi: {min_fi}, max_fi: {max_fi}, min_fn: {min_fn}, max_fn: {max_fn}")
+
+    # Return the data in a format that the frontend can process
+    return jsonify({
+        'num_records': num_records,
+        'num_fi_non_null': num_fi_non_null,
+        'num_fn_non_null': num_fn_non_null,
+        'min_fi': min_fi,
+        'max_fi': max_fi,
+        'min_fn': min_fn,
+        'max_fn': max_fn
+    })

@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Dashboard [...]</title>
+    <link href="{{ url_for('static', filename='argon-dashboard/css/argon-dashboard.css') }}" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Top Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">Home</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <!-- Back Button -->
+                    <li class="nav-item">
+                        <a class="nav-link" href="javascript:history.back()">Back</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main content -->
+    <div class="main-content">
+        <div class="header bg-primary pb-6 pt-5">
+            <div class="container-fluid">
+                <div class="header-body">
+                    <h1 class="text-white">Dashboard [...]</h1>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dropdown filters -->
+        <div class="container mt-4">
+
+            <form id="filter-form">
+                <div class="row">
+                    <!-- Company Dropdown -->
+                    <div class="col-md-3">
+                        <label for="company">Company</label>
+                        <select id="company" name="company_id" class="form-control">
+                            <option value="">All</option>
+                            {% for company in companies %}
+                                <option value="{{ company.id }}">{{ company.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Area Dropdown -->
+                    <div class="col-md-3">
+                        <label for="area">Area</label>
+                        <select id="area" name="area_id" class="form-control">
+                            <option value="">All Areas</option>
+                            {% for area in areas %}
+                                <option value="{{ area.id }}">{{ area.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Subarea Dropdown (Populated Dynamically) -->
+                    <div class="col-md-3">
+                        <label for="subarea">Subarea</label>
+                        <select id="subarea" name="subarea_id" class="form-control">
+                            <option value="">All Subareas</option>
+                            <!-- Subarea options will be populated dynamically -->
+                        </select>
+                    </div>
+
+                    <!-- Year Dropdown -->
+                    <div class="col-md-3">
+                        <label for="year">Year</label>
+                        <select id="year" name="year" class="form-control">
+                            <option value="">All Years</option>
+                            {% for year in years %}
+                                <option value="{{ year }}">{{ year }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Record Type Dropdown -->
+                    <div class="col-md-3">
+                        <label for="record_type">Record Type</label>
+                        <select id="record_type" name="record_type" class="form-control">
+                            <option value="">All Record Types</option>
+                            {% for record_type in record_types %}
+                                <option value="{{ record_type }}">{{ record_type }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </form>
+
+        </div>
+
+        <!-- Containers for different visualizations -->
+
+        <div class="container mt-5">
+            <div class="row">
+                <!-- Left Column: 66% width, two rectangles stacked vertically -->
+                <div class="col-md-8">
+                    <!-- Top left container -->
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <h4>Data Table</h4>
+                            <table class="table table-hover" id="data-table">
+                                <thead>
+                                    <tr>
+                                        <th>Number of Records</th>
+                                        <th>Non-null 'fi*' Values</th>
+                                        <th>Non-null 'fn*' Values</th>
+                                        <th>Min/Max 'fi*' and 'fn*'</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Dynamic content will be inserted here by JavaScript -->
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Bottom left container -->
+                    <div class="row">
+                        <div class="col-md-12">
+                            <h4>Bar Chart</h4>
+                            <canvas id="bar-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: 33% width, three or four smaller containers -->
+                <div class="col-md-4">
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">Top Right Container</h5>
+                                    <p>This is a top right container.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">Middle Right Container</h5>
+                                    <p>This is a middle right container.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-12">
+                            <div class="card">
+                                <div class="card-body">
+                                    <h5 class="card-title">Bottom Right Container</h5>
+                                    <p>This is a bottom right container.</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Argon JS and Chart.js -->
+    <script src="{{ url_for('static', filename='argon-dashboard/js/argon-dashboard.js') }}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Script to populate and control filters and chart -->
+
+    <script>
+
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("Dashboard loaded, initializing event listeners...");
+
+            // Event listener for filter change and table/chart update
+            document.getElementById('filter-form').addEventListener('change', function() {
+                console.log("Filters changed, updating table and chart...");
+                updateTable();
+                updateChart();
+            });
+
+            function updateTable() {
+                // Get the selected filter values
+                const company = document.getElementById('company').value;
+                const area = document.getElementById('area').value;
+                const subarea = document.getElementById('subarea').value;
+                const year = document.getElementById('year').value;
+                const recordType = document.getElementById('record_type').value;
+
+                console.log(`Fetching data with filters: company=${company}, area=${area}, subarea=${subarea}, year=${year}, record_type=${recordType}`);
+
+                // Fetch the filtered data
+                fetch(`/argon/multi_format_dashboard_data?company_id=${company}&area_id=${area}&subarea_id=${subarea}&year=${year}&record_type=${recordType}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log("Data received:", data);
+
+                        // Clear the table body
+                        const tbody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
+                        tbody.innerHTML = '';
+
+                        // Insert the new data into the table
+                        const row = `
+                            <tr>
+                                <td>${data.num_records}</td>
+                                <td>${data.num_fi_non_null}</td>
+                                <td>${data.num_fn_non_null}</td>
+                                <td>Min FI: ${data.min_fi}, Max FI: ${data.max_fi}, Min FN: ${data.min_fn}, Max FN: ${data.max_fn}</td>
+                            </tr>
+                        `;
+                        tbody.innerHTML = row;
+                    })
+                    .catch(error => console.error('Error fetching data:', error));
+            }
+
+            // Initial data load
+            updateTable();
+            updateChart();
+        });
+
+        document.getElementById('area').addEventListener('change', function() {
+            var areaId = this.value;
+
+            console.log(`Area changed, fetching subareas for Area ID: ${areaId}`);
+
+            // Clear the subarea dropdown before loading new data
+            var subareaSelect = document.getElementById('subarea');
+            subareaSelect.innerHTML = '<option value="">All Subareas</option>';  // Reset with default option
+
+            if (areaId) {
+                // Fetch the subareas for the selected area
+                fetch(`/argon/api/subareas/${areaId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log("Subareas received:", data);
+                        data.forEach(function(subarea) {
+                            var option = document.createElement('option');
+                            option.value = subarea.id;
+                            option.text = subarea.name;
+                            subareaSelect.add(option);
+                        });
+                    })
+                    .catch(error => console.error('Error fetching subareas:', error));
+            }
+        });
+
+
+    </script>
+</body>
+</html>

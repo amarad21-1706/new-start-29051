@@ -581,6 +581,9 @@ class AreaSubareas(db.Model):
     interval_id = db.Column(db.Integer, db.ForeignKey('interval.id'))
     caption = db.Column(db.Text(255))
 
+    # Relationship to Subarea
+    subarea = db.relationship('Subarea', backref='area_subareas')
+
     def __repr__(self):
         return (f"Area={self.area_id}, subarea={self.subarea_id}, "
                 f"status={self.status_id}, interval={self.interval_id}")
