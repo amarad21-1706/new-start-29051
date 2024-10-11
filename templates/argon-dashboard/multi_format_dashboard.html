@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <title>Dashboard [...]</title>
+    <title>Dashboard</title>
     <link href="{{ url_for('static', filename='argon-dashboard/css/argon-dashboard.css') }}" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet">
 </head>
@@ -18,7 +18,6 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto mb-2 mb-lg-0">
-                    <!-- Back Button -->
                     <li class="nav-item">
                         <a class="nav-link" href="javascript:history.back()">Back</a>
                     </li>
@@ -32,7 +31,7 @@
         <div class="header bg-primary pb-6 pt-5">
             <div class="container-fluid">
                 <div class="header-body">
-                    <h1 class="text-white">Dashboard [...]</h1>
+                    <h1 class="text-white">Dashboard</h1>
                 </div>
             </div>
         </div>
@@ -41,8 +40,8 @@
         <div class="container mt-4">
             <form id="filter-form">
                 <div class="row">
-                    <!-- Company Dropdown -->
-                    <div class="col-md-3">
+                    <!-- Combo Boxes (now fit into one row) -->
+                    <div class="col-md-2">
                         <label for="company">Company</label>
                         <select id="company" name="company_id" class="form-control">
                             <option value="">All</option>
@@ -52,8 +51,7 @@
                         </select>
                     </div>
 
-                    <!-- Area Dropdown -->
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label for="area">Area</label>
                         <select id="area" name="area_id" class="form-control">
                             <option value="">All Areas</option>
@@ -63,17 +61,14 @@
                         </select>
                     </div>
 
-                    <!-- Subarea Dropdown (Populated Dynamically) -->
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label for="subarea">Subarea</label>
                         <select id="subarea" name="subarea_id" class="form-control">
                             <option value="">All Subareas</option>
-                            <!-- Subarea options will be populated dynamically -->
                         </select>
                     </div>
 
-                    <!-- Year Dropdown -->
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label for="year">Year</label>
                         <select id="year" name="year" class="form-control">
                             <option value="">All Years</option>
@@ -83,8 +78,7 @@
                         </select>
                     </div>
 
-                    <!-- Record Type Dropdown -->
-                    <div class="col-md-3">
+                    <div class="col-md-2">
                         <label for="record_type">Record Type</label>
                         <select id="record_type" name="record_type" class="form-control">
                             <option value="">All Record Types</option>
@@ -97,55 +91,65 @@
             </form>
         </div>
 
-        <!-- Containers for FI* and FN* visualizations -->
+        <!-- Three Containers Horizontally -->
         <div class="container mt-5">
             <div class="row">
-                <!-- FI* Data Table -->
-                <div class="col-md-6">
-                    <h4>FI* Data Table</h4>
-                    <table class="table table-hover" id="fi-table">
-                        <thead>
-                            <tr>
-                                <th>Number of Records</th>
-                                <th>Non-null 'fi*' Values</th>
-                                <th>Min/Max 'fi*'</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Dynamic content will be inserted here by JavaScript -->
-                        </tbody>
-                    </table>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Top Container 1</h5>
+                            <p>Content for container 1.</p>
+                        </div>
+                    </div>
                 </div>
-
-                <!-- FN* Data Table -->
-                <div class="col-md-6">
-                    <h4>FN* Data Table</h4>
-                    <table class="table table-hover" id="fn-table">
-                        <thead>
-                            <tr>
-                                <th>Number of Records</th>
-                                <th>Non-null 'fn*' Values</th>
-                                <th>Min/Max 'fn*'</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <!-- Dynamic content will be inserted here by JavaScript -->
-                        </tbody>
-                    </table>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Top Container 2</h5>
+                            <p>Content for container 2.</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Top Container 3</h5>
+                            <p>Content for container 3.</p>
+                        </div>
+                    </div>
                 </div>
             </div>
+        </div>
 
-            <!-- FI* Candlestick Chart -->
-            <div class="row mt-5">
-                <div class="col-md-6">
-                    <h4>FI* Candlestick Chart</h4>
-                    <div id="fi-chart" style="width: 100%; height: 400px;"></div> <!-- ECharts container -->
+        <!-- Containers for Data Table and Charts -->
+        <div class="container mt-5">
+            <div class="row">
+                <!-- Data Table -->
+                <div class="col-md-12">
+                    <h4>Data Table</h4>
+                    <table class="table table-hover" id="data-table">
+                        <thead>
+                            <tr>
+                                <th>Number of Records</th>
+                                <th>Abs values</th>
+                                <th>Rel values</th>
+                                <th>Min/max abs & rel</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Dynamic content will be inserted here by JavaScript -->
+                        </tbody>
+                    </table>
                 </div>
 
-                <!-- FN* Candlestick Chart -->
+                <!-- Candlestick Charts -->
                 <div class="col-md-6">
-                    <h4>FN* Candlestick Chart</h4>
-                    <div id="fn-chart" style="width: 100%; height: 400px;"></div> <!-- ECharts container -->
+                    <h4>Absolute Metrics</h4>
+                    <div id="fi-chart" style="width: 100%; height: 400px;"></div>
+                </div>
+                <div class="col-md-6">
+                    <h4>Relative Metrics</h4>
+                    <div id="fn-chart" style="width: 100%; height: 400px;"></div>
                 </div>
             </div>
         </div>
@@ -159,43 +163,52 @@
             updateDashboard();
         });
 
-        function updateTable(data, tableId) {
-            console.log("Received data for table:", data);  // Debugging line to check the data received
+        // Function to update the data table
+        function updateTable(data) {
+            const tbody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
+            tbody.innerHTML = '';  // Clear table
 
-            // Clear the table body first
-            const tbody = document.getElementById(tableId).getElementsByTagName('tbody')[0];
-            tbody.innerHTML = '';  // Reset the table content
+            if (data && data.candlestick_data_fi.length > 0 && data.candlestick_data_fn.length > 0) {
+                const numRecords = data.candlestick_data_fi.length;  // Assume equal length for FI/FN records
+                const numFiNonNull = data.candlestick_data_fi.filter(item => item.f !== null).length;
+                const numFnNonNull = data.candlestick_data_fn.filter(item => item.f !== null).length;
 
-            if (data && data.length > 0) {
-                const numRecords = data.length;
-                const numNonNull = data.filter(item => item.f !== null).length;
-                const minVal = Math.min(...data.map(item => item.f));
-                const maxVal = Math.max(...data.map(item => item.f));
+                const minFi = Math.min(...data.candlestick_data_fi.map(item => item.f));
+                const maxFi = Math.max(...data.candlestick_data_fi.map(item => item.f));
+                const minFn = Math.min(...data.candlestick_data_fn.map(item => item.f));
+                const maxFn = Math.max(...data.candlestick_data_fn.map(item => item.f));
 
-                // Populate the table with these computed values
                 const row = `
                     <tr>
                         <td>${numRecords}</td>
-                        <td>${numNonNull}</td>
-                        <td>Min: ${minVal}, Max: ${maxVal}</td>
+                        <td>${numFiNonNull}</td>
+                        <td>${numFnNonNull}</td>
+                        <td>Min abs: ${minFi}, Max: ${maxFi}, Min rel: ${minFn}, Max: ${maxFn}</td>
                     </tr>
                 `;
-                tbody.innerHTML = row;  // Insert the row into the table body
+                tbody.innerHTML = row;
             } else {
                 console.log("No data available to populate the table.");
-                tbody.innerHTML = '<tr><td colspan="3">No data available</td></tr>';  // Display 'no data available' if data is empty
+                tbody.innerHTML = '<tr><td colspan="4">No data available</td></tr>';
             }
         }
 
-        function updateCandlestickChart(data, chartId) {
-            var chart = echarts.init(document.getElementById(chartId));
+        // Function to update both FI and FN candlestick charts
+        function updateCandlestickCharts(data) {
+            updateCandlestickChart(data.candlestick_data_fi, 'fi-chart');
+            updateCandlestickChart(data.candlestick_data_fn, 'fn-chart');
+        }
 
-            if (data && data.length > 0) {
-                var candlestickData = data.map(item => [item.f, item.s, item.l, item.h]); // Convert to ECharts format
+        // Candlestick chart update function using ECharts
+        function updateCandlestickChart(data, chartElementId) {
+            var chart = echarts.init(document.getElementById(chartElementId));
+
+            if (data) {
+                var candlestickData = data.map(item => [item.f, item.s, item.l, item.h]);
 
                 var option = {
                     title: {
-                        text: 'Candlestick Chart',
+                        text: `${chartElementId}`,
                         left: 'center'
                     },
                     tooltip: {
@@ -218,12 +231,12 @@
                 };
                 chart.setOption(option);
             } else {
-                console.log("No candlestick data available.");
+                console.log(`No data available for ${chartElementId}`);
                 chart.clear();  // Clear the chart if there's no data
             }
         }
 
-        // Update both tables and charts in one fetch call
+        // Fetch data and update dashboard (table and both charts)
         function updateDashboard() {
             const company = document.getElementById('company').value;
             const area = document.getElementById('area').value;
@@ -238,11 +251,9 @@
                 .then(data => {
                     console.log("Data received:", data);
 
-                    // Update tables and charts for both fi* and fn* data
-                    updateTable(data.candlestick_data_fi, 'fi-table');
-                    updateCandlestickChart(data.candlestick_data_fi, 'fi-chart');
-                    updateTable(data.candlestick_data_fn, 'fn-table');
-                    updateCandlestickChart(data.candlestick_data_fn, 'fn-chart');
+                    // Update both table and charts
+                    updateTable(data);
+                    updateCandlestickCharts(data);
                 })
                 .catch(error => console.error('Error fetching dashboard data:', error));
         }
@@ -253,12 +264,12 @@
             updateDashboard();
         });
 
-        // Subarea population based on area selection
+        // Event listener for subarea update based on selected area
         document.getElementById('area').addEventListener('change', function() {
             const areaId = this.value;
 
             if (areaId) {
-                fetch(`/argon/api/subareas/${areaId}`)  // Corrected URL
+                fetch(`/argon/api/subareas/${areaId}`)
                     .then(response => response.json())
                     .then(subareas => {
                         const subareaSelect = document.getElementById('subarea');
@@ -274,8 +285,8 @@
                     .catch(error => console.error('Error fetching subareas:', error));
             }
         });
-
     </script>
 
 </body>
 </html>
+
