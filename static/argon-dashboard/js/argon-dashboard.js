@@ -9,10 +9,6 @@
       var ps = new PerfectScrollbar(mainpanel);
     };
 
-    if (document.getElementsByClassName('sidenav')[0]) {
-      var sidebar = document.querySelector('.sidenav');
-      var ps1 = new PerfectScrollbar(sidebar);
-    };
 
     if (document.getElementsByClassName('navbar-collapse')[0]) {
       var fixedplugin = document.querySelector('.navbar:not(.navbar-expand-lg) .navbar-collapse');
@@ -365,7 +361,6 @@ function debounce(func, wait, immediate) {
     if (callNow) func.apply(context, args);
   };
 };
-
 // Toggle Sidenav
 const iconNavbarSidenav = document.getElementById('iconNavbarSidenav');
 const iconSidenav = document.getElementById('iconSidenav');
@@ -373,37 +368,41 @@ const sidenav = document.getElementById('sidenav-main');
 let body = document.getElementsByTagName('body')[0];
 let className = 'g-sidenav-pinned';
 
-if (iconNavbarSidenav) {
-  iconNavbarSidenav.addEventListener("click", toggleSidenav);
+if (sidenav) { // Ensure sidenav exists before proceeding
+
+    if (iconNavbarSidenav) {
+        iconNavbarSidenav.addEventListener("click", toggleSidenav);
+    }
+
+    if (iconSidenav) {
+        iconSidenav.addEventListener("click", toggleSidenav);
+    }
+
+    function toggleSidenav() {
+        if (body.classList.contains(className)) {
+            body.classList.remove(className);
+            setTimeout(function() {
+                if (sidenav) {
+                    sidenav.classList.remove('bg-white');
+                }
+            }, 100);
+            if (sidenav) {
+                sidenav.classList.remove('bg-transparent');
+            }
+        } else {
+            body.classList.add(className);
+            if (sidenav) {
+                sidenav.classList.add('bg-white');
+                sidenav.classList.remove('bg-transparent');
+            }
+            if (iconSidenav) {
+                iconSidenav.classList.remove('d-none');
+            }
+        }
+    }
+} else {
+    console.warn("Sidenav not found, skipping sidenav functionality.");
 }
-
-if (iconSidenav) {
-  iconSidenav.addEventListener("click", toggleSidenav);
-}
-
-function toggleSidenav() {
-  if (body.classList.contains(className)) {
-    body.classList.remove(className);
-    setTimeout(function() {
-      sidenav.classList.remove('bg-white');
-    }, 100);
-    sidenav.classList.remove('bg-transparent');
-
-  } else {
-    body.classList.add(className);
-    sidenav.classList.add('bg-white');
-    sidenav.classList.remove('bg-transparent');
-    iconSidenav.classList.remove('d-none');
-  }
-}
-
-let html = document.getElementsByTagName('html')[0];
-
-html.addEventListener("click", function(e) {
-  if (body.classList.contains('g-sidenav-pinned') && !e.target.classList.contains('sidenav-toggler-line')) {
-    body.classList.remove(className);
-  }
-});
 
 // Resize navbar color depends on configurator active type of sidenav
 

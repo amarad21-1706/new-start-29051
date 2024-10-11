@@ -39,7 +39,6 @@
 
         <!-- Dropdown filters -->
         <div class="container mt-4">
-
             <form id="filter-form">
                 <div class="row">
                     <!-- Company Dropdown -->
@@ -96,11 +95,9 @@
                     </div>
                 </div>
             </form>
-
         </div>
 
         <!-- Containers for different visualizations -->
-
         <div class="container mt-5">
             <div class="row">
                 <!-- Left Column: 66% width, two rectangles stacked vertically -->
@@ -125,11 +122,11 @@
                         </div>
                     </div>
 
-                    <!-- Bottom left container -->
-                    <div class="row">
+                    <!-- Candlestick Chart Container -->
+                    <div class="row mt-5">
                         <div class="col-md-12">
-                            <h4>Bar Chart</h4>
-                            <canvas id="bar-chart"></canvas>
+                            <h4>Candlestick Chart</h4>
+                            <div id="candlestick-chart" style="width: 100%; height: 400px;"></div> <!-- ECharts container -->
                         </div>
                     </div>
                 </div>
@@ -171,93 +168,98 @@
                 </div>
             </div>
         </div>
-
     </div>
 
-    <!-- Argon JS and Chart.js -->
-    <script src="{{ url_for('static', filename='argon-dashboard/js/argon-dashboard.js') }}"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <!-- Script to populate and control filters and chart -->
+    <!-- Include ECharts library -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
 
     <script>
-
         document.addEventListener('DOMContentLoaded', function() {
-            console.log("Dashboard loaded, initializing event listeners...");
-
-            // Event listener for filter change and table/chart update
-            document.getElementById('filter-form').addEventListener('change', function() {
-                console.log("Filters changed, updating table and chart...");
-                updateTable();
-                updateChart();
-            });
-
-            function updateTable() {
-                // Get the selected filter values
-                const company = document.getElementById('company').value;
-                const area = document.getElementById('area').value;
-                const subarea = document.getElementById('subarea').value;
-                const year = document.getElementById('year').value;
-                const recordType = document.getElementById('record_type').value;
-
-                console.log(`Fetching data with filters: company=${company}, area=${area}, subarea=${subarea}, year=${year}, record_type=${recordType}`);
-
-                // Fetch the filtered data
-                fetch(`/argon/multi_format_dashboard_data?company_id=${company}&area_id=${area}&subarea_id=${subarea}&year=${year}&record_type=${recordType}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        console.log("Data received:", data);
-
-                        // Clear the table body
-                        const tbody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
-                        tbody.innerHTML = '';
-
-                        // Insert the new data into the table
-                        const row = `
-                            <tr>
-                                <td>${data.num_records}</td>
-                                <td>${data.num_fi_non_null}</td>
-                                <td>${data.num_fn_non_null}</td>
-                                <td>Min FI: ${data.min_fi}, Max FI: ${data.max_fi}, Min FN: ${data.min_fn}, Max FN: ${data.max_fn}</td>
-                            </tr>
-                        `;
-                        tbody.innerHTML = row;
-                    })
-                    .catch(error => console.error('Error fetching data:', error));
-            }
-
-            // Initial data load
-            updateTable();
-            updateChart();
+            updateDashboard();
         });
 
-        document.getElementById('area').addEventListener('change', function() {
-            var areaId = this.value;
+        // Combined function to fetch data and update both table and chart
+        function updateDashboard() {
+            const company = document.getElementById('company').value;
+            const area = document.getElementById('area').value;
+            const subarea = document.getElementById('subarea').value;
+            const year = document.getElementById('year').value;
+            const recordType = document.getElementById('record_type').value;
 
-            console.log(`Area changed, fetching subareas for Area ID: ${areaId}`);
+            // Fetch the filtered data once and update both table and chart
+            fetch(`/argon/multi_format_dashboard_data?company_id=${company}&area_id=${area}&subarea_id=${subarea}&year=${year}&record_type=${recordType}`)
+                .then(response => response.json())
+                .then(data => {
+                    updateTable(data);
+                    updateCandlestickChart(data);
+                })
+                .catch(error => console.error('Error fetching dashboard data:', error));
+        }
 
-            // Clear the subarea dropdown before loading new data
-            var subareaSelect = document.getElementById('subarea');
-            subareaSelect.innerHTML = '<option value="">All Subareas</option>';  // Reset with default option
+        // Table update function
+        function updateTable(data) {
+            const tbody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
+            tbody.innerHTML = '';
 
-            if (areaId) {
-                // Fetch the subareas for the selected area
-                fetch(`/argon/api/subareas/${areaId}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        console.log("Subareas received:", data);
-                        data.forEach(function(subarea) {
-                            var option = document.createElement('option');
-                            option.value = subarea.id;
-                            option.text = subarea.name;
-                            subareaSelect.add(option);
-                        });
-                    })
-                    .catch(error => console.error('Error fetching subareas:', error));
+            if (data.num_records !== undefined) {
+                const row = `
+                    <tr>
+                        <td>${data.num_records}</td>
+                        <td>${data.num_fi_non_null}</td>
+                        <td>${data.num_fn_non_null}</td>
+                        <td>Min FI: ${data.min_fi}, Max FI: ${data.max_fi}, Min FN: ${data.min_fn}, Max FN: ${data.max_fn}</td>
+                    </tr>
+                `;
+                tbody.innerHTML = row;
+            } else {
+                console.log("No data available to populate the table.");
+                tbody.innerHTML = '<tr><td colspan="4">No data available</td></tr>';
             }
+        }
+
+        // Candlestick chart update function using ECharts
+        function updateCandlestickChart(data) {
+            var chart = echarts.init(document.getElementById('candlestick-chart'));
+
+            if (data.candlestick_data) {
+                var candlestickData = data.candlestick_data.map(item => [item.f, item.s, item.l, item.h]); // Convert to ECharts format
+
+                var option = {
+                    title: {
+                        text: 'Candlestick Chart Example',
+                        left: 'center'
+                    },
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: {
+                            type: 'cross'
+                        }
+                    },
+                    xAxis: {
+                        type: 'category',
+                        data: data.candlestick_data.map(item => item.x)
+                    },
+                    yAxis: {
+                        scale: true
+                    },
+                    series: [{
+                        type: 'candlestick',
+                        data: candlestickData
+                    }]
+                };
+                chart.setOption(option);
+            } else {
+                console.log("No candlestick data available.");
+                chart.clear();  // Clear the chart if there's no data
+            }
+        }
+
+        // Event listener for filter changes
+        document.getElementById('filter-form').addEventListener('change', function(e) {
+            e.preventDefault();
+            updateDashboard();
         });
-
-
     </script>
+
 </body>
 </html>

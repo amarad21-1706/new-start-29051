@@ -17,7 +17,9 @@ from forms.forms import (MainForm, PlanForm, QuestionnaireFormArgon, QuestionFor
 from flask_login import login_required
 from sqlalchemy.exc import IntegrityError
 
-app = Flask(__name__)
+# app = Flask(__name__)
+app = Flask(__name__, static_folder='static')
+
 
 # Create the blueprint object
 argon_bp = Blueprint('argon', __name__)
@@ -477,11 +479,9 @@ def remove_question_from_survey(id):
     flash('Question removed from the survey successfully!', 'success')
     return redirect(url_for('argon.surveys_view'))
 
-
 @argon_bp.route('/multi_format_dashboard_data', methods=['GET'])
 @login_required
 def multi_format_dashboard_data():
-    # Debug: Log incoming request
     print("Fetching multi-format dashboard data...")
 
     # Get filter parameters from request arguments
@@ -491,56 +491,41 @@ def multi_format_dashboard_data():
     year = request.args.get('year')
     record_type = request.args.get('record_type')
 
-    # Debug: Log the filter inputs
-    print(f"Company ID: {company_id}, Area ID: {area_id}, Subarea ID: {subarea_id}, Year: {year}, Record Type: {record_type}")
-
-    # Build the query with filters
     query = BaseData.query
 
     if company_id and company_id != "":
-        print(f"Filtering by Company ID: {company_id}")
         query = query.filter(BaseData.company_id == company_id)
     if area_id and area_id != "":
-        print(f"Filtering by Area ID: {area_id}")
         query = query.filter(BaseData.area_id == area_id)
     if subarea_id and subarea_id != "":
-        print(f"Filtering by Subarea ID: {subarea_id}")
         query = query.filter(BaseData.subarea_id == subarea_id)
     if year and year != "":
-        print(f"Filtering by Year: {year}")
         query = query.filter(BaseData.fi0 == year)
     if record_type and record_type != "":
-        print(f"Filtering by Record Type: {record_type}")
         query = query.filter(BaseData.record_type == record_type)
 
-    # Execute the query
-    try:
-        records = query.all()
-        print(f"Number of records found: {len(records)}")
-    except Exception as e:
-        print(f"Error executing query: {e}")
-        return jsonify({'error': 'Failed to execute query'}), 500
+    records = query.all()
+    print(f"Number of records found: {len(records)}")
 
-    # Calculate the required statistics
-    num_records = len(records)
-    num_fi_non_null = sum(1 for record in records if any(getattr(record, f'fi{i}', None) not in [None, 0] for i in range(10)))  # Assuming fi0-fi9
-    num_fn_non_null = sum(1 for record in records if any(getattr(record, f'fn{i}', None) not in [None, 0] for i in range(10)))  # Assuming fn0-fn9
+    # Prepare dynamic candlestick data for fi* fields, excluding fi0
+    candlestick_data = []
+    for i in range(1, 10):  # Start from fi1 to fi9, skipping fi0
+        fi_values = [getattr(record, f'fi{i}', None) for record in records if
+                     getattr(record, f'fi{i}', None) not in [None, 0]]
+        if fi_values:
+            min_fi = min(fi_values)
+            max_fi = max(fi_values)
+            avg_fi = sum(fi_values) / len(fi_values)
+            candlestick_data.append({
+                'x': f'fi{i}',
+                'f': min_fi,  # Open (use min as open)
+                'h': max_fi,  # High
+                'l': min_fi,  # Low
+                's': avg_fi  # Close (use average as close)
+            })
 
-    min_fi = min((getattr(record, f'fi{i}') for record in records for i in range(10) if getattr(record, f'fi{i}', None) not in [None, 0]), default=None)
-    max_fi = max((getattr(record, f'fi{i}') for record in records for i in range(10) if getattr(record, f'fi{i}', None) not in [None, 0]), default=None)
-    min_fn = min((getattr(record, f'fn{i}') for record in records for i in range(10) if getattr(record, f'fn{i}', None) not in [None, 0]), default=None)
-    max_fn = max((getattr(record, f'fn{i}') for record in records for i in range(10) if getattr(record, f'fn{i}', None) not in [None, 0]), default=None)
+    print(f"Candlestick Data: {candlestick_data}")
 
-    # Debug: Print the calculated statistics
-    print(f"Statistics - num_records: {num_records}, num_fi_non_null: {num_fi_non_null}, num_fn_non_null: {num_fn_non_null}, min_fi: {min_fi}, max_fi: {max_fi}, min_fn: {min_fn}, max_fn: {max_fn}")
-
-    # Return the data in a format that the frontend can process
     return jsonify({
-        'num_records': num_records,
-        'num_fi_non_null': num_fi_non_null,
-        'num_fn_non_null': num_fn_non_null,
-        'min_fi': min_fi,
-        'max_fi': max_fi,
-        'min_fn': min_fn,
-        'max_fn': max_fn
+        'candlestick_data': candlestick_data  # Send candlestick data to frontend
     })
