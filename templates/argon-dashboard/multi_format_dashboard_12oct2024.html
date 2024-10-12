@@ -94,30 +94,27 @@
         <!-- Three Containers Horizontally -->
         <div class="container mt-5">
             <div class="row">
-                <!-- Pie Chart for Document Types -->
                 <div class="col-md-4">
                     <div class="card">
                         <div class="card-body">
-                            <h5 class="card-title">Document Types</h5>
-                            <div id="document-type-chart" style="width: 100%; height: 400px;"></div> <!-- ECharts container for document types -->
+                            <h5 class="card-title">Top Container 1</h5>
+                            <p>Content for container 1.</p>
                         </div>
                     </div>
                 </div>
-                <!-- Pie Chart for Document Areas -->
                 <div class="col-md-4">
                     <div class="card">
                         <div class="card-body">
-                            <h5 class="card-title">Document Areas</h5>
-                            <div id="document-area-chart" style="width: 100%; height: 400px;"></div> <!-- ECharts container for document areas -->
+                            <h5 class="card-title">Top Container 2</h5>
+                            <p>Content for container 2.</p>
                         </div>
                     </div>
                 </div>
-                <!-- Container 3 -->
                 <div class="col-md-4">
                     <div class="card">
                         <div class="card-body">
-                            <h5 class="card-title">Workflow Data</h5>
-                            <div id="workflow-chart" style="width: 100%; height: 400px;"></div> <!-- ECharts container for workflow -->
+                            <h5 class="card-title">Top Container 3</h5>
+                            <p>Content for container 3.</p>
                         </div>
                     </div>
                 </div>
@@ -239,36 +236,6 @@
             }
         }
 
-        // Function to update the pie charts using ECharts
-        function updatePieChart(chartElementId, data, chartTitle) {
-            var chart = echarts.init(document.getElementById(chartElementId));
-
-            var option = {
-                title: {
-                    text: chartTitle,
-                    left: 'center'
-                },
-                tooltip: {
-                    trigger: 'item'
-                },
-                series: [{
-                    name: chartTitle,
-                    type: 'pie',
-                    radius: '50%',
-                    data: data.map(item => ({ name: item.name, value: item.value })),
-                    emphasis: {
-                        itemStyle: {
-                            shadowBlur: 10,
-                            shadowOffsetX: 0,
-                            shadowColor: 'rgba(0, 0, 0, 0.5)'
-                        }
-                    }
-                }]
-            };
-
-            chart.setOption(option);
-        }
-
         // Fetch data and update dashboard (table and both charts)
         function updateDashboard() {
             const company = document.getElementById('company').value;
@@ -282,18 +249,11 @@
             fetch(`/argon/multi_format_dashboard_data?company_id=${company}&area_id=${area}&subarea_id=${subarea}&year=${year}&record_type=${recordType}`)
                 .then(response => response.json())
                 .then(data => {
-                    if (data) {
-                        // Update the pie chart for document types and areas
-                        updatePieChart('document-type-chart', data.document_type_data, 'Document Types');
-                        updatePieChart('document-area-chart', data.document_area_data, 'Document Areas');
+                    console.log("Data received:", data);
 
-                        console.log("Data received:", data);
-                    } else {
-                        console.error('No data received');
-                    }
                     // Update both table and charts
-                    updateCandlestickCharts(data);
                     updateTable(data);
+                    updateCandlestickCharts(data);
                 })
                 .catch(error => console.error('Error fetching dashboard data:', error));
         }
@@ -329,3 +289,4 @@
 
 </body>
 </html>
+
