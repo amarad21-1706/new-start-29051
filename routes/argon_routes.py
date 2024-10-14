@@ -482,58 +482,6 @@ def remove_question_from_survey(id):
     return redirect(url_for('argon.surveys_view'))
 
 
-@argon_bp.route('/multi_format_dashboard_data_two', methods=['GET'])
-@login_required
-def multi_format_dashboard_data_two():
-    print("Fetching multi-format dashboard data...")
-
-    # Get filter parameters from request arguments
-    company_id = request.args.get('company_id')
-    area_id = request.args.get('area_id')
-    subarea_id = request.args.get('subarea_id')
-    year = request.args.get('year')
-    record_type = request.args.get('record_type')
-
-    query = BaseData.query
-
-    if company_id and company_id != "":
-        query = query.filter(BaseData.company_id == company_id)
-    if area_id and area_id != "":
-        query = query.filter(BaseData.area_id == area_id)
-    if subarea_id and subarea_id != "":
-        query = query.filter(BaseData.subarea_id == subarea_id)
-    if year and year != "":
-        query = query.filter(BaseData.fi0 == year)
-    if record_type and record_type != "":
-        query = query.filter(BaseData.record_type == record_type)
-
-    records = query.all()
-    print(f"Number of records found: {len(records)}")
-
-    # Prepare dynamic candlestick data for fi* fields, excluding fi0
-    candlestick_data = []
-    for i in range(1, 10):  # Start from fi1 to fi9, skipping fi0
-        fi_values = [getattr(record, f'fi{i}', None) for record in records if
-                     getattr(record, f'fi{i}', None) not in [None, 0]]
-        if fi_values:
-            min_fi = min(fi_values)
-            max_fi = max(fi_values)
-            avg_fi = sum(fi_values) / len(fi_values)
-            candlestick_data.append({
-                'x': f'fi{i}',
-                'f': min_fi,  # Open (use min as open)
-                'h': max_fi,  # High
-                'l': min_fi,  # Low
-                's': avg_fi  # Close (use average as close)
-            })
-
-    print(f"Candlestick Data: {candlestick_data}")
-
-    return jsonify({
-        'candlestick_data': candlestick_data  # Send candlestick data to frontend
-    })
-
-
 @argon_bp.route('/multi_format_dashboard_data', methods=['GET'])
 @login_required
 def multi_format_dashboard_data():
@@ -560,83 +508,68 @@ def multi_format_dashboard_data():
         if record_type and record_type != "":
             query = query.filter(BaseData.record_type == record_type)
 
-        # Ensure records are sorted chronologically by `updated_on`
         query = query.order_by(BaseData.updated_on)
-
         records = query.all()
         print(f"Number of records found: {len(records)}")
 
         # Candlestick data logic for fi* fields
         candlestick_data_fi = []
-        for i in range(1, 10):  # For fi1 to fi9
-            fi_values = [(getattr(record, f'fi{i}', None), record.updated_on) for record in records if getattr(record, f'fi{i}', None) not in [None, 0]]
+        for i in range(1, 10):
+            fi_values = [(getattr(record, f'fi{i}', None), record.updated_on) for record in records if
+                         getattr(record, f'fi{i}', None) not in [None, 0]]
             if fi_values:
-                fi_values.sort(key=lambda x: x[1])  # Sort by `updated_on`
-                fi_only_values = [val[0] for val in fi_values]  # Extract just the fi* values after sorting
+                fi_values.sort(key=lambda x: x[1])
+                fi_only_values = [val[0] for val in fi_values]
                 candlestick_data_fi.append({
                     'x': f'fi{i}',
-                    'f': fi_only_values[0],  # Open (first value)
-                    'h': max(fi_only_values),  # High
-                    'l': min(fi_only_values),  # Low
-                    's': fi_only_values[-1],  # Close (last value)
+                    'f': fi_only_values[0],
+                    'h': max(fi_only_values),
+                    'l': min(fi_only_values),
+                    's': fi_only_values[-1],
                 })
 
         print(f"Candlestick Data (fi): {candlestick_data_fi}")
 
         # Candlestick data logic for fn* fields
         candlestick_data_fn = []
-        for i in range(1, 10):  # For fn1 to fn9
-            fn_values = [(getattr(record, f'fn{i}', None), record.updated_on) for record in records if getattr(record, f'fn{i}', None) not in [None, 0]]
+        for i in range(1, 10):
+            fn_values = [(getattr(record, f'fn{i}', None), record.updated_on) for record in records if
+                         getattr(record, f'fn{i}', None) not in [None, 0]]
             if fn_values:
-                fn_values.sort(key=lambda x: x[1])  # Sort by `updated_on`
-                fn_only_values = [val[0] for val in fn_values]  # Extract just the fn* values after sorting
+                fn_values.sort(key=lambda x: x[1])
+                fn_only_values = [val[0] for val in fn_values]
                 candlestick_data_fn.append({
                     'x': f'fn{i}',
-                    'f': fn_only_values[0],  # Open (first value)
-                    'h': max(fn_only_values),  # High
-                    'l': min(fn_only_values),  # Low
-                    's': fn_only_values[-1],  # Close (last value)
+                    'f': fn_only_values[0],
+                    'h': max(fn_only_values),
+                    'l': min(fn_only_values),
+                    's': fn_only_values[-1],
                 })
 
         print(f"Candlestick Data (fn): {candlestick_data_fn}")
 
-        try:
-            # Add document type data, excluding records with NULL record_type
-            document_type_data = db.session.query(BaseData.record_type, db.func.count(BaseData.id)).filter(
-                BaseData.record_type.isnot(None)).group_by(BaseData.record_type).all()
+        # Filtered document type and area data
+        document_type_data = db.session.query(BaseData.record_type, db.func.count(BaseData.id)).group_by(
+            BaseData.record_type).filter(
+            BaseData.company_id == company_id if company_id else True,
+            BaseData.area_id == area_id if area_id else True).all()
 
-            # Transform to a pie chart-friendly structure
-            document_type_data = [{'name': record_type, 'value': count} for record_type, count in document_type_data]
+        document_type_data = [{'name': record_type or "Unknown", 'value': count} for record_type, count in document_type_data]
 
-        except Exception as e:
-            print(f"Error generating document type data: {e}")
-            document_type_data = []
+        document_area_data = db.session.query(BaseData.area_id, db.func.count(BaseData.id)).group_by(
+            BaseData.area_id).filter(
+            BaseData.company_id == company_id if company_id else True).all()
 
-        # Add logic for document areas (example: count documents by area)
-        try:
-            # Generate document area data, excluding records with NULL area_id
-            document_area_data = []
-            area_counts = db.session.query(BaseData.area_id, func.count(BaseData.id)).filter(
-                BaseData.area_id.isnot(None)).group_by(BaseData.area_id).all()
-
-            for area_id, count in area_counts:
-                area = Area.query.get(area_id)
-                if area:  # Check if the area exists
-                    document_area_data.append({'name': area.name, 'value': count})
-                else:
-                    print(f"Warning: Area with ID {area_id} not found.")
-        except Exception as e:
-            print(f"Error generating document area data: {e}")
-            document_area_data = []
+        # Handle the case where Area.query.get(area_id) returns None
+        document_area_data = [{'name': (Area.query.get(area_id).name if Area.query.get(area_id) else "Unknown Area"), 'value': count}
+                              for area_id, count in document_area_data]
 
         try:
-            # The rest of the logic remains the same...
-
             return jsonify({
-                'candlestick_data_fi': candlestick_data_fi or [],  # Ensure it returns an empty list if no data
-                'candlestick_data_fn': candlestick_data_fn or [],  # Ensure it returns an empty list if no data
-                'document_type_data': document_type_data or [],  # Return empty array if no data
-                'document_area_data': document_area_data or [],  # Return empty array if no data
+                'candlestick_data_fi': candlestick_data_fi or [],
+                'candlestick_data_fn': candlestick_data_fn or [],
+                'document_type_data': document_type_data or [],
+                'document_area_data': document_area_data or [],
             })
         except Exception as e:
             print(f"Error during dashboard data fetch: {e}")
@@ -645,3 +578,4 @@ def multi_format_dashboard_data():
     except Exception as e:
         print(f"Error during dashboard data fetch: {e}")
         return jsonify({'error': str(e)}), 500
+

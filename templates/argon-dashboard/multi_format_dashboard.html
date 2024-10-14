@@ -269,6 +269,7 @@
             chart.setOption(option);
         }
 
+
         // Fetch data and update dashboard (table and both charts)
         function updateDashboard() {
             const company = document.getElementById('company').value;
@@ -303,6 +304,7 @@
             e.preventDefault();
             updateDashboard();
         });
+
 
         // Event listener for subarea update based on selected area
         document.getElementById('area').addEventListener('change', function() {
