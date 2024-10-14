@@ -6,17 +6,6 @@
     <title>Dashboard</title>
     <link href="{{ url_for('static', filename='argon-dashboard/css/argon-dashboard.css') }}" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet">
-    <style>
-        /* Make containers square and fit four in one row */
-        .container-row {
-            display: flex;
-            justify-content: space-around;
-        }
-        .container-card {
-            width: 22%;
-            height: 250px;
-        }
-    </style>
 </head>
 
 <body>
@@ -51,7 +40,7 @@
         <div class="container mt-4">
             <form id="filter-form">
                 <div class="row">
-                    <!-- Combo Boxes (fit into one row) -->
+                    <!-- Combo Boxes (now fit into one row) -->
                     <div class="col-md-2">
                         <label for="company">Company</label>
                         <select id="company" name="company_id" class="form-control">
@@ -102,45 +91,33 @@
             </form>
         </div>
 
-        <!-- Four Containers Horizontally -->
+        <!-- Three Containers Horizontally -->
         <div class="container mt-5">
-            <div class="row container-row">
+            <div class="row">
                 <!-- Pie Chart for Document Types -->
-                <div class="col-md-3 container-card">
+                <div class="col-md-4">
                     <div class="card">
                         <div class="card-body">
                             <h5 class="card-title">Document Types</h5>
-                            <div id="document-type-chart" style="width: 100%; height: 100%;"></div> <!-- ECharts container for document types -->
+                            <div id="document-type-chart" style="width: 100%; height: 400px;"></div> <!-- ECharts container for document types -->
                         </div>
                     </div>
                 </div>
                 <!-- Pie Chart for Document Areas -->
-                <div class="col-md-3 container-card">
+                <div class="col-md-4">
                     <div class="card">
                         <div class="card-body">
                             <h5 class="card-title">Document Areas</h5>
-                            <div id="document-area-chart" style="width: 100%; height: 100%;"></div> <!-- ECharts container for document areas -->
+                            <div id="document-area-chart" style="width: 100%; height: 400px;"></div> <!-- ECharts container for document areas -->
                         </div>
                     </div>
                 </div>
                 <!-- Container 3 -->
-                <!-- Third Container for Workflow Data -->
                 <div class="col-md-4">
                     <div class="card">
                         <div class="card-body">
                             <h5 class="card-title">Workflow Data</h5>
-                            <p id="workflow-summary">Loading...</p> <!-- This will show the number of distinct workflows and documents -->
-                            <div id="workflow-chart" style="width: 100%; height: 100%;"></div> <!-- ECharts container for workflow chart -->
-                        </div>
-                    </div>
-                </div>
-
-                <!-- New Horizontal Bar Chart for Subarea Distribution -->
-                <div class="col-md-3 container-card">
-                    <div class="card">
-                        <div class="card-body">
-                            <h5 class="card-title">Subarea Distribution</h5>
-                            <div id="subarea-distribution-chart" style="width: 100%; height: 100%;"></div> <!-- ECharts container for subarea distribution -->
+                            <div id="workflow-chart" style="width: 100%; height: 400px;"></div> <!-- ECharts container for workflow -->
                         </div>
                     </div>
                 </div>
@@ -189,148 +166,6 @@
             updateDashboard();
         });
 
-        // Function to update the document workflow summary in the third container
-        function updateWorkflowSummary(data) {
-            const workflowSummaryContainer = document.getElementById('workflow-summary');
-            if (data && data.description) {
-                workflowSummaryContainer.textContent = data.description;
-            } else {
-                workflowSummaryContainer.textContent = 'No workflow data available';
-            }
-        }
-
-        // Function to update subarea dropdown based on the selected area
-        function updateSubareaDropdown(areaId) {
-            if (!areaId) {
-                document.getElementById('subarea').innerHTML = '<option value="">All Subareas</option>';
-                return;
-            }
-
-            fetch(`/argon/api/subareas/${areaId}`)
-                .then(response => response.json())
-                .then(subareas => {
-                    const subareaSelect = document.getElementById('subarea');
-                    subareaSelect.innerHTML = '<option value="">All Subareas</option>';  // Reset subarea options
-
-                    subareas.forEach(subarea => {
-                        const option = document.createElement('option');
-                        option.value = subarea.id;
-                        option.textContent = subarea.name;
-                        subareaSelect.appendChild(option);
-                    });
-                })
-                .catch(error => console.error('Error fetching subareas:', error));
-
-            // Fetch and update the workflow summary for the selected combination
-            fetch(`/argon/api/get_workflow_summary?company_id=${company}&area_id=${area}&subarea_id=${subarea}&year=${year}`)
-                .then(response => response.json())
-                .then(data => {
-                    updateWorkflowSummary(data);
-                })
-                .catch(error => console.error('Error fetching workflow summary:', error));
-        }
-
-        // Event listener for area dropdown changes to update the subarea dropdown
-        document.getElementById('area').addEventListener('change', function() {
-            const areaId = this.value;
-            updateSubareaDropdown(areaId);  // Update subarea dropdown when area changes
-            updateDashboard();  // Optionally update the entire dashboard when area changes
-        });
-
-        document.getElementById('filter-form').addEventListener('change', function(e) {
-            e.preventDefault();
-            updateWorkflowSummary();
-        });
-
-        // Function to update the horizontal bar chart for subarea distribution
-        function updateSubareaDistributionChart(data) {
-            const chart = echarts.init(document.getElementById('subarea-distribution-chart'));
-
-            const areaNames = data.map(item => item.area_name);
-            const subareaCounts = data.map(item => item.subarea_count);
-            const maxSubareaCount = Math.max(...subareaCounts) || 1;  // Prevent division by zero
-
-            const option = {
-                tooltip: {
-                    trigger: 'axis',
-                    axisPointer: { type: 'shadow' }
-                },
-                xAxis: {
-                    type: 'value',
-                    max: 100  // Since it's percentage
-                },
-                yAxis: {
-                    type: 'category',
-                    data: areaNames
-                },
-                series: [{
-                    type: 'bar',
-                    data: subareaCounts.map(count => Math.round((count / maxSubareaCount) * 100 * 100) / 100),  // Normalize to percentage and round to 2 decimal places
-                    label: {
-                        show: true,
-                        position: 'insideRight'
-                    }
-                }]
-            };
-
-            chart.setOption(option);
-        }
-
-        // Function to update the pie charts using ECharts
-        function updatePieChart(chartElementId, data, chartTitle) {
-            var chart = echarts.init(document.getElementById(chartElementId));
-
-            var option = {
-                tooltip: {
-                    trigger: 'item'
-                },
-                series: [{
-                    name: chartTitle,
-                    type: 'pie',
-                    radius: '50%',
-                    data: data.map(item => ({ name: item.name || "Unknown", value: item.value })),
-                    emphasis: {
-                        itemStyle: {
-                            shadowBlur: 10,
-                            shadowOffsetX: 0,
-                            shadowColor: 'rgba(0, 0, 0, 0.5)'
-                        }
-                    }
-                }]
-            };
-
-            chart.setOption(option);
-        }
-
-        // Update all dashboard components
-        function updateDashboard() {
-            const company = document.getElementById('company').value;
-            const area = document.getElementById('area').value;
-            const subarea = document.getElementById('subarea').value;
-            const year = document.getElementById('year').value;
-            const recordType = document.getElementById('record_type').value;
-
-            fetch(`/argon/multi_format_dashboard_data?company_id=${company}&area_id=${area}&subarea_id=${subarea}&year=${year}&record_type=${recordType}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data) {
-                        // Update the pie chart for document types and areas
-                        updatePieChart('document-type-chart', data.document_type_data, 'Document Types');
-                        updatePieChart('document-area-chart', data.document_area_data, 'Document Areas');
-
-                        // Update the candlestick charts and the data table
-                        updateCandlestickCharts(data);
-                        updateTable(data);
-
-                        // Update the horizontal bar chart for subarea distribution
-                        updateSubareaDistributionChart(data.subarea_distribution);
-                    } else {
-                        console.error('No data received');
-                    }
-                })
-                .catch(error => console.error('Error fetching dashboard data:', error));
-        }
-
         // Function to update the data table
         function updateTable(data) {
             const tbody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
@@ -375,6 +210,10 @@
                 var candlestickData = data.map(item => [item.f, item.s, item.l, item.h]);
 
                 var option = {
+                    title: {
+                        text: `${chartElementId}`,
+                        left: 'center'
+                    },
                     tooltip: {
                         trigger: 'axis',
                         axisPointer: {
@@ -400,10 +239,93 @@
             }
         }
 
+        // Function to update the pie charts using ECharts
+        function updatePieChart(chartElementId, data, chartTitle) {
+            var chart = echarts.init(document.getElementById(chartElementId));
+
+            var option = {
+                title: {
+                    text: chartTitle,
+                    left: 'center'
+                },
+                tooltip: {
+                    trigger: 'item'
+                },
+                series: [{
+                    name: chartTitle,
+                    type: 'pie',
+                    radius: '50%',
+                    data: data.map(item => ({ name: item.name, value: item.value })),
+                    emphasis: {
+                        itemStyle: {
+                            shadowBlur: 10,
+                            shadowOffsetX: 0,
+                            shadowColor: 'rgba(0, 0, 0, 0.5)'
+                        }
+                    }
+                }]
+            };
+
+            chart.setOption(option);
+        }
+
+
+        // Fetch data and update dashboard (table and both charts)
+        function updateDashboard() {
+            const company = document.getElementById('company').value;
+            const area = document.getElementById('area').value;
+            const subarea = document.getElementById('subarea').value;
+            const year = document.getElementById('year').value;
+            const recordType = document.getElementById('record_type').value;
+
+            console.log(`Fetching data with filters: company=${company}, area=${area}, subarea=${subarea}, year=${year}, record_type=${recordType}`);
+
+            fetch(`/argon/multi_format_dashboard_data?company_id=${company}&area_id=${area}&subarea_id=${subarea}&year=${year}&record_type=${recordType}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data) {
+                        // Update the pie chart for document types and areas
+                        updatePieChart('document-type-chart', data.document_type_data, 'Document Types');
+                        updatePieChart('document-area-chart', data.document_area_data, 'Document Areas');
+
+                        console.log("Data received:", data);
+                    } else {
+                        console.error('No data received');
+                    }
+                    // Update both table and charts
+                    updateCandlestickCharts(data);
+                    updateTable(data);
+                })
+                .catch(error => console.error('Error fetching dashboard data:', error));
+        }
+
         // Event listener for filter changes
         document.getElementById('filter-form').addEventListener('change', function(e) {
             e.preventDefault();
             updateDashboard();
+        });
+
+
+        // Event listener for subarea update based on selected area
+        document.getElementById('area').addEventListener('change', function() {
+            const areaId = this.value;
+
+            if (areaId) {
+                fetch(`/argon/api/subareas/${areaId}`)
+                    .then(response => response.json())
+                    .then(subareas => {
+                        const subareaSelect = document.getElementById('subarea');
+                        subareaSelect.innerHTML = '<option value="">All Subareas</option>';  // Reset subarea options
+
+                        subareas.forEach(subarea => {
+                            const option = document.createElement('option');
+                            option.value = subarea.id;
+                            option.textContent = subarea.name;
+                            subareaSelect.appendChild(option);
+                        });
+                    })
+                    .catch(error => console.error('Error fetching subareas:', error));
+            }
         });
     </script>
 

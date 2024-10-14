@@ -9,6 +9,9 @@ from models.user import (BaseData, Users, UserRoles, Event,
         Plan, Product, PlanProducts, UserPlans
         )
 
+from flask_login import current_user
+from datetime import datetime, timedelta
+
 from flask import Blueprint, render_template, jsonify
 from flask import render_template, request, redirect, url_for, flash
 from db import db
@@ -482,6 +485,135 @@ def remove_question_from_survey(id):
     return redirect(url_for('argon.surveys_view'))
 
 
+
+@argon_bp.route('/api/get_workflow_summary_one', methods=['GET'])
+@login_required
+def get_workflow_summary_one():
+    from flask_login import current_user
+    from datetime import datetime, timedelta
+
+    two_years_ago = datetime.utcnow() - timedelta(days=365 * 2)
+
+    # Fetch filter parameters from the request
+    company_id = request.args.get('company_id')
+    area_id = request.args.get('area_id')
+    subarea_id = request.args.get('subarea_id')
+    year = request.args.get('year')
+
+    # Base query for fetching documents and workflows
+    query = db.session.query(
+        BaseData.id.label('document_id'),
+        Workflow.id.label('workflow_id')
+    ).join(
+        DocumentWorkflow, DocumentWorkflow.base_data_id == BaseData.id
+    ).join(
+        Workflow, DocumentWorkflow.workflow_id == Workflow.id
+    ).filter(
+        BaseData.area_id.in_([1, 3]),  # Filter area_id in [1, 3]
+        DocumentWorkflow.end_date >= two_years_ago  # Filter for workflows ending in the last 2 years
+    )
+
+    # Apply dynamic filtering based on selected filters
+    if company_id and company_id != "":
+        query = query.filter(BaseData.company_id == company_id)
+    if area_id and area_id != "":
+        query = query.filter(BaseData.area_id == area_id)
+    if subarea_id and subarea_id != "":
+        query = query.filter(BaseData.subarea_id == subarea_id)
+    if year and year != "":
+        query = query.filter(BaseData.fi0 == year)
+
+    # Apply role-based filtering
+    if current_user.has_role('Admin'):
+        pass  # Admins can see everything
+    elif current_user.has_role('Manager'):
+        company_id = session.get('company_id')  # Assuming company_id is stored in the session
+        query = query.filter(BaseData.company_id == company_id)
+    elif current_user.has_role('Employee'):
+        user_id = current_user.id  # Assuming user_id is associated with BaseData
+        query = query.filter(BaseData.user_id == user_id)
+
+    # Fetch distinct document-workflow tuples
+    distinct_documents_workflows = query.distinct().all()
+
+    # Calculate the workflow summary
+    num_documents = len(set([row.document_id for row in distinct_documents_workflows]))
+    num_workflows = len(set([row.workflow_id for row in distinct_documents_workflows]))
+
+    # Create a summary description
+    summary_description = f"{num_documents} document(s) in {num_workflows} workflow(s)"
+
+    # Return the workflow summary in JSON format
+    summary = {
+        'num_documents': num_documents,
+        'num_workflows': num_workflows,
+        'description': summary_description
+    }
+
+    return jsonify(summary)
+
+
+@argon_bp.route('/api/get_workflow_summary', methods=['GET'])
+@login_required
+def get_workflow_summary():
+
+    two_years_ago = datetime.utcnow() - timedelta(days=365 * 2)
+
+    # Fetch filter parameters from the request
+    company_id = request.args.get('company_id')
+    area_id = request.args.get('area_id')
+    subarea_id = request.args.get('subarea_id')
+    year = request.args.get('year')
+
+    # Base query with joins
+    query = db.session.query(
+        BaseData.id.label('document_id'),
+        Workflow.id.label('workflow_id')
+    ).join(
+        DocumentWorkflow, DocumentWorkflow.base_data_id == BaseData.id
+    ).join(
+        Workflow, DocumentWorkflow.workflow_id == Workflow.id
+    ).filter(
+        BaseData.area_id.in_([1, 3]),  # Filter area_id in [1, 3]
+        DocumentWorkflow.end_date >= two_years_ago  # Filter for end_date in the last 2 years
+    )
+
+    # Apply dynamic filtering from the request arguments
+    if company_id and company_id != "":
+        query = query.filter(BaseData.company_id == company_id)
+    if area_id and area_id != "":
+        query = query.filter(BaseData.area_id == area_id)
+    if subarea_id and subarea_id != "":
+        query = query.filter(BaseData.subarea_id == subarea_id)
+    if year and year != "":
+        query = query.filter(BaseData.fi0 == year)
+
+    # Apply role-based filtering
+    if current_user.has_role('Admin'):
+        pass  # Admins can see everything
+    elif current_user.has_role('Manager'):
+        company_id = session.get('company_id')  # Assume company_id is stored in the session
+        query = query.filter(BaseData.company_id == company_id)
+    elif current_user.has_role('Employee'):
+        user_id = current_user.id  # Assume user_id is associated with BaseData
+        query = query.filter(BaseData.user_id == user_id)
+
+    # Fetch distinct document-workflow tuples
+    distinct_documents_workflows = query.distinct().all()
+
+    # Calculate the summary
+    num_documents = len(set([row.document_id for row in distinct_documents_workflows]))
+    num_workflows = len(set([row.workflow_id for row in distinct_documents_workflows]))
+
+    summary = {
+        'num_documents': num_documents,
+        'num_workflows': num_workflows,
+        'description': f"{num_documents} documents in {num_workflows} workflows"
+    }
+
+    return jsonify(summary)
+
+
 @argon_bp.route('/multi_format_dashboard_data', methods=['GET'])
 @login_required
 def multi_format_dashboard_data():
@@ -561,8 +693,63 @@ def multi_format_dashboard_data():
             BaseData.company_id == company_id if company_id else True).all()
 
         # Handle the case where Area.query.get(area_id) returns None
-        document_area_data = [{'name': (Area.query.get(area_id).name if Area.query.get(area_id) else "Unknown Area"), 'value': count}
-                              for area_id, count in document_area_data]
+        document_area_data = [
+            {
+                'name': (Area.query.get(area_id).name if area_id and Area.query.get(area_id) else "Unknown Area"),
+                'value': count
+            }
+            for area_id, count in document_area_data
+        ]
+
+        # Fetch subarea distribution based on the filters, handling NULL values
+        '''
+        subarea_distribution = db.session.query(
+            Area.name,
+            func.coalesce(func.count(BaseData.subarea_id), 0).label('subarea_count'),
+            Area.id  # Include Area.id for ordering
+        ).join(BaseData).filter(
+            # Apply your filtering logic here based on company, area, subarea, etc.
+        ).group_by(Area.name, Area.id).order_by(Area.id).all()  # Group by and order by Area.id
+
+        # Find the maximum subarea count for percentage calculations
+        max_subarea_count = max([count for _, count, _ in subarea_distribution]) if subarea_distribution else 1
+
+        # Prepare the data for the front-end, calculating percentages and rounding to 2 decimal places
+        subarea_distribution_data = [
+            {
+                'area_name': area_name,
+                'subarea_count': count,
+                'percentage': round((count / max_subarea_count) * 100, 2)  # Calculate percentage and round
+            }
+            for area_name, count, _ in subarea_distribution
+        ]
+        '''
+
+        # Fetch subarea distribution based on the filters, handling NULL values
+        subarea_distribution = db.session.query(
+            Area.name,
+            func.coalesce(func.count(BaseData.subarea_id), 0).label('subarea_count'),
+            Area.id  # Include Area.id for ordering
+        ).join(BaseData).filter(
+            # Apply dynamic filtering logic
+            BaseData.company_id == company_id if company_id else True,
+            BaseData.area_id == area_id if area_id else True,
+            BaseData.subarea_id == subarea_id if subarea_id else True,
+            BaseData.fi0 == year if year else True
+        ).group_by(Area.name, Area.id).order_by(Area.id).all()  # Group by and order by Area.id
+
+        # Find the maximum subarea count for percentage calculations
+        max_subarea_count = max([count for _, count, _ in subarea_distribution]) if subarea_distribution else 1
+
+        # Prepare the data for the front-end, calculating percentages and rounding to 2 decimal places
+        subarea_distribution_data = [
+            {
+                'area_name': area_name,
+                'subarea_count': count,
+                'percentage': round((count / max_subarea_count) * 100, 2)  # Calculate percentage and round
+            }
+            for area_name, count, _ in subarea_distribution
+        ]
 
         try:
             return jsonify({
@@ -570,6 +757,7 @@ def multi_format_dashboard_data():
                 'candlestick_data_fn': candlestick_data_fn or [],
                 'document_type_data': document_type_data or [],
                 'document_area_data': document_area_data or [],
+                'subarea_distribution': subarea_distribution_data or []
             })
         except Exception as e:
             print(f"Error during dashboard data fetch: {e}")

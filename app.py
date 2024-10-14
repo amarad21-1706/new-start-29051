@@ -716,30 +716,6 @@ def get_workflows():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/api/get_workflows222', methods=['GET'])
-@login_required
-def get_workflows222():
-    base_data_id = request.args.get('base_data_id')
-
-    if not base_data_id:
-        return jsonify({"error": "Document ID is required"}), 400
-
-    # Query DocumentWorkflow to get workflows for the selected base_data_id
-    document_workflows = DocumentWorkflow.query.filter_by(base_data_id=base_data_id).all()
-
-    if not document_workflows:
-        return jsonify({"error": "No workflows found for the selected document"}), 404
-
-    # Extract workflow IDs and get Workflow details
-    workflow_ids = [dw.workflow_id for dw in document_workflows]
-    workflows = Workflow.query.filter(Workflow.id.in_(workflow_ids)).all()
-
-    # Prepare the list of workflows to be sent as a JSON response
-    workflow_list = [{'id': w.id, 'name': w.name} for w in workflows]
-
-    return jsonify(workflows=workflow_list)
-
-
 @app.route('/api/get_steps', methods=['GET'])
 @login_required
 def get_steps():
@@ -757,100 +733,18 @@ def get_steps():
         return jsonify({"error": str(e)}), 500
 
 
-@app.route('/api/get_steps333', methods=['GET'])
-@login_required
-def get_steps333():
-    workflow_id = request.args.get('workflow_id')
-
-    if not workflow_id:
-        return jsonify({"error": "Workflow ID is required"}), 400
-
-    # Query DocumentWorkflowHistory to get steps for the selected workflow
-    workflow_steps = DocumentWorkflowHistory.query.filter_by(workflow_id=workflow_id).all()
-
-    if not workflow_steps:
-        return jsonify({"error": "No steps found for the selected workflow"}), 404
-
-    # Extract step IDs and get Step details
-    step_ids = [ws.step_id for ws in workflow_steps]
-    steps = Step.query.filter(Step.id.in_(step_ids)).all()
-
-    # Prepare the list of steps to be sent as a JSON response
-    steps_list = [{'id': step.id, 'name': step.name} for step in steps]
-
-    return jsonify(steps=steps_list)
-
-
 @app.route('/workflow_tree')
 @login_required
 def workflow_tree():
     return render_template('workflow_tree.html')
 
 
-@app.route('/api/get_workflow_data', methods=['GET'])
-@login_required
-def get_workflow_data():
-    from flask_login import current_user
-    from datetime import datetime, timedelta
-
-    two_years_ago = datetime.utcnow() - timedelta(days=365 * 2)
-
-    # Base query with joins
-    query = db.session.query(
-        BaseData, Workflow, Step, DocumentWorkflow
-    ).join(
-        DocumentWorkflow, DocumentWorkflow.base_data_id == BaseData.id
-    ).join(
-        Workflow, DocumentWorkflow.workflow_id == Workflow.id
-    ).join(
-        Step, DocumentWorkflow.step_id == Step.id
-    ).filter(
-        BaseData.area_id.in_([1, 3]),  # Filter area_id in [1, 3]
-        DocumentWorkflow.end_date >= two_years_ago  # Filter for end_date in the last 2 years
-    )
-
-    # Apply filtering based on user role
-    if current_user.has_role('Admin'):
-        pass  # Admins can see everything
-    elif current_user.has_role('Manager'):
-        company_id = session.get('company_id')  # Assume company_id is stored in the session
-        query = query.filter(BaseData.company_id == company_id)
-    elif current_user.has_role('Employee'):
-        user_id = current_user.id  # Assume user_id is associated with BaseData
-        query = query.filter(BaseData.user_id == user_id)
-
-    # Order by workflow_id, step_id, and date_of_doc descending
-    workflow_steps = query.order_by(
-        DocumentWorkflow.workflow_id,
-        DocumentWorkflow.step_id,
-        BaseData.date_of_doc.desc()
-    ).all()
-
-    # Construct the response
-    workflow_data = []
-    for base_data, workflow, step, document_workflow in workflow_steps:
-        workflow_data.append({
-            "document_id": base_data.id,
-            "document_number": base_data.number_of_doc,
-            "document_date": base_data.date_of_doc.isoformat() if base_data.date_of_doc else None,
-            "document_name": base_data.ft1,
-            "company_id": base_data.company_id,
-            "user_id": base_data.user_id,
-            "workflow_id": workflow.id,
-            "workflow_name": workflow.name,
-            "step_id": step.id,
-            "step_name": step.name,
-            "start_date": document_workflow.start_date.isoformat() if document_workflow.start_date else None,
-            "end_date": document_workflow.end_date.isoformat() if document_workflow.end_date else None,
-        })
-
-    return jsonify(workflow_data)
-
 
 @app.route('/company_tree')
 @login_required
 def company_tree():
     return render_template('company_tree.html')
+
 
 @app.route('/api/get_company_data', methods=['GET'])
 @login_required
