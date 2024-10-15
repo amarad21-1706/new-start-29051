@@ -215,10 +215,10 @@ app.register_blueprint(argon_bp, url_prefix='/argon') # Add a prefix if needed
 print('Argon blueprint registered')
 
 # Register the Argon blueprint
-# app.register_blueprint(plan_bp, url_prefix='/plan') # Add a prefix if needed
-# print('plan blueprint registered')
+app.register_blueprint(plan_bp, url_prefix='/plan') # Add a prefix if needed
+print('plan blueprint registered')
 
-#print(app.url_map)
+print(app.url_map)
 
 # Load API key from environment variable
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -618,6 +618,7 @@ def get_intervals():
 
     # Return the last five years as a JSON response
     return jsonify({'years': last_five_years})
+
 
 @app.route('/api/area-subarea', methods=['GET'])
 @login_required

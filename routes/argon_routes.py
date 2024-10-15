@@ -1,3 +1,4 @@
+import os
 from flask import Flask, jsonify
 import requests
 from models.user import (BaseData, Users, UserRoles, Event,
@@ -16,17 +17,30 @@ from flask import Blueprint, render_template, jsonify
 from flask import render_template, request, redirect, url_for, flash
 from db import db
 from forms.forms import (MainForm, PlanForm, QuestionnaireFormArgon, QuestionFormArgon,
-                         AddQuestionFormArgon) # Assuming your form is in forms.py
+                         AddQuestionFormArgon, ProductForm) # Assuming your form is in forms.py
 from flask_login import login_required
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func
+from app_factory import create_app
 
 # app = Flask(__name__)
-app = Flask(__name__, static_folder='static')
+app = create_app() #Flask(__name__, static_folder='static')
 
 
 # Create the blueprint object
 argon_bp = Blueprint('argon', __name__)
+
+
+@argon_bp.route('/list_icons')
+def icons_view():
+    # Assuming your static files are in "static/icons/"
+    icons_path = os.path.join('static', 'icons')
+    icons = os.listdir(icons_path)
+
+    # Generate the full URL for each icon
+    icon_urls = [url_for('static', filename=f'icons/{icon}') for icon in icons]
+
+    return render_template('argon-dashboard/list_icons.html', icon_urls=icon_urls)
 
 
 @argon_bp.route('/multi_format_dashboard')
@@ -98,16 +112,7 @@ def plans_view():
     return render_template('argon-dashboard/plans.html', plans=plans, form=form)
 
 
-@argon_bp.route('/products')
-@login_required
-def products_view():
-    products = Product.query.order_by(
-        Product.id.asc()).all()  # Fetch questions ordered by question_id
-
-    return render_template('argon-dashboard/products.html', products=products)
-
-
-@argon_bp.route('/plan/<int:id>', methods=['GET'])
+@argon_bp.route('/argon/<int:id>', methods=['GET'])
 @login_required
 def view_plan(id):
     plan = Plan.query.get_or_404(id)  # Fetch the plan or return 404 if not found
@@ -766,4 +771,76 @@ def multi_format_dashboard_data():
     except Exception as e:
         print(f"Error during dashboard data fetch: {e}")
         return jsonify({'error': str(e)}), 500
+
+
+
+
+@argon_bp.route('/products', methods=['GET'])
+@login_required
+def products_view():
+    products = Product.query.all()  # Fetch all products
+    return render_template('argon-dashboard/products.html', products=products)
+
+
+# Create Product
+@argon_bp.route('/products/create', methods=['GET', 'POST'])
+@login_required
+def create_product():
+    form = ProductForm()  # Assume you have a ProductForm for product creation
+    if form.validate_on_submit():
+        product = Product(
+            name=form.name.data,
+            type=form.type.data,
+            description=form.description.data,
+            price=form.price.data,
+            currency=form.currency.data,
+            stripe_product_id=form.stripe_product_id.data,
+            stripe_price_id=form.stripe_price_id.data,
+            path=form.path.data,
+            icon=form.icon.data
+        )
+        db.session.add(product)
+        db.session.commit()
+        flash('Product created successfully', 'success')
+        return redirect(url_for('argon.products_view'))
+    return render_template('argon-dashboard/create_product.html', form=form)
+
+
+# View Product
+@argon_bp.route('/products/<int:id>', methods=['GET'])
+@login_required
+def view_product(id):
+    product = Product.query.get_or_404(id)
+    return render_template('argon-dashboard/view_product.html', product=product)
+
+# Edit Product
+@argon_bp.route('/products/edit/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_product(id):
+    product = Product.query.get_or_404(id)
+    form = ProductForm(obj=product)  # Populate form with existing data
+    if request.method == 'POST' and form.validate_on_submit():
+        product.name = form.name.data
+        product.type = form.type.data
+        product.description = form.description.data
+        product.price = form.price.data
+        product.currency = form.currency.data
+        product.stripe_product_id = form.stripe_product_id.data
+        product.stripe_price_id = form.stripe_price_id.data
+        product.path = form.path.data
+        product.icon = form.icon.data
+        db.session.commit()
+        flash('Product updated successfully', 'success')
+        return redirect(url_for('argon.view_product', id=product.id))
+    return render_template('argon-dashboard/edit_product.html', form=form)
+
+# Delete Product
+@argon_bp.route('/products/delete/<int:id>', methods=['POST'])
+@login_required
+def delete_product(id):
+    product = Product.query.get_or_404(id)
+    db.session.delete(product)
+    db.session.commit()
+    flash('Product deleted successfully', 'success')
+    return redirect(url_for('argon.products_view'))
 

@@ -11,8 +11,9 @@ import pycountry
 import phonenumbers
 from phonenumbers.phonenumberutil import region_code_for_country_code
 from phonenumbers.phonenumberutil import NumberParseException, PhoneNumberType
+from app_factory import create_app
 
-app = Flask(__name__)
+app = create_app() #Flask(__name__)
 
 # Create the blueprint object
 geonames_bp = Blueprint('geonames', __name__)

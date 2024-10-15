@@ -1251,9 +1251,11 @@ class Plan(db.Model):
     def __repr__(self):
         return f"<Plan {self.id} ({self.name})>"
 
+
 class Product(db.Model):
     __tablename__ = 'product'
     id = db.Column(db.Integer, primary_key=True)
+    type = db.Column(db.String(64), unique=False, nullable=False, default='application')
     name = db.Column(db.String(64), unique=True, nullable=False)
     description = db.Column(db.Text, nullable=True)
     stripe_product_id = db.Column(db.String(128), nullable=False)
@@ -1264,9 +1266,10 @@ class Product(db.Model):
     icon = db.Column(db.String(128), nullable=True)
     plan_products = db.relationship('PlanProducts', back_populates='product')
 
-    def __init__(self, name, description):
+    def __init__(self, name, description, type='application'):
         self.name = name
         self.description = description
+        self.type = type
 
     def __repr__(self):
         return f"<Product {self.id} ({self.name})>"

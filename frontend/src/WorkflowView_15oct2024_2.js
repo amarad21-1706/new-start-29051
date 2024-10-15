@@ -161,13 +161,11 @@ function WorkflowView() {
   }));
 
   const handleItemClick = (itemId) => {
-  console.log("Item selected:", itemId);  // Debugging
-  const selectedDocument = workflowData.find(doc => doc.id === itemId);
-
+    console.log("Item selected:", itemId);  // Debugging
+    const selectedDocument = workflowData.find(doc => doc.id === itemId);
     if (selectedDocument) {
       const documentId = selectedDocument.id;
-      // New admin URL with the required pattern
-      const adminUrl = `http://127.0.0.1:5000/open_admin_3/upload_documenti_view_existing/edit/?id=${documentId}&url=%2Fopen_admin_3%2Fupload_documenti_view_existing%2F`;
+      const adminUrl = `/open_admin_4/bdocuments_view/edit/?id=${documentId}&url=%2Fopen_admin_4%2Fbdocuments_view%2F`;
 
       console.log("Navigating to:", adminUrl);  // Debugging
 
@@ -181,12 +179,6 @@ function WorkflowView() {
   return (
     <div className="container">
       <h1 className="title">Workflow Data</h1>
-
-      {/* Home and Back buttons */}
-      <div style={{ marginBottom: '20px' }}>
-        <button className="btn btn-secondary" onClick={() => window.location.href = '/'}>Home</button>
-        <button className="btn btn-secondary" onClick={() => window.history.back()}>Back</button>
-      </div>
 
       {/* Filter Form */}
       <form onSubmit={handleSubmit} className="form-container">

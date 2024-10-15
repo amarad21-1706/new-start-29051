@@ -73,6 +73,33 @@ class PlanForm(FlaskForm):
     submit = SubmitField('Save Plan')
 
 
+from flask_wtf import FlaskForm
+from wtforms import StringField, TextAreaField, IntegerField, SelectField, SubmitField
+from wtforms.validators import DataRequired
+
+
+class ProductForm(FlaskForm):
+    name = StringField('Name', validators=[DataRequired()])
+    description = TextAreaField('Description', validators=[DataRequired()])
+    stripe_product_id = StringField('Stripe Product ID', validators=[DataRequired()])
+    stripe_price_id = StringField('Stripe Price ID', validators=[DataRequired()])
+    price = IntegerField('Price (cents)', validators=[DataRequired()])
+    currency = StringField('Currency', default='EUR')
+    path = StringField('Path', validators=[DataRequired()])
+    icon = StringField('Icon')
+
+    # Adding the type field as a dropdown
+    type = SelectField('Type', choices=[
+        ('application', 'Application'),
+        ('product', 'Product'),
+        ('consulting', 'Consulting'),
+        ('other_services', 'Other Services')
+    ], default='application')
+
+    submit = SubmitField('Submit')
+
+
+
 class QuestionnaireFormArgon(FlaskForm):
     # Fields based on the `Questionnaire` model
     questionnaire_id = StringField('Questionnaire ID', validators=[DataRequired()])
@@ -160,6 +187,7 @@ class ManageProductForm(FlaskForm):
     path = StringField('Product Path', validators=[DataRequired()])
     icon = StringField('Product Icon (URL or internal path)', validators=[URL(require_tld=False)])
     submit = SubmitField('Save Product')
+
 
 class AddPlanToCartForm(FlaskForm):
     submit = SubmitField('Add to Cart')

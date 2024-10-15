@@ -1,0 +1,81 @@
+{% extends 'argon-dashboard/plan_base.html' %}
+
+{% block content %}
+    <div class="container">
+        <h2>Create New Product</h2>
+        <form method="POST">
+            {{ form.hidden_tag() }}
+
+            <div class="form-group">
+                {{ form.name.label }}
+                {{ form.name(class="form-control") }}
+            </div>
+
+            <div class="form-group">
+                {{ form.description.label }}
+                {{ form.description(class="form-control") }}
+            </div>
+
+            <div class="form-group">
+                {{ form.stripe_product_id.label }}
+                {{ form.stripe_product_id(class="form-control") }}
+            </div>
+
+            <div class="form-group">
+                {{ form.stripe_price_id.label }}
+                {{ form.stripe_price_id(class="form-control") }}
+            </div>
+
+            <div class="form-group">
+                {{ form.price.label }}
+                {{ form.price(class="form-control") }}
+            </div>
+
+            <div class="form-group">
+                {{ form.currency.label }}
+                {{ form.currency(class="form-control") }}
+            </div>
+
+            <!-- Path to Application -->
+            <div class="form-group">
+                {{ form.path.label }}
+                {{ form.path(class="form-control") }}
+                <small class="form-text text-muted">Example: /applications/your_app</small>
+            </div>
+
+            <!-- Icon Selection with Link to Static Icons -->
+            <!-- Icon (Optional) -->
+            <div class="form-group">
+                {{ form.icon.label(class="form-label") }}
+                <div class="input-group">
+                    {{ form.icon(class="form-control", id="icon-input", placeholder="Enter icon URL (optional)") }}
+                    <div class="input-group-append">
+                        <button type="button" class="btn btn-info" id="select-icon-btn" onclick="window.open('/argon/list_icons', '_blank')">Select Icon</button>
+                    </div>
+                </div>
+                {% if form.icon.errors %}
+                    <small class="text-danger">{{ form.icon.errors[0] }}</small>
+                {% endif %}
+            </div>
+
+
+            <!-- Type Dropdown -->
+            <div class="form-group">
+                {{ form.type.label }}
+                {{ form.type(class="form-control") }}
+            </div>
+
+            <button type="submit" class="btn btn-primary">Submit</button>
+        </form>
+
+    </div>
+
+    <script>
+        document.getElementById('select-icon-btn').addEventListener('click', function() {
+            // Open the icons page in a new tab
+            window.open('/list_icons', '_blank');
+        });
+    </script>
+
+
+{% endblock %}

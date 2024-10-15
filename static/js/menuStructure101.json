@@ -176,7 +176,7 @@
             "display": false
         },
         "submenus": {
-            "Open Actions": {
+            "Reserved Open Actions": {
                 "label": "Open Actions",
                 "url": "/company_overview_current",
                 "protected": true,
@@ -189,7 +189,7 @@
                     "display": true
                 }
             },
-            "Cards One": {
+            "Reserved Cards One": {
                 "label": "My Actions",
                 "url": "/show_cards",
                 "protected": true,
@@ -198,7 +198,7 @@
                     "display": false
                 }
             },
-            "Area di controllo 1": {
+            "Reserved Area di controllo 1": {
                 "label": "Area 1",
                 "url": "/area_di_controllo_1",
                 "protected": true,
@@ -211,7 +211,7 @@
                     "size": "medium"
                 },
                 "submenus": {
-                    "Area 1a": {
+                    "Reserved Area 1a Sub": {
                         "label": "Raccolta dati",
                         "url": "/open_admin_1",
                         "protected": true,
@@ -225,7 +225,7 @@
                             "size": "medium"
                         }
                     },
-                    "Area 1b": {
+                    "Reserved Area 1b Sub": {
                         "label": "Contingencies - PSF",
                         "url": "/redirect_to_survey/1",
                         "protected": true,
@@ -235,7 +235,7 @@
                             "display": false
                         }
                     },
-                    "Area 1c": {
+                    "Reserved Area 1c Res": {
                         "label": "Check list",
                         "url": "/questionnaire_psf",
                         "protected": true,
@@ -247,7 +247,7 @@
                     }
                 }
             },
-            "Area di controllo 2": {
+            "Reserved Area di controllo 2 Res": {
                 "label": "Area 2",
                 "url": "/open_admin_2",
                 "protected": true,
@@ -260,7 +260,7 @@
                     "size": "medium"
                 }
             },
-            "Workflows Admin View - Reserved": {
+            "Reserved Workflows Admin View": {
                 "label": "Area 3 - Document Workflows",
                 "url": "/open_admin_3",
                 "protected": true,
@@ -269,7 +269,7 @@
                     "display": false
                 }
             },
-            "Workflow Data": {
+            "Reserved Workflow Data": {
                 "label": "Workflow Timeline Chart",
                 "url": "/react-page",
                 "protected": true,
@@ -278,7 +278,7 @@
                     "display": false
                 }
             },
-            "Workflow Tree": {
+            "Reserved Workflow Tree": {
                 "label": "Workflow Tree",
                 "url": "/workflow_tree",
                 "protected": true,
@@ -287,7 +287,7 @@
                     "display": false
                 }
             },
-            "Area di controllo 10": {
+            "Reserved Area di controllo 10": {
                 "label": "Surveys and Questionnaires",
                 "url": "/open_admin_10",
                 "protected": true,
@@ -296,7 +296,7 @@
                     "display": false
                 }
             },
-            "Contracts": {
+            "Reserved Contracts": {
                 "label": "Contract Management",
                 "url": "/open_admin_6",
                 "protected": true,
@@ -305,7 +305,7 @@
                     "display": true
                 }
             },
-            "Statistics": {
+            "Reserved Statistics": {
                 "label": "Statistics",
                 "url": "/dashboard/authority/dashboard_a3",
                 "protected": true,
@@ -339,7 +339,7 @@
                     "display": false
                 },
                 "submenus": {
-                    "CompanyUsers": {
+                    "Admin CompanyUsers": {
                         "label": "Companies and Users Report",
                         "url": "/dashboard_setup_companies_users",
                         "protected": true,
@@ -350,7 +350,7 @@
                             "display": false
                         }
                     },
-                    "UserRoles": {
+                    "Admin UserRoles": {
                         "label": "Users and Roles",
                         "url": "/dashboard_setup_user_roles",
                         "protected": true,
@@ -361,7 +361,7 @@
                             "display": false
                         }
                     },
-                    "AreasSubareas": {
+                    "Admin AreasSubareas": {
                         "label": "Control Areas and Subareas",
                         "url": "/dashboard_setup_area_subareas",
                         "protected": true,
@@ -372,7 +372,7 @@
                             "display": false
                         }
                     },
-                    "CompanyQuestionnaires": {
+                    "Admin CompanyQuestionnaires": {
                         "label": "Questionnaires and Companies",
                         "url": "/generate_setup_company_questionnaire",
                         "protected": true,
@@ -383,7 +383,7 @@
                             "display": false
                         }
                     },
-                    "QuestionnaireQuestions": {
+                    "Admin QuestionnaireQuestions": {
                         "label": "Questionnaires Structure",
                         "url": "/dashboard_setup_questionnaire_questions",
                         "protected": true,
@@ -394,7 +394,7 @@
                             "display": false
                         }
                     },
-                    "WorkflowSteps": {
+                    "Admin WorkflowSteps": {
                         "label": "Workflows Structure",
                         "url": "/dashboard_setup_workflow_steps",
                         "protected": true,
@@ -407,7 +407,7 @@
                     }
                 }
             },
-            "Commercial": {
+            "Admin Commercial": {
                 "label": "Commercial Settings",
                 "url": "/argon",
                 "protected": true,
@@ -418,7 +418,7 @@
                     "display": false
                 },
                 "submenus": {
-                    "Commercial": {
+                    "Admin Commercial Sub PCQ": {
                         "label": "Plans, Contracts, Questionnaires",
                         "url": "/argon",
                         "protected": true,
@@ -429,7 +429,7 @@
                             "display": false
                         }
                     },
-                    "Manage Plans": {
+                    "Admin Manage Plans Sub MPL": {
                         "label": "Manage Plans List",
                         "url": "/open_admin_4/plan_view",
                         "protected": true,
@@ -440,7 +440,7 @@
                             "display": false
                         }
                     },
-                    "Manage Products": {
+                    "Admin Manage Products MPO": {
                         "label": "Manage Products Offer",
                         "url": "/open_admin_4/product_view",
                         "protected": true,
@@ -475,7 +475,7 @@
                     }
                 }
             },
-            "Clients": {
+            "Admin Clients": {
                 "label": "Clients",
                 "url": "/dashboard_clients",
                 "protected": true,
@@ -486,7 +486,7 @@
                     "display": false
                 },
                 "submenus": {
-                    "Activity": {
+                    "Admin Activity": {
                         "label": "Activity Log",
                         "url": "/auditlog",
                         "protected": true,
@@ -497,7 +497,7 @@
                             "display": false
                         }
                     },
-                    "Workflows Admin View": {
+                    "Admin Workflows Admin View": {
                         "label": "Document Workflows",
                         "url": "/open_admin_3",
                         "protected": true,
@@ -508,7 +508,7 @@
                             "display": false
                         }
                     },
-                    "Audit": {
+                    "Admin Audit": {
                         "label": "Audit",
                         "url": "/dashboard_company_audit",
                         "protected": true,
@@ -519,7 +519,7 @@
                             "display": false
                         }
                     },
-                    "Status": {
+                    "Admin Status": {
                         "label": "Current Status",
                         "url": "/dashboard_company_audit_progression",
                         "protected": true,
@@ -530,7 +530,7 @@
                             "display": false
                         }
                     },
-                    "Service": {
+                    "Admin Service": {
                         "label": "Email",
                         "url": "/send_email",
                         "protected": true,
@@ -541,7 +541,7 @@
                             "display": false
                         }
                     },
-                    "Deadlines": {
+                    "Admin Deadlines": {
                         "label": "Deadlines",
                         "url": "/dashboard/company/dashboard_deadlines",
                         "protected": true,
@@ -552,7 +552,7 @@
                             "display": false
                         }
                     },
-                    "Multi Format Dashboard": {
+                    "Admin Multi Format Dashboard": {
                         "label": "Combo Dashboard",
                         "url": "/argon/multi_format_dashboard",
                         "protected": true,
@@ -563,7 +563,7 @@
                             "display": false
                         }
                     },
-                    "Subscriptions Dashboard": {
+                    "Admin Subscriptions Dashboard": {
                         "label": "Subscriptions Dashboard",
                         "url": "/subscription_overview",
                         "protected": true,
@@ -576,7 +576,7 @@
                     }
                 }
             },
-            "Settings and tools": {
+            "Admin Settings and tools": {
                 "label": "Settings Manager",
                 "url": "/dashboard/ILM/settings",
                 "protected": true,
@@ -585,7 +585,7 @@
                     "display": false
                 },
                 "submenus": {
-                    "Basic": {
+                    "Admin Basic ELC": {
                         "label": "Basic Entities, Lists and Collections",
                         "url": "/dashboard/ILM/settings_basic",
                         "protected": true,
@@ -594,7 +594,7 @@
                             "display": false
                         },
                         "submenus": {
-                            "Calendar-2": {
+                            "Admin Calendar-2": {
                                 "label": "Agenda",
                                 "url": "/calendar",
                                 "protected": true,
@@ -603,7 +603,7 @@
                                     "display": false
                                 }
                             },
-                            "Main setup manager": {
+                            "Admin Main setup manager": {
                                 "label": "Main Setup",
                                 "url": "/open_admin_4",
                                 "protected": true,
@@ -614,7 +614,7 @@
                                     "display": false
                                 }
                             },
-                            "Company Tree": {
+                            "Admin Company Tree CURT": {
                                 "label": "Company-Users-Roles Tree",
                                 "url": "/company_tree",
                                 "protected": true,
@@ -625,7 +625,7 @@
                                     "display": false
                                 }
                             },
-                            "Manage Documents": {
+                            "Admin Manage Documents": {
                                 "label": "Documents Manager",
                                 "url": "/open_admin_3",
                                 "protected": true,
@@ -636,8 +636,7 @@
                                     "display": false
                                 }
                             },
-
-                            "Workflow Data": {
+                            "Admin Workflow Data": {
                                 "label": "Workflow Timeline Chart",
                                 "url": "/react-page",
                                 "protected": true,
@@ -646,7 +645,7 @@
                                     "display": false
                                 }
                             },
-                            "Workflow Tree": {
+                            "Admin Workflow Tree": {
                                 "label": "Workflow Tree",
                                 "url": "/workflow_tree",
                                 "protected": true,
@@ -655,7 +654,18 @@
                                     "display": false
                                 }
                             },
-                            "Manage News": {
+                            "Admin Plans Argon": {
+                                "label": "Plans II",
+                                "url": "/argon/plan_dashboard",
+                                "protected": true,
+                                "allowed_roles": [
+                                    "Admin"
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
+                            },
+                            "Admin Manage News": {
                                 "label": "News",
                                 "url": "/admin_news",
                                 "protected": true,
@@ -666,7 +676,7 @@
                                     "display": false
                                 }
                             },
-                            "Password Reset": {
+                            "Admin Password Reset": {
                                 "label": "Reset User Password",
                                 "url": "/admin_reset_password",
                                 "protected": true,
@@ -688,7 +698,7 @@
                                     "display": false
                                 }
                             },
-                            "Contract-Management": {
+                            "Admin Contract-Management": {
                                 "label": "Contract Management",
                                 "url": "/team",
                                 "protected": true,
@@ -732,7 +742,7 @@
                                     }
                                 }
                             },
-                            "AI Test": {
+                            "Admin AI Test": {
                                 "label": "AI Test",
                                 "url": "/analyze_text_view",
                                 "protected": true,
@@ -743,7 +753,7 @@
                             }
                         }
                     },
-                    "Relational": {
+                    "Admin Relational": {
                         "label": "Relations Between Entities",
                         "url": "/dashboard/ILM/settings_relational",
                         "protected": true,
@@ -1101,7 +1111,7 @@
                             "display": false
                         }
                     },
-                    "Subscriptions Report": {
+                    "Access Subscriptions Report": {
                         "label": "Subscriptions Report",
                         "url": "/subscription_report",
                         "protected": true,
@@ -1115,7 +1125,7 @@
                             "display": false
                         }
                     },
-                    "Products": {
+                    "Access Products": {
                         "label": "Products",
                         "url": "/products_page",
                         "protected": true,
@@ -1128,7 +1138,7 @@
                             "display": false
                         }
                     },
-                    "Plans": {
+                    "Access Plans": {
                         "label": "Plans",
                         "url": "/plans_page",
                         "protected": true,
@@ -1141,7 +1151,7 @@
                             "display": false
                         }
                     },
-                    "User Tickets": {
+                    "Access User Tickets": {
                         "label": "Tickets",
                         "url": "/create_ticket",
                         "protected": true,
@@ -1156,7 +1166,7 @@
                             "display": false
                         },
                         "submenus": {
-                            "Create ticket": {
+                            "Access Create ticket": {
                                 "label": "Create",
                                 "url": "/create_ticket",
                                 "protected": true,
@@ -1171,7 +1181,7 @@
                                     "display": false
                                 }
                             },
-                            "View tickets": {
+                            "Access View tickets": {
                                 "label": "View",
                                 "url": "/view_tickets",
                                 "protected": true,

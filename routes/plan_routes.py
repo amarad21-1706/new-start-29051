@@ -11,8 +11,9 @@ from flask import render_template, request, redirect, url_for, flash
 from db import db
 from forms.forms import PlanForm  # Assuming your form is in forms.py
 from flask_login import login_required
+from app_factory import create_app
 
-app = Flask(__name__)
+app = create_app() #Flask(__name__)
 
 # Create the blueprint object
 plan_bp = Blueprint('plan', __name__)
@@ -31,13 +32,6 @@ def plans_view():
 
     # Pass the form to the template along with the plans
     return render_template('argon-dashboard/plans.html', plans=plans, form=form)
-
-
-@plan_bp.route('/products')
-@login_required
-def products_view():
-    products = Product.query.all()  # Fetch all contracts
-    return render_template('argon-dashboard/products.html', products=products)
 
 
 @plan_bp.route('/<int:id>', methods=['GET'])
@@ -111,4 +105,5 @@ def delete_plan(id):
     except:
         flash('Error deleting plan', 'danger')
         return redirect(url_for('plan.view_plan', id=id))
+
 

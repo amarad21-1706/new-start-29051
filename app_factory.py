@@ -71,7 +71,8 @@ def create_app(conf=None):
 
     # app = Flask(__name__)
     # app = Flask(__name__, static_folder='static')
-    app = Flask(__name__, static_folder="static", static_url_path="/")
+    # app = Flask(__name__, static_folder="static", static_url_path="/")
+    app = Flask(__name__, static_folder='static', static_url_path='/static')
 
     # Explicitly set debug mode based on an environment variable or configuration
     app.config['DEBUG'] = os.environ.get('FLASK_DEBUG', 'False').lower() in ['true', '1']

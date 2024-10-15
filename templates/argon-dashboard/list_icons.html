@@ -1,0 +1,24 @@
+{% extends 'argon-dashboard/argon_base.html' %}
+
+{% block content %}
+<div class="container">
+    <h3>Select an Icon</h3>
+    <div class="row">
+        {% for icon_url in icon_urls %}
+        <div class="col-md-2 text-center">
+            <img src="{{ icon_url }}" alt="Icon" class="img-fluid" style="max-height: 100px;">
+            <p>{{ icon_url.split('/')[-1] }}</p>
+            <button class="btn btn-primary btn-sm" onclick="selectIcon('{{ icon_url }}')">Select</button>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+    function selectIcon(iconUrl) {
+        // Pass the selected icon URL to the opener window and close the current tab
+        window.opener.document.getElementById('icon-input').value = iconUrl;
+        window.close();
+    }
+</script>
+{% endblock %}
