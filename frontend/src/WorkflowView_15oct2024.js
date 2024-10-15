@@ -70,6 +70,7 @@ function WorkflowView() {
     fetch(queryString)
       .then((response) => response.json())
       .then((data) => {
+        console.log('Fetched Data:', data);
         if (Array.isArray(data)) {
           setWorkflowData(data);  // Set data for the timeline
           setDocuments(data);     // Set documents for the dropdown
@@ -123,37 +124,20 @@ function WorkflowView() {
     title: `Doc: ${doc.name}`,  // Group title is the document name
   }));
 
-  // Map each document to its own timeline item
+  // 2. Map each document to its own timeline item
   const items = workflowData.map((doc) => ({
-    id: doc.id,  // This ID will be used in the onItemSelect function
-    group: doc.id,
+    id: doc.id,
+    group: doc.id,  // Ensure the document is in its own group (row)
     title: `Doc: ${doc.name}`,
-    start_time: moment(doc.workflows[0]?.date_start),
-    end_time: moment(doc.workflows[0]?.date_end)
+    start_time: moment(doc.workflows[0]?.date_start),  // Use the actual date_start from first workflow
+    end_time: moment(doc.workflows[0]?.date_end)      // Use the actual date_end from first workflow
   }));
-
-  const handleItemClick = (itemId) => {
-    console.log("Item selected:", itemId);  // Debugging
-    const selectedDocument = workflowData.find(doc => doc.id === itemId);
-    if (selectedDocument) {
-      const documentId = selectedDocument.id;
-      const adminUrl = `/open_admin_4/bdocuments_view/edit/?id=${documentId}&url=%2Fopen_admin_4%2Fbdocuments_view%2F`;
-
-      console.log("Navigating to:", adminUrl);  // Debugging
-
-      // Use window.location to navigate to the admin page
-      window.location.href = adminUrl;
-    } else {
-      console.error("Document not found.");
-    }
-  };
 
   return (
     <div className="container">
       <h1 className="title">Workflow Data</h1>
-
-      {/* Filter Form */}
       <form onSubmit={handleSubmit} className="form-container">
+        {/* Workflow, Step, Year, and Document dropdowns as before */}
         <div className="form-group">
           <label htmlFor="workflow-select">Workflow:</label>
           <select
@@ -170,6 +154,7 @@ function WorkflowView() {
             ))}
           </select>
         </div>
+
         <div className="form-group">
           <label htmlFor="step-select">Step:</label>
           <select
@@ -186,6 +171,7 @@ function WorkflowView() {
             ))}
           </select>
         </div>
+
         <div className="form-group">
           <label htmlFor="year-select">Year (FI0):</label>
           <select
@@ -201,6 +187,7 @@ function WorkflowView() {
             <option value="2020">2020</option>
           </select>
         </div>
+
         <div className="form-group">
           <label htmlFor="document-select">Document:</label>
           <select
@@ -236,7 +223,6 @@ function WorkflowView() {
           items={items}
           defaultTimeStart={moment().startOf('year')}
           defaultTimeEnd={moment().endOf('year')}
-          onItemClick={(itemId) => handleItemClick(itemId)}  // Use onItemClick
         />
       )}
     </div>

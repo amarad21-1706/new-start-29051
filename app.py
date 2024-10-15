@@ -573,7 +573,6 @@ def get_documents_query(session, current_user):
 
 # and then
 # 3) cp -r build/* /Users/aradulescu/PycharmProjects/ILM501/new-repository-28051/static/react-page/
-
 # 4) cd ..
 
 # http://127.0.0.1:5000/api/workflow-data?area_id=3&subarea_id=1&fi0=2024
@@ -737,7 +736,6 @@ def get_steps():
 @login_required
 def workflow_tree():
     return render_template('workflow_tree.html')
-
 
 
 @app.route('/company_tree')

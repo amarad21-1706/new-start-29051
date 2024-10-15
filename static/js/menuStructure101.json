@@ -329,7 +329,7 @@
         },
         "submenus": {
             "System Setup": {
-                "label": "System Setup",
+                "label": "Current Setup",
                 "url": "/dashboard/company/dashboard_system_setup",
                 "protected": true,
                 "allowed_roles": [
@@ -397,39 +397,6 @@
                     "WorkflowSteps": {
                         "label": "Workflows Structure",
                         "url": "/dashboard_setup_workflow_steps",
-                        "protected": true,
-                        "allowed_roles": [
-                            "Admin"
-                        ],
-                        "widget": {
-                            "display": false
-                        }
-                    },
-                    "WorkflowDocuments": {
-                        "label": "Documents in Workflows",
-                        "url": "/dashboard_setup_workflow_base_data",
-                        "protected": true,
-                        "allowed_roles": [
-                            "Admin"
-                        ],
-                        "widget": {
-                            "display": false
-                        }
-                    },
-                    "DocumentStatus": {
-                        "label": "Status of Document Processing",
-                        "url": "/dashboard_setup_step_base_data",
-                        "protected": true,
-                        "allowed_roles": [
-                            "Admin"
-                        ],
-                        "widget": {
-                            "display": false
-                        }
-                    },
-                    "DocumentViewer": {
-                        "label": "Document Viewer",
-                        "url": "/document_workflow_visualization_d3js",
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
@@ -610,7 +577,7 @@
                 }
             },
             "Settings and tools": {
-                "label": "Functional Settings",
+                "label": "Settings Manager",
                 "url": "/dashboard/ILM/settings",
                 "protected": true,
                 "allowed_roles": ["Admin"],
@@ -627,7 +594,16 @@
                             "display": false
                         },
                         "submenus": {
-                            "Manage Companies": {
+                            "Calendar-2": {
+                                "label": "Agenda",
+                                "url": "/calendar",
+                                "protected": true,
+                                "allowed_roles": ["Admin"],
+                                "widget": {
+                                    "display": false
+                                }
+                            },
+                            "Main setup manager": {
                                 "label": "Main Setup",
                                 "url": "/open_admin_4",
                                 "protected": true,
@@ -639,7 +615,7 @@
                                 }
                             },
                             "Company Tree": {
-                                "label": "Company User Role Tree",
+                                "label": "Company-Users-Roles Tree",
                                 "url": "/company_tree",
                                 "protected": true,
                                 "allowed_roles": [
@@ -708,15 +684,6 @@
                                 "allowed_roles": [
                                     "Admin"
                                 ],
-                                "widget": {
-                                    "display": false
-                                }
-                            },
-                            "Calendar-2": {
-                                "label": "Agenda",
-                                "url": "/calendar",
-                                "protected": true,
-                                "allowed_roles": ["Admin"],
                                 "widget": {
                                     "display": false
                                 }
