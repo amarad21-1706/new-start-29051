@@ -17,15 +17,17 @@ from flask import Blueprint, render_template, jsonify
 from flask import render_template, request, redirect, url_for, flash
 from db import db
 from forms.forms import (MainForm, PlanForm, QuestionnaireFormArgon, QuestionFormArgon,
-                         AddQuestionFormArgon, ProductForm) # Assuming your form is in forms.py
+                         AddQuestionFormArgon, ProductForm, PlanProductsForm) # Assuming your form is in forms.py
 from flask_login import login_required
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import func
-from app_factory import create_app
+
+from app_factory import roles_required, subscription_required
+
+# from app_factory import create_app
 
 # app = Flask(__name__)
-app = create_app() #Flask(__name__, static_folder='static')
-
+# app = create_app() #Flask(__name__, static_folder='static')
 
 # Create the blueprint object
 argon_bp = Blueprint('argon', __name__)
@@ -41,6 +43,91 @@ def icons_view():
     icon_urls = [url_for('static', filename=f'icons/{icon}') for icon in icons]
 
     return render_template('argon-dashboard/list_icons.html', icon_urls=icon_urls)
+
+
+@argon_bp.route('/manage_plan_products', methods=['GET', 'POST'])
+@login_required
+@roles_required('Admin')
+def manage_plan_products():
+    form = PlanProductsForm()
+    message = None  # Reset the message at the start
+
+    try:
+        # Populate choices for plans and products
+        form.plan_id.choices = [(plan.id, plan.name) for plan in Plan.query.all()]
+        form.product_id.choices = [(product.id, product.name) for product in Product.query.all()]
+
+        if request.method == 'POST':
+            # Reset the message before each submission
+            message = None
+
+            if form.validate_on_submit():
+                if form.cancel.data:
+                    # Handle cancel button
+                    return redirect(url_for('index'))
+                elif form.add.data:
+                    # Handle add button
+                    plan_id = form.plan_id.data
+                    product_id = form.product_id.data
+
+                    # Check if the plan-product association already exists
+                    existing_plan_product = PlanProducts.query.filter_by(plan_id=plan_id, product_id=product_id).first()
+
+                    if existing_plan_product:
+                        message = "Association plan-product already exists."
+                    else:
+                        # Add logic to associate the plan with the selected product
+                        new_association = PlanProducts(plan_id=plan_id, product_id=product_id)
+                        db.session.add(new_association)
+                        db.session.commit()
+                        # Set a success message
+                        message = "Association plan-product added successfully."
+
+                elif form.delete.data:
+                    # Handle delete button
+                    plan_id = form.plan_id.data
+                    product_id = form.product_id.data
+
+                    # Find and delete the plan-product association
+                    association_to_delete = PlanProducts.query.filter_by(plan_id=plan_id, product_id=product_id).first()
+
+                    if association_to_delete:
+                        db.session.delete(association_to_delete)
+                        db.session.commit()
+                        message = "Association plan-product deleted successfully."
+                    else:
+                        message = "Association plan-product not found."
+            else:
+                message = "Form validation failed. Please check your input."
+    except Exception as e:
+        # Log the error and set a message for the template
+        app.logger.error(f"Error managing plan products: {e}")
+        message = "An unexpected error occurred. Please try again later."
+
+    # Handle GET request or any case where form validation failed
+    return render_template('argon-dashboard/manage_plan_products.html', form=form, message=message)
+
+
+@argon_bp.route('/get_plan_products/<int:plan_id>', methods=['GET'])
+@login_required
+@roles_required('Admin')
+def get_plan_products(plan_id):
+    try:
+        # Fetch the products associated with the given plan_id
+        plan = Plan.query.get_or_404(plan_id)
+        products = [
+            {
+                'id': pp.product.id,
+                'name': pp.product.name,
+            }
+            for pp in plan.plan_products
+        ]
+
+        return jsonify({'products': products}), 200
+    except Exception as e:
+        app.logger.error(f"Error fetching products for plan {plan_id}: {e}")
+        return jsonify({'error': 'An error occurred while fetching products'}), 500
+
 
 
 @argon_bp.route('/multi_format_dashboard')

@@ -11,9 +11,9 @@ from flask import render_template, request, redirect, url_for, flash
 from db import db
 from forms.forms import PlanForm  # Assuming your form is in forms.py
 from flask_login import login_required
-from app_factory import create_app
+#from app_factory import create_app
 
-app = create_app() #Flask(__name__)
+# app = create_app() #Flask(__name__)
 
 # Create the blueprint object
 plan_bp = Blueprint('plan', __name__)

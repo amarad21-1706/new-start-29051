@@ -218,7 +218,8 @@ print('Argon blueprint registered')
 app.register_blueprint(plan_bp, url_prefix='/plan') # Add a prefix if needed
 print('plan blueprint registered')
 
-print(app.url_map)
+# ======= PRINT URL LIST
+# print(app.url_map)
 
 # Load API key from environment variable
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -2141,66 +2142,6 @@ def attach_documents_to_workflow_step():
     return jsonify({'success_message': success_message, 'error_message': None})
 
 
-@app.route('/manage_plan_products', methods=['GET', 'POST'])
-@login_required
-@roles_required('Admin')
-def manage_plan_products():
-    form = PlanProductsForm()
-    message = None
-
-    try:
-        # Populate choices for plans and products
-        form.plan_id.choices = [(plan.id, plan.name) for plan in Plan.query.all()]
-        form.product_id.choices = [(product.id, product.name) for product in Product.query.all()]
-
-        if request.method == 'POST':
-            if form.validate_on_submit():
-                if form.cancel.data:
-                    # Handle cancel button
-                    return redirect(url_for('index'))
-                elif form.add.data:
-                    # Handle add button
-                    plan_id = form.plan_id.data
-                    product_id = form.product_id.data
-
-                    # Check if the plan-product association already exists
-                    existing_plan_product = PlanProducts.query.filter_by(plan_id=plan_id, product_id=product_id).first()
-
-                    if existing_plan_product:
-                        message = "Association plan-product already exists."
-                    else:
-                        # Add logic to associate the plan with the selected product
-                        new_association = PlanProducts(plan_id=plan_id, product_id=product_id)
-                        db.session.add(new_association)
-                        db.session.commit()
-                        # Set a success message
-                        message = "Association plan-product added successfully."
-
-                elif form.delete.data:
-                    # Handle delete button
-                    plan_id = form.plan_id.data
-                    product_id = form.product_id.data
-
-                    # Find and delete the plan-product association
-                    association_to_delete = PlanProducts.query.filter_by(plan_id=plan_id, product_id=product_id).first()
-
-                    if association_to_delete:
-                        db.session.delete(association_to_delete)
-                        db.session.commit()
-                        message = "Association plan-product deleted successfully."
-                    else:
-                        message = "Association plan-product not found."
-            else:
-                message = "Form validation failed. Please check your input."
-    except Exception as e:
-        # Log the error and set a message for the template
-        app.logger.error(f"Error managing plan products: {e}")
-        message = "An unexpected error occurred. Please try again later."
-
-    # Handle GET request or any case where form validation failed
-    return render_template('manage_plan_products.html', form=form, message=message)
-
-
 @app.route('/action_manage_dws_deadline', methods=['POST'])
 @login_required
 def manage_deadline():
@@ -3337,6 +3278,24 @@ def manage_user_roles():
     return render_template('manage_user_roles.html', form=form, message=message)
 
 
+@app.route('/get_user_roles/<int:user_id>', methods=['GET'])
+@login_required
+@roles_required('Admin')
+def get_user_roles(user_id):
+    try:
+        # Fetch the user by ID
+        user = Users.query.get_or_404(user_id)
+
+        # Fetch the roles associated with the user
+        roles = [{'id': role.id, 'name': role.name, 'description': role.description} for role in
+                 user.roles]  # Correctly access role attributes
+
+        return jsonify({'roles': roles}), 200
+    except Exception as e:
+        app.logger.error(f"Error fetching roles for user {user_id}: {e}")
+        return jsonify({'error': 'An error occurred while fetching roles'}), 500
+
+
 @app.route('/manage_workflow_steps', methods=['GET', 'POST'])
 @login_required
 @roles_required('Admin', 'Manager', 'Employee')
@@ -3391,6 +3350,26 @@ def manage_workflow_steps():
     # Handle GET request or any case where form validation failed
     return render_template('manage_workflow_steps.html', form=form, message=message)
 
+
+@app.route('/get_workflow_steps/<int:workflow_id>', methods=['GET'])
+@login_required
+@roles_required('Admin', 'Manager', 'Employee')
+def get_workflow_steps(workflow_id):
+    try:
+        # Fetch the steps associated with the given workflow_id
+        workflow = Workflow.query.get_or_404(workflow_id)
+        steps = [
+            {
+                'id': ws.step.id,
+                'name': ws.step.name,
+            }
+            for ws in workflow.workflow_steps  # Assuming `workflow_steps` is a relationship on Workflow model
+        ]
+
+        return jsonify({'steps': steps}), 200
+    except Exception as e:
+        app.logger.error(f"Error fetching steps for workflow {workflow_id}: {e}")
+        return jsonify({'error': 'An error occurred while fetching steps'}), 500
 
 
 @app.route('/manage_workflow_base_data', methods=['GET', 'POST'])
@@ -3747,7 +3726,6 @@ def manage_base_data_workflow_step():
     return render_template('manage_base_data_workflow_step.html', form=form, message=message)
 
 
-
 @app.route('/manage_company_users', methods=['GET', 'POST'])
 @login_required
 @roles_required('Admin')
@@ -3799,6 +3777,26 @@ def manage_company_users():
                 message = "Company User not found."
 
     return render_template('manage_company_users.html', form=form, message=message)
+
+@app.route('/get_company_users/<int:company_id>', methods=['GET'])
+@login_required
+@roles_required('Admin')
+def get_company_users(company_id):
+    try:
+        # Fetch the users associated with the given company_id
+        company = Company.query.get_or_404(company_id)
+        users = [
+            {
+                'id': cu.user.id,
+                'username': cu.user.username,
+            }
+            for cu in company.company_users  # Assuming `company_users` is a relationship on the Company model
+        ]
+
+        return jsonify({'users': users}), 200
+    except Exception as e:
+        app.logger.error(f"Error fetching users for company {company_id}: {e}")
+        return jsonify({'error': 'An error occurred while fetching users'}), 500
 
 
 @app.route('/manage_questionnaire_companies', methods=['GET', 'POST'])
@@ -3858,6 +3856,25 @@ def manage_questionnaire_companies():
     return render_template('manage_questionnaire_companies.html', form=form, message=message)
 
 
+@app.route('/get_company_questionnaires/<int:company_id>', methods=['GET'])
+@login_required
+@roles_required('Admin')
+def get_company_questionnaires(company_id):
+    try:
+        # Fetch questionnaires associated with the selected company
+        company = Company.query.get_or_404(company_id)
+        questionnaires = [
+            {
+                'id': qc.questionnaire.id,
+                'name': qc.questionnaire.name,
+            }
+            for qc in company.questionnaire_companies  # Assuming 'questionnaire_companies' is the relationship
+        ]
+
+        return jsonify({'questionnaires': questionnaires}), 200
+    except Exception as e:
+        app.logger.error(f"Error fetching questionnaires for company {company_id}: {e}")
+        return jsonify({'error': 'An error occurred while fetching questionnaires'}), 500
 
 
 @login_required
@@ -3889,64 +3906,83 @@ def submit_confirmed():
         flash('No data to save or session expired.', 'error')
         return redirect(url_for('show_survey', questionnaire_id=request.form.get('questionnaire_id')))
 
-@login_required
+
 @app.route('/manage_questionnaire_questions', methods=['GET', 'POST'])
+@login_required
+@roles_required('Admin')
 def manage_questionnaire_questions():
     form = QuestionnaireQuestionForm()
     message = None
 
-    # Populate choices for users and roles
+    # Populate choices for questionnaires and questions
     form.questionnaire.choices = [(questionnaire.id, questionnaire.name) for questionnaire in Questionnaire.query.all()]
-    #form.question.choices = [(question.id, question.text) for question in Question.query.all()]
     form.question.choices = [(question.id, question.text) for question in Question.query.order_by('question_id').all()]
 
-    if form.validate_on_submit():
-        if form.cancel.data:
-            # Handle cancel button
-            return redirect(url_for('index'))
-        elif form.add.data:
-            # Handle add button
-            questionnaire_id = form.questionnaire.data
-            question_id = form.question.data
+    if request.method == 'POST':
+        if form.validate_on_submit():
+            if form.cancel.data:
+                return redirect(url_for('index'))
+            elif form.add.data:
+                questionnaire_id = form.questionnaire.data
+                question_id = form.question.data
 
-            # Check if the user-role association already exists
-            existing_questionnaire_question = QuestionnaireQuestions.query.filter_by(
-                question_id=question_id, questionnaire_id=questionnaire_id).first()
+                existing_questionnaire_question = QuestionnaireQuestions.query.filter_by(
+                    question_id=question_id, questionnaire_id=questionnaire_id).first()
 
-            if existing_questionnaire_question:
-                message = "Link questionnaire-to-question already exists."
+                if existing_questionnaire_question:
+                    message = "Link questionnaire-to-question already exists."
+                else:
+                    try:
+                        new_questionnaire_question = QuestionnaireQuestions(
+                            question_id=question_id, questionnaire_id=questionnaire_id)
+                        db.session.add(new_questionnaire_question)
+                        db.session.commit()
+                        message = f"Question {question_id} assigned successfully to questionnaire {questionnaire_id}."
+                    except Exception as e:
+                        db.session.rollback()
+                        message = f"Question {question_id} not assigned to questionnaire {questionnaire_id}. Error: {e}."
 
-            else:
-                # Add logic to associate the user with the selected role
-                try:
-                    new_questionnaire_question = QuestionnaireQuestions(
-                        question_id=question_id, questionnaire_id=questionnaire_id)
-                    db.session.add(new_questionnaire_question)
+            elif form.delete.data:
+                question_id = form.question.data
+                questionnaire_id = form.questionnaire.data
+
+                questionnaire_question_to_delete = QuestionnaireQuestions.query.filter_by(
+                    question_id=question_id, questionnaire_id=questionnaire_id).first()
+
+                if questionnaire_question_to_delete:
+                    db.session.delete(questionnaire_question_to_delete)
                     db.session.commit()
-                    # Set a success message
-                    message = f"Question {question_id} assigned successfully to questionnaire {questionnaire_id}."
-                except Exception as e:
-                    db.session.rollback()
-                    message = f"Question {question_id} not assigned to questionnaire {questionnaire_id}. Error: {e}."
-
-        elif form.delete.data:
-            # Handle delete button
-            question_id = form.question.data
-            questionnaire_id = form.questionnaire.data
-
-            # Find and delete the user-role association
-            questionnaire_question_to_delete = QuestionnaireQuestions.query.filter_by(
-                question_id=question_id, questionnaire_id=questionnaire_id).first()
-
-            if questionnaire_question_to_delete:
-                db.session.delete(questionnaire_question_to_delete)
-                db.session.commit()
-                message = "Question assignment to questionnaire deleted successfully."
-
-            else:
-                message = "Association of this question to questionnaire not found."
+                    message = "Question assignment to questionnaire deleted successfully."
+                else:
+                    message = "Association of this question to questionnaire not found."
 
     return render_template('manage_questionnaire_questions.html', form=form, message=message)
+
+
+@app.route('/get_questionnaire_questions/<int:questionnaire_id>', methods=['GET'])
+@login_required
+@roles_required('Admin')
+def get_questionnaire_questions(questionnaire_id):
+    try:
+        # Fetch the questionnaire with an order applied to the questions by question_id
+        questionnaire = Questionnaire.query.get_or_404(questionnaire_id)
+        questions = [
+            {
+                'id': q.question.id,
+                'text': q.question.text,
+            }
+            for q in questionnaire.questionnaire_questions
+            # Apply ordering by question_id
+            if q.question
+        ]
+
+        # Sort by question ID
+        questions = sorted(questions, key=lambda x: x['id'])
+
+        return jsonify({'questions': questions}), 200
+    except Exception as e:
+        app.logger.error(f"Error fetching questions for questionnaire {questionnaire_id}: {e}")
+        return jsonify({'error': 'An error occurred while fetching questions'}), 500
 
 
 def fetch_questions(questionnaire_id):

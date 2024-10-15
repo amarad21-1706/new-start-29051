@@ -131,9 +131,12 @@ class Users(db.Model, UserMixin):
     agreement_signed = db.Column(db.Boolean, default=False)
     agreement_signed_date = db.Column(db.DateTime, nullable=True)
 
-    roles = db.relationship('Role', secondary='user_roles', backref=db.backref('users', lazy='dynamic'),
-                            primaryjoin='UserRoles.user_id == Users.id',
-                            secondaryjoin='UserRoles.role_id == Role.id')
+    # roles = db.relationship('Role', secondary='user_roles', backref=db.backref('users', lazy='dynamic'),
+    #                         primaryjoin='UserRoles.user_id == Users.id',
+    #                         secondaryjoin='UserRoles.role_id == Role.id')
+
+    # Define many-to-many relationship to 'Role' through 'UserRoles'
+    roles = db.relationship('Role', secondary='user_roles', backref=db.backref('users', lazy='dynamic'))
 
     user_plans = db.relationship('UserPlans', back_populates='user', uselist=False)
     subscriptions = db.relationship('Subscription', back_populates='user')
@@ -148,6 +151,9 @@ class Users(db.Model, UserMixin):
 
     # Relationship to team memberships
     team_memberships = relationship('TeamMembership', back_populates='user')
+    created_contracts = db.relationship("Contract", back_populates="created_by_user")
+    status_changes = db.relationship("ContractStatusHistory", back_populates="changed_by_user")
+    company_users = relationship('CompanyUsers', back_populates='user')  # Explicitly set the relationship
 
     # Add constructor to set the primary key
     def __init__(self, **kwargs):
@@ -198,9 +204,6 @@ class Users(db.Model, UserMixin):
     def __repr__(self):
         return f"{self.username} {self.last_name}"
 
-    created_contracts = db.relationship("Contract", back_populates="created_by_user")
-    status_changes = db.relationship("ContractStatusHistory", back_populates="changed_by_user")
-
 
 class Role(db.Model, RoleMixin):
     __tablename__ = 'role'
@@ -223,6 +226,9 @@ class UserRoles(db.Model):
     #user = relationship('Users', backref='user_roles')
     #role = relationship('Role', backref='user_roles')
 
+    def __repr__(self):
+        return f"<User: {self.user_id}, Role: {self.role_id}>"
+
 
 class CompanyUsers(db.Model):
     __tablename__ = 'company_users'
@@ -233,8 +239,8 @@ class CompanyUsers(db.Model):
     updated_on = Column(DateTime, nullable=True, onupdate=datetime.now)
     end_of_registration = db.Column(db.DateTime, nullable=True)
 
-    company = relationship('Company', backref='company_users')
-    user = relationship('Users', backref='company_users')
+    company = relationship('Company', back_populates='company_users')
+    user = relationship('Users', back_populates='company_users')
 
     def readable_format(self):
         company_name = self.company.name if self.company else "N/A"
@@ -246,6 +252,7 @@ class CompanyUsers(db.Model):
         return self.readable_format()
 
 class Company(db.Model):
+    __tablename__ = 'company'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(String(100), unique=True)
     description = db.Column(String)
@@ -259,11 +266,16 @@ class Company(db.Model):
     updated_on = db.Column(db.DateTime, default=datetime.utcnow)
     end_of_registration = db.Column(db.DateTime, nullable=True)
 
-    def __repr__(self):
-        return (f"{self.name}")
+    # Relationship to company_users
+    company_users = relationship('CompanyUsers', back_populates='company')  # Explicitly set the relationship
 
     contract_parties = db.relationship("ContractParty", back_populates="company")
 
+    # Relationship to questionnaire companies
+    questionnaire_companies = db.relationship('QuestionnaireCompanies', back_populates='company')
+
+    def __repr__(self):
+        return (f"{self.name}")
 
 class Employee(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -296,6 +308,8 @@ class Questionnaire(db.Model):
     headers = db.Column(db.JSON)
 
     steps_questionnaires_relationship = db.relationship("StepQuestionnaire", back_populates="questionnaire")
+    # Relationship to QuestionnaireCompanies
+    questionnaire_companies = db.relationship('QuestionnaireCompanies', back_populates='questionnaire', lazy='dynamic')
 
     def __init__(self, questionnaire_id: str, questionnaire_type: str, name: str, interval: str, deadline_date: datetime, status_id: int, headers: dict):
         self.questionnaire_id = questionnaire_id
@@ -432,8 +446,10 @@ class QuestionnaireCompanies(db.Model):
     status_id = db.Column(Integer, ForeignKey('status.id'))
 
     # Define relationships
-    questionnaire = db.relationship('Questionnaire', backref='companies')
-    company = db.relationship('Company', backref='questionnaires')
+    # questionnaire = db.relationship('Questionnaire', backref='companies')
+    # company = db.relationship('Company', backref='questionnaires')
+    company = db.relationship('Company', back_populates='questionnaire_companies')
+    questionnaire = db.relationship('Questionnaire', back_populates='questionnaire_companies')
 
 
 class Answer(db.Model):

@@ -429,31 +429,9 @@
                             "display": false
                         }
                     },
-                    "Admin Manage Plans Sub MPL": {
-                        "label": "Manage Plans List",
-                        "url": "/open_admin_4/plan_view",
-                        "protected": true,
-                        "allowed_roles": [
-                            "Admin"
-                        ],
-                        "widget": {
-                            "display": false
-                        }
-                    },
-                    "Admin Manage Products MPO": {
-                        "label": "Manage Products Offer",
-                        "url": "/open_admin_4/product_view",
-                        "protected": true,
-                        "allowed_roles": [
-                            "Admin"
-                        ],
-                        "widget": {
-                            "display": false
-                        }
-                    },
                     "Assign Products to Plans": {
                         "label": "Associate Products to Plans",
-                        "url": "/manage_plan_products",
+                        "url": "/argon/manage_plan_products",
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
@@ -650,17 +628,6 @@
                                 "url": "/workflow_tree",
                                 "protected": true,
                                 "allowed_roles": ["Admin"],
-                                "widget": {
-                                    "display": false
-                                }
-                            },
-                            "Admin Plans Argon": {
-                                "label": "Plans II",
-                                "url": "/argon/plan_dashboard",
-                                "protected": true,
-                                "allowed_roles": [
-                                    "Admin"
-                                ],
                                 "widget": {
                                     "display": false
                                 }

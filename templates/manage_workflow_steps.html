@@ -2,49 +2,89 @@
 
 {% block content %}
 
-    {% block title %}Steps associated to workflows{% endblock %}
+<h1 style="font-size: 2em;">Steps associated to workflows</h1>  <!-- Title with larger font size -->
 
-    <form method="POST" class="my-8 mx-auto" style="max-width: 80%;">
-        {{ form.hidden_tag() }}
+<form method="POST" class="my-8 mx-auto" style="max-width: 80%;">
+    {{ form.hidden_tag() }}
 
-        <div class="row mb-4">
+    <div class="row mb-4">
 
-            <div class="col-md-6">
-                <label for="workflow" class="form-label">Select Workflow:</label>
-                {{ form.workflow(class="form-control") }}
-            </div>
-
-             <div class="col-md-6">
-                <label for="step" class="form-label">Select Step of the Workflow:</label>
-                {{ form.step(class="form-control") }}
-            </div>
-
-
+        <div class="col-md-6">
+            <label for="workflow" class="form-label">Select Workflow:</label>
+            {{ form.workflow(class="form-control", id="workflow-select") }}  <!-- Added id -->
         </div>
 
-        <div class="row mb-4">
-            <div class="col-md-12">
-                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                    {{ form.add(class="btn btn-primary me-md-2") }}
-                    {{ form.delete(class="btn btn-danger me-md-2") }}
-                    {{ form.cancel(class="btn btn-secondary") }}
-                </div>
-            </div>
+        <div class="col-md-6">
+            <label for="step" class="form-label">Select Step of the Workflow:</label>
+            {{ form.step(class="form-control", id="step-select") }}  <!-- Added id -->
         </div>
 
-        {% if message %}
-        <div class="row mb-4">
-            <div class="col-md-12">
-                <div class="alert alert-info" workflow="alert">
-                    {{ message }}
-                </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div id="associated-steps" class="form-group">
+                <!-- This section will be populated with associated steps -->
             </div>
         </div>
-        {% endif %}
+    </div>
 
-    </form>
-    <!-- Include Bootstrap JS and Popper.js from CDN (optional) -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                {{ form.add(class="btn btn-primary me-md-2") }}
+                {{ form.delete(class="btn btn-danger me-md-2") }}
+                {{ form.cancel(class="btn btn-secondary") }}
+            </div>
+        </div>
+    </div>
+
+    {% if message %}
+    <div class="row mb-4">
+        <div class="col-md-12">
+            <div class="alert alert-info" id="message-box">
+                {{ message }}
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+</form>
+
+<!-- Include jQuery for making AJAX requests -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script>
+    // Listen for changes to the workflow select dropdown
+    $('#workflow-select').on('change', function () {
+        var workflowId = $('#workflow-select').val();  // Get selected workflow ID
+        var messageBox = $('#message-box');  // Message box element
+
+        // Clear the existing message when selection changes
+        if (messageBox.length) {
+            messageBox.remove();
+        }
+
+        if (workflowId) {
+            // Make an AJAX request to fetch associated steps
+            $.get('/get_workflow_steps/' + workflowId, function (data) {
+                var associatedStepsDiv = $('#associated-steps');
+                associatedStepsDiv.empty();  // Clear the existing content
+
+                if (data.steps && data.steps.length > 0) {
+                    associatedStepsDiv.append('<h5>Associated Steps:</h5>');
+                    var list = $('<ul></ul>');  // Create an unordered list
+                    data.steps.forEach(function (s) {
+                        list.append('<li>' + s.name + '</li>');
+                    });
+                    associatedStepsDiv.append(list);
+                } else {
+                    associatedStepsDiv.append('<p>No steps are associated with this workflow.</p>');
+                }
+            });
+        } else {
+            $('#associated-steps').empty();  // Clear the content if no workflow is selected
+        }
+    });
+</script>
 
 {% endblock %}

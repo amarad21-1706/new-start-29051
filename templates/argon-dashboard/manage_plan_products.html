@@ -2,26 +2,26 @@
 
 {% block content %}
 
-    <h1 style="font-size: 2em;">Users associated with roles</h1>  <!-- Title with larger font size -->
+    <h1 style="font-size: 2em;">Products associated to Plans</h1>  <!-- Title with larger font size -->
 
     <form method="POST" class="my-8 mx-auto" style="max-width: 80%;">
         {{ form.hidden_tag() }}
 
         <div class="row mb-4">
             <div class="col-md-6">
-                <label for="user" class="form-label">Select User:</label>
-                {{ form.user(class="form-control", id="user-select") }}
+                <label for="plan" class="form-label">Select Plan:</label>
+                {{ form.plan_id(class="form-control", id="plan-select") }}  <!-- Plan selection field -->
             </div>
             <div class="col-md-6">
-                <label for="role" class="form-label">Select Role:</label>
-                {{ form.role(class="form-control") }}
+                <label for="product" class="form-label">Select Product:</label>
+                {{ form.product_id(class="form-control", id="product-select") }}  <!-- Product selection field -->
             </div>
         </div>
 
         <div class="row mb-4">
             <div class="col-md-12">
-                <div id="associated-roles" class="form-group">
-                    <!-- This section will be populated with associated roles -->
+                <div id="associated-products" class="form-group">
+                    <!-- This section will be populated with associated products -->
                 </div>
             </div>
         </div>
@@ -51,9 +51,9 @@
     <!-- Include jQuery for making AJAX requests -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script>
-        // Listen for changes to the user select dropdown
-        $('#user-select').on('change', function () {
-            var userId = $(this).val();  // Get selected user ID
+        // Listen for changes to the plan select dropdown
+        $('#plan-select').on('change', function () {
+            var planId = $('#plan-select').val();  // Get selected plan ID
             var messageBox = $('#message-box');  // Message box element
 
             // Clear the existing message when selection changes
@@ -61,25 +61,25 @@
                 messageBox.remove();
             }
 
-            if (userId) {
-                // Make an AJAX request to fetch associated roles
-                $.get('/get_user_roles/' + userId, function (data) {
-                    var associatedRolesDiv = $('#associated-roles');
-                    associatedRolesDiv.empty();  // Clear the existing content
+            if (planId) {
+                // Make an AJAX request to fetch associated products
+                $.get('/argon/get_plan_products/' + planId, function (data) {
+                    var associatedProductsDiv = $('#associated-products');
+                    associatedProductsDiv.empty();  // Clear the existing content
 
-                    if (data.roles && data.roles.length > 0) {
-                        associatedRolesDiv.append('<h5>Associated Roles:</h5>');
+                    if (data.products && data.products.length > 0) {
+                        associatedProductsDiv.append('<h5>Associated Products:</h5>');
                         var list = $('<ul></ul>');  // Create an unordered list
-                        data.roles.forEach(function (r) {
-                            list.append('<li>' + r.name + '</li>');
+                        data.products.forEach(function (p) {
+                            list.append('<li>' + p.name + '</li>');
                         });
-                        associatedRolesDiv.append(list);
+                        associatedProductsDiv.append(list);
                     } else {
-                        associatedRolesDiv.append('<p>No roles are associated with this user.</p>');
+                        associatedProductsDiv.append('<p>No products are associated with this plan.</p>');
                     }
                 });
             } else {
-                $('#associated-roles').empty();  // Clear the content if no user is selected
+                $('#associated-products').empty();  // Clear the content if no plan is selected
             }
         });
     </script>
