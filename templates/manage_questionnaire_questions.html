@@ -62,7 +62,7 @@
 
             if (questionnaireId) {
                 // Make an AJAX request to fetch associated questions
-                $.get('/get_questionnaire_questions/' + questionnaireId, function (data) {
+                $.get('/association/get_questionnaire_questions/' + questionnaireId, function (data) {
                     var associatedQuestionsDiv = $('#associated-questions');
                     associatedQuestionsDiv.empty();  // Clear the existing content
 

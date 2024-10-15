@@ -731,7 +731,7 @@
                         "submenus": {
                             "Manage Association of users to companies": {
                                 "label": "Associate users to companies",
-                                "url": "/manage_company_users",
+                                "url": "/association/manage_company_users",
                                 "protected": true,
                                 "allowed_roles": ["Admin"],
                                 "widget": {
@@ -740,7 +740,7 @@
                             },
                             "Manage Association of roles to users": {
                                 "label": "Associate roles to user",
-                                "url": "/manage_user_roles",
+                                "url": "/association/manage_user_roles",
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"
@@ -751,7 +751,7 @@
                             },
                             "Assign Questions to Questionnaires": {
                                 "label": "Attach questions to questionnaire",
-                                "url": "/manage_questionnaire_questions",
+                                "url": "/association/manage_questionnaire_questions",
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"
@@ -762,7 +762,7 @@
                             },
                             "Assign Questionnaires to Companies": {
                                 "label": "Assign questionnaire to company",
-                                "url": "/manage_questionnaire_companies",
+                                "url": "/association/manage_questionnaire_companies",
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"
@@ -773,7 +773,7 @@
                             },
                             "Assign Steps to Workflows": {
                                 "label": "Assign steps (phases) to workflow",
-                                "url": "/manage_workflow_steps",
+                                "url": "/association/manage_workflow_steps",
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"

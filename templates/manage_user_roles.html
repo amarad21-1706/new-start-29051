@@ -50,38 +50,36 @@
 
     <!-- Include jQuery for making AJAX requests -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script>
-        // Listen for changes to the user select dropdown
+    <script>// Listen for changes to the user select dropdown
         $('#user-select').on('change', function () {
-            var userId = $(this).val();  // Get selected user ID
-            var messageBox = $('#message-box');  // Message box element
+            var userId = $(this).val();  // Get the selected user ID
+            var associatedRolesDiv = $('#associated-roles');  // The div where roles will be displayed
 
-            // Clear the existing message when selection changes
-            if (messageBox.length) {
-                messageBox.remove();
-            }
+            // Clear any existing roles
+            associatedRolesDiv.empty();
 
             if (userId) {
                 // Make an AJAX request to fetch associated roles
-                $.get('/get_user_roles/' + userId, function (data) {
-                    var associatedRolesDiv = $('#associated-roles');
-                    associatedRolesDiv.empty();  // Clear the existing content
-
+                $.get('/association/get_user_roles/' + userId, function (data) {
                     if (data.roles && data.roles.length > 0) {
+                        // If roles are found, display them
                         associatedRolesDiv.append('<h5>Associated Roles:</h5>');
                         var list = $('<ul></ul>');  // Create an unordered list
-                        data.roles.forEach(function (r) {
-                            list.append('<li>' + r.name + '</li>');
+                        data.roles.forEach(function (role) {
+                            list.append('<li>' + role.name + ' (' + role.description + ')</li>');
                         });
                         associatedRolesDiv.append(list);
                     } else {
                         associatedRolesDiv.append('<p>No roles are associated with this user.</p>');
                     }
+                }).fail(function () {
+                    associatedRolesDiv.append('<p class="text-danger">Error loading roles</p>');
                 });
             } else {
-                $('#associated-roles').empty();  // Clear the content if no user is selected
+                associatedRolesDiv.append('<p>Select a user to view their roles.</p>');
             }
         });
+
     </script>
 
 {% endblock %}

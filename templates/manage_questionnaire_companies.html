@@ -63,7 +63,7 @@
 
             if (companyId) {
                 // Make an AJAX request to fetch associated questionnaires
-                $.get('/get_company_questionnaires/' + companyId, function (data) {
+                $.get('/association/get_company_questionnaires/' + companyId, function (data) {
                     var associatedQuestionnairesDiv = $('#associated-questionnaires');
                     associatedQuestionnairesDiv.empty();  // Clear the existing content
 

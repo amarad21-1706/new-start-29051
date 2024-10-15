@@ -63,7 +63,7 @@
 
         if (companyId) {
             // Make an AJAX request to fetch associated users
-            $.get('/get_company_users/' + companyId, function (data) {
+            $.get('/association/get_company_users/' + companyId, function (data) {
                 var associatedUsersDiv = $('#associated-users');
                 associatedUsersDiv.empty();  // Clear the existing content
 
