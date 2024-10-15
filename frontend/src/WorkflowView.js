@@ -17,7 +17,12 @@ function WorkflowView() {
   const [selectedWorkflow, setSelectedWorkflow] = useState('all');  // Default to 'All Workflows'
   const [selectedStep, setSelectedStep] = useState('all');          // Default to 'All Steps'
   const [selectedDocument, setSelectedDocument] = useState('');
-  const [fi0, setFi0] = useState(2024);
+
+  const [fi0, setFi0] = useState(2025);  // Default year
+
+  // New state for storing the year options
+  const [yearOptions, setYearOptions] = useState([]);
+
 
   // Fetch workflows, steps, and documents as before
   useEffect(() => {
@@ -58,6 +63,18 @@ function WorkflowView() {
         .catch((error) => setError(error));
     }
   }, [selectedWorkflow]);
+
+  useEffect(() => {
+    fetch(`/api/get_intervals`)
+      .then(response => response.json())
+      .then(data => {
+        const years = data.years || [];
+        setFi0(years[0]);  // Set the default selected year to the most recent year
+        setYearOptions(years);  // Populate the year dropdown with the last five years
+      })
+      .catch(error => console.error('Error fetching intervals:', error));
+  }, []);
+
 
   useEffect(() => {
     let queryString = `/api/documents?workflow_id=${selectedWorkflow}&step_id=${selectedStep}&fi0=${fi0}`;
@@ -125,11 +142,22 @@ function WorkflowView() {
 
   // Map each document to its own timeline item
   const items = workflowData.map((doc) => ({
-    id: doc.id,  // This ID will be used in the onItemSelect function
+    id: doc.id,
     group: doc.id,
-    title: `Doc: ${doc.name}`,
+    title: `
+      Doc: ${doc.name} 
+      Number: ${doc.number_of_doc || "N/A"} 
+      Area ID: ${doc.area_id || "N/A"} 
+      Date: ${doc.date_of_doc ? moment(doc.date_of_doc).format('YYYY-MM-DD') : "N/A"} 
+      Updated on: ${doc.updated_on ? moment(doc.updated_on).format('YYYY-MM-DD') : "N/A"} 
+      Workflow: ${doc.workflows[0]?.workflow_name || "N/A"} 
+      Step: ${doc.workflows[0]?.step_name || "N/A"}
+    `,  // Tooltip content, including workflow and step
     start_time: moment(doc.workflows[0]?.date_start),
-    end_time: moment(doc.workflows[0]?.date_end)
+    end_time: moment(doc.workflows[0]?.date_end),
+    itemProps: {
+      'data-tip': `Document: ${doc.name} - Start: ${moment(doc.workflows[0]?.date_start).format('LL')} - End: ${moment(doc.workflows[0]?.date_end).format('LL')}`,
+    }
   }));
 
   const handleItemClick = (itemId) => {
@@ -157,35 +185,37 @@ function WorkflowView() {
         <div className="form-group">
           <label htmlFor="workflow-select">Workflow:</label>
           <select
-            id="workflow-select"
-            value={selectedWorkflow}
-            onChange={(e) => setSelectedWorkflow(e.target.value)}
-            className="form-control"
+              id="workflow-select"
+              value={selectedWorkflow}
+              onChange={(e) => setSelectedWorkflow(e.target.value)}
+              className="form-control"
           >
             <option value="all">All Workflows</option>
             {workflows.map((wf) => (
-              <option key={wf.id} value={wf.id}>
-                {wf.name}
-              </option>
+                <option key={wf.id} value={wf.id}>
+                  {wf.name}
+                </option>
             ))}
           </select>
         </div>
         <div className="form-group">
           <label htmlFor="step-select">Step:</label>
           <select
-            id="step-select"
-            value={selectedStep}
-            onChange={(e) => setSelectedStep(e.target.value)}
-            className="form-control"
+              id="step-select"
+              value={selectedStep}
+              onChange={(e) => setSelectedStep(e.target.value)}
+              className="form-control"
           >
             <option value="all">All Steps</option>
             {steps.map((step) => (
-              <option key={step.id} value={step.id}>
-                {step.name}
-              </option>
+                <option key={step.id} value={step.id}>
+                  {step.name}
+                </option>
             ))}
           </select>
         </div>
+
+        {/* Year Dropdown */}
         <div className="form-group">
           <label htmlFor="year-select">Year (FI0):</label>
           <select
@@ -194,26 +224,27 @@ function WorkflowView() {
             onChange={(e) => setFi0(e.target.value)}
             className="form-control"
           >
-            <option value="2024">2024</option>
-            <option value="2023">2023</option>
-            <option value="2022">2022</option>
-            <option value="2021">2021</option>
-            <option value="2020">2020</option>
+            {yearOptions.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
           </select>
         </div>
+
         <div className="form-group">
           <label htmlFor="document-select">Document:</label>
           <select
-            id="document-select"
-            value={selectedDocument}
-            onChange={(e) => setSelectedDocument(e.target.value)}
-            className="form-control"
+              id="document-select"
+              value={selectedDocument}
+              onChange={(e) => setSelectedDocument(e.target.value)}
+              className="form-control"
           >
             <option value="">All Documents</option>
             {documents.map((doc) => (
-              <option key={doc.id} value={doc.id}>
-                {doc.name}
-              </option>
+                <option key={doc.id} value={doc.id}>
+                  {doc.name}
+                </option>
             ))}
           </select>
         </div>
@@ -237,6 +268,11 @@ function WorkflowView() {
           defaultTimeStart={moment().startOf('year')}
           defaultTimeEnd={moment().endOf('year')}
           onItemClick={(itemId) => handleItemClick(itemId)}  // Use onItemClick
+          itemRenderer={({ item, itemContext, getItemProps, getResizeProps }) => (
+            <div {...getItemProps(item.itemProps)}>
+              <div data-tip={item.title}>{itemContext.title}</div>
+            </div>
+          )}
         />
       )}
     </div>

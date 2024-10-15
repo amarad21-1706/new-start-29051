@@ -603,6 +603,22 @@ def serialize_base_data(item):
     }
 
 
+@app.route('/api/get_intervals', methods=['GET'])
+@login_required
+def get_intervals():
+    # Get the current intervals from the app config (as you've already done)
+    intervals = app.config.get('CURRENT_INTERVALS', [])
+
+    # Assuming intervals are in the format [(id, year, some_value), ...]
+    # Extract the current year from the first interval
+    current_year = intervals[0][1] if intervals else datetime.utcnow().year
+
+    # Generate the last 5 years including the current year
+    last_five_years = [current_year - i for i in range(5)]
+
+    # Return the last five years as a JSON response
+    return jsonify({'years': last_five_years})
+
 @app.route('/api/area-subarea', methods=['GET'])
 @login_required
 def get_area_subarea():
@@ -672,10 +688,14 @@ def get_documents():
         if not documents:
             return jsonify({"error": "No documents found"}), 404
 
-        # Prepare the response data, converting date_start and date_end to strings
+        # Prepare the response data, including additional fields like number_of_doc, updated_on, area_id, and date_of_doc
         document_list = [{
             'id': doc.id,
             'name': doc.number_of_doc or f"Document {doc.id}",
+            'number_of_doc': doc.number_of_doc,
+            'updated_on': doc.updated_on.isoformat() if doc.updated_on else None,
+            'area_id': doc.area_id,
+            'date_of_doc': doc.date_of_doc.isoformat() if doc.date_of_doc else None,
             'workflows': [
                 {
                     'date_start': workflow.start_date.isoformat() if workflow.start_date else None,
