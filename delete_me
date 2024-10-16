@@ -1,0 +1,164 @@
+
+# Example use within the Flask view function
+@login_required
+@app.route('/show_survey_sqlite/<int:questionnaire_id>', methods=['GET', 'POST'])
+def show_survey_sqlite(questionnaire_id):
+
+    form = BaseSurveyForm()
+    headers = None
+    user_id = current_user.id
+    company = CompanyUsers.query.filter_by(user_id=user_id).first()
+    company_id = company.company_id if company else None
+
+    if request.method == 'POST':
+        if form.validate_on_submit():
+            answers_to_save = serialize_answers(request.form)
+            return handle_post_submission(form, company_id, user_id, questionnaire_id, answers_to_save)
+        else:
+            flash('Error with form data. Please check your entries.', 'error')
+
+    # Fetch the questionnaire details and questions via QuestionnaireQuestions
+    # reset answer_fields in Question
+    update_question_answer_fields()
+    selected_questionnaire = Questionnaire.query.get_or_404(questionnaire_id)
+    raw_json = selected_questionnaire.headers
+
+    headers = []  # Default to an empty list if there's a problem
+    if raw_json:
+        try:
+            headers = json.loads(raw_json)
+        except json.JSONDecodeError as e:
+            print(f"JSON decode error: {e}")
+
+    horizontal = selected_questionnaire.questionnaire_type.endswith('H')
+
+    if request.method == 'POST':
+        if form.validate_on_submit():
+            answers_to_save = serialize_answers(request.form)
+            return handle_post_submission(form, company_id, user_id, questionnaire_id, answers_to_save)
+        else:
+            flash('Error with form data. Please check your entries.', 'error')
+
+    questionnaire_questions = QuestionnaireQuestions.query.filter_by(
+        questionnaire_id=questionnaire_id
+    ).join(Question).order_by(Question.question_id).all()
+
+    questions = []
+    form_data = {}
+    for qq in questionnaire_questions:
+        question = qq.question
+        existing_answer = Answer.query.filter_by(
+            company_id=company_id, user_id=user_id, questionnaire_id=questionnaire_id, question_id=question.id
+        ).first()
+
+        if existing_answer and existing_answer.answer_data:
+            merged_fields = merge_answer_fields(question.answer_fields, existing_answer.answer_data)  # Make sure this function is set to merge JSON fields correctly
+            form_data[str(question.id)] = merged_fields
+        else:
+            form_data[str(question.id)] = question.answer_fields
+
+        questions.append({
+            'id': question.id,
+            'question_id': question.question_id,
+            'text': question.text,
+            'answer_type': question.answer_type,
+            'answer_width': question.answer_width,
+            'answer_fields': form_data[str(question.id)]
+        })
+
+    dynamic_html = create_dynamic_form(form, {'questions': questions, 'form_data': form_data}, company_id, horizontal)  # Adjust this function to accept horizontal flag
+    return render_template('survey.html', form=form, headers=headers, dynamic_html=dynamic_html, questionnaire_name=selected_questionnaire.name, today=datetime.now().date())
+
+
+def validate_form_structure(form_data, json_data):
+    expected_keys = form_data.keys()  # Get field names from your form class or definition
+    json_keys = json_data.keys()
+
+    if set(expected_keys) == set(json_keys):
+        return True
+    else:
+        return False
+
+
+
+
+def process_aggregation_rule(aggregation_rule, data_list):
+    result = 0
+    # Process the aggregation rule
+    if aggregation_rule['operation'] == 'sum':
+        for data in data_list:
+            for field in aggregation_rule['fields']:
+                result += data[field]
+
+    # Add more logic for different operations if necessary
+    return result
+
+
+
+def create_company_folder222(company_id, subfolder):
+    try:
+        base_path = '/path/to/company/folders' # TODO to be adapted...
+        company_folder_path = os.path.join(base_path, str(company_id), str(subfolder))
+        os.makedirs(company_folder_path, exist_ok=True)
+        #logging.info(f'Created folder: {company_folder_path}')
+    except Exception as e:
+        #logging.error(f'Error creating company folder: {e}')
+        #raise
+        pass
+
+
+# TODO unused?
+def verify_password_reset_token(token, expiration=1800):
+    salt = app.config['SECURITY_PASSWORD_SALT']
+    try:
+        email = serializer.loads(token, salt=salt, max_age=expiration)
+    except (SignatureExpired, BadSignature):
+        return None
+    return email
+
+
+
+
+def get_cards001(company_id):
+    cards = []
+    # Use SQLAlchemy to query the 'container' table
+    containers = db.session.query(Container).filter_by(
+        company_id=company_id
+    ).all()
+
+    for container in containers:
+        content = container.content
+
+        # Check data type before decoding
+        if isinstance(content, str):
+            card_data = json.loads(content)
+        elif isinstance(content, dict):
+            card_data = content  # Already a dictionary
+        else:
+            # Handle unexpected data type (optional)
+            # You can log a warning or raise an exception here
+            print(f"Unexpected data type for container content: {type(content)}")
+            continue  # Skip this container
+
+        # Include content_type in the card data
+        card_data['content_type'] = container.content_type
+        cards.append(card_data)
+
+    return cards
+
+
+class MoveDocumentForm(FlaskForm):
+    next_step = SelectField('Next Step')
+    submit = SubmitField('Move Document')
+
+    def __init__(self, available_steps, current_step=None, **kwargs):
+        super(MoveDocumentForm, self).__init__(**kwargs)
+        self.next_step.choices = [(step.id, step.name) for step in available_steps]
+        self.current_step = current_step  # Store for potential use in template
+
+    def validate(self):
+        if not self.next_step.data:
+            return False
+        return True
+
+

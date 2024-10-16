@@ -28,6 +28,7 @@ from flask import (Flask, render_template, redirect, url_for, request, g,
                    make_response, flash, Markup,
                    send_from_directory)
 import datetime
+from datetime import date, timedelta, time, timezone
 from dateutil import rrule
 from flask_wtf import FlaskForm
 from wtforms import EmailField
@@ -197,10 +198,6 @@ print('mail server active')
 app.json_encoder = CustomJSONEncoder
 print('JSON decoder on')
 
-#cache = Cache(app)
-# Choose one geocoder based on your preference:
-# geocoder = geocoder.geocoder  # Original implementation
-# geocoder = os.getenv('OPENCAGE_GEOCODE')
 GEONAMES_USERNAME = os.getenv('GEONAMES_USERNAME')
 NOMINATIM_URL = os.getenv('NOMINATIM_URL')
 cache = TTLCache(maxsize=100, ttl=86400)  # Adjust cache size and TTL as needed
@@ -329,6 +326,7 @@ def test_relationship():
     except Exception as e:
         return str(e), 500
 
+
 @app.after_request
 def log_request_info(response):
     logger.info('Headers: %s', request.headers)
@@ -343,7 +341,6 @@ def load_user(user_id):
     if user:
         session['user_roles'] = [role.name for role in user.roles] if user.roles else []
     return user
-
 
 def initialize_app(app):
     with app.app_context():
@@ -718,6 +715,7 @@ def get_documents():
         app.logger.error(f"Error fetching documents: {e}")
         return jsonify({"error": str(e)}), 500
 
+
 @app.route('/api/get_workflow_data', methods=['GET'])
 @login_required
 def get_workflow_data():
@@ -917,6 +915,8 @@ def get_workflow_data_bad():
 
 
 @app.route('/attach_documents_to_workflow', methods=['POST'])
+@login_required
+@roles_required(['Employee', 'Manager', 'Admin'])
 def attach_documents_to_workflow():
     try:
         # Get the submitted form data
@@ -969,18 +969,6 @@ def attach_documents_to_workflow():
         return redirect(url_for('open_admin_3.index'))
 
 
-def create_company_folder222(company_id, subfolder):
-    try:
-        base_path = '/path/to/company/folders' # TODO to be adapted...
-        company_folder_path = os.path.join(base_path, str(company_id), str(subfolder))
-        os.makedirs(company_folder_path, exist_ok=True)
-        #logging.info(f'Created folder: {company_folder_path}')
-    except Exception as e:
-        #logging.error(f'Error creating company folder: {e}')
-        #raise
-        pass
-
-
 def create_company_folder(company_id, subfolder):
     """
     Creates a folder for the given company_id in the specified directory.
@@ -1019,17 +1007,6 @@ def generate_password_reset_token(email):
     return serializer.dumps(email, salt=salt)
 
 
-# TODO unused?
-def verify_password_reset_token(token, expiration=1800):
-    salt = app.config['SECURITY_PASSWORD_SALT']
-    try:
-        email = serializer.loads(token, salt=salt, max_age=expiration)
-    except (SignatureExpired, BadSignature):
-        return None
-    return email
-
-
-
 # Define the custom Jinja2 filter
 def list_intersection(lst1, lst2):
     return list(set(lst1) & set(lst2))
@@ -1056,32 +1033,6 @@ def menu_item_allowed(menu_item, user_roles):
     # Example: Check if the user has the required role to access the menu_item
     # WHEN the phrase on the right was present, the landing page was empty A.R. 15Feb2024
     return True #menu_item['allowed_roles'] and any(role in user_roles for role in menu_item['allowed_roles'])
-
-def process_menu_items222(menu_items, is_authenticated, user_roles):
-    menus_to_display = []
-    widgets_to_display = []
-
-    # Iterate through each menu item
-    for key, item in menu_items.items():
-        # Check if the item itself has a widget that should be displayed as a widget
-        if 'widget' in item and item['widget'].get('display', False):
-            widgets_to_display.append(item)
-        else:
-            # If not a widget, consider it a menu item to display
-            menus_to_display.append(item)
-
-        # Process submenus (if any)
-        submenus = item.get('submenus', {})
-        for subkey, submenu in submenus.items():
-            # Check if the submenu has a widget and should be displayed as a widget
-            if 'widget' in submenu and submenu['widget'].get('display', False):
-                widgets_to_display.append(submenu)
-            else:
-                # If not a widget, consider it a submenu item to display
-                menus_to_display.append(submenu)
-
-    return menus_to_display, widgets_to_display
-
 
 def process_menu_items(menu_items, is_authenticated, user_roles):
     menus_to_display = []
@@ -1331,34 +1282,6 @@ def get_containers(company_id):
     return container_data
 
 
-def get_cards001(company_id):
-    cards = []
-    # Use SQLAlchemy to query the 'container' table
-    containers = db.session.query(Container).filter_by(
-        company_id=company_id
-    ).all()
-
-    for container in containers:
-        content = container.content
-
-        # Check data type before decoding
-        if isinstance(content, str):
-            card_data = json.loads(content)
-        elif isinstance(content, dict):
-            card_data = content  # Already a dictionary
-        else:
-            # Handle unexpected data type (optional)
-            # You can log a warning or raise an exception here
-            print(f"Unexpected data type for container content: {type(content)}")
-            continue  # Skip this container
-
-        # Include content_type in the card data
-        card_data['content_type'] = container.content_type
-        cards.append(card_data)
-
-    return cards
-
-
 def analyze_text(contract_text, prompt):
     """
     Analyze a given contract text using a custom prompt.
@@ -1414,22 +1337,6 @@ def analyze_text_view():
         print(f"Error occurred: {e}")  # Print the error for debugging
         return "An error occurred during analysis", 500
 
-
-class MoveDocumentForm(FlaskForm):
-    next_step = SelectField('Next Step')
-    submit = SubmitField('Move Document')
-
-    def __init__(self, available_steps, current_step=None, **kwargs):
-        super(MoveDocumentForm, self).__init__(**kwargs)
-        self.next_step.choices = [(step.id, step.name) for step in available_steps]
-        self.current_step = current_step  # Store for potential use in template
-
-    def validate(self):
-        if not self.next_step.data:
-            return False
-        return True
-
-
 @app.errorhandler(SMTPAuthenticationError)
 def handle_smtp_authentication_error(error):
     # Handle SMTP authentication errors gracefully
@@ -1439,7 +1346,6 @@ def handle_smtp_authentication_error(error):
 @app.errorhandler(OperationalError)
 def handle_db_error(error):
    return render_template('db_error.html'), 500
-
 
 
 @app.route('/forgot_password', methods=['GET', 'POST'])
@@ -2700,9 +2606,9 @@ def overview_statistics_1():
 
     return render_template('base_cards_template.html', containers=card_data, create_card=create_card)
 
-@app.route('/deadlines_1')
+@app.route('/deadlines')
 @login_required
-def deadlines_1():
+def deadlines():
     user_id = current_user.id  # Implement your user authentication logic
     if not user_id:
         user_id = request.args.get('user_id')  # Assuming you retrieve user_id from the request
@@ -2841,7 +2747,6 @@ def generate_setup_company_questionnaire():
     # Render the template with the report data
     return render_template('generic_report.html', title="Questionnaires and Companies", columns=["Company", "Questionnaire name", "Questionnaire id"], rows=report_data)
 
-#@login_required
 
 @app.route('/dashboard_setup_workflow_steps')
 @login_required
@@ -2916,6 +2821,7 @@ def dashboard_setup_area_subareas():
 
     # Render the template with the report data
     return render_template('generic_report.html', title="Control Areas and Subareas", columns=["Area", "Subarea", "Data Type"], rows=report_data)
+
 
 @app.route('/dashboard_company_audit_progression')
 @login_required
@@ -2997,49 +2903,6 @@ def company_overview_current():
         return render_template('error.html', error_message=str(e)), 500
 
 
-
-@app.route('/company_overview_current222')
-@login_required
-def company_overview_current222():
-    # logging.basicConfig(level=logging.DEBUG)
-
-    session = db.session  # Create a new database session object
-    engine = db.engine  # Get the engine object from SQLAlchemy
-    time_scope = 'current'
-
-    try:
-        def filter_records_by_time_qualifier(records, time_qualifier):
-            filtered_records = []
-            for record in records:
-                if record['time_qualifier'] == time_qualifier:
-                    filtered_records.append(record)
-            return filtered_records
-
-        sorted_values_raw = get_pd_report_from_base_data_wtq(engine)
-
-        # Example usage to filter 'current' records
-        sorted_values = filter_records_by_time_qualifier(sorted_values_raw, time_scope)
-
-        if is_user_role(session, current_user.id, 'Admin'):
-            company_id = None  # will list all companies' cards
-        else:
-            company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-
-        html_cards = generate_html_cards_progression_with_progress_bars111(
-            sorted_values, time_scope or {}, db.session, company_id
-        )
-
-        # Write HTML code to a file
-        with open('report_cards1.html', 'w') as f:
-            f.write(html_cards)
-
-        return render_template('admin_cards_progression.html', html_cards=html_cards, user_roles=user_roles)
-
-    except Exception as e:
-        # logging.error(f'Error in company_overview_current: {e}')
-        return render_template('error.html', error_message=str(e)), 500
-
-
 @app.route('/company_overview_historical')
 @login_required
 def company_overview_historical():
@@ -3075,51 +2938,6 @@ def company_overview_historical():
         f.write(html_cards)
 
     return render_template('admin_cards_progression.html', html_cards=html_cards, user_roles=user_roles)
-
-
-@app.route('/company_overview_historical222')
-@login_required
-def company_overview_historical222():
-    try:
-        session = db.session  # Create a new database session object
-        engine = db.engine  # Get the engine object from SQLAlchemy
-        time_scope = 'past'
-
-        def filter_records_by_time_qualifier(records, time_qualifier):
-            filtered_records = []
-            for record in records:
-                if record['time_qualifier'] == time_qualifier:
-                    filtered_records.append(record)
-            return filtered_records
-
-        # Initialize filtered_records to avoid referencing before assignment
-        filtered_records = []
-
-        sorted_values_raw = get_pd_report_from_base_data_wtq(engine)
-
-        # Example usage to filter 'current' records
-        sorted_values = filter_records_by_time_qualifier(sorted_values_raw, time_scope)
-
-        if is_user_role(db.session, current_user.id, 'Admin'):
-            company_id = None  # will list all companies' cards
-        else:
-            company_user = CompanyUsers.query.filter_by(user_id=current_user.id).first()
-            if company_user:
-                company_id = company_user.company_id
-            else:
-                company_id = None
-
-        html_cards = generate_html_cards_progression_with_progress_bars111(sorted_values, time_scope, db.session, company_id)
-
-        # Write HTML code to a file
-        with open('report_cards1.html', 'w') as f:
-            f.write(html_cards)
-
-        return render_template('admin_cards_progression.html', html_cards=html_cards, user_roles=user_roles)
-
-    except Exception as e:
-        logging.error(f"Error in company_overview_historical: {e}")
-        return str(e), 500
 
 
 @app.route('/control_area_1')
@@ -3213,7 +3031,6 @@ def site_map():
 
     # Pass the menu_tree to the template
     return render_template('home/site_map.html', menu_tree=menu_tree)
-
 
 def generate_captcha(width, height, length):
     characters = "&%?ABCDEFGHJKLMNPRSTUVWXYZ2345679"
@@ -3323,7 +3140,6 @@ def manage_workflow_base_data():
 
     # Handle GET request or any case where form validation failed
     return render_template('manage_workflow_base_data.html', form=form, message=message)
-
 
 
 def extract_filename_and_extension(file_path):
@@ -3467,7 +3283,6 @@ def delete_records_bws():
         return jsonify({'message': f'{records_deleted} record(s) deleted successfully.'}), 200
     else:
         return jsonify({'message': 'No records deleted.'}), 200
-
 
 ''' 
 Trilateral entry form route - SERVER SIDE I, Jsonify combos
@@ -3908,77 +3723,6 @@ def show_survey(questionnaire_id):
     return render_template('survey.html', form=form, headers=headers, dynamic_html=dynamic_html, questionnaire_name=selected_questionnaire.name, today=datetime.now().date())
 
 
-# Example use within the Flask view function
-@login_required
-@app.route('/show_survey_sqlite/<int:questionnaire_id>', methods=['GET', 'POST'])
-def show_survey_sqlite(questionnaire_id):
-
-    form = BaseSurveyForm()
-    headers = None
-    user_id = current_user.id
-    company = CompanyUsers.query.filter_by(user_id=user_id).first()
-    company_id = company.company_id if company else None
-
-    if request.method == 'POST':
-        if form.validate_on_submit():
-            answers_to_save = serialize_answers(request.form)
-            return handle_post_submission(form, company_id, user_id, questionnaire_id, answers_to_save)
-        else:
-            flash('Error with form data. Please check your entries.', 'error')
-
-    # Fetch the questionnaire details and questions via QuestionnaireQuestions
-    # reset answer_fields in Question
-    update_question_answer_fields()
-    selected_questionnaire = Questionnaire.query.get_or_404(questionnaire_id)
-    raw_json = selected_questionnaire.headers
-
-    headers = []  # Default to an empty list if there's a problem
-    if raw_json:
-        try:
-            headers = json.loads(raw_json)
-        except json.JSONDecodeError as e:
-            print(f"JSON decode error: {e}")
-
-    horizontal = selected_questionnaire.questionnaire_type.endswith('H')
-
-    if request.method == 'POST':
-        if form.validate_on_submit():
-            answers_to_save = serialize_answers(request.form)
-            return handle_post_submission(form, company_id, user_id, questionnaire_id, answers_to_save)
-        else:
-            flash('Error with form data. Please check your entries.', 'error')
-
-    questionnaire_questions = QuestionnaireQuestions.query.filter_by(
-        questionnaire_id=questionnaire_id
-    ).join(Question).order_by(Question.question_id).all()
-
-    questions = []
-    form_data = {}
-    for qq in questionnaire_questions:
-        question = qq.question
-        existing_answer = Answer.query.filter_by(
-            company_id=company_id, user_id=user_id, questionnaire_id=questionnaire_id, question_id=question.id
-        ).first()
-
-        if existing_answer and existing_answer.answer_data:
-            merged_fields = merge_answer_fields(question.answer_fields, existing_answer.answer_data)  # Make sure this function is set to merge JSON fields correctly
-            form_data[str(question.id)] = merged_fields
-        else:
-            form_data[str(question.id)] = question.answer_fields
-
-        questions.append({
-            'id': question.id,
-            'question_id': question.question_id,
-            'text': question.text,
-            'answer_type': question.answer_type,
-            'answer_width': question.answer_width,
-            'answer_fields': form_data[str(question.id)]
-        })
-
-    dynamic_html = create_dynamic_form(form, {'questions': questions, 'form_data': form_data}, company_id, horizontal)  # Adjust this function to accept horizontal flag
-    return render_template('survey.html', form=form, headers=headers, dynamic_html=dynamic_html, questionnaire_name=selected_questionnaire.name, today=datetime.now().date())
-
-
 def handle_post_submission(form, company_id, user_id, questionnaire_id, answers_to_save):
     action_id = request.form.get('action_id', 'load')
 
@@ -4156,16 +3900,6 @@ def load_survey():
     return render_template('survey.html', form_data=json_data)
 
 
-def validate_form_structure(form_data, json_data):
-    expected_keys = form_data.keys()  # Get field names from your form class or definition
-    json_keys = json_data.keys()
-
-    if set(expected_keys) == set(json_keys):
-        return True
-    else:
-        return False
-
-
 @login_required
 @app.route('/company_files/<company_id>', methods=['GET'])
 def list_company_files(company_id):
@@ -4319,7 +4053,6 @@ def internal_error(error):
     return render_template('error_pages/500.html', message=str(error)), 500
 
 
-
 @app.route('/back')
 def back():
     # Add any logic you need before redirecting, if necessary
@@ -4422,7 +4155,6 @@ def chart_form():
     return render_template('charts/chart_form.html', areas=areas, subareas=subareas, companies=companies)
 
 
-
 @app.route('/questionnaire/<int:id>', methods=['GET'])
 @login_required
 @roles_required('Admin', 'Manager', 'Employee')
@@ -4436,8 +4168,6 @@ def get_questionnaire(id):
 
 # STRIPE
 # ======
-
-
 @app.route('/create-checkout-session', methods=['POST'])
 @login_required
 @roles_required('Admin', 'Manager', 'Employee')
@@ -4809,21 +4539,6 @@ def generate_dashboard():
     return render_template('dashboard.html', chart_data=chart_data)
 
 
-def process_aggregation_rule(aggregation_rule, data_list):
-    result = 0
-
-    # Process the aggregation rule
-    if aggregation_rule['operation'] == 'sum':
-        for data in data_list:
-            for field in aggregation_rule['fields']:
-                result += data[field]
-
-    # Add more logic for different operations if necessary
-
-    return result
-
-
-
 @app.route('/subscription_overview')
 @login_required
 @roles_required('Admin', 'Manager', 'Employee')
@@ -4868,6 +4583,7 @@ def subscription_overview():
         logging.error(f"Error in subscription_overview route: {e}")
         flash("An error occurred while generating the subscription overview.", "danger")
         return redirect(url_for('index'))
+
 
 def perform_data_aggregation(data_key, aggregation_rule, area_id, subarea_id, additional_info, company_id=None):
     query = BaseData.query.filter_by(area_id=area_id, subarea_id=subarea_id)
@@ -5180,6 +4896,7 @@ def create_ticket():
         return redirect(url_for('view_tickets'))
     return render_template('create_ticket.html', form=form)
 
+
 @app.route('/edit_ticket/<int:ticket_id>', methods=['GET', 'POST'])
 @login_required
 def edit_ticket(ticket_id):
@@ -5344,7 +5061,6 @@ def generate_event_instances(event):
             })
 
     return instances
-
 
 @app.route('/api/events')
 @login_required
@@ -5564,6 +5280,7 @@ def delete_event(event_id):
 
 
 @app.route('/update-event/<int:event_id>', methods=['POST'])
+@login_required
 def update_event(event_id):
     event = Event.query.get_or_404(event_id)
 
@@ -6136,7 +5853,6 @@ def checkout_success():
     Cart.query.delete()
     db.session.commit()
     return render_template('checkout_success.html')
-
 
 
 if __name__ == '__main__':

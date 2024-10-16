@@ -353,9 +353,6 @@ def create_card(**kwargs):
 
     return card_html
 
-
-
-
 def get_step_base_data_close_to_deadline(session):
     # Calculate the date 30 days from now
     thirty_days_from_now = datetime.now() + timedelta(days=30)
@@ -405,7 +402,9 @@ def deadline_approaching(session):
         step = step_base_data.step
 
         # Calculate the number of days before the deadline
-        deadline_date = step_base_data.deadline_date.date()
+        #deadline_date = step_base_data.deadline_date.date()
+        deadline_date = step_base_data.deadline_date
+
         deadline_before = (deadline_date - current_date).days
 
         # Build card data dictionary
@@ -470,8 +469,6 @@ def deadline_approaching_when(session, within_days):
         cards_data.append(card_data)
 
     return cards_data
-
-
 
 def create_deadline_card(card_data):
     """
@@ -552,7 +549,6 @@ def add_transition_log(session, **kwargs):
     # Commit the transaction
     session.commit()
 
-
 def create_model_card(**kwargs):
   """
   This function creates a card HTML element displaying information about a model.
@@ -606,7 +602,6 @@ def create_model_card(**kwargs):
   return card_html
 
 
-
 def create_pie_chart(data, labels, title="", colors=None):
   """
   This function generates HTML code for a pie chart using Chart.js.
@@ -658,7 +653,6 @@ def create_pie_chart(data, labels, title="", colors=None):
   """
 
   return chart_html
-
 
 
 def create_bar_chart(data, labels, title="", colors=None):
@@ -716,7 +710,6 @@ def create_bar_chart(data, labels, title="", colors=None):
   return chart_html
 
 
-
 def create_side_modal(title, content, button_text="Open", button_class="btn btn-primary"):
   """
   This function generates HTML code for a side modal window using Flask-Bootstrap.
@@ -765,7 +758,6 @@ def create_side_modal(title, content, button_text="Open", button_class="btn btn-
 
   return modal_html
 
-
 def get_current_step(workflow_id):
     # Retrieve the current step of the workflow
     # You can implement your logic to determine the current step
@@ -793,7 +785,6 @@ def advance_workflow(workflow_id):
         next_step = get_next_step(current_step)
         # Update the database to reflect the advancement
         update_workflow_step(workflow_id, next_step)
-
 
 
 def validate_step(workflow_id):

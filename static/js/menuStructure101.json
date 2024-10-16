@@ -146,15 +146,6 @@
                     "display": false
                 }
             },
-            "Deadlines": {
-                "label": "Deadlines",
-                "url": "/deadlines_1",
-                "protected": true,
-                "allowed_roles": ["Admin", "Employee", "Manager"],
-                "widget": {
-                    "display": false
-                }
-            },
             "Charts and Views 1": {
                 "label": "Control areas - Charts",
                 "url": "/chart_form",
@@ -183,7 +174,7 @@
                 "allowed_roles": [
                     "Admin",
                     "Employee",
-                    "Manager"
+                    "Manager", "Authority"
                 ],
                 "widget": {
                     "display": true
@@ -198,11 +189,33 @@
                     "display": false
                 }
             },
+            "Deadlines": {
+                "label": "Deadlines",
+                "url": "/deadlines",
+                "protected": true,
+                "allowed_roles": ["Admin", "Employee", "Manager", "Authority"],
+                "widget": {
+                    "display": true,
+                    "type": "button",
+                    "submit_url": "/deadlines",
+                    "style": "btn-info",
+                    "size": "medium"
+                }
+            },
+            "Reserved Workflow Data": {
+                "label": "Workflow Chart",
+                "url": "/react-page",
+                "protected": true,
+                "allowed_roles": ["Admin", "Manager", "Employee", "Authority"],
+                "widget": {
+                    "display": false
+                }
+            },
             "Reserved Area di controllo 1": {
                 "label": "Area 1",
                 "url": "/area_di_controllo_1",
                 "protected": true,
-                "allowed_roles": ["Admin", "Employee", "Manager"],
+                "allowed_roles": ["Admin", "Employee", "Manager", "Authority"],
                 "widget": {
                     "display": false,
                     "type": "button",
@@ -216,7 +229,7 @@
                         "url": "/open_admin_1",
                         "protected": true,
                         "allowed_roles": [
-                            "Admin", "Employee", "Manager"],
+                            "Admin", "Employee", "Manager", "Authority"],
                         "widget": {
                             "display": false,
                             "type": "button",
@@ -230,7 +243,7 @@
                         "url": "/redirect_to_survey/1",
                         "protected": true,
                         "allowed_roles": [
-                            "Admin", "Employee", "Manager"],
+                            "Admin", "Employee", "Manager", "Authority"],
                         "widget": {
                             "display": false
                         }
@@ -240,7 +253,7 @@
                         "url": "/questionnaire_psf",
                         "protected": true,
                         "allowed_roles": [
-                            "Admin", "Employee", "Manager"],
+                            "Admin", "Employee", "Manager", "Authority"],
                         "widget": {
                             "display": false
                         }
@@ -251,7 +264,7 @@
                 "label": "Area 2",
                 "url": "/open_admin_2",
                 "protected": true,
-                "allowed_roles": ["Admin", "Employee", "Manager"],
+                "allowed_roles": ["Admin", "Employee", "Manager", "Authority"],
                 "widget": {
                     "display": false,
                     "type": "button",
@@ -260,20 +273,11 @@
                     "size": "medium"
                 }
             },
-            "Reserved Workflows Admin View": {
+            "Reserved Workflows Reserved View": {
                 "label": "Area 3 - Document Workflows",
                 "url": "/open_admin_3",
                 "protected": true,
-                "allowed_roles": ["Admin", "Employee", "Manager"],
-                "widget": {
-                    "display": false
-                }
-            },
-            "Reserved Workflow Data": {
-                "label": "Workflow Timeline Chart",
-                "url": "/react-page",
-                "protected": true,
-                "allowed_roles": ["Admin", "Manager", "Employee"],
+                "allowed_roles": ["Admin", "Employee", "Manager", "Authority"],
                 "widget": {
                     "display": false
                 }
@@ -282,7 +286,7 @@
                 "label": "Workflow Tree",
                 "url": "/workflow_tree",
                 "protected": true,
-                "allowed_roles": ["Admin", "Manager", "Employee"],
+                "allowed_roles": ["Admin", "Manager", "Employee", "Authority"],
                 "widget": {
                     "display": false
                 }
@@ -291,7 +295,7 @@
                 "label": "Surveys and Questionnaires",
                 "url": "/open_admin_10",
                 "protected": true,
-                "allowed_roles": ["Admin", "Manager", "Employee", "Provider"],
+                "allowed_roles": ["Admin", "Manager", "Employee", "Authority", "Provider"],
                 "widget": {
                     "display": false
                 }
@@ -316,7 +320,7 @@
                 "url": "/dashboard/authority/dashboard_a3",
                 "protected": true,
                 "allowed_roles": [
-                    "Admin", "Authority"],
+                    "Admin", "Manager", "Authority"],
                 "widget": {
                     "display": false
                 }
@@ -515,12 +519,21 @@
                         }
                     },
                     "Admin Deadlines": {
-                        "label": "Deadlines",
-                        "url": "/dashboard/company/dashboard_deadlines",
+                        "label": "Deadlines Dashboard",
+                        "url": "/deadlines",
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
                         ],
+                        "widget": {
+                            "display": false
+                        }
+                    },
+                    "Admin Workflow Data": {
+                        "label": "Workflow Chart",
+                        "url": "/react-page",
+                        "protected": true,
+                        "allowed_roles": ["Admin"],
                         "widget": {
                             "display": false
                         }
@@ -583,15 +596,6 @@
                                 "allowed_roles": [
                                     "Admin"
                                 ],
-                                "widget": {
-                                    "display": false
-                                }
-                            },
-                            "Admin Workflow Data": {
-                                "label": "Workflow Timeline Chart",
-                                "url": "/react-page",
-                                "protected": true,
-                                "allowed_roles": ["Admin"],
                                 "widget": {
                                     "display": false
                                 }
