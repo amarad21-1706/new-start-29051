@@ -300,13 +300,7 @@
                 "label": "Contract Management",
                 "url": "/open_admin_6",
                 "protected": true,
-                "allowed_roles": [
-                    "Admin",
-                    "Employee",
-                    "Manager",
-                    "Authority",
-                    "Provider"
-                ],
+                "allowed_roles": ["Admin", "Employee", "Manager", "Authority", "Provider"],
                 "widget": {
                     "display": true
                 }
@@ -334,8 +328,87 @@
             "display": false
         },
         "submenus": {
+            "System Setup": {
+                "label": "Current Setup",
+                "url": "/dashboard/company/dashboard_system_setup",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin"
+                ],
+                "widget": {
+                    "display": false
+                },
+                "submenus": {
+                    "Admin CompanyUsers": {
+                        "label": "Companies and Users Report",
+                        "url": "/dashboard_setup_companies_users",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin"
+                        ],
+                        "widget": {
+                            "display": false
+                        }
+                    },
+                    "Admin UserRoles": {
+                        "label": "Users and Roles",
+                        "url": "/dashboard_setup_user_roles",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin"
+                        ],
+                        "widget": {
+                            "display": false
+                        }
+                    },
+                    "Admin AreasSubareas": {
+                        "label": "Control Areas and Subareas",
+                        "url": "/dashboard_setup_area_subareas",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin"
+                        ],
+                        "widget": {
+                            "display": false
+                        }
+                    },
+                    "Admin CompanyQuestionnaires": {
+                        "label": "Questionnaires and Companies",
+                        "url": "/generate_setup_company_questionnaire",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin"
+                        ],
+                        "widget": {
+                            "display": false
+                        }
+                    },
+                    "Admin QuestionnaireQuestions": {
+                        "label": "Questionnaires Structure",
+                        "url": "/dashboard_setup_questionnaire_questions",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin"
+                        ],
+                        "widget": {
+                            "display": false
+                        }
+                    },
+                    "Admin WorkflowSteps": {
+                        "label": "Workflows Structure",
+                        "url": "/dashboard_setup_workflow_steps",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin"
+                        ],
+                        "widget": {
+                            "display": false
+                        }
+                    }
+                }
+            },
             "Admin Commercial": {
-                "label": "Content Management",
+                "label": "Commercial Settings",
                 "url": "/argon",
                 "protected": true,
                 "allowed_roles": [
@@ -377,79 +450,11 @@
                         "widget": {
                             "display": false
                         }
-                    },
-                    "Admin Workflows Admin View": {
-                        "label": "Document Workflows",
-                        "url": "/open_admin_3",
-                        "protected": true,
-                        "allowed_roles": [
-                            "Admin"
-                        ],
-                        "widget": {
-                            "display": false
-                        }
-                    },
-                    "Admin Subscriptions Dashboard": {
-                        "label": "Subscriptions",
-                        "url": "/subscription_overview",
-                        "protected": true,
-                        "allowed_roles": [
-                            "Admin"
-                        ],
-                        "widget": {
-                            "display": false
-                        }
-                    },
-                    "Admin Contract-Management": {
-                        "label": "Contract Management",
-                        "url": "/team",
-                        "protected": true,
-                        "allowed_roles": [
-                            "Admin"
-                        ],
-                        "widget": {
-                            "display": false
-                        },
-                        "submenus": {
-                            "Create Team": {
-                                "label": "Create Team",
-                                "url": "/team/create_team",
-                                "protected": true,
-                                "allowed_roles": [
-                                    "Admin"
-                                ],
-                                "widget": {
-                                    "display": false
-                                }
-                            },
-                            "View Teams": {
-                                "label": "Teams Setup",
-                                "url": "/team/view_teams",
-                                "protected": true,
-                                "allowed_roles": [
-                                    "Admin"
-                                ],
-                                "widget": {
-                                    "display": false
-                                }
-                            },
-                            "Contracts": {
-                                "label": "Contracts",
-                                "url": "/open_admin_6",
-                                "protected": true,
-                                "allowed_roles": [
-                                    "Admin"
-                                ],
-                                "widget": {
-                                    "display": false
-                                }
-                            }
-                        }
                     }
                 }
             },
             "Admin Clients": {
-                "label": "User Management",
+                "label": "Clients",
                 "url": "/dashboard_clients",
                 "protected": true,
                 "allowed_roles": [
@@ -459,9 +464,9 @@
                     "display": false
                 },
                 "submenus": {
-                    "Admin Company Tree CURT": {
-                        "label": "User Map",
-                        "url": "/company_tree",
+                    "Admin Activity": {
+                        "label": "Activity Log",
+                        "url": "/auditlog",
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
@@ -470,9 +475,9 @@
                             "display": false
                         }
                     },
-                    "Admin Activity": {
-                        "label": "Activity Log",
-                        "url": "/auditlog",
+                    "Admin Workflows Admin View": {
+                        "label": "Document Workflows",
+                        "url": "/open_admin_3",
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
@@ -526,8 +531,19 @@
                         }
                     },
                     "Admin Multi Format Dashboard": {
-                        "label": "Dashboard by Control Area",
+                        "label": "Combo Dashboard",
                         "url": "/argon/multi_format_dashboard",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin"
+                        ],
+                        "widget": {
+                            "display": false
+                        }
+                    },
+                    "Admin Subscriptions Dashboard": {
+                        "label": "Subscriptions Dashboard",
+                        "url": "/subscription_overview",
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
@@ -539,7 +555,7 @@
                 }
             },
             "Admin Settings and tools": {
-                "label": "System Settings",
+                "label": "Settings Manager",
                 "url": "/dashboard/ILM/settings",
                 "protected": true,
                 "allowed_roles": ["Admin"],
@@ -548,7 +564,7 @@
                 },
                 "submenus": {
                     "Admin Basic ELC": {
-                        "label": "Settings",
+                        "label": "Basic Entities, Lists and Collections",
                         "url": "/dashboard/ILM/settings_basic",
                         "protected": true,
                         "allowed_roles": ["Admin"],
@@ -566,8 +582,19 @@
                                 }
                             },
                             "Admin Main setup manager": {
-                                "label": "Collections",
+                                "label": "Main Setup",
                                 "url": "/open_admin_4",
+                                "protected": true,
+                                "allowed_roles": [
+                                    "Admin"
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
+                            },
+                            "Admin Company Tree CURT": {
+                                "label": "Company-Users-Roles Tree",
+                                "url": "/company_tree",
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"
@@ -638,6 +665,50 @@
                                     "display": false
                                 }
                             },
+                            "Admin Contract-Management": {
+                                "label": "Contract Management",
+                                "url": "/team",
+                                "protected": true,
+                                "allowed_roles": ["Admin"],
+                                "widget": {
+                                    "display": false
+                                },
+                                "submenus": {
+                                    "Create Team": {
+                                        "label": "Create Team",
+                                        "url": "/team/create_team",
+                                        "protected": true,
+                                        "allowed_roles": [
+                                            "Admin"
+                                        ],
+                                        "widget": {
+                                            "display": false
+                                        }
+                                    },
+                                    "View Teams": {
+                                        "label": "View Teams",
+                                        "url": "/team/view_teams",
+                                        "protected": true,
+                                        "allowed_roles": [
+                                            "Admin"
+                                        ],
+                                        "widget": {
+                                            "display": false
+                                        }
+                                    },
+                                    "Contracts": {
+                                        "label": "Contracts",
+                                        "url": "/open_admin_6",
+                                        "protected": true,
+                                        "allowed_roles": [
+                                            "Admin"
+                                        ],
+                                        "widget": {
+                                            "display": false
+                                        }
+                                    }
+                                }
+                            },
                             "Admin AI Test": {
                                 "label": "AI Test",
                                 "url": "/analyze_text_view",
@@ -650,7 +721,7 @@
                         }
                     },
                     "Admin Relational": {
-                        "label": "Complex Settings",
+                        "label": "Relations Between Entities",
                         "url": "/dashboard/ILM/settings_relational",
                         "protected": true,
                         "allowed_roles": ["Admin"],
@@ -725,85 +796,6 @@
                             "Assign Documents to Steps": {
                                 "label": "Documents-workflow-steps management",
                                 "url": "/manage_base_data_workflow_step",
-                                "protected": true,
-                                "allowed_roles": [
-                                    "Admin"
-                                ],
-                                "widget": {
-                                    "display": false
-                                }
-                            }
-                        }
-                    },
-                    "System Setup": {
-                        "label": "Current Setup",
-                        "url": "/dashboard/company/dashboard_system_setup",
-                        "protected": true,
-                        "allowed_roles": [
-                            "Admin"
-                        ],
-                        "widget": {
-                            "display": false
-                        },
-                        "submenus": {
-                            "Admin CompanyUsers": {
-                                "label": "Companies and Users Report",
-                                "url": "/dashboard_setup_companies_users",
-                                "protected": true,
-                                "allowed_roles": [
-                                    "Admin"
-                                ],
-                                "widget": {
-                                    "display": false
-                                }
-                            },
-                            "Admin UserRoles": {
-                                "label": "Users and Roles",
-                                "url": "/dashboard_setup_user_roles",
-                                "protected": true,
-                                "allowed_roles": [
-                                    "Admin"
-                                ],
-                                "widget": {
-                                    "display": false
-                                }
-                            },
-                            "Admin AreasSubareas": {
-                                "label": "Control Areas and Subareas",
-                                "url": "/dashboard_setup_area_subareas",
-                                "protected": true,
-                                "allowed_roles": [
-                                    "Admin"
-                                ],
-                                "widget": {
-                                    "display": false
-                                }
-                            },
-                            "Admin CompanyQuestionnaires": {
-                                "label": "Questionnaires and Companies",
-                                "url": "/generate_setup_company_questionnaire",
-                                "protected": true,
-                                "allowed_roles": [
-                                    "Admin"
-                                ],
-                                "widget": {
-                                    "display": false
-                                }
-                            },
-                            "Admin QuestionnaireQuestions": {
-                                "label": "Questionnaires Structure",
-                                "url": "/dashboard_setup_questionnaire_questions",
-                                "protected": true,
-                                "allowed_roles": [
-                                    "Admin"
-                                ],
-                                "widget": {
-                                    "display": false
-                                }
-                            },
-                            "Admin WorkflowSteps": {
-                                "label": "Workflows Structure",
-                                "url": "/dashboard_setup_workflow_steps",
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"

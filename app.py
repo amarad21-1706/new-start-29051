@@ -5562,6 +5562,7 @@ def delete_event(event_id):
     flash('Event deleted successfully!', 'success')
     return redirect(url_for('calendar'))
 
+
 @app.route('/update-event/<int:event_id>', methods=['POST'])
 def update_event(event_id):
     event = Event.query.get_or_404(event_id)
