@@ -5867,6 +5867,40 @@ def get_document_details_and_workflows(doc_id):
        ]
    })
 
+
+@app.route('/show_message_modal/<ids>', methods=['GET', 'POST'])
+def show_message_modal(ids):
+    # Convert the comma-separated string of IDs back into a list
+    ids_list = ids.split(',')
+
+    if request.method == 'POST':
+        # Process the form submission
+        message_type = request.form.get('message_type')
+        subject = request.form.get('subject')
+        body = request.form.get('body')
+        lifespan = request.form.get('lifespan')
+
+        # Create a Post for each selected user
+        for company_user in CompanyUsers.query.filter(CompanyUsers.id.in_(ids_list)).all():
+            post = Post(
+                user_id=company_user.user.id,
+                company_id=company_user.company.id,
+                sender=current_user.username,  # Assuming current_user is the sender
+                message_type=message_type,
+                subject=subject,
+                body=body,
+                lifespan=lifespan
+            )
+            db.session.add(post)
+
+        db.session.commit()
+        flash(f'Message sent to {len(ids_list)} users successfully!', 'success')
+        return redirect(url_for('open_admin_7.index'))  # Redirect to admin page after sending the message
+
+    # If it's a GET request, render the modal form
+    return render_template('admin/send_message_modal.html', users=Users.query.filter(Users.id.in_(ids_list)).all())
+
+
 @app.route('/checkout_success')
 def checkout_success():
     Cart.query.delete()

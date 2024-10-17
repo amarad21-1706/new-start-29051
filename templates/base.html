@@ -6,6 +6,8 @@
     <title>{% block title %}Your Default Title{% endblock %}</title>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.min.css">
     <!-- Add additional stylesheets or custom styles here -->
+    <!-- Include Bootstrap CSS -->
+    <link href="{{ url_for('static', filename='css/bootstrap.min.css') }}" rel="stylesheet">
     <style>
         /* Apply a smaller font size to the entire document */
         body {
