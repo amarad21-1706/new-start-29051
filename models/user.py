@@ -242,6 +242,18 @@ class CompanyUsers(db.Model):
     company = relationship('Company', back_populates='company_users')
     user = relationship('Users', back_populates='company_users')
 
+    @hybrid_property
+    def user_name(self):
+        return self.user.username
+
+    @hybrid_property
+    def company_name(self):
+        return self.company.name
+
+    @hybrid_property
+    def user_roles(self):
+        return ', '.join([role.name for role in self.user.roles])  # Assuming a many-to-many relationship for roles
+
     def readable_format(self):
         company_name = self.company.name if self.company else "N/A"
         user_name = self.user.username if self.user else "N/A"
@@ -268,7 +280,6 @@ class Company(db.Model):
 
     # Relationship to company_users
     company_users = relationship('CompanyUsers', back_populates='company')  # Explicitly set the relationship
-
     contract_parties = db.relationship("ContractParty", back_populates="company")
 
     # Relationship to questionnaire companies
@@ -1193,7 +1204,6 @@ class Post(db.Model):
 
     def __repr__(self):
         return f"{self.message_type}, {self.subject}"
-
 
 
 class Ticket(db.Model):

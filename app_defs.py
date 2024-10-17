@@ -10,8 +10,8 @@ admin_app3 = None
 admin_app4 = None
 admin_app5 = None
 admin_app6 = None
+admin_app7 = None
 admin_app10 = None
-
 
 def get_user_roles(session=None, user_id=None):
     # Query UserRoles to get the roles for the given user ID

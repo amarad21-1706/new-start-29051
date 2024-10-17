@@ -381,6 +381,67 @@ class CheckboxField(BooleanField):
         setattr(obj, name, "Yes" if self.data else "No")  # Customize as per your model
 
 
+class CompanyUsersAdminView(ModelView):
+    # Display company name, username, and user roles in the list
+    column_list = ['company_name', 'user_name', 'user_roles']
+
+    # Set the default sorting order: first by company name, then by user name
+    column_default_sort = [('company.name', True), ('user.username', True)]
+
+    # Query to fetch CompanyUsers, ordered by company and username
+    def get_query(self):
+        # return self.session.query(CompanyUsers).join(Company).join(Users).order_by(Company.name, Users.username)
+        # return self.session.query(CompanyUsers).all()
+
+        results = db.session.query(CompanyUsers).join(Users).join(Company).order_by(Company.name, Users.username).all()
+        print('results are', results)
+
+        results = db.session.query(CompanyUsers).all()
+        print('results without join are', results)
+
+        # Use outer joins to see if any records are missing from Users or Company
+        query = self.session.query(CompanyUsers).outerjoin(Users).outerjoin(Company).order_by(Company.name,
+                                                                                              Users.username)
+        return query  # Return the query object without calling .all()
+
+    # Custom action to send messages to selected users
+    @action('send_message', 'Send Message', 'Are you sure you want to send a message to the selected users?')
+    def action_send_message(self, ids):
+        if request.method == 'POST':
+            message_type = request.form.get('message_type')
+            subject = request.form.get('subject')
+            body = request.form.get('body')
+            lifespan = request.form.get('lifespan')
+
+            # Query CompanyUsers to get company and user details
+            for company_user in CompanyUsers.query.filter(CompanyUsers.id.in_(ids)).all():
+                post = Post(
+                    user_id=company_user.user.id,  # Access user_id via relationship
+                    company_id=company_user.company.id,  # Access company_id via relationship
+                    sender=current_user.username,  # Assuming current_user is the sender
+                    message_type=message_type,
+                    subject=subject,
+                    body=body,
+                    lifespan=lifespan
+                )
+                db.session.add(post)
+
+            db.session.commit()
+            flash(f'Message sent to {len(ids)} users successfully!', 'success')
+            # Redirect to the correct admin index
+            return redirect(url_for('open_admin_7.index'))  # Adjust this as per your setup
+
+        # If it's a GET request, render the modal with the selected users
+        return self.render('admin/send_message_modal.html', users=Users.query.filter(Users.id.in_(ids)).all())
+
+    # Optional: Define how to format the related fields if needed (but hybrid properties should work fine)
+    column_formatters = {
+        'user_name': lambda v, c, m, p: m.user.username if m.user else '',
+        'company_name': lambda v, c, m, p: m.company.name if m.company else '',
+        'user_roles': lambda v, c, m, p: ', '.join([role.name for role in m.user.roles]) if m.user.roles else 'N/A'
+    }
+
+
 class SignedContractsView(ModelView):
     column_list = ['contract_name', 'contract_status', 'created_by_user',
                    'start_date', 'end_date']
@@ -5594,6 +5655,15 @@ def create_admin_views(app, intervals):
         admin_app6.add_view(ModelView(Party, db.session, name='Parties'))
 
 
+        # Initialize Flask-Admin
+        admin_app7 = Admin(app,
+                           name='Messaging System',
+                           url='/open_admin_7',
+                           template_mode='bootstrap4',
+                           endpoint='open_admin_7')
+
+        # admin_app7.add_view(PostAdminView(Post, db.session, name="Messaging System", endpoint="messaging_system"))
+        admin_app7.add_view((CompanyUsersAdminView(CompanyUsers, db.session, name="Messaging System", endpoint="messaging_system")))
         # 10-th Flask-Admin instance
         # ===========================================================
         admin_app10 = Admin(app, name='Surveys & Questionnaires Workflow',
@@ -5748,7 +5818,7 @@ def create_admin_views(app, intervals):
             print('Error occurred:', str(e))
             return 'An error occurred', 500
 
-    return admin_app1, admin_app2, admin_app3, admin_app4, admin_app5, admin_app6, admin_app10
+    return admin_app1, admin_app2, admin_app3, admin_app4, admin_app5, admin_app6, admin_app7, admin_app10
 
 
 class ContainerAdmin(ModelView):

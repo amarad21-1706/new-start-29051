@@ -49,7 +49,7 @@ from workflow_manager import (add_transition_log, create_card,
 
 import app_defs
 from app_defs import (get_user_roles, create_message, generate_menu_tree, admin_app1, admin_app2, admin_app3,
-                      admin_app4, admin_app5, admin_app6, admin_app10)
+                      admin_app4, admin_app5, admin_app6, admin_app7, admin_app10)
 from admin_views import create_admin_views, admin_all
 
 from models.user import (Users, UserRoles, Event, Role, Questionnaire, Question,
@@ -381,7 +381,8 @@ intervals = initialize_app(app)
 print('intervals', intervals)
 
 # Initialize the admin views
-app_defs.admin_app1, app_defs.admin_app2, app_defs.admin_app3, app_defs.admin_app4, app_defs.admin_app5, app_defs.admin_app6, app_defs.admin_app10 = create_admin_views(app, intervals)
+(app_defs.admin_app1, app_defs.admin_app2, app_defs.admin_app3, app_defs.admin_app4, app_defs.admin_app5,
+ app_defs.admin_app6, app_defs.admin_app7, app_defs.admin_app10) = create_admin_views(app, intervals)
 
 # Call the function to create the admin views
 #shared.admin_app1, shared.admin_app2, shared.admin_app3 = create_admin_views(app, intervals)
@@ -1353,6 +1354,7 @@ def analyze_text_view():
     except Exception as e:
         print(f"Error occurred: {e}")  # Print the error for debugging
         return "An error occurred during analysis", 500
+
 
 @app.errorhandler(SMTPAuthenticationError)
 def handle_smtp_authentication_error(error):

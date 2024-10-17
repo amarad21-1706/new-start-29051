@@ -507,6 +507,21 @@
                             "display": false
                         }
                     },
+                    "Reserved Contracts": {
+                        "label": "Message Manager",
+                        "url": "/open_admin_7",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin",
+                            "Employee",
+                            "Manager",
+                            "Authority",
+                            "Provider"
+                        ],
+                        "widget": {
+                            "display": true
+                        }
+                    },
                     "Admin Service": {
                         "label": "Email",
                         "url": "/send_email",
