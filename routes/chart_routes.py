@@ -1,3 +1,4 @@
+import json
 from flask import Flask, jsonify
 from forms.forms import MainForm
 import requests
@@ -115,24 +116,24 @@ def edit_chart(chart_id):
     base_data_columns = BaseData.__table__.columns
     metric_choices = [col.name for col in base_data_columns if col.name.startswith('fi') or col.name.startswith('fn')]
 
-    # Populate the form with existing metrics
-    # ... (existing code)
+    # Populate the form with existing metrics on GET request
     if request.method == 'GET':
         form.metrics.entries = []  # Clear previous entries
 
-        # Populate the form with existing metrics
-        for metric_name, label in existing_metrics.items():
-            selected = True  # Checkbox selected for existing metrics
+        # Loop through the metrics and mark those that exist for this chart
+        for metric_name in metric_choices:
+            label = existing_metrics.get(metric_name, metric_name)  # Use existing label or default to column name
+            selected = metric_name in existing_metrics  # Checkbox selected if metric exists in chart
 
             form.metrics.append_entry({
-                'column_name': metric_name,  # HiddenField for column name
-                'metric': selected,  # Checkbox state based on existing data
-                'label': label  # Editable label, pre-filled from existing data
+                'column_name': metric_name,
+                'metric': selected,  # True if already selected for this chart
+                'label': label  # Pre-fill label if exists
             })
 
-    # On form submission
+    # Handle form submission for updating the chart
     if form.validate_on_submit():
-        # Update chart details
+        # Update the chart configuration
         chart.chart_name = form.chart_name.data
         chart.chart_type = form.chart_type.data
         chart.x_axis_label = form.x_axis_label.data
@@ -142,25 +143,22 @@ def edit_chart(chart_id):
         chart.subarea_id = form.subarea_id.data
         chart.fi0 = form.fi0.data
 
-        # Remove old metrics
+        # Delete old metrics before saving the new ones
         db.session.query(ChartMetric).filter_by(config_chart_id=chart.id).delete()
 
-        # Add new metrics
+        # Process metrics and save the updated ones
         for metric_data in form.metrics.data:
-            if metric_data['metric']:  # Only save selected metrics
-                metric_name = metric_data.get('column_name')
-                label = metric_data.get('label') or metric_name
+            if metric_data['metric']:  # Only process if the checkbox is checked
+                metric_name = metric_data['column_name']
+                label = metric_data['label'] or metric_name  # Use the default label if not provided
 
-                if metric_name is None:
-                    flash("Error: metric_name is None.")
-                    return render_template('charts/edit_chart.html', form=form)
-
-                new_metric = ChartMetric(
-                    config_chart_id=chart.id,
-                    metric_name=metric_name,
-                    display_label=label
-                )
-                db.session.add(new_metric)
+                if metric_name:
+                    new_metric = ChartMetric(
+                        config_chart_id=chart.id,
+                        metric_name=metric_name,
+                        display_label=label
+                    )
+                    db.session.add(new_metric)
 
         db.session.commit()
 
@@ -168,4 +166,73 @@ def edit_chart(chart_id):
         return redirect(url_for('charts.list_charts'))
 
     return render_template('charts/edit_chart.html', form=form)
+@chart_bp.route('/view_chart/<int:chart_id>', methods=['GET'])
+@login_required
+def view_chart(chart_id):
+    # Fetch the selected chart configuration
+    chart = ConfigChart.query.get_or_404(chart_id)
+    print(f"Chart Config: {chart}")  # Debugging: Show chart configuration
 
+    # Fetch the associated metrics for the chart
+    metrics = ChartMetric.query.filter_by(config_chart_id=chart.id).all()
+    print(f"Metrics: {metrics}")  # Debugging: Show associated metrics
+
+    # List of metric names (fi1, fi2, fn1, etc.)
+    metric_names = [metric.metric_name for metric in metrics]
+    display_labels = {metric.metric_name: metric.display_label for metric in metrics}
+    print(f"Metric Names: {metric_names}")  # Debugging: Show metric names
+    print(f"Display Labels: {display_labels}")  # Debugging: Show display labels
+
+    # Dynamically build a query to get the relevant columns from base_data
+    selected_columns = [getattr(BaseData, name) for name in metric_names]
+    print(f"Selected Columns: {selected_columns}")  # Debugging: Show selected columns
+
+    # Build base query for base_data
+    base_data_query = BaseData.query.with_entities(*selected_columns)
+
+    # Apply filters conditionally
+    if chart.area_id:
+        base_data_query = base_data_query.filter_by(area_id=chart.area_id)
+
+    if chart.subarea_id:
+        base_data_query = base_data_query.filter_by(subarea_id=chart.subarea_id)
+
+    # If company_id is None/Null, fetch data for all companies
+    if chart.company_id:
+        base_data_query = base_data_query.filter_by(company_id=chart.company_id)
+
+    # If fi0 (year) is None/Null, fetch data for all years
+    if chart.fi0:
+        base_data_query = base_data_query.filter_by(fi0=chart.fi0)
+
+    # Execute the query and fetch the data
+    base_data_result = base_data_query.all()
+    print(f"Base Data Result: {base_data_result}")  # Debugging: Show result from base_data query
+
+    # Check if base_data_query returns any data
+    if not base_data_result:
+        print("No data found for this chart configuration.")
+        flash('No data available for this chart.')
+        return redirect(url_for('charts.list_charts'))
+
+    # Prepare data for the chart (assuming we're generating JSON for a chart library like Chart.js)
+    chart_data = {
+        "labels": [row[0] for row in base_data_result],  # Assuming first column for x-axis (e.g., Year)
+        "datasets": []
+    }
+    print(f"Chart Data Labels: {chart_data['labels']}")  # Debugging: Show x-axis labels
+
+    # Build datasets from the query
+    for idx, metric_name in enumerate(metric_names):
+        dataset = {
+            "label": display_labels[metric_name],
+            "data": [row[idx] for row in base_data_result],
+            "fill": False  # Optional: no fill for line charts
+        }
+        print(f"Dataset for {metric_name}: {dataset}")  # Debugging: Show dataset for each metric
+        chart_data['datasets'].append(dataset)
+
+    print(f"Final Chart Data: {chart_data}")  # Debugging: Show final chart data
+
+    # Render the chart template, passing the chart data as JSON
+    return render_template('charts/view_chart.html', chart=chart, chart_data=json.dumps(chart_data))

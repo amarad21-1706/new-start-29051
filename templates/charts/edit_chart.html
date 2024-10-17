@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-    <h2>Edit Chart Configuration</h2>
+    <h2>{{ 'Edit Chart Configuration' if form.chart_name.data else 'Add Chart Configuration' }}</h2>
 
     <!-- Display form validation errors -->
     {% if form.errors %}
@@ -59,11 +59,15 @@
             {{ form.fi0(class="form-control") }}
         </div>
 
+        <!-- Metrics Section: Checkboxes and Editable Labels -->
         <h3>Select Metrics and Edit Labels</h3>
         <div class="form-group">
             {% for metric_entry in form.metrics %}
                 <div class="metric-row">
-                    <!-- Display the column name (fi1, fn1, etc.) -->
+                    <!-- Hidden Field for the column name -->
+                    {{ metric_entry.column_name() }}
+
+                    <!-- Display the column name (fi1, fn1, etc.) as a label -->
                     <label><strong>{{ metric_entry.column_name.data }}</strong></label>
 
                     <!-- Checkbox for selecting the metric -->

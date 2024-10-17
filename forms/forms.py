@@ -88,7 +88,18 @@ class ChartMetricForm(FlaskForm):
 
 class ConfigChartForm(FlaskForm):
     chart_name = StringField('Chart Name', validators=[DataRequired()])
-    chart_type = SelectField('Chart Type', choices=[('bar', 'Bar'), ('line', 'Line'), ('stacked', 'Stacked Bar')], validators=[DataRequired()])
+    chart_type = SelectField('Chart Type', choices=[
+                                                    ('bar', 'Bar'),
+                                                    ('line', 'Line'),
+                                                    ('pie', 'Pie'),
+                                                    ('doughnut', 'Doughnut'),
+                                                    ('radar', 'Radar'),
+                                                    ('polarArea', 'Polar Area'),
+                                                    ('bubble', 'Bubble'),
+                                                    ('scatter', 'Scatter'),
+                                                    ('stackedBar', 'Stacked Bar'),  # Custom option for stacked
+                                                    ('stackedLine', 'Stacked Line')  # Custom option for stacked line
+    ], validators=[DataRequired()])
     x_axis_label = StringField('X Axis Label', validators=[DataRequired()])
     y_axis_label = StringField('Y Axis Label', validators=[DataRequired()])
     company_id = IntegerField('Company ID')

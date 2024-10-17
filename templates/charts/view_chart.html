@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h2>{{ chart.chart_name }} ({{ chart.chart_type }})</h2>
+
+    <canvas id="myChart" width="400" height="200"></canvas>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        var ctx = document.getElementById('myChart').getContext('2d');
+        var chartData = {{ chart_data | safe }};
+        var chartType = '{{ chart.chart_type }}';
+
+        // Check for stacked chart types and configure options accordingly
+        var isStacked = (chartType === 'stackedBar' || chartType === 'stackedLine');
+        var finalChartType = (chartType === 'stackedBar') ? 'bar' :
+                             (chartType === 'stackedLine') ? 'line' : chartType;
+
+        var myChart = new Chart(ctx, {
+            type: finalChartType, // Use the correct type for stacked or normal
+            data: {
+                labels: chartData.labels,  // X-axis labels
+                datasets: chartData.datasets  // Dataset for Y-axis values
+            },
+            options: {
+                scales: {
+                    x: {
+                        stacked: isStacked  // Enable stacking for X-axis if applicable
+                    },
+                    y: {
+                        stacked: isStacked,  // Enable stacking for Y-axis if applicable
+                        beginAtZero: true  // Optional: Start Y-axis from 0
+                    }
+                }
+            }
+        });
+    </script>
+{% endblock %}
