@@ -12,11 +12,6 @@
     <div class="container mt-4">
         <h1>Send Message to Selected Users</h1>
         <p>Use the form below to send a message to the selected users.</p>
-
-        <!-- Modal trigger (optional) -->
-        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#sendMessageModal">
-            Open Modal
-        </button>
     </div>
 
     <!-- Modal HTML Structure -->
@@ -65,12 +60,12 @@
     <!-- Load Bootstrap JavaScript at the bottom -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/js/bootstrap.bundle.min.js"></script>
 
-    <!-- Optional auto-show modal -->
+    <!-- Auto-show the modal on page load -->
     <script>
-        // Uncomment this to auto-show the modal on page load
-        // $(document).ready(function() {
-        //     $('#sendMessageModal').modal('show');
-        // });
+        document.addEventListener('DOMContentLoaded', function () {
+            var myModal = new bootstrap.Modal(document.getElementById('sendMessageModal'));
+            myModal.show();
+        });
     </script>
 
 </body>
