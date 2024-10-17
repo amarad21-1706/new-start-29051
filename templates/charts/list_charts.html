@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Chart Configurations</h2>
+<a href="{{ url_for('charts.add_chart') }}" class="btn btn-primary">Add New Chart</a>
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Chart Name</th>
+            <th>Chart Type</th>
+            <th>Company</th>
+            <th>Area</th>
+            <th>Subarea</th>
+            <th>Year</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for chart in charts %}
+        <tr>
+            <td>{{ chart.chart_name }}</td>
+            <td>{{ chart.chart_type }}</td>
+            <td>{{ chart.company_id or 'N/A' }}</td>
+            <td>{{ chart.area_id }}</td>
+            <td>{{ chart.subarea_id }}</td>
+            <td>{{ chart.fi0 }}</td>
+            <td>
+                <a href="{{ url_for('charts.edit_chart', chart_id=chart.id) }}" class="btn btn-info">Edit</a>
+                <form action="{{ url_for('charts.delete_chart', id=chart.id) }}" method="POST" style="display:inline;" onsubmit="return confirmDelete();">
+                    <button type="submit" class="btn btn-danger">Delete</button>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+<script>
+    // JavaScript function to confirm the deletion action
+    function confirmDelete() {
+        return confirm('Are you sure you want to delete this chart configuration? This action cannot be undone.');
+    }
+</script>
+
+{% endblock %}

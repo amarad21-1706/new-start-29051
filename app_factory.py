@@ -1,6 +1,7 @@
 # app_factory.py
 
 import os
+from sqlalchemy.exc import OperationalError
 from flask import Flask, request, session, flash, redirect, url_for, send_from_directory
 from flask_login import LoginManager
 from flask_wtf.csrf import CSRFProtect
@@ -114,7 +115,14 @@ def create_app(conf=None):
         from models import user
         from routes import routes  # Ensure your routes are imported here
         db.init_app(app)
-        db.create_all()
+
+        try:
+            db.create_all()  # Create tables in the database
+        except OperationalError as e:
+            app.logger.error(f"Database connection failed during app initialization: {e}")
+            # You can handle this more gracefully, but here we're stopping the app
+            raise SystemExit("Could not connect to the database. Please check your database server.")
+
         # Initialize extensions with the app instance
         # babel.init_app(app)  # Initialize Babel with the app instance
 

@@ -642,6 +642,15 @@
                                     "display": false
                                 }
                             },
+                            "Chart Management": {
+                                "label": "Manage Charts",
+                                "url": "/charts/charts",
+                                "protected": true,
+                                "allowed_roles": ["Admin"],
+                                "widget": {
+                                    "display": false
+                                }
+                            },
                             "Admin AI Test": {
                                 "label": "AI Test",
                                 "url": "/analyze_text_view",

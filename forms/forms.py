@@ -21,6 +21,7 @@ from wtforms.widgets import DateTimeInput
 # Import ColorField
 from wtforms.fields import ColorField  # Correct import
 from wtforms import FieldList
+from wtforms.widgets import ListWidget, CheckboxInput  # <-- Import this
 
 from flask_wtf import FlaskForm
 from wtforms import StringField, DateTimeField, BooleanField, SubmitField, SelectField, TextAreaField, FieldList, IntegerField
@@ -72,10 +73,33 @@ class PlanForm(FlaskForm):
 
     submit = SubmitField('Save Plan')
 
+'''
+class ChartMetricForm(FlaskForm):
+    column_name = StringField('Column Name', render_kw={'readonly': True})  # Display column name as readonly
+    metric = BooleanField()  # Checkbox for selecting the metric
+    label = StringField('Label')  # Editable label for the selected metric
+'''
 
-from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField, IntegerField, SelectField, SubmitField
-from wtforms.validators import DataRequired
+class ChartMetricForm(FlaskForm):
+    column_name = HiddenField('Column Name')  # Hidden field to retain the column name on submission
+    metric = BooleanField()  # Checkbox for selecting the metric
+    label = StringField('Label')  # Editable label for the selected metric
+
+
+class ConfigChartForm(FlaskForm):
+    chart_name = StringField('Chart Name', validators=[DataRequired()])
+    chart_type = SelectField('Chart Type', choices=[('bar', 'Bar'), ('line', 'Line'), ('stacked', 'Stacked Bar')], validators=[DataRequired()])
+    x_axis_label = StringField('X Axis Label', validators=[DataRequired()])
+    y_axis_label = StringField('Y Axis Label', validators=[DataRequired()])
+    company_id = IntegerField('Company ID')
+    area_id = IntegerField('Area ID', validators=[DataRequired()])
+    subarea_id = IntegerField('Subarea ID', validators=[DataRequired()])
+    fi0 = IntegerField('Year')
+
+    # List of dynamic metric checkboxes and editable labels
+    metrics = FieldList(FormField(ChartMetricForm), min_entries=1)
+
+    submit = SubmitField('Submit')
 
 
 class ProductForm(FlaskForm):
@@ -97,7 +121,6 @@ class ProductForm(FlaskForm):
     ], default='application')
 
     submit = SubmitField('Submit')
-
 
 
 class QuestionnaireFormArgon(FlaskForm):

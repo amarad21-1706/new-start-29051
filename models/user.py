@@ -1774,4 +1774,46 @@ class DocumentWorkflowHistory(db.Model):
         return f"Document {self.base_data_id} transitioned in Workflow {self.workflow_id} to Step {self.step_id} on {self.transition_date}"
 
 
+class ConfigChart(db.Model):
+    __tablename__ = 'config_chart'
+
+    id = db.Column(db.Integer, primary_key=True)
+    chart_name = db.Column(db.String(128), nullable=False)
+    chart_type = db.Column(db.String(64), nullable=False)  # e.g., 'Bar', 'Stacked Bar', 'Line'
+    x_axis_label = db.Column(db.String(128), nullable=False)  # e.g., 'Year'
+    y_axis_label = db.Column(db.String(128), nullable=False)  # General y-axis label, e.g., 'Metrics'
+
+    # Keys for data filtering
+    company_id = db.Column(db.Integer, nullable=True)  # Optional; if filtering by company
+    area_id = db.Column(db.Integer, nullable=False)  # Required; the main key
+    subarea_id = db.Column(db.Integer, nullable=False)  # Required; subarea key
+    fi0 = db.Column(db.Integer, nullable=False)  # e.g., Year filter
+
+    # Relationships
+    # metrics = db.relationship('ChartMetric', backref='config_chart',
+    #                           cascade="all, delete-orphan")  # Link to ChartMetric
+
+    # Add the relationship to ChartMetric
+    chart_metrics = db.relationship('ChartMetric', backref='config_chart', cascade="all, delete-orphan")
+
+    def __repr__(self):
+        return f"<ConfigChart {self.chart_name} (Type: {self.chart_type}, Area: {self.area_id}, Subarea: {self.subarea_id})>"
+
+
+class ChartMetric(db.Model):
+    __tablename__ = 'chart_metric'
+
+    id = db.Column(db.Integer, primary_key=True)
+
+    # Metric configuration
+    metric_name = db.Column(db.String(64), nullable=False)  # e.g., 'fi1', 'fi2', etc.
+    display_label = db.Column(db.String(128), nullable=False)  # e.g., 'Total', 'IVI', 'Other'
+
+    # Foreign Key to ConfigChart
+    config_chart_id = db.Column(db.Integer, db.ForeignKey('config_chart.id', ondelete='CASCADE'), nullable=False)
+
+    def __repr__(self):
+        return f"<ChartMetric {self.metric_name} ({self.display_label}) linked to Chart {self.config_chart_id}>"
+
+
 

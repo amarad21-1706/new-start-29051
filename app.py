@@ -97,6 +97,7 @@ from config.config import (get_current_intervals,
 from routes.routes import geonames_bp, fetch_phone_prefixes
 from routes.argon_routes import argon_bp
 from routes.plan_routes import plan_bp
+from routes.chart_routes import chart_bp
 from routes.association_routes import association_bp
 
 from mail_service import send_simple_message, send_simple_message333
@@ -220,6 +221,10 @@ print('Association routes blueprint registered')
 app.register_blueprint(plan_bp, url_prefix='/plan') # Add a prefix if needed
 print('plan blueprint registered')
 
+# Register the chart blueprint
+app.register_blueprint(chart_bp, url_prefix='/charts', name='charts')
+print('chart blueprint registered')
+
 # ======= PRINT URL LIST
 # print(app.url_map)
 
@@ -299,6 +304,18 @@ def set_language(language=None):
 '''
 
 # Serve the React app
+
+@app.errorhandler(OperationalError)
+def handle_db_connection_error(e):
+    app.logger.error(f"Database connection issue: {e}")
+
+    # Return a custom error page or JSON response for API calls
+    if request.is_json:
+        return jsonify(error="Database connection error. Please try again later."), 500
+    else:
+        flash('Database connection failed. Please try again later.', 'error')
+        return render_template('error_page.html'), 500  # Use a custom error page
+
 
 # Serve the React app on a specific route
 @app.route('/react-page', defaults={'path': ''})

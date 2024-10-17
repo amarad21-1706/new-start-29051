@@ -723,10 +723,10 @@
                 {% endif %}
 
                 <!-- Your Apps Section -->
-                <h2>Your Apps</h2>
-                <div class="container mt-4">
-                    <div class="row">
-                        {% if containers %}
+                {% if containers %}
+                    <h2>Your Apps</h2>
+                    <div class="container mt-4">
+                        <div class="row">
                             {% for container in containers %}
                                 {% if container.content_type == 'card' %}
                                     <div class="col-md-3 mb-4">
@@ -744,34 +744,36 @@
                                     </div>
                                 {% endif %}
                             {% endfor %}
-                        {% else %}
-                            <p>No apps found.</p>
-                        {% endif %}
+                        </div>
                     </div>
-                </div>
+                {% else %}
+                    <p>You have no registered apps.</p>
+                {% endif %}
 
                 <!-- News Section -->
-                <h2>News</h2>
-                <div class="container mt-4">
-                    {% if containers %}
-                        {% for container in containers %}
-                            {% if container.content_type == 'news' %}
-                                <li>
-                                    <strong>{{ container.content.headline }}</strong>
-                                    <p>{{ container.content.short_text }}</p>
-                                    <img src="{{ container.content.image_url }}" alt="{{ container.content.headline }}" style="width: 100px; height: auto;">
-                                    {% if container.content.link_type == 'internal' %}
-                                        <a href="{{ url_for('detailed_news', id=container.id) }}">More</a>
-                                    {% else %}
-                                        <a href="{{ container.content.more_link }}" target="_blank">More</a>
-                                    {% endif %}
-                                </li>
-                            {% endif %}
-                        {% endfor %}
-                    {% else %}
-                        <p>No news found.</p>
-                    {% endif %}
-                </div>
+                {% if containers %}
+                    <h2>News</h2>
+                    <div class="container mt-4">
+                        <ul>
+                            {% for container in containers %}
+                                {% if container.content_type == 'news' %}
+                                    <li>
+                                        <strong>{{ container.content.headline }}</strong>
+                                        <p>{{ container.content.short_text }}</p>
+                                        <img src="{{ container.content.image_url }}" alt="{{ container.content.headline }}" style="width: 100px; height: auto;">
+                                        {% if container.content.link_type == 'internal' %}
+                                            <a href="{{ url_for('detailed_news', id=container.id) }}">More</a>
+                                        {% else %}
+                                            <a href="{{ container.content.more_link }}" target="_blank">More</a>
+                                        {% endif %}
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+                        </ul>
+                    </div>
+                {% else %}
+                    <p>No news available.</p>
+                {% endif %}
 
                 {% if cards %}
                 <div id="myCarousel" class="carousel slide mt-5" data-bs-ride="carousel">
