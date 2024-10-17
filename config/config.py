@@ -1763,43 +1763,43 @@ workflows and their steps
 def generate_workflow_step_report_data(session):
     report_data = []
 
-    # Fetch company_questionnaires relationship data
+    # Fetch workflow_steps relationship data
     workflow_steps = session.query(WorkflowSteps).all()
 
-    # Iterate over workflow_workflows
+    # Iterate over workflow_steps
     for cu in workflow_steps:
         workflow = cu.workflow
         step = cu.step
 
         if workflow and step:  # Check if both workflow and step exist
-
-            step_id = step.id  # Get workflow name from step model
-            step_name = step.name  # Get workflow name from step model
-            workflow_id = workflow.id  # Get workflow first name from workflow model
-            workflow_name = workflow.name  # Get user last name from User model
-            # Append user and company names to the report data
+            step_id = step.id  # Get step ID from step model
+            step_name = step.name  # Get step name from step model
+            workflow_id = workflow.id  # Get workflow ID from workflow model
+            workflow_name = workflow.name  # Get workflow name from workflow model
+            # Append workflow and step data to the report
             report_data.append([workflow_id, workflow_name, step_id, step_name])
 
-        elif workflow:  # If user exists but not assigned to a step
-            workflow_id = workflow.id  # Get user first name from User model
-            workflow_name = workflow.name  # Get user last name from User model
-            # Append user name and placeholder for company name to the report data
+        elif workflow:  # If workflow exists but not assigned to a step
+            workflow_id = workflow.id  # Get workflow ID from workflow model
+            workflow_name = workflow.name  # Get workflow name from workflow model
+            # Append workflow data and placeholder for step
             report_data.append([workflow_id, workflow_name, "", "No steps assigned"])
 
-        elif step:  # If company exists but no user assigned
-            step_id = step.id  # Get workflow name from step model
+        elif step:  # If step exists but not assigned to a workflow
+            step_id = step.id  # Get step ID from step model
             step_name = step.name  # Get step name from step model
-            # Append placeholder for user name and company name to the report data
+            # Append step data and placeholder for workflow
             report_data.append(["No workflow assigned", "", step_id, step_name])
 
-        else:  # If neither user nor company exists
-            # Append placeholders for user and company names to the report data
+        else:  # If neither workflow nor step exists
+            # Append placeholders for both workflow and step
             report_data.append(["No workflow assigned", "", "No step created"])
 
-    # Sort the report data by company name (third element in each row)
-    report_data.sort(key=lambda x: x[0])
+    # Sort the report data by the first element, converted to string for consistency
+    report_data.sort(key=lambda x: str(x[0]))
 
     return report_data
+
 
 
 '''

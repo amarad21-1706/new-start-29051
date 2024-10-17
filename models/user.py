@@ -1720,7 +1720,9 @@ class Workflow(db.Model):
     deadline_date = db.Column(db.DateTime, nullable=True)
 
     # Relationship with WorkflowSteps
-    workflow_steps = db.relationship('WorkflowSteps', back_populates='workflow')
+    #workflow_steps = db.relationship('WorkflowSteps', back_populates='workflow')
+    # Relationship to WorkflowSteps, with cascading delete
+    workflow_steps = db.relationship('WorkflowSteps', back_populates='workflow', cascade="all, delete-orphan")
 
     # Relationship to DocumentWorkflow
     document_workflows = db.relationship('DocumentWorkflow', back_populates='workflow')
