@@ -1,61 +1,88 @@
 {% extends "argon-dashboard/argon_base_main_areas.html" %}
 
 {% block content %}
-<div class="container">
-    <!-- Combo Selection Dropdowns -->
-    <form>
+<div class="container mt-4">
+    <h2>Search Dossiers</h2>
+
+    <!-- Search Filters -->
+    <form method="GET" action="{{ url_for('argon.search_dossiers') }}">
         <div class="row">
+            <!-- Dossier Code -->
+            <div class="col-md-3">
+                <label for="code">Dossier Code</label>
+                <select id="code" name="code" class="form-control">
+                    <option value="">All</option>
+                    {% for dossier_code in dossier_codes %}
+                        <option value="{{ dossier_code }}" {% if request.args.get('code') == dossier_code %}selected{% endif %}>
+                            {{ dossier_code }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Company Dropdown -->
             <div class="col-md-3">
                 <label for="company">Company</label>
                 <select id="company" name="company_id" class="form-control">
-                    <!-- Options go here -->
+                    <option value="">All</option>
+                    {% for company in companies %}
+                        <option value="{{ company.id }}" {% if request.args.get('company_id') == company.id %}selected{% endif %}>
+                            {{ company.name }}
+                        </option>
+                    {% endfor %}
                 </select>
             </div>
+
+            <!-- Year Dropdown -->
             <div class="col-md-3">
                 <label for="year">Year</label>
                 <select id="year" name="year" class="form-control">
-                    <!-- Options go here -->
+                    <option value="">All</option>
+                    {% for year in years %}
+                        <option value="{{ year }}" {% if request.args.get('year') == year %}selected{% endif %}>
+                            {{ year }}
+                        </option>
+                    {% endfor %}
                 </select>
             </div>
+
+            <!-- Type Dropdown -->
             <div class="col-md-3">
                 <label for="type">Type</label>
                 <select id="type" name="type" class="form-control">
-                    <!-- Options go here -->
+                    <option value="">All</option>
+                    <option value="audit" {% if request.args.get('type') == 'audit' %}selected{% endif %}>Audit</option>
+                    <option value="remediation" {% if request.args.get('type') == 'remediation' %}selected{% endif %}>Remediation</option>
+                    <option value="survey" {% if request.args.get('type') == 'survey' %}selected{% endif %}>Survey</option>
+                    <option value="other" {% if request.args.get('type') == 'other' %}selected{% endif %}>Other</option>
                 </select>
             </div>
+
+            <!-- Status Dropdown -->
             <div class="col-md-3">
                 <label for="status">Status</label>
                 <select id="status" name="status" class="form-control">
-                    <!-- Options go here -->
+                    <option value="">All</option>
+                    <option value="pending" {% if request.args.get('status') == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="in_progress" {% if request.args.get('status') == 'in_progress' %}selected{% endif %}>In Progress</option>
+                    <option value="completed" {% if request.args.get('status') == 'completed' %}selected{% endif %}>Completed</option>
+                    <option value="archived" {% if request.args.get('status') == 'archived' %}selected{% endif %}>Archived</option>
                 </select>
             </div>
         </div>
         <button type="submit" class="btn btn-primary mt-3">Filter</button>
     </form>
 
-    <!-- Create Dossier Button (conditionally displayed) -->
+    <!-- List Filtered Dossiers -->
     <div class="mt-4">
-        <button type="button" class="btn btn-success" onclick="window.location.href='{{ url_for('argon.create_dossier') }}'">Create Dossier</button>
-    </div>
-
-    <!-- Message Box -->
-    <div class="card mt-4">
-        <div class="card-header">
-            Messages
-        </div>
-        <div class="card-body">
-            <!-- Messages will be displayed here -->
-        </div>
-    </div>
-
-    <!-- Dossier Display (Chronological Order) -->
-    <div class="card mt-4">
-        <div class="card-header">
-            Dossiers
-        </div>
-        <div class="card-body">
-            <!-- Dossiers with steps, actions, and documents in chronological order -->
-        </div>
+        <h3>Dossiers</h3>
+        <ul class="list-group">
+            {% for dossier in dossiers %}
+                <li class="list-group-item">
+                    <strong>{{ dossier.code }}</strong> - {{ dossier.type }} | Status: {{ dossier.status }} | Year: {{ dossier.created_at.year }}
+                </li>
+            {% endfor %}
+        </ul>
     </div>
 </div>
 {% endblock %}

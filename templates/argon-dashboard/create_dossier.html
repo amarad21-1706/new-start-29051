@@ -3,6 +3,18 @@
 {% block content %}
 <div class="container mt-4">
     <h2>Create New Dossier</h2>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="alert-container">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }}">{{ message }}</div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
     <form method="POST" action="{{ url_for('argon.submit_create_dossier') }}">
         <div class="row">
             <div class="col-md-6">
@@ -29,11 +41,9 @@
                 </select>
             </div>
             <div class="col-md-6">
-            <div class="col-md-6">
                 <label for="initiator">Initiator</label>
                 <input type="text" name="initiator_name" class="form-control" value="{{ current_user.company.name }}" readonly>
                 <input type="hidden" name="initiator_id" value="{{ current_user.company.id }}">
-            </div>
             </div>
         </div>
         <div class="row mt-3">

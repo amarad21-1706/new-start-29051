@@ -7,7 +7,8 @@ from models.user import (BaseData, Users, UserRoles, Event,
         ContractArticle, Party,
         Company, CompanyUsers, Area, Subarea, AreaSubareas, Answer,
         Team, TeamMembership, ContractTeam,
-        Plan, Product, PlanProducts, UserPlans, Post
+        Plan, Product, PlanProducts, UserPlans, Post,
+        Dossier, Action
         )
 
 from flask_login import current_user
@@ -20,7 +21,7 @@ from forms.forms import (MainForm, PlanForm, QuestionnaireFormArgon, QuestionFor
                          AddQuestionFormArgon, ProductForm, PlanProductsForm) # Assuming your form is in forms.py
 from flask_login import login_required
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy import func
+from sqlalchemy import func, extract
 
 from app_factory import roles_required, subscription_required
 
@@ -127,7 +128,6 @@ def get_plan_products(plan_id):
     except Exception as e:
         app.logger.error(f"Error fetching products for plan {plan_id}: {e}")
         return jsonify({'error': 'An error occurred while fetching products'}), 500
-
 
 
 @argon_bp.route('/multi_format_dashboard')
@@ -1007,6 +1007,8 @@ def create_dossier():
                            default_type=default_type)
 
 
+from datetime import datetime
+
 @argon_bp.route('/submit_create_dossier', methods=['POST'])
 @login_required
 def submit_create_dossier():
@@ -1014,21 +1016,135 @@ def submit_create_dossier():
     code = request.form['code']
     type = request.form['type']
     company_id = request.form['company_id']
-    initiator_id = request.form['initiator_id']  # Hidden field for initiator
 
-    # Get status from the form
+    # Fetch the company via the CompanyUsers relationship
+    company_user = CompanyUsers.query.filter_by(user_id=current_user.id).first()
+    print(f"Company User: {company_user}")  # Debug: Check the company_user object
+
+    # Allowing company_id = 0 (adjust logic based on requirements)
+    if company_user and company_user.company_id is not None:  # Allow company_id=0 as valid
+        company_id = company_user.company_id  # Use this for company_id field
+        initiator_id = current_user.id  # Use the current user's ID for initiator_id
+        print(f"Initiator ID: {initiator_id}")  # Debug: Check initiator_id
+    else:
+        flash('Error: No valid company associated with the current user.', 'danger')
+        return redirect(url_for('argon.create_dossier'))
+
+    # Check if a dossier with the same code already exists
+    existing_dossier = Dossier.query.filter_by(code=code).first()
+    if existing_dossier:
+        flash(f'Error: A dossier with code "{code}" already exists.', 'danger')
+        return redirect(url_for('argon.create_dossier'))
+
+    # Get status and other fields
     status = request.form['status']
+    archived = False  # You can modify this based on form input if needed
 
     # Create new dossier
     new_dossier = Dossier(
         code=code,
         type=type,
-        company_id=company_id,
-        initiator_id=initiator_id,  # Set the initiator based on the logged-in user's company
-        status=status
+        company_id=int(company_id),  # Ensure company_id is correct
+        initiator_id=int(initiator_id),  # Use current_user.id for initiator_id
+        status=status,
+        archived=archived,
+        updated_at=datetime.utcnow()  # Set updated_on at creation
     )
+
     db.session.add(new_dossier)
     db.session.commit()
 
     flash('Dossier created successfully!', 'success')
-    return redirect(url_for('dossier_view'))
+
+    # Redirect to the dossier view, passing the new dossier's ID
+    return redirect(url_for('argon.dossier_view', dossier_id=new_dossier.id))
+
+
+
+@argon_bp.route('/dossier/<int:dossier_id>', methods=['GET'])
+@login_required
+def dossier_details(dossier_id):
+    dossier = Dossier.query.get_or_404(dossier_id)
+    return render_template('argon-dashboard/dossier_details.html', dossier=dossier)
+
+
+@argon_bp.route('/dossier/<int:dossier_id>', methods=['GET'])
+@login_required
+def dossier_view(dossier_id):
+    dossier = Dossier.query.get_or_404(dossier_id)
+    # Render the dossier view template with the dossier data
+    return render_template('argon-dashboard/dossier_view.html', dossier=dossier)
+
+
+@argon_bp.route('/submit_action/<int:dossier_id>', methods=['POST'])
+@login_required
+def submit_action(dossier_id):
+    dossier = Dossier.query.get_or_404(dossier_id)
+
+    # Get form data
+    action_type = request.form['action_type']
+    description = request.form.get('description', '')
+
+    # Create new action
+    new_action = Action(
+        dossier_id=dossier.id,
+        user_id=current_user.id,
+        action_type=action_type,
+        description=description,
+        timestamp=datetime.utcnow()
+    )
+
+    db.session.add(new_action)
+    db.session.commit()
+
+    flash('Action added successfully!', 'success')
+    return redirect(url_for('dossier_details', dossier_id=dossier.id))
+
+from sqlalchemy import extract
+
+@argon_bp.route('/dossier_view', methods=['GET'])
+@login_required
+def search_dossiers():
+    # Get filter values from request.args
+    code = request.args.get('code', '')
+    company_id = request.args.get('company_id', '')
+    year = request.args.get('year', '')
+    dossier_type = request.args.get('type', '')
+    status = request.args.get('status', '')
+
+    # Start with a base query
+    query = Dossier.query
+
+    # Apply filters to the query
+    if code:
+        query = query.filter(Dossier.code.ilike(f'%{code}%'))
+    if company_id:
+        query = query.filter(Dossier.company_id == company_id)
+    if year:
+        query = query.filter(extract('year', Dossier.created_at) == year)
+    if dossier_type:
+        query = query.filter(Dossier.type == dossier_type)
+    if status:
+        query = query.filter(Dossier.status == status)
+
+    # Execute the filtered query
+    dossiers = query.all()
+
+    # Fetch companies for the dropdown
+    companies = Company.query.all()
+
+    # Fetch distinct dossier codes for the dossier code dropdown
+    dossier_codes = db.session.query(Dossier.code).distinct().all()
+
+    # Get distinct years from the dossiers for the year dropdown
+    years = db.session.query(extract('year', Dossier.created_at)).distinct().all()
+    years = [year[0] for year in years]  # Convert tuple to a list
+
+    # Render the template with filtered dossiers
+    return render_template(
+        'argon-dashboard/dossier_view.html',
+        dossiers=dossiers,
+        companies=companies,
+        dossier_codes=[code[0] for code in dossier_codes],  # Extract codes from tuple
+        years=years
+    )

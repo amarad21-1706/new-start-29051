@@ -1848,13 +1848,19 @@ class Dossier(db.Model):
     updated_at = db.Column(db.DateTime, onupdate=datetime.utcnow)
     archived = db.Column(db.Boolean, default=False)
 
-    # Foreign key linking Dossier to base_data (or 'documents')
-    base_data_id = db.Column(db.Integer, db.ForeignKey('base_data.id'))
+    # Nullable base_data_id for dossiers without documents initially
+    base_data_id = db.Column(db.Integer, db.ForeignKey('base_data.id'), nullable=True)
 
+    # Relationship to company
+    company = db.relationship('Company', backref='dossiers')
+
+    # Relationship to initiator (user who created the dossier)
+    initiator = db.relationship('Users', backref='initiated_dossiers')
     # Relationship to base_data (documents)
     documents = db.relationship('BaseData', back_populates='dossier')
 
     actions = db.relationship('Action', backref='dossier', lazy=True)
+
 
 class Action(db.Model):
     id = db.Column(db.Integer, primary_key=True)

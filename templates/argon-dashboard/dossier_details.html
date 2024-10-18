@@ -1,0 +1,108 @@
+{% extends "argon-dashboard/argon_base_main_areas.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Dossier: {{ dossier.code }}</h2>
+
+    <!-- Dossier details -->
+    <div class="card">
+        <div class="card-header">
+            <h3>Dossier Details</h3>
+        </div>
+        <div class="card-body">
+            <p><strong>Status:</strong> {{ dossier.status }}</p>
+            <p><strong>Type:</strong> {{ dossier.type }}</p>
+            <p><strong>Company:</strong> {{ dossier.company.name }}</p>
+            <p><strong>Initiator:</strong> {{ dossier.initiator.username }}</p>
+        </div>
+    </div>
+
+    <!-- Action Form -->
+    <div class="mt-4">
+        <h3>Take Action</h3>
+        <form method="POST" enctype="multipart/form-data" action="{{ url_for('argon.submit_action', dossier_id=dossier.id) }}">
+            <div class="row">
+                <!-- Select Action Dropdown -->
+                <div class="col-md-6">
+                    <label for="action_type">Select Action</label>
+                    <select id="action_type" name="action_type" class="form-control" required onchange="showActionFields()">
+                        <option value="document_added">Add Document</option>
+                        <option value="status_changed">Change Status</option>
+                        <option value="note_added">Add Note</option>
+                    </select>
+                </div>
+                <div class="col-md-6">
+                    <label for="description">Description (Optional)</label>
+                    <input type="text" name="description" class="form-control">
+                </div>
+            </div>
+
+            <!-- Document Upload Field (Hidden by Default) -->
+            <div id="document_upload_field" class="form-group mt-3" style="display: none;">
+                <label for="document">Attach Document</label>
+                <input type="file" name="document" class="form-control">
+            </div>
+
+            <!-- Status Dropdown Field (Hidden by Default) -->
+            <div id="status_dropdown_field" class="form-group mt-3" style="display: none;">
+                <label for="status">Select Status</label>
+                <select name="status" class="form-control">
+                    <option value="pending">Pending</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                    <option value="archived">Archived</option>
+                </select>
+            </div>
+
+            <!-- Note Textarea Field (Hidden by Default) -->
+            <div id="note_field" class="form-group mt-3" style="display: none;">
+                <label for="note">Enter Note</label>
+                <textarea name="note" class="form-control" rows="5"></textarea>
+            </div>
+
+            <button type="submit" class="btn btn-primary mt-3">Submit Action</button>
+        </form>
+    </div>
+
+    <!-- List of Actions -->
+    <div class="card mt-4">
+        <div class="card-header">
+            <h3>Action History</h3>
+        </div>
+        <div class="card-body">
+            <ul class="list-group">
+                {% for action in dossier.actions %}
+                    <li class="list-group-item">
+                        <strong>{{ action.action_type.replace('_', ' ').title() }}</strong> - {{ action.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}<br>
+                        {{ action.description or 'No description' }}
+                    </li>
+                {% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+
+<!-- JavaScript to Show/Hide Fields Based on Action Type -->
+<script>
+    function showActionFields() {
+        const actionType = document.getElementById("action_type").value;
+
+        // Hide all fields by default
+        document.getElementById("document_upload_field").style.display = "none";
+        document.getElementById("status_dropdown_field").style.display = "none";
+        document.getElementById("note_field").style.display = "none";
+
+        // Show the relevant field based on the selected action
+        if (actionType === "document_added") {
+            document.getElementById("document_upload_field").style.display = "block";
+        } else if (actionType === "status_changed") {
+            document.getElementById("status_dropdown_field").style.display = "block";
+        } else if (actionType === "note_added") {
+            document.getElementById("note_field").style.display = "block";
+        }
+    }
+
+    // Initialize form based on the current selection when the page loads
+    window.onload = showActionFields;
+</script>
+{% endblock %}
