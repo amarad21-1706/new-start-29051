@@ -1,0 +1,56 @@
+{% extends "argon-dashboard/argon_base_main_areas.html" %}
+
+{% block content %}
+<div class="container">
+    <!-- Combo Selection Dropdowns -->
+    <form>
+        <div class="row">
+            <div class="col-md-3">
+                <label for="company">Company</label>
+                <select id="company" name="company_id" class="form-control">
+                    <!-- Options go here -->
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="year">Year</label>
+                <select id="year" name="year" class="form-control">
+                    <!-- Options go here -->
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="type">Type</label>
+                <select id="type" name="type" class="form-control">
+                    <!-- Options go here -->
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="status">Status</label>
+                <select id="status" name="status" class="form-control">
+                    <!-- Options go here -->
+                </select>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary mt-3">Filter</button>
+    </form>
+
+    <!-- Message Box -->
+    <div class="card mt-4">
+        <div class="card-header">
+            Messages
+        </div>
+        <div class="card-body">
+            <!-- Messages will be displayed here -->
+        </div>
+    </div>
+
+    <!-- Dossier Display (Chronological Order) -->
+    <div class="card mt-4">
+        <div class="card-header">
+            Dossiers
+        </div>
+        <div class="card-body">
+            <!-- Dossiers with steps, actions, and documents in chronological order -->
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -167,6 +167,17 @@
             "display": false
         },
         "submenus": {
+            "Main Dashboard": {
+                "label": "Main Dashboard",
+                "url": "/argon/main_dashboard",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin", "Manager", "Employee"
+                ],
+                "widget": {
+                    "display": true
+                }
+            },
             "Reserved Open Actions": {
                 "label": "Open Actions",
                 "url": "/company_overview_current",
@@ -551,6 +562,17 @@
                         "allowed_roles": ["Admin"],
                         "widget": {
                             "display": false
+                        }
+                    },
+                    "Main Dashboard": {
+                        "label": "Main Dashboard",
+                        "url": "/argon/main_dashboard",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin"
+                        ],
+                        "widget": {
+                            "display": true
                         }
                     },
                     "Admin Multi Format Dashboard": {

@@ -733,6 +733,12 @@ class BaseData(db.Model):
     document_workflows = db.relationship('DocumentWorkflow', back_populates='base_data', cascade="all, delete-orphan")
     document_workflow_history = db.relationship('DocumentWorkflowHistory', back_populates='base_data')
 
+    # Define relationships with step_base_data and document_workflow
+    # steps = db.relationship('StepBaseData', back_populates='base_data', cascade="all, delete-orphan")
+    document_workflows = db.relationship('DocumentWorkflow', back_populates='base_data', cascade="all, delete-orphan")
+    # Add a back-reference to Dossier
+    dossier = db.relationship('Dossier', back_populates='documents')
+
     def __repr__(self):
         return f"{self.id}-{self.ft1}"
 
@@ -1092,6 +1098,7 @@ class WorkflowBaseData(db.Model):
 
     workflow = db.relationship("Workflow", backref="workflow_base_data")
     base_data = db.relationship("BaseData", backref="workflow_base_data")
+
     # Define the relationship with Workflow model
     #workflow_data_id = db.Column(db.Integer, db.ForeignKey('workflow.id'))
     #workflow_data = relationship('Workflow', backref='base_data_workflows')
@@ -1656,9 +1663,9 @@ class DocumentWorkflow(db.Model):
     open_action = db.Column(db.Boolean, default=False)
     comments = db.Column(db.Text, nullable=True)  # Add the comments field
 \
-    # Foreign Key
-    base_data_id = db.Column(db.Integer, db.ForeignKey('base_data.id'))
-    # Relationship
+    # Foreign key with "ON DELETE CASCADE"
+    base_data_id = db.Column(db.Integer, ForeignKey('base_data.id', ondelete="CASCADE"))
+
     base_data = db.relationship('BaseData', back_populates='document_workflows')
 
     # Define the unique constraint on the three keys
@@ -1827,5 +1834,34 @@ class ChartMetric(db.Model):
     def __repr__(self):
         return f"<ChartMetric {self.metric_name} ({self.display_label}) linked to Chart {self.config_chart_id}>"
 
+
+
+
+class Dossier(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    code = db.Column(db.String(100), unique=True, nullable=False)
+    status = db.Column(db.Enum('pending', 'in_progress', 'completed', 'archived', name='dossier_status'), nullable=False)
+    type = db.Column(db.Enum('audit', 'remediation', 'survey', 'other', name='dossier_type'), nullable=False)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)
+    initiator_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, onupdate=datetime.utcnow)
+    archived = db.Column(db.Boolean, default=False)
+
+    # Foreign key linking Dossier to base_data (or 'documents')
+    base_data_id = db.Column(db.Integer, db.ForeignKey('base_data.id'))
+
+    # Relationship to base_data (documents)
+    documents = db.relationship('BaseData', back_populates='dossier')
+
+    actions = db.relationship('Action', backref='dossier', lazy=True)
+
+class Action(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    dossier_id = db.Column(db.Integer, db.ForeignKey('dossier.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    action_type = db.Column(db.Enum('document_added', 'status_changed', 'note_added', name='action_type'), nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    description = db.Column(db.String(255))
 
 

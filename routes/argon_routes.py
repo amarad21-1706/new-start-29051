@@ -7,7 +7,7 @@ from models.user import (BaseData, Users, UserRoles, Event,
         ContractArticle, Party,
         Company, CompanyUsers, Area, Subarea, AreaSubareas, Answer,
         Team, TeamMembership, ContractTeam,
-        Plan, Product, PlanProducts, UserPlans
+        Plan, Product, PlanProducts, UserPlans, Post
         )
 
 from flask_login import current_user
@@ -930,4 +930,51 @@ def delete_product(id):
     db.session.commit()
     flash('Product deleted successfully', 'success')
     return redirect(url_for('argon.products_view'))
+
+
+# MAIN DASHBOARD - with the 3 areas
+
+@argon_bp.route('/main_dashboard')
+def main_dashboard():
+    # Query for posts where company_id matches the user's company_id
+    # and lifespan is either 'persistent' or 'one_off' with marked_as_read = False
+    posts = Post.query.filter(
+        Post.company_id == current_user.company_id,
+        db.or_(
+            Post.lifespan == 'persistent',
+            db.and_(Post.lifespan == 'one_off', Post.marked_as_read == False)
+        )
+    ).order_by(Post.created_at.desc()).all()
+
+    # Render the main dashboard with the posts for the message board
+    return render_template('argon-dashboard/main_dashboard.html', posts=posts)
+
+
+@argon_bp.route('/raccolta_dati/open')
+def raccolta_dati_open():
+    # Render the reusable template with the appropriate filters
+    return render_template('argon-dashboard/dossier_view.html', area_ids=[1, 2])
+
+@argon_bp.route('/audit/open')
+def audit_open():
+    # Render the reusable template for audits
+    return render_template('argon-dashboard/dossier_view.html', area_ids=[3], initiator_id=0)
+
+@argon_bp.route('/remediation/open')
+def remediation_open():
+    # Render the reusable template for remediation
+    return render_template('argon-dashboard/dossier_view.html', area_ids=[3], initiator_id='Authority')
+
+
+@argon_bp.route('/argon/audit_archive')
+def audit_archive():
+    # Logic for displaying archived audits
+    # return render_template('argon-dashboard/audit_archive.html')
+    return render_template('argon-dashboard/dossier_view.html', area_ids=[3], initiator_id=0)
+
+@argon_bp.route('/argon/remediation_archive')
+def remediation_archive():
+    # Logic for displaying archived remediations
+    # return render_template('argon-dashboard/remediation_archive.html')
+    return render_template('argon-dashboard/dossier_view.html', area_ids=[3], initiator_id='Authority')
 

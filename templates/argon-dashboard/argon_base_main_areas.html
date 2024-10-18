@@ -31,18 +31,28 @@
         <div class="sidebar-wrapper">
             <ul class="nav">
                 <li class="nav-item">
-                    <a class="nav-link" href="/argon/teams">
-                        <i class="ni ni-single-02 text-yellow"></i> Project Teams
+                    <a class="nav-link" href="/argon/main_dashboard">
+                        <i class="ni ni-single-02 text-yellow"></i> Dashboard
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/argon/contracts">
-                        <i class="ni ni-paper-diploma text-blue"></i> Contracts
+                    <a class="nav-link" href="/open_admin_1">
+                        <i class="ni ni-single-02 text-yellow"></i> Area 1
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" href="/argon/members">
-                        <i class="ni ni-circle-08 text-gray"></i> Team Members
+                    <a class="nav-link" href="/open_admin_2">
+                        <i class="ni ni-single-02 text-yellow"></i> Area 2
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('argon.audit_open') }}">
+                        <i class="ni ni-paper-diploma text-blue"></i> Audit
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('argon.remediation_open') }}">
+                        <i class="ni ni-paper-diploma text-blue"></i> Remediation
                     </a>
                 </li>
             </ul>
@@ -54,7 +64,7 @@
         <div class="header bg-primary pb-6 pt-5">
             <div class="container-fluid">
                 <div class="header-body">
-                    <h1 class="text-white">Dashboard</h1>
+                    <h1 class="text-white">Activity Dashboard</h1>
                 </div>
             </div>
         </div>
