@@ -11,6 +11,9 @@ from models.user import (BaseData, Users, UserRoles, Event,
         Dossier, Action
         )
 
+import os
+from werkzeug.utils import secure_filename
+
 from flask_login import current_user
 from datetime import datetime, timedelta
 
@@ -1075,32 +1078,124 @@ def dossier_view(dossier_id):
     # Render the dossier view template with the dossier data
     return render_template('argon-dashboard/dossier_view.html', dossier=dossier)
 
-
 @argon_bp.route('/submit_action/<int:dossier_id>', methods=['POST'])
 @login_required
 def submit_action(dossier_id):
     dossier = Dossier.query.get_or_404(dossier_id)
-
-    # Get form data
     action_type = request.form['action_type']
     description = request.form.get('description', '')
 
-    # Create new action
-    new_action = Action(
-        dossier_id=dossier.id,
-        user_id=current_user.id,
-        action_type=action_type,
-        description=description,
-        timestamp=datetime.utcnow()
-    )
+    # Handle different action types
+    if action_type == 'document_added':
+        # Check if a document is uploaded
+        if 'document' not in request.files or request.files['document'].filename == '':
+            flash('No document uploaded', 'danger')
+            return redirect(url_for('argon.dossier_details', dossier_id=dossier_id))
 
+        document = request.files['document']
+        # Save the document (assuming you're saving files to a directory)
+        document_path = save_document(document)  # You'll need to implement this function
+
+        # Log the action as "document_added"
+        new_action = Action(
+            dossier_id=dossier.id,
+            user_id=current_user.id,
+            action_type='document_added',
+            description=f"Document uploaded: {document.filename}"
+        )
+        # (Optional) You can also relate this to the Dossier's base_data model if needed
+        # dossier.documents.append(document_record)  # assuming you're linking documents to dossiers
+
+    elif action_type == 'status_changed':
+        # Change the status of the dossier
+        new_status = request.form['status']
+        dossier.status = new_status
+
+        # Log the action as "status_changed"
+        new_action = Action(
+            dossier_id=dossier.id,
+            user_id=current_user.id,
+            action_type='status_changed',
+            description=f"Status changed to {new_status}"
+        )
+
+    elif action_type == 'note_added':
+        # Add a note to the dossier
+        note = request.form.get('note', '')
+
+        # Log the action as "note_added"
+        new_action = Action(
+            dossier_id=dossier.id,
+            user_id=current_user.id,
+            action_type='note_added',
+            description=f"Note added: {note}"
+        )
+
+    # Add the action to the database and commit changes
     db.session.add(new_action)
     db.session.commit()
 
-    flash('Action added successfully!', 'success')
-    return redirect(url_for('dossier_details', dossier_id=dossier.id))
+    flash('Action submitted successfully!', 'success')
+    return redirect(url_for('argon.dossier_details', dossier_id=dossier_id))
 
-from sqlalchemy import extract
+
+def save_document(document):
+    # Use the /tmp directory on Render for temporary file storage
+    upload_folder = '/tmp'  # Ephemeral storage
+
+    # Secure the filename to prevent malicious filenames
+    filename = secure_filename(document.filename)
+
+    # Create the full path for saving the file
+    file_path = os.path.join(upload_folder, filename)
+
+    # Save the document to the path
+    document.save(file_path)
+
+    return file_path
+
+'''
+S3 cloud storage
+import boto3
+import os
+from werkzeug.utils import secure_filename
+from flask import current_app
+
+def save_document(document):
+    # Secure the filename to prevent malicious filenames
+    filename = secure_filename(document.filename)
+
+    # Upload to S3
+    s3 = boto3.client('s3', 
+                      aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'), 
+                      aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'))
+    
+    bucket_name = os.getenv('AWS_S3_BUCKET_NAME')
+
+    try:
+        s3.upload_fileobj(document, bucket_name, filename)
+        file_url = f"https://{bucket_name}.s3.amazonaws.com/{filename}"
+        return file_url
+    except Exception as e:
+        print(f"Error uploading file to S3: {e}")
+        return None
+        
+        
+Example Configuration in Render Dashboard:
+Key: AWS_ACCESS_KEY_ID
+
+Value: <Your AWS Access Key>
+
+Key: AWS_SECRET_ACCESS_KEY
+
+Value: <Your AWS Secret Key>
+
+Key: AWS_S3_BUCKET_NAME
+
+Value: <Your S3 Bucket Name>        
+'''
+
+
 
 @argon_bp.route('/dossier_view', methods=['GET'])
 @login_required
@@ -1115,7 +1210,18 @@ def search_dossiers():
     # Start with a base query
     query = Dossier.query
 
-    # Apply filters to the query
+    # Apply role-based filters
+    if current_user.has_role('Admin') or current_user.has_role('Authority'):
+        # Admins and Authorities see all dossiers
+        pass  # No need to filter
+    elif current_user.has_role('Manager') or current_user.has_role('Employee'):
+        # Managers and Employees only see dossiers from their own company
+        query = query.filter(Dossier.company_id == current_user.company_id)
+    else:
+        # No role, no access to dossiers
+        query = query.filter(False)
+
+    # Apply additional filters based on the form input
     if code:
         query = query.filter(Dossier.code.ilike(f'%{code}%'))
     if company_id:
@@ -1145,6 +1251,6 @@ def search_dossiers():
         'argon-dashboard/dossier_view.html',
         dossiers=dossiers,
         companies=companies,
-        dossier_codes=[code[0] for code in dossier_codes],  # Extract codes from tuple
+        dossier_codes=[code[0] for code in dossier_codes],
         years=years
     )

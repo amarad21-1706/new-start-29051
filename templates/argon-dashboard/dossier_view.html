@@ -3,6 +3,15 @@
 {% block content %}
 <div class="container mt-4">
     <h2>Search Dossiers</h2>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <ul class="flashes">
+                {% for category, message in messages %}
+                    <li class="alert alert-{{ category }}">{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
 
     <!-- Search Filters -->
     <form method="GET" action="{{ url_for('argon.search_dossiers') }}">
@@ -74,15 +83,22 @@
     </form>
 
     <!-- List Filtered Dossiers -->
-    <div class="mt-4">
-        <h3>Dossiers</h3>
-        <ul class="list-group">
-            {% for dossier in dossiers %}
-                <li class="list-group-item">
-                    <strong>{{ dossier.code }}</strong> - {{ dossier.type }} | Status: {{ dossier.status }} | Year: {{ dossier.created_at.year }}
-                </li>
-            {% endfor %}
-        </ul>
+    <div class="row mt-4">
+        <h3>Available Dossiers</h3>
+        {% for dossier in dossiers %}
+            <div class="col-md-4 mb-3">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">{{ dossier.code }}</h5>
+                        <p class="card-text">Type: {{ dossier.type }} | Status: {{ dossier.status }}</p>
+                        <p class="card-text">Company: {{ dossier.company.name }} | Year: {{ dossier.created_at.year }}</p>
+                        <a href="{{ url_for('argon.dossier_details', dossier_id=dossier.id) }}" class="btn btn-primary">View Details</a>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <p>No dossiers found for your selection.</p>
+        {% endfor %}
     </div>
 </div>
 {% endblock %}

@@ -172,7 +172,7 @@
                 "url": "/argon/main_dashboard",
                 "protected": true,
                 "allowed_roles": [
-                    "Admin", "Manager", "Employee"
+                    "Admin", "Manager", "Employee", "Authority"
                 ],
                 "widget": {
                     "display": true
@@ -222,66 +222,14 @@
                     "display": false
                 }
             },
-            "Reserved Area di controllo 1": {
-                "label": "Area 1",
-                "url": "/area_di_controllo_1",
+            "Reserved Area 1c Res": {
+                "label": "Check list",
+                "url": "/questionnaire_psf",
                 "protected": true,
-                "allowed_roles": ["Admin", "Employee", "Manager", "Authority"],
+                "allowed_roles": [
+                    "Admin", "Employee", "Manager", "Authority"],
                 "widget": {
-                    "display": false,
-                    "type": "button",
-                    "submit_url": "/area_di_controllo_1",
-                    "style": "btn-info",
-                    "size": "medium"
-                },
-                "submenus": {
-                    "Reserved Area 1a Sub": {
-                        "label": "Raccolta dati",
-                        "url": "/open_admin_1",
-                        "protected": true,
-                        "allowed_roles": [
-                            "Admin", "Employee", "Manager", "Authority"],
-                        "widget": {
-                            "display": false,
-                            "type": "button",
-                            "submit_url": "/open_admin_1",
-                            "style": "btn-neutral",
-                            "size": "medium"
-                        }
-                    },
-                    "Reserved Area 1b Sub": {
-                        "label": "Contingencies - PSF",
-                        "url": "/redirect_to_survey/1",
-                        "protected": true,
-                        "allowed_roles": [
-                            "Admin", "Employee", "Manager", "Authority"],
-                        "widget": {
-                            "display": false
-                        }
-                    },
-                    "Reserved Area 1c Res": {
-                        "label": "Check list",
-                        "url": "/questionnaire_psf",
-                        "protected": true,
-                        "allowed_roles": [
-                            "Admin", "Employee", "Manager", "Authority"],
-                        "widget": {
-                            "display": false
-                        }
-                    }
-                }
-            },
-            "Reserved Area di controllo 2 Res": {
-                "label": "Area 2",
-                "url": "/open_admin_2",
-                "protected": true,
-                "allowed_roles": ["Admin", "Employee", "Manager", "Authority"],
-                "widget": {
-                    "display": false,
-                    "type": "button",
-                    "submit_url": "/open_admin_2",
-                    "style": "btn-secondary",
-                    "size": "medium"
+                    "display": false
                 }
             },
             "Reserved Workflows Reserved View": {
@@ -298,15 +246,6 @@
                 "url": "/workflow_tree",
                 "protected": true,
                 "allowed_roles": ["Admin", "Manager", "Employee", "Authority"],
-                "widget": {
-                    "display": false
-                }
-            },
-            "Reserved Area di controllo 10": {
-                "label": "Surveys and Questionnaires",
-                "url": "/open_admin_10",
-                "protected": true,
-                "allowed_roles": ["Admin", "Manager", "Employee", "Authority", "Provider"],
                 "widget": {
                     "display": false
                 }
