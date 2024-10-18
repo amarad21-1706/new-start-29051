@@ -3,15 +3,6 @@
 {% block content %}
 <div class="container mt-4">
     <h2>Dossier: {{ dossier.code }}</h2>
-    {% with messages = get_flashed_messages(with_categories=true) %}
-        {% if messages %}
-            <ul class="flashes">
-                {% for category, message in messages %}
-                    <li class="alert alert-{{ category }}">{{ message }}</li>
-                {% endfor %}
-            </ul>
-        {% endif %}
-    {% endwith %}
 
     <!-- Dossier details -->
     <div class="card">
@@ -29,7 +20,7 @@
     <!-- Action Form -->
     <div class="mt-4">
         <h3>Take Action</h3>
-        <form method="POST" enctype="multipart/form-data" action="{{ url_for('argon.submit_action', dossier_id=dossier.id) }}">
+        <form method="POST" action="{{ url_for('argon.submit_action', dossier_id=dossier.id) }}" enctype="multipart/form-data">
             <div class="row">
                 <!-- Select Action Dropdown -->
                 <div class="col-md-6">
@@ -46,13 +37,13 @@
                 </div>
             </div>
 
-            <!-- Document Upload Field (Hidden by Default) -->
+            <!-- Document Upload Field (hidden by default) -->
             <div id="document_upload_field" class="form-group mt-3" style="display: none;">
                 <label for="document">Attach Document</label>
                 <input type="file" name="document" class="form-control">
             </div>
 
-            <!-- Status Dropdown Field (Hidden by Default) -->
+            <!-- Status Dropdown Field (hidden by default) -->
             <div id="status_dropdown_field" class="form-group mt-3" style="display: none;">
                 <label for="status">Select Status</label>
                 <select name="status" class="form-control">
@@ -63,10 +54,56 @@
                 </select>
             </div>
 
-            <!-- Note Textarea Field (Hidden by Default) -->
+            <!-- Note Textarea Field (hidden by default) -->
             <div id="note_field" class="form-group mt-3" style="display: none;">
                 <label for="note">Enter Note</label>
                 <textarea name="note" class="form-control" rows="5"></textarea>
+            </div>
+
+            <!-- Deadline Date Field (Date Picker) -->
+            <div class="form-group mt-3">
+                <label for="deadline_date">Deadline Date</label>
+                <input type="date" name="deadline_date" class="form-control" value="{{ dossier.deadline_date.strftime('%Y-%m-%d') if dossier.deadline_date }}">
+            </div>
+
+            <!-- Start Recall Field -->
+            <div class="form-group mt-3">
+                <label for="start_recall">Start Recall</label>
+                <input type="number" name="start_recall" class="form-control" value="{{ dossier.start_recall }}">
+            </div>
+
+            <!-- Recall Unit Dropdown -->
+            <div class="form-group mt-3">
+                <label for="recall_unit">Recall Unit</label>
+                <select name="recall_unit" class="form-control">
+                    <option value="1 day" {% if dossier.recall_unit == '1 day' %}selected{% endif %}>1 Day</option>
+                    <option value="2 days" {% if dossier.recall_unit == '2 days' %}selected{% endif %}>2 Days</option>
+                    <option value="3 days" {% if dossier.recall_unit == '3 days' %}selected{% endif %}>3 Days</option>
+                    <option value="5 days" {% if dossier.recall_unit == '5 days' %}selected{% endif %}>5 Days</option>
+                    <option value="7 days" {% if dossier.recall_unit == '7 days' %}selected{% endif %}>7 Days</option>
+                    <option value="15 days" {% if dossier.recall_unit == '15 days' %}selected{% endif %}>15 Days</option>
+                    <option value="30 days" {% if dossier.recall_unit == '30 days' %}selected{% endif %}>30 Days</option>
+                    <option value="90 days" {% if dossier.recall_unit == '90 days' %}selected{% endif %}>90 Days</option>
+                </select>
+            </div>
+
+            <!-- Send Message Checkbox -->
+            <div class="form-group mt-3">
+                <label for="send_message">Send Message</label>
+                <input type="checkbox" name="send_message" class="form-check-input" {% if dossier.send_message %}checked{% endif %}>
+            </div>
+
+            <!-- Message Frequency Dropdown -->
+            <div class="form-group mt-3">
+                <label for="message_frequency">Message Frequency</label>
+                <select name="message_frequency" class="form-control">
+                    <option value="1 day" {% if dossier.message_frequency == '1 day' %}selected{% endif %}>1 Day</option>
+                    <option value="2 days" {% if dossier.message_frequency == '2 days' %}selected{% endif %}>2 Days</option>
+                    <option value="3 days" {% if dossier.message_frequency == '3 days' %}selected{% endif %}>3 Days</option>
+                    <option value="5 days" {% if dossier.message_frequency == '5 days' %}selected{% endif %}>5 Days</option>
+                    <option value="7 days" {% if dossier.message_frequency == '7 days' %}selected{% endif %}>7 Days</option>
+                    <option value="10 days" {% if dossier.message_frequency == '10 days' %}selected{% endif %}>10 Days</option>
+                </select>
             </div>
 
             <button type="submit" class="btn btn-primary mt-3">Submit Action</button>
@@ -97,21 +134,22 @@
         const actionType = document.getElementById("action_type").value;
 
         // Hide all fields by default
-        document.getElementById("document_upload_field").style.display = "none";
-        document.getElementById("status_dropdown_field").style.display = "none";
-        document.getElementById("note_field").style.display = "none";
+        document.getElementById("document_upload_field").style.display = 'none';
+        document.getElementById("status_dropdown_field").style.display = 'none';
+        document.getElementById("note_field").style.display = 'none';
 
-        // Show the relevant field based on the selected action
-        if (actionType === "document_added") {
-            document.getElementById("document_upload_field").style.display = "block";
-        } else if (actionType === "status_changed") {
-            document.getElementById("status_dropdown_field").style.display = "block";
-        } else if (actionType === "note_added") {
-            document.getElementById("note_field").style.display = "block";
+        if (actionType === 'document_added') {
+            document.getElementById("document_upload_field").style.display = 'block';
+        } else if (actionType === 'status_changed') {
+            document.getElementById("status_dropdown_field").style.display = 'block';
+        } else if (actionType === 'note_added') {
+            document.getElementById("note_field").style.display = 'block';
         }
     }
 
-    // Initialize form based on the current selection when the page loads
-    window.onload = showActionFields;
+    // Trigger the function on page load to ensure correct fields are shown
+    document.addEventListener("DOMContentLoaded", function() {
+        showActionFields();
+    });
 </script>
 {% endblock %}

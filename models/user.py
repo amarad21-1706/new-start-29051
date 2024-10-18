@@ -1847,7 +1847,18 @@ class Dossier(db.Model):
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, onupdate=datetime.utcnow)
     archived = db.Column(db.Boolean, default=False)
-
+    # Set default to 30 days from the current date
+    deadline_date = db.Column(db.DateTime, default=lambda: datetime.utcnow() + timedelta(days=30),
+                              onupdate=datetime.utcnow)
+    hidden_data = db.Column(db.String(255))
+    start_recall = db.Column(db.Integer, default=0)
+    recall_unit = db.Column(db.Enum('1 day', '2 days', '3 days', '5 days', '7 days', '15 days',
+                                          '30 days', '90 days', name='message_frequency'), nullable=False,
+                            default='7 days')
+    send_message = db.Column(db.Boolean, default=False)
+    message_frequency = db.Column(db.Enum('1 day', '2 days', '3 days', '5 days', '7 days', '10 days',
+                                          name='message_frequency'), nullable=False,
+                                  default='7 days')
     # Nullable base_data_id for dossiers without documents initially
     base_data_id = db.Column(db.Integer, db.ForeignKey('base_data.id'), nullable=True)
 
