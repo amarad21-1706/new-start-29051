@@ -503,17 +503,6 @@
                             "display": false
                         }
                     },
-                    "Main Dashboard": {
-                        "label": "Main Dashboard",
-                        "url": "/argon/main_dashboard",
-                        "protected": true,
-                        "allowed_roles": [
-                            "Admin"
-                        ],
-                        "widget": {
-                            "display": true
-                        }
-                    },
                     "Admin Multi Format Dashboard": {
                         "label": "Dashboard by Control Area",
                         "url": "/argon/multi_format_dashboard",

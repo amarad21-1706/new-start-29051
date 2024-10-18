@@ -64,8 +64,9 @@ from models.user import (Users, UserRoles, Event, Role, Questionnaire, Question,
         Questionnaire_psf, Response_psf,
         Contract, ContractParty, ContractTerm, ContractDocument, ContractStatusHistory,
         ContractArticle, Party,
-        Team, TeamMembership, ContractTeam
-         )
+        Team, TeamMembership, ContractTeam,
+        Dossier
+        )
 
 # from master_password_reset import admin_reset_password, AdminResetPasswordForm
 from forms.forms import (AddPlanToCartForm, SignupForm, UpdateAccountForm, TicketForm,
@@ -5899,6 +5900,26 @@ def show_message_modal(ids):
 
     # If it's a GET request, render the modal form
     return render_template('admin/send_message_modal.html', users=Users.query.filter(Users.id.in_(ids_list)).all())
+
+
+@app.route('/finalize_attach_to_dossier', methods=['POST'])
+@login_required
+def finalize_attach_to_dossier():
+    dossier_id = request.form['dossier_id']
+    document_ids = request.form['document_ids'].split(',')
+
+    dossier = Dossier.query.get(dossier_id)
+
+    # Attach each document to the selected Dossier
+    for doc_id in document_ids:
+        document = BaseData.query.get(doc_id)
+        document.dossier_id = dossier_id
+        db.session.add(document)
+
+    db.session.commit()
+
+    flash(f'Documents successfully attached to {dossier.type} Dossier!', 'success')
+    return redirect(url_for('open_admin_3.index'))  # Adjust to your admin index
 
 
 @app.route('/checkout_success')

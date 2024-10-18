@@ -565,7 +565,6 @@ class Lexic(db.Model):
     def __repr__(self):
         return f"{self.name}"
 
-
 class Area(db.Model):
     __tablename__ = 'area'
 
@@ -573,13 +572,15 @@ class Area(db.Model):
     name = db.Column(db.String(64), unique=True, nullable=False)
     description = db.Column(db.String(255))
 
+    # Explicitly define the relationship and use overlaps
+    subareas = db.relationship('AreaSubareas', back_populates='area', overlaps="related_area,subareas")
+
     def __init__(self, name=None, description=None):
         self.name = name
         self.description = description
 
     def __repr__(self):
         return f"{self.name} ({self.description})"
-
 
 class Subarea(db.Model):
     __tablename__ = 'subarea'
@@ -589,6 +590,9 @@ class Subarea(db.Model):
     description = db.Column(db.String(255))
     data_type = db.Column(db.String(64))
 
+    # Explicitly define the relationship and use overlaps
+    areas = db.relationship('AreaSubareas', back_populates='subarea', overlaps="areas,related_subarea")
+
     def __init__(self, name=None, description=None, data_type=None):
         self.name = name
         self.description = description
@@ -596,8 +600,6 @@ class Subarea(db.Model):
 
     def __repr__(self):
         return f"{self.name} ({self.description})"
-
-
 
 class AreaSubareas(db.Model):
     __tablename__ = 'area_subareas'
@@ -608,8 +610,9 @@ class AreaSubareas(db.Model):
     interval_id = db.Column(db.Integer, db.ForeignKey('interval.id'))
     caption = db.Column(db.Text(255))
 
-    # Relationship to Subarea
-    subarea = db.relationship('Subarea', backref='area_subareas')
+    # Define relationships with back_populates to ensure no conflict
+    area = db.relationship('Area', back_populates='subareas', overlaps="related_area,subareas")
+    subarea = db.relationship('Subarea', back_populates='areas', overlaps="areas,related_subarea")
 
     def __repr__(self):
         return (f"Area={self.area_id}, subarea={self.subarea_id}, "

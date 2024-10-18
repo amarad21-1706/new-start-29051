@@ -75,6 +75,7 @@ from models.user import (Users, UserRoles, Role, Table, Questionnaire, Question,
                                 Container, Config,
                                 Contract, ContractParty, ContractTerm, ContractDocument,
                                 ContractStatusHistory, ContractArticle, Party,
+                                Dossier, Action,
                                 get_config_values)
 
 from wtforms.widgets import DateTimeInput
@@ -568,6 +569,243 @@ class ContractArticleAdmin(ModelView):
                 # Redirect to a list view or an error page
                 return redirect(url_for('.index_view'))  # Adjust to your requirement
 
+class DocumentsBaseDataView(ModelView):
+    can_create = True
+    can_edit = True
+    can_delete = True
+    name = 'Documents'
+    menu_icon_type = 'glyph'
+    menu_icon_value = 'glyphicon-list-alt'
+
+    column_list = [
+        'id', 'company_name', 'user_name',
+        'interval_name', 'interval_ord', 'fi0',
+        'record_type', 'area_name', 'subarea_name',
+        'data_type', 'subject_name', 'legal_name',
+        'file_path', 'created_on', 'number_of_doc',
+        'fc1', 'no_action'
+    ]
+
+    column_labels = {
+        'id': 'Document ID', 'company_name': 'Company', 'user_name': 'User',
+        'interval_name': 'Interval', 'interval_ord': 'Interv.#',
+        'record_type': 'Type', 'area_name': 'Area', 'subarea_name': 'Subarea',
+        'data_type': 'Data Type', 'subject_name': 'Subject', 'legal_name': 'Doc Type',
+        'file_path': 'File', 'created_on': 'Date created', 'number_of_doc': 'Doc. #',
+        'fc1': 'Note', 'no_action': 'No doc.'
+    }
+
+    form_columns = [
+        'number_of_doc', 'date_of_doc',
+        'interval_id', 'interval_ord',
+        'area_id', 'subarea_id',
+        'subject_id', 'lexic_id',
+        'file_path', 'no_action',
+        'fc1'
+    ]
+
+    column_default_sort = ('created_on', True)
+    column_searchable_list = ('company_id', 'user_id', 'fi0', 'subject_id', 'legal_document_id', 'file_path')
+    column_filters = ('company_id', 'user_id', 'fi0', 'subject_id', 'legal_document_id', 'file_path')
+
+    form_excluded_columns = ('company_id', 'user_id', 'status_id', 'created_by', 'created_on', 'updated_on', 'record_type')
+
+    form_extra_fields = {
+        'file_path': FileField('Attachment', render_kw={'class': 'form-control'}),
+        'date_of_doc': DateField('Date of Document', format='%Y-%m-%d', render_kw={'class': 'form-control'}),
+        'area_id': QuerySelectField('Area', query_factory=lambda: Area.query.all(),
+                                    get_label='name', allow_blank=True,
+                                    render_kw={'class': 'form-control'}),
+        'subarea_id': QuerySelectField('Subarea', query_factory=lambda: Subarea.query.all(),
+                                       get_label='name', allow_blank=True,
+                                       render_kw={'class': 'form-control'}),
+        'interval_id': QuerySelectField('Interval', query_factory=lambda: Interval.query.all(),
+                                        get_label='name', allow_blank=True,
+                                        render_kw={'class': 'form-control'}),
+        'interval_ord': SelectField('Interval Order', coerce=int, choices=[(i, i) for i in range(1, 6)],  # Populate dynamically
+                                    render_kw={'class': 'form-control'}),
+        'subject_id': QuerySelectField('Subject', query_factory=lambda: Subject.query.all(),
+                                       get_label='name', allow_blank=True,
+                                       render_kw={'class': 'form-control'}),
+        'lexic_id': QuerySelectField('Lexic', query_factory=lambda: Lexic.query.all(),
+                                     get_label='name', allow_blank=True,
+                                     render_kw={'class': 'form-control'}),
+        'no_action': BooleanField('No Action'),
+        'fc1': TextAreaField('Comments')
+    }
+
+
+    def scaffold_form(self):
+        """
+        Scaffold the form to ensure the fields are correctly generated.
+        """
+        # Use the base class scaffold_form to generate the form
+        form_class = super(DocumentsBaseDataView, self).scaffold_form()
+
+        # Customize fields as necessary
+        form_class.file_path = FileUploadField('Attachment', base_path=current_app.config.get('UPLOAD_FOLDER', 'uploads'))
+        form_class.date_of_doc = DateField('Date of Document', format='%Y-%m-%d', render_kw={'class': 'form-control'})
+        form_class.area_id = QuerySelectField('Area', query_factory=lambda: Area.query.all(),
+                                              get_label='name', allow_blank=True, render_kw={'class': 'form-control'})
+        form_class.subarea_id = QuerySelectField('Subarea', query_factory=lambda: Subarea.query.all(),
+                                                 get_label='name', allow_blank=True, render_kw={'class': 'form-control'})
+        form_class.interval_id = QuerySelectField('Interval', query_factory=lambda: Interval.query.all(),
+                                                  get_label='name', allow_blank=True, render_kw={'class': 'form-control'})
+        form_class.interval_ord = SelectField('Interval Order', coerce=int,
+                                              choices=[(i, i) for i in range(1, 6)], render_kw={'class': 'form-control'})
+        form_class.subject_id = QuerySelectField('Subject', query_factory=lambda: Subject.query.all(),
+                                                 get_label='name', allow_blank=True, render_kw={'class': 'form-control'})
+        form_class.no_action = BooleanField('No Action', render_kw={'class': 'form-control'})
+        form_class.fc1 = TextAreaField('Comments', render_kw={'class': 'form-control'})
+
+        return form_class
+
+    def on_form_prefill(self, form, id):
+        """
+        Populates area, subarea, and interval_ord dropdowns based on current record.
+        """
+        # Populate Area choices
+        form.area_id.choices = [(area.id, area.name) for area in Area.query.all()]
+
+        # Populate Subarea choices based on the selected Area
+        form.subarea_id.choices = [(subarea.id, subarea.name) for subarea in Subarea.query
+        .join(AreaSubareas)
+        .filter(AreaSubareas.area_id == form.area_id.data).all()]
+
+        # Fetch the selected interval
+        selected_interval = Interval.query.filter_by(id=form.interval_id.data).first()
+
+        if selected_interval:
+            # Prefill interval_ord with numbers from 1 to the interval range
+            form.interval_ord.choices = [(i, str(i)) for i in range(1, selected_interval.interval_id + 1)]
+        else:
+            form.interval_ord.choices = [(1, '1')]  # Default choice in case no interval is selected
+
+        return super(DocumentsBaseDataView, self).on_form_prefill(form, id)
+
+    def on_model_change(self, form, model, is_created):
+        """
+        Custom logic to handle model data and form inputs before commit.
+        """
+        form.populate_obj(model)  # Populate the model with form data
+
+        # Set fields automatically
+        if is_created:
+            model.created_by = current_user.id  # Set the creator
+            model.created_on = datetime.now()
+        model.updated_on = datetime.now()
+        model.company_id = current_user.company_id
+        model.user_id = current_user.id
+        model.record_type = 'document'  # Automatically set the record type
+
+        # Handle interval_ord if null or 0
+        model.interval_ord = form.interval_ord.data if form.interval_ord.data not in [None, 0] else 1
+
+        # If date_of_doc is provided, extract the year and assign it to fi0, otherwise set to the current year
+        if form.date_of_doc.data:
+            model.fi0 = form.date_of_doc.data.year  # Extract year from date_of_doc and set to fi0
+        else:
+            model.fi0 = datetime.now().year  # Set to the current year if date_of_doc is not provided
+
+        # Ensure area_id, subarea_id, interval_id, lexic_id, and subject_id are stored as integers (IDs)
+        if form.area_id.data:
+            model.area_id = form.area_id.data.id  # Use the ID of the Area object
+        if form.subarea_id.data:
+            model.subarea_id = form.subarea_id.data.id  # Use the ID of the Subarea object
+        if form.interval_id.data:
+            model.interval_id = form.interval_id.data.id  # Use the ID of the Interval object
+        if form.lexic_id.data:
+            model.lexic_id = form.lexic_id.data.id  # Use the ID of the Lexic object
+        if form.subject_id.data:
+            model.subject_id = form.subject_id.data.id  # Use the ID of the Subject object
+
+        # Handle file upload
+        if form.file_path.data:
+            filename = secure_filename(form.file_path.data.filename)
+            file_directory = current_app.config.get('UPLOAD_FOLDER', 'uploads')
+            file_path = os.path.join(file_directory, filename)
+            form.file_path.data.save(file_path)
+            model.file_path = file_path  # Store the path to the file in the database
+
+        # Add the model to the session
+        db.session.add(model)
+
+        # Commit the changes
+        try:
+            db.session.commit()
+        except Exception as e:
+            db.session.rollback()  # Rollback in case of error
+            flash(f"Error committing changes: {str(e)}", 'danger')
+            raise e
+
+    def get_query(self):
+        query = super(DocumentsBaseDataView, self).get_query()
+
+        if current_user.is_authenticated:
+            if current_user.has_role('Admin'):
+                query = query
+            elif current_user.has_role('Manager'):
+                company_id = current_user.company_id
+                query = query.filter(BaseData.company_id == company_id)
+            elif current_user.has_role('Employee'):
+                user_id = current_user.id
+                query = query.filter(BaseData.user_id == user_id)
+
+        query = query.filter(
+            (BaseData.area_id.in_([1, 3])) | (BaseData.record_type == 'document')
+        )
+
+        return query.order_by(BaseData.updated_on.desc(), BaseData.date_of_doc.desc())
+
+    def get_list(self, page, sort_column, sort_desc, search, filters, page_size=None):
+        count, data = super().get_list(page, sort_column, sort_desc, search, filters, page_size)
+
+        for item in data:
+            item.company_name = item.company.name if item.company else 'n.a.'
+            item.user_name = item.user.last_name if item.user else 'n.a.'
+            item.interval_name = item.interval.description if item.interval else 'n.a.'
+            item.area_name = item.area.name if item.area else 'n.a.'
+            item.subarea_name = item.subarea.name if item.subarea else 'n.a.'
+            item.subject_name = item.subject.name if item.subject else 'n.a.'
+            item.legal_name = item.subject.name if item.subject else 'n.a.'
+
+        return count, data
+
+    @action('attach_to_audit', 'Attach to Audit', 'Are you sure you want to assign these documents to an Audit Dossier?')
+    def action_attach_to_audit(self, ids):
+        try:
+            document_ids = [int(id_1) for id_1 in ids]
+            selected_documents = BaseData.query.filter(BaseData.id.in_(document_ids)).all()
+
+            # Query the dossiers of type 'audit' for the current user's company
+            audit_dossiers = Dossier.query.filter_by(company_id=current_user.company_id, type='audit').all()
+
+            return render_template('admin/attach_to_dossier.html',
+                                   dossiers=audit_dossiers,
+                                   selected_documents=selected_documents,
+                                   dossier_type='Audit')
+        except Exception as e:
+            app.logger.error(f"Error in action_attach_to_audit: {e}")
+            flash(f"Error attaching documents to Audit Dossier: {e}", 'error')
+            return redirect(url_for('open_admin_3.index'))
+
+    @action('attach_to_remediation', 'Attach to Remediation', 'Are you sure you want to assign these documents to a Remediation Dossier?')
+    def action_attach_to_remediation(self, ids):
+        try:
+            document_ids = [int(id_1) for id_1 in ids]
+            selected_documents = BaseData.query.filter(BaseData.id.in_(document_ids)).all()
+
+            # Query the dossiers of type 'remediation' for the current user's company
+            remediation_dossiers = Dossier.query.filter_by(company_id=current_user.company_id, type='remediation').all()
+
+            return render_template('admin/attach_to_dossier.html',
+                                   dossiers=remediation_dossiers,
+                                   selected_documents=selected_documents,
+                                   dossier_type='Remediation')
+        except Exception as e:
+            app.logger.error(f"Error in action_attach_to_remediation: {e}")
+            flash(f"Error attaching documents to Remediation Dossier: {e}", 'error')
+            return redirect(url_for('open_admin_3.index'))
 
 
 class DraftingContractsView(ModelView):
@@ -846,7 +1084,6 @@ class DocumentsBaseDataDetails(ModelView):
     form_excluded_columns = ['base_data_id', 'ft1', 'number_of_doc', 'date_of_doc', 'hidden_data']
 
     column_list = [
-        'base_data.number_of_doc',  # Display the document number
         'workflow.name',  # Display workflow name
         'step.name',  # Display step name
         'company_name',  # Company name
@@ -872,11 +1109,10 @@ class DocumentsBaseDataDetails(ModelView):
         'open_action',
         'recall_value',
         'recall_unit',
-        'comments'  # Add other fields if necessary
+        'comments'
     ]
 
     column_labels = {
-        'base_data.number_of_doc': 'Document Number',
         'workflow.name': 'Workflow',
         'step.name': 'Step',
         'company_name': 'Company',
@@ -898,12 +1134,9 @@ class DocumentsBaseDataDetails(ModelView):
 
     # Add filters for company_id, user_id, comments, workflow, step, and document number
     column_filters = [
-        'base_data.company_id',  # Company filter by ID
-        'base_data.user_id',  # User filter by ID
         'comments',  # Search by comments
         'workflow.name',  # Search by workflow name
         'step.name',  # Search by step name
-        'base_data.number_of_doc'  # Filter by document number
     ]
 
     # Define how the filters are displayed
@@ -913,7 +1146,6 @@ class DocumentsBaseDataDetails(ModelView):
         'step.name',  # Allow search by step name
         'base_data.number_of_doc'  # Allow search by document number
     ]
-    # Form customization for only changeable attributes
     form_extra_fields = {
         'workflow_id': QuerySelectField(
             'Workflow',
@@ -927,8 +1159,8 @@ class DocumentsBaseDataDetails(ModelView):
         ),
         'status_id': QuerySelectField(
             'Status',
-            query_factory=lambda: Status.query.all(),  # Fetch all statuses from Status model
-            get_label='name',  # Assuming the field to display is 'status_name'
+            query_factory=lambda: Status.query.all(),
+            get_label='name',
             allow_blank=False
         ),
         'start_date': DateField('Start Date', format='%Y-%m-%d'),
@@ -5498,8 +5730,16 @@ def create_admin_views(app, intervals):
                            endpoint='open_admin_3',
                            )
 
+        DocumentsBaseDataView
+
+        admin_app3.add_view(DocumentsBaseDataView(
+                                                name='Documents',
+                                                model=BaseData,  # Replacing Step Base Data with the correct model
+                                                session=db.session,
+                                                endpoint='document_manager_view'  # Make sure the endpoint is unique
+        ))
         admin_app3.add_view(DocumentsBaseDataDetails(
-                                                name='Documents in Workflows',
+                                                name='Document Workflows',
                                                 model=DocumentWorkflow,  # Replacing Step Base Data with the correct model
                                                 session=db.session,
                                                 endpoint='document_workflow'  # Make sure the endpoint is unique
@@ -5522,22 +5762,22 @@ def create_admin_views(app, intervals):
                                        intervals=intervals, area_id=3,
                                 subarea_id=1, endpoint='upload_documenti_view_existing'))
         # Add views to admin_app2
-        admin_app3.add_view(
-            DocumentUploadView(model=BaseData, session=db.session, name='List of Document Workflow',
-                               intervals=intervals, area_id=3,
-                                subarea_id=1, endpoint='upload_documenti_view'))
+        #admin_app3.add_view(
+        #    DocumentUploadView(model=BaseData, session=db.session, name='List of Document Workflow',
+        #                       intervals=intervals, area_id=3,
+        #                        subarea_id=1, endpoint='upload_documenti_view'))
 
-        admin_app3.add_view(WorkflowStepsTreeView(name='Workflows Steps Tree',
-                                      model=WorkflowSteps,
-                                      session=db.session,
-                                      endpoint='workflow_steps_tree'))
+        # admin_app3.add_view(WorkflowStepsTreeView(name='Workflows Steps Tree',
+        #                               model=WorkflowSteps,
+        #                               session=db.session,
+        #                              endpoint='workflow_steps_tree'))
 
-        admin_app3.add_view(ModelView(name='Workflows Dictionary',
-                                      model=Workflow,
-                                      session=db.session))
-        admin_app3.add_view(ModelView(name='Steps Dictionary',
-                                      model=Step,
-                                      session=db.session))
+        # admin_app3.add_view(ModelView(name='Workflows Dictionary',
+        #                               model=Workflow,
+        #                               session=db.session))
+        # admin_app3.add_view(ModelView(name='Steps Dictionary',
+        #                               model=Step,
+        #                               session=db.session))
 
 
         # Fourth Flask-Admin instance
@@ -5765,16 +6005,12 @@ def create_admin_views(app, intervals):
     @roles_required('Admin', 'Manager', 'Employee')
     def open_admin_app_10():
         try:
-            print('quest 0')
             user_id = current_user.id
-            print('quest 1', user_id)
             company_row = db.session.query(Company.name) \
                 .join(CompanyUsers, CompanyUsers.company_id == Company.id) \
                 .filter(CompanyUsers.user_id == user_id) \
                 .first()
-            print('quest 2', company_row)
             company_name = company_row[0] if company_row else None  # Extracting the name attribute
-            print('quest 3', company_name)
 
             if admin_app10 is None:
                 raise ValueError("admin_app10 is not initialized.")
@@ -5784,7 +6020,6 @@ def create_admin_views(app, intervals):
             formatted_string = template.format(placeholder_value) if placeholder_value else template
             admin_app10.name = formatted_string
 
-            print('quest 4', admin_app10.name, 'redirect to open_Admin_10')
             return redirect(url_for('open_admin_10.index'))
 
         except Exception as e:
@@ -5822,7 +6057,6 @@ class ContainerAdmin(ModelView):
             model.created_at = datetime.now()
         model.updated_at = datetime.now()
         return super(ContainerAdmin, self).on_model_change(form, model, is_created)
-
 
 
 # Custom view for surveys open for editing
