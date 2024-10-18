@@ -1,0 +1,53 @@
+{% extends "argon-dashboard/argon_base_main_areas.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Create New Dossier</h2>
+    <form method="POST" action="{{ url_for('argon.submit_create_dossier') }}">
+        <div class="row">
+            <div class="col-md-6">
+                <label for="code">Dossier Code</label>
+                <input type="text" name="code" class="form-control" required>
+            </div>
+            <div class="col-md-6">
+                <label for="type">Dossier Type</label>
+                <select name="type" class="form-control" required>
+                    <option value="audit" {% if default_type == 'audit' %} selected {% endif %}>Audit</option>
+                    <option value="remediation" {% if default_type == 'remediation' %} selected {% endif %}>Remediation</option>
+                    <option value="survey" {% if default_type == 'survey' %} selected {% endif %}>Survey</option>
+                    <option value="other" {% if default_type == 'other' %} selected {% endif %}>Other</option>
+                </select>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-md-6">
+                <label for="company">Company</label>
+                <select name="company_id" class="form-control" required>
+                    {% for company in companies %}
+                        <option value="{{ company.id }}">{{ company.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-6">
+            <div class="col-md-6">
+                <label for="initiator">Initiator</label>
+                <input type="text" name="initiator_name" class="form-control" value="{{ current_user.company.name }}" readonly>
+                <input type="hidden" name="initiator_id" value="{{ current_user.company.id }}">
+            </div>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-md-12">
+                <label for="status">Dossier Status</label>
+                <select name="status" class="form-control" required>
+                    <option value="pending">Pending</option>
+                    <option value="in_progress">In Progress</option>
+                    <option value="completed">Completed</option>
+                    <option value="archived">Archived</option>
+                </select>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-success mt-3">Create Dossier</button>
+    </form>
+</div>
+{% endblock %}

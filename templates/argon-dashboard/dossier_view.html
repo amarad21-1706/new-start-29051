@@ -33,6 +33,11 @@
         <button type="submit" class="btn btn-primary mt-3">Filter</button>
     </form>
 
+    <!-- Create Dossier Button (conditionally displayed) -->
+    <div class="mt-4">
+        <button type="button" class="btn btn-success" onclick="window.location.href='{{ url_for('argon.create_dossier') }}'">Create Dossier</button>
+    </div>
+
     <!-- Message Box -->
     <div class="card mt-4">
         <div class="card-header">

@@ -1662,7 +1662,7 @@ class DocumentWorkflow(db.Model):
     recall_value = db.Column(db.Integer, default=1)
     open_action = db.Column(db.Boolean, default=False)
     comments = db.Column(db.Text, nullable=True)  # Add the comments field
-\
+
     # Foreign key with "ON DELETE CASCADE"
     base_data_id = db.Column(db.Integer, ForeignKey('base_data.id', ondelete="CASCADE"))
 

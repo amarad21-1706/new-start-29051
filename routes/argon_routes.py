@@ -966,15 +966,69 @@ def remediation_open():
     return render_template('argon-dashboard/dossier_view.html', area_ids=[3], initiator_id='Authority')
 
 
-@argon_bp.route('/argon/audit_archive')
+@argon_bp.route('/audit_archive')
 def audit_archive():
     # Logic for displaying archived audits
     # return render_template('argon-dashboard/audit_archive.html')
     return render_template('argon-dashboard/dossier_view.html', area_ids=[3], initiator_id=0)
 
-@argon_bp.route('/argon/remediation_archive')
+@argon_bp.route('/remediation_archive')
 def remediation_archive():
     # Logic for displaying archived remediations
     # return render_template('argon-dashboard/remediation_archive.html')
     return render_template('argon-dashboard/dossier_view.html', area_ids=[3], initiator_id='Authority')
 
+
+@argon_bp.route('/create_dossier', methods=['GET'])
+@login_required
+def create_dossier():
+    companies = Company.query.all()  # Fetch all companies for the dropdown
+
+    # Logic to enable/disable the button based on role and block
+    enable_create_dossier = False
+    if (current_user.has_role('Admin') or \
+            (current_user.has_role('Authority'))):
+        enable_create_dossier = True
+
+    # Pre-set dossier type based on user role
+    if current_user.has_role('Admin'):
+        default_type = 'audit'
+    elif current_user.has_role('Authority'):
+        default_type = 'remediation'
+    else:
+        default_type = 'other'  # Default to 'other' or adjust based on requirements
+
+
+    print('enable_create_dossier', enable_create_dossier)
+    return render_template('argon-dashboard/create_dossier.html',
+                           companies=companies,
+                           current_user=current_user,
+                           enable_create_dossier=enable_create_dossier,
+                           default_type=default_type)
+
+
+@argon_bp.route('/submit_create_dossier', methods=['POST'])
+@login_required
+def submit_create_dossier():
+    # Get form data
+    code = request.form['code']
+    type = request.form['type']
+    company_id = request.form['company_id']
+    initiator_id = request.form['initiator_id']  # Hidden field for initiator
+
+    # Get status from the form
+    status = request.form['status']
+
+    # Create new dossier
+    new_dossier = Dossier(
+        code=code,
+        type=type,
+        company_id=company_id,
+        initiator_id=initiator_id,  # Set the initiator based on the logged-in user's company
+        status=status
+    )
+    db.session.add(new_dossier)
+    db.session.commit()
+
+    flash('Dossier created successfully!', 'success')
+    return redirect(url_for('dossier_view'))
