@@ -10,17 +10,17 @@
                     <h3>Raccolta Dati</h3>
                 </div>
                 <div class="card-body">
-                    <div class="row">
+                    <div class="row text-center">
                         <!-- Sub-block for Area 1 -->
-                        <div class="col-md-12 mb-2">
+                        <div class="col-md-4 mb-2">
                             <button type="button" class="btn btn-primary btn-block" onclick="window.location.href='/open_admin_1'">Area 1</button>
                         </div>
                         <!-- Sub-block for Area 2 -->
-                        <div class="col-md-12">
+                        <div class="col-md-4 mb-2">
                             <button type="button" class="btn btn-secondary btn-block" onclick="window.location.href='/open_admin_2'">Area 2</button>
                         </div>
                         <!-- Sub-block for Survey -->
-                        <div class="col-md-12">
+                        <div class="col-md-4 mb-2">
                             <button type="button" class="btn btn-success btn-block" onclick="window.location.href='/open_admin_10/open_questionnaires'">Survey</button>
                         </div>
                     </div>
@@ -35,13 +35,13 @@
                     <h3>Audit</h3>
                 </div>
                 <div class="card-body">
-                    <div class="row">
+                    <div class="row text-center">
                         <!-- Open Sub-block -->
-                        <div class="col-md-12 mb-2">
+                        <div class="col-md-6 mb-2">
                             <button type="button" class="btn btn-primary btn-block" onclick="window.location.href='{{ url_for('argon.audit_open') }}'">Pending</button>
                         </div>
                         <!-- Archive Sub-block -->
-                        <div class="col-md-12">
+                        <div class="col-md-6 mb-2">
                             <button type="button" class="btn btn-info btn-block" onclick="window.location.href='{{ url_for('argon.audit_archive') }}'">Archive</button>
                         </div>
                     </div>
@@ -56,13 +56,13 @@
                     <h3>Remediation</h3>
                 </div>
                 <div class="card-body">
-                    <div class="row">
+                    <div class="row text-center">
                         <!-- Open Sub-block -->
-                        <div class="col-md-12 mb-2">
+                        <div class="col-md-6 mb-2">
                             <button type="button" class="btn btn-primary btn-block" onclick="window.location.href='{{ url_for('argon.remediation_open') }}'">Pending</button>
                         </div>
                         <!-- Archive Sub-block -->
-                        <div class="col-md-12">
+                        <div class="col-md-6 mb-2">
                             <button type="button" class="btn btn-info btn-block" onclick="window.location.href='{{ url_for('argon.remediation_archive') }}'">Archive</button>
                         </div>
                     </div>
