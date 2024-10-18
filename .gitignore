@@ -4,6 +4,8 @@ __pycache__/
 *.py[cod]
 .venv/
 /venv/
+.env.development
+.env.production
 
 my_new_venv/
 .idea/
