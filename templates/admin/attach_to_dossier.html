@@ -1,6 +1,6 @@
 <!-- attach_to_dossier.html -->
 <h2>Attach Documents to {{ dossier_type }} Dossier</h2>
-<form method="POST" action="{{ url_for('admin.finalize_attach_to_dossier') }}">
+<form method="POST" action="{{ url_for('finalize_attach_to_dossier') }}">
     <div class="form-group">
         <label for="dossier">Select {{ dossier_type }} Dossier</label>
         <select name="dossier_id" class="form-control" required>

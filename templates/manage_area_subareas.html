@@ -1,0 +1,85 @@
+{% extends 'base.html' %}
+<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+
+{% block content %}
+    <h1 style="font-size: 2em;">Manage Subareas for Areas</h1> <!-- Title with larger font size -->
+
+    <form method="POST" class="my-8 mx-auto" style="max-width: 80%;">
+        {{ form.hidden_tag() }}
+
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <label for="area" class="form-label">Select Area:</label>
+                {{ form.area(class="form-control", id="area-select") }}
+            </div>
+            <div class="col-md-6">
+                <label for="subarea" class="form-label">Select Subarea:</label>
+                {{ form.subarea(class="form-control") }}
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div id="associated-subareas" class="form-group">
+                    <!-- This section will be populated with associated subareas -->
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    {{ form.add(class="btn btn-primary me-md-2") }}
+                    {{ form.delete(class="btn btn-danger me-md-2") }}
+                    {{ form.cancel(class="btn btn-secondary") }}
+                </div>
+            </div>
+        </div>
+
+        {% if message %}
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="alert alert-info" role="alert" id="message-box">
+                    {{ message }}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+    </form>
+
+    <!-- Include jQuery for making AJAX requests -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        // Listen for changes to the area select dropdown
+        $('#area-select').on('change', function () {
+            var areaId = $(this).val();  // Get the selected area ID
+            var associatedSubareasDiv = $('#associated-subareas');  // The div where subareas will be displayed
+
+            // Clear any existing subareas
+            associatedSubareasDiv.empty();
+
+            if (areaId) {
+                // Make an AJAX request to fetch associated subareas
+                $.get('/association/get_area_subareas/' + areaId, function (data) {
+                    if (data.subareas && data.subareas.length > 0) {
+                        // If subareas are found, display them
+                        associatedSubareasDiv.append('<h5>Associated Subareas:</h5>');
+                        var list = $('<ul></ul>');  // Create an unordered list
+                        data.subareas.forEach(function (subarea) {
+                            list.append('<li>' + subarea.name + ' (' + subarea.description + ')</li>');
+                        });
+                        associatedSubareasDiv.append(list);
+                    } else {
+                        associatedSubareasDiv.append('<p>No subareas are associated with this area.</p>');
+                    }
+                }).fail(function () {
+                    associatedSubareasDiv.append('<p class="text-danger">Error loading subareas</p>');
+                });
+            } else {
+                associatedSubareasDiv.append('<p>Select an area to view its subareas.</p>');
+            }
+        });
+    </script>
+
+{% endblock %}

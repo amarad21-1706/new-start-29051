@@ -65,7 +65,7 @@ from models.user import (Users, UserRoles, Event, Role, Questionnaire, Question,
         Contract, ContractParty, ContractTerm, ContractDocument, ContractStatusHistory,
         ContractArticle, Party,
         Team, TeamMembership, ContractTeam,
-        Dossier
+        Dossier, ExtraTimeAuthorization
         )
 
 # from master_password_reset import admin_reset_password, AdminResetPasswordForm
@@ -398,7 +398,6 @@ def set_session():
 def get_session():
     value = session.get('key')
     return f'Session value: {value}'
-
 
 # TODO use it for the landing page
 def check_internet():
@@ -734,7 +733,6 @@ def get_documents():
         app.logger.error(f"Error fetching documents: {e}")
         return jsonify({"error": str(e)}), 500
 
-
 @app.route('/api/get_workflow_data', methods=['GET'])
 @login_required
 def get_workflow_data():
@@ -745,8 +743,14 @@ def get_workflow_data():
         for workflow in workflows:
             for workflow_step in workflow.workflow_steps:
                 step = workflow_step.step  # Access the step through workflow_steps
+
                 for document_workflow in workflow.document_workflows:
                     document = document_workflow.base_data  # Assuming this is correct
+
+                    # Check if document is None before accessing its attributes
+                    if document is None:
+                        app.logger.warning(f"Document is None for workflow ID: {workflow.id}")
+                        continue  # Skip this document if it's None
 
                     # Convert the date_of_doc to string if it's not None
                     document_date = document.date_of_doc.isoformat() if document.date_of_doc else None
@@ -758,7 +762,7 @@ def get_workflow_data():
                         'step_id': step.id,
                         'step_name': step.name,
                         'document_id': document.id,
-                        'document_name': document.ft1,  # Adjust as per your field
+                        'document_name': document.ft1 if document.ft1 else 'Unnamed',  # Adjust as per your field
                         'document_number': document.number_of_doc,  # Adjust as per your field
                         'document_date': document_date,  # Convert date to string
                         'company_id': document.company_id,
@@ -1530,7 +1534,6 @@ def login():
     captcha_text, captcha_image = generate_captcha(300, 100, 5)
     session['captcha'] = captcha_text
     return render_template('access/login.html', form=form, captcha_image=captcha_image)
-
 
 
 @app.route('/left_menu', methods=['GET', 'POST'])
@@ -5920,6 +5923,107 @@ def finalize_attach_to_dossier():
 
     flash(f'Documents successfully attached to {dossier.type} Dossier!', 'success')
     return redirect(url_for('open_admin_3.index'))  # Adjust to your admin index
+
+@app.route('/manage_extra_time', methods=['GET', 'POST'])
+@login_required
+def manage_extra_time():
+    if not current_user.has_role('Admin'):
+        flash("You are not authorized to access this page.", "danger")
+        return redirect(url_for('index'))
+
+    companies = Company.query.all()
+    areas = Area.query.all()
+    subareas = Subarea.query.all()
+
+    if request.method == 'POST':
+        company_id = request.form.get('company_id')
+        area_id = request.form.get('area_id')
+        subarea_id = request.form.get('subarea_id')
+        extra_time_end = request.form.get('extra_time_end')
+
+        # Check if a record already exists for this combination
+        existing_record = ExtraTimeAuthorization.query.filter_by(
+            company_id=company_id,
+            area_id=area_id,
+            subarea_id=subarea_id
+        ).first()
+
+        if existing_record:
+            # If the record exists, update the existing record with the new extra time end date
+            existing_record.extra_time_end = extra_time_end
+            db.session.commit()
+            flash("Extra time authorization updated.", "success")
+        else:
+            # If no record exists, create a new one
+            new_extra_time = ExtraTimeAuthorization(
+                company_id=company_id,
+                area_id=area_id,
+                subarea_id=subarea_id,
+                extra_time_end=extra_time_end
+            )
+            db.session.add(new_extra_time)
+            db.session.commit()
+            flash("Extra time authorization saved.", "success")
+
+        return redirect(url_for('manage_extra_time'))
+
+    # Fetch all existing extra time records
+    extra_time_records = ExtraTimeAuthorization.query.all()
+
+    return render_template(
+        'manage_extra_time.html',
+        companies=companies,
+        areas=areas,
+        subareas=subareas,
+        extra_time_records=extra_time_records
+    )
+
+
+@app.route('/edit_extra_time/<int:record_id>', methods=['GET', 'POST'])
+@login_required
+def edit_extra_time(record_id):
+    if not current_user.has_role('Admin'):
+        flash("You are not authorized to access this page.", "danger")
+        return redirect(url_for('index'))
+
+    extra_time_record = ExtraTimeAuthorization.query.get_or_404(record_id)
+
+    if request.method == 'POST':
+        extra_time_record.company_id = request.form.get('company_id')
+        extra_time_record.area_id = request.form.get('area_id')
+        extra_time_record.subarea_id = request.form.get('subarea_id')
+        extra_time_record.extra_time_end = request.form.get('extra_time_end')
+
+        db.session.commit()
+        flash("Extra time authorization updated successfully.", "success")
+        return redirect(url_for('manage_extra_time'))
+
+    companies = Company.query.all()
+    areas = Area.query.all()
+    subareas = Subarea.query.all()
+
+    return render_template(
+        'edit_extra_time.html',
+        record=extra_time_record,
+        companies=companies,
+        areas=areas,
+        subareas=subareas
+    )
+
+@app.route('/delete_extra_time/<int:record_id>', methods=['POST'])
+@login_required
+def delete_extra_time(record_id):
+    if not current_user.has_role('Admin'):
+        flash("You are not authorized to access this page.", "danger")
+        return redirect(url_for('index'))
+
+    extra_time_record = ExtraTimeAuthorization.query.get_or_404(record_id)
+
+    db.session.delete(extra_time_record)
+    db.session.commit()
+    flash("Extra time authorization deleted successfully.", "success")
+    return redirect(url_for('manage_extra_time'))
+
 
 
 @app.route('/checkout_success')

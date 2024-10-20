@@ -7,7 +7,7 @@ from models.user import (Company, CompanyUsers, Users, Role, UserRoles,
                          Area, Subarea, AreaSubareas, Deadline, Interval,
                          QuestionnaireCompanies, Questionnaire, Question, QuestionnaireQuestions,
                          get_config_values, Workflow, Step, BaseData, WorkflowSteps,
-                         WorkflowBaseData, DocumentWorkflow, Post, AuditLog, DataMapping)
+                         WorkflowBaseData, DocumentWorkflow, Post, AuditLog, DataMapping, ExtraTimeAuthorization)
 
 # from sqlalchemy import or_, and_, desc, func, null
 # import pandas as pd
@@ -16,6 +16,9 @@ from models.user import (Company, CompanyUsers, Users, Role, UserRoles,
 
 from dateutil.relativedelta import relativedelta
 
+from datetime import datetime
+
+from flask_login import current_user
 import pandas as pd
 from flask_admin import Admin
 
@@ -486,8 +489,6 @@ def extract_year_from_fy(fy_string):
     parts = fy_string.split()  # Split the string into parts based on spaces
     return parts[-1]  # Return the last part, which should be the year
 
-
-from datetime import datetime
 def get_current_interval(interval):
     now = datetime.now()
 
@@ -2396,6 +2397,66 @@ def remove_duplicates(session, model_class, keys):
 
         # Commit the changes
         session.commit()
+
+
+def is_extratime(company_id, area_id, subarea_id, document_year, document_interval):
+    """
+    Check if the action is allowed based on the current year, interval, and any extra time authorization.
+    """
+    # Get the current year
+    current_year = str(datetime.now().year)
+    print('--->>> Checking action: current year:', current_year)
+
+    # Fetch configuration values based on area and subarea (assume config_type='area_interval' gives nr_intervals)
+    config_values = get_config_values(config_type='area_interval', company_id=company_id, area_id=area_id,
+                                      subarea_id=subarea_id)
+    nr_intervals = config_values[0]
+
+    # Get current intervals
+    intervals = get_current_intervals(db.session)
+
+    # Filter the current interval based on nr_intervals (e.g., quarterly, monthly, etc.)
+    current_intervals = [t[2] for t in intervals if t[0] == nr_intervals]
+
+    if not current_intervals:
+        print(f"No current intervals found for the given configuration: nr_intervals={nr_intervals}")
+        return False
+
+    # Extract the first interval from the current intervals list
+    current_interval = current_intervals[0]
+    print('--->>> Checking action: current interval:', current_interval)
+
+    # normalize the values
+    try:
+        document_year = int(document_year)
+        current_year = int(current_year)
+        document_interval = int(document_interval)
+        current_interval = int(current_interval)
+    except ValueError as e:
+        print(f"Error converting parameters to integers: {e}")
+        return False  # Handle the error appropriately
+
+    print('extratime parameters are', document_year, current_year, document_interval, current_interval)
+    # Compare the document's year and interval with the current year and interval
+    if document_year == current_year and document_interval == current_interval:
+        print('--->>> Access granted based on current year and interval match.')
+        return True
+
+    # Check for extra time authorization for the company, area, and subarea
+    extra_time_auth = ExtraTimeAuthorization.query.filter_by(
+        company_id=company_id,
+        area_id=area_id,
+        subarea_id=subarea_id
+    ).first()
+
+    # If extra time authorization exists and is valid, grant access
+    if extra_time_auth and extra_time_auth.has_extra_time():
+        print('--->>> Access granted based on extra time authorization.')
+        return True
+
+    # If no condition is met, deny access
+    print('--->>> Access denied.')
+    return False
 
 
 def create_notification(session, **kwargs):

@@ -601,14 +601,20 @@ class Subarea(db.Model):
     def __repr__(self):
         return f"{self.name} ({self.description})"
 
+
 class AreaSubareas(db.Model):
     __tablename__ = 'area_subareas'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    area_id = db.Column(db.Integer, db.ForeignKey('area.id'))
-    subarea_id = db.Column(db.Integer, db.ForeignKey('subarea.id'))
+    area_id = db.Column(db.Integer, db.ForeignKey('area.id'), nullable=False)
+    subarea_id = db.Column(db.Integer, db.ForeignKey('subarea.id'), nullable=False)
     status_id = db.Column(db.Integer, db.ForeignKey('status.id'))
     interval_id = db.Column(db.Integer, db.ForeignKey('interval.id'))
     caption = db.Column(db.Text(255))
+
+    # Add a composite unique constraint to ensure uniqueness of area-subarea combination
+    __table_args__ = (
+        db.UniqueConstraint('area_id', 'subarea_id', name='unique_area_subarea'),
+    )
 
     # Define relationships with back_populates to ensure no conflict
     area = db.relationship('Area', back_populates='subareas', overlaps="related_area,subareas")
@@ -617,6 +623,7 @@ class AreaSubareas(db.Model):
     def __repr__(self):
         return (f"Area={self.area_id}, subarea={self.subarea_id}, "
                 f"status={self.status_id}, interval={self.interval_id}")
+
 
 class Subject(db.Model):
     __tablename__ = 'subject'
@@ -736,9 +743,6 @@ class BaseData(db.Model):
     document_workflows = db.relationship('DocumentWorkflow', back_populates='base_data', cascade="all, delete-orphan")
     document_workflow_history = db.relationship('DocumentWorkflowHistory', back_populates='base_data')
 
-    # Define relationships with step_base_data and document_workflow
-    # steps = db.relationship('StepBaseData', back_populates='base_data', cascade="all, delete-orphan")
-    document_workflows = db.relationship('DocumentWorkflow', back_populates='base_data', cascade="all, delete-orphan")
     # Add a back-reference to Dossier
     dossier = db.relationship('Dossier', back_populates='documents')
 
@@ -1122,6 +1126,7 @@ class Config(db.Model):
     company_id = db.Column(db.Integer)
     area_id = db.Column(db.Integer)
     subarea_id = db.Column(db.Integer)
+    current_interval = db.Column(db.Integer, nullable=False)
     config_integer = db.Column(db.Integer)
     config_number = db.Column(db.Numeric)
     config_text = db.Column(db.String(255))
@@ -1131,6 +1136,20 @@ class Config(db.Model):
         return (f"Config: type={self.config_type}, company={self.company_id}, "
                 f"area={self.area_id}, subarea={self.subarea_id}")
 
+
+class ExtraTimeAuthorization(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    company_id = db.Column(db.Integer, db.ForeignKey('company.id'))
+    area_id = db.Column(db.Integer, db.ForeignKey('area.id'))
+    subarea_id = db.Column(db.Integer, db.ForeignKey('subarea.id'))
+    extra_time_end = db.Column(db.DateTime, nullable=True)
+
+    company = db.relationship('Company')
+    area = db.relationship('Area')
+    subarea = db.relationship('Subarea')
+
+    def has_extra_time(self):
+        return self.extra_time_end and self.extra_time_end >= datetime.utcnow()
 
 
 def get_config_values(config_type, company_id=None, area_id=None, subarea_id=None):

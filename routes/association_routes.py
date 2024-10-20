@@ -5,14 +5,15 @@ from models.user import (Users, UserRoles, Event, Role,
         Plan, Product, PlanProducts, UserPlans,
         Question, QuestionnaireQuestions, Questionnaire,
         Workflow, WorkflowSteps, WorkflowBaseData, DocumentWorkflow, Step,
-        Company, CompanyUsers
+        Company, CompanyUsers,
+        Area, Subarea, AreaSubareas
         #, Application,
         )
 
 # from master_password_reset import admin_reset_password, AdminResetPasswordForm
 from forms.forms import (CompanyUserForm, QuestionnaireCompanyForm,
 PlanProductsForm, QuestionnaireQuestionForm, WorkflowStepForm,
-                         UserDocumentsForm, UserRoleForm)
+                         UserDocumentsForm, UserRoleForm, AreaSubareaForm)
 
 from flask import Blueprint, render_template, jsonify
 from flask import render_template, request, redirect, url_for, flash
@@ -24,8 +25,8 @@ from app_factory import roles_required
 # app = create_app() #Flask(__name__)
 
 # Create the blueprint object
+# Create the blueprint object
 association_bp = Blueprint('association', __name__)
-
 
 @association_bp.route('/manage_user_roles', methods=['GET', 'POST'])
 @login_required
@@ -405,4 +406,78 @@ def get_questionnaire_questions(questionnaire_id):
     except Exception as e:
         app.logger.error(f"Error fetching questions for questionnaire {questionnaire_id}: {e}")
         return jsonify({'error': 'An error occurred while fetching questions'}), 500
+
+
+@association_bp.route('/manage_area_subareas', methods=['GET', 'POST'])
+@login_required
+@roles_required('Admin')
+def manage_area_subareas():
+    form = AreaSubareaForm()
+    message = None
+
+    # Populate choices for areas and subareas
+    form.area.choices = [(area.id, area.name) for area in Area.query.all()]
+    form.subarea.choices = [(subarea.id, subarea.name) for subarea in Subarea.query.all()]
+
+    if request.method == 'POST':
+        print('AREA post')
+        if form.validate_on_submit():
+
+            print('AREA post valid')
+            if form.cancel.data:
+                return redirect(url_for('index'))
+            elif form.add.data:
+                # Handle adding a subarea to an area
+                area_id = form.area.data
+                subarea_id = form.subarea.data
+
+                print('AREA post checking')
+                # Check if the area-subarea association already exists
+                existing_area_subarea = AreaSubareas.query.filter_by(area_id=area_id, subarea_id=subarea_id).first()
+
+                print('AREA post checked')
+                if existing_area_subarea:
+                    message = "This subarea is already associated with the selected area."
+                else:
+
+                    print('AREA post inserting')
+                    try:
+                        # Add the new area-subarea association
+                        new_area_subarea = AreaSubareas(area_id=area_id, subarea_id=subarea_id)
+                        db.session.add(new_area_subarea)
+                        db.session.commit()
+                        message = "Subarea added to the area successfully."
+                    except Exception as e:
+                        db.session.rollback()  # Roll back the transaction on error
+                        print(f"Error adding subarea: {e}")
+                        message = "An error occurred while adding the subarea."
+
+            elif form.delete.data:
+                # Handle removing a subarea from an area
+                area_id = form.area.data
+                subarea_id = form.subarea.data
+
+                # Find and delete the area-subarea association
+                area_subarea_to_delete = AreaSubareas.query.filter_by(area_id=area_id, subarea_id=subarea_id).first()
+
+                if area_subarea_to_delete:
+                    db.session.delete(area_subarea_to_delete)
+                    db.session.commit()
+                    message = "Subarea removed from the area successfully."
+                else:
+                    message = "Subarea not found in the selected area."
+        else:
+            message = "Form validation failed. Please check your input."
+
+    return render_template('manage_area_subareas.html', form=form, message=message)
+
+
+@association_bp.route('/get_area_subareas/<int:area_id>', methods=['GET'])
+@login_required
+def get_area_subareas(area_id):
+    # Query the AreaSubareas table to get the subareas for the selected area
+    area_subareas = AreaSubareas.query.filter_by(area_id=area_id).all()
+    subareas = [{'name': subarea.subarea.name, 'description': subarea.subarea.description} for subarea in area_subareas]
+
+    return jsonify({'subareas': subareas})
 

@@ -38,7 +38,7 @@ from wtforms_sqlalchemy.fields import QuerySelectField
 from models.user import (Users, Company, Event, Subject, Step, Workflow, #StepBaseData,
                          WorkflowSteps, BaseData, BaseDataInline,
                          Question, Questionnaire, QuestionnaireQuestions, Status, LegalDocument,
-                         Area, Subarea, Lexic, Workflow, Interval, Step,
+                         Area, Subarea, AreaSubareas, Lexic, Workflow, Interval, Step,
                          Contract, ContractParty, ContractTerm, ContractDocument,
                          ContractStatusHistory, ContractArticle, Party,
                          BaseData, DocumentWorkflow
@@ -79,6 +79,14 @@ class ChartMetricForm(FlaskForm):
     metric = BooleanField()  # Checkbox for selecting the metric
     label = StringField('Label')  # Editable label for the selected metric
 '''
+
+class AreaSubareaForm(FlaskForm):
+    area = SelectField('Select Area', coerce=int)
+    subarea = SelectField('Select Subarea', coerce=int)
+    add = SubmitField('Add Subarea to Area')
+    delete = SubmitField('Remove Subarea from Area')
+    cancel = SubmitField('Cancel')
+
 
 class ChartMetricForm(FlaskForm):
     column_name = HiddenField('Column Name')  # Hidden field to retain the column name on submission

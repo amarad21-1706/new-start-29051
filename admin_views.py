@@ -61,7 +61,7 @@ from app_factory import roles_required, subscription_required
 
 from config.config import (get_if_active, get_subarea_name, get_current_interval, get_current_intervals,
                            get_subarea_interval_type, create_audit_log, remove_duplicates,
-                           create_notification)
+                           create_notification, is_extratime)
 
 from config.custom_fields import CustomFileUploadField  # Import the custom field
 
@@ -75,7 +75,7 @@ from models.user import (Users, UserRoles, Role, Table, Questionnaire, Question,
                                 Container, Config,
                                 Contract, ContractParty, ContractTerm, ContractDocument,
                                 ContractStatusHistory, ContractArticle, Party,
-                                Dossier, Action,
+                                Dossier, Action, ExtraTimeAuthorization,
                                 get_config_values)
 
 from wtforms.widgets import DateTimeInput
@@ -144,6 +144,17 @@ def check_record_exists(form, company_id):
         company_id=company_id,
     )
     return query.first() is not None
+
+
+class ExtraTimeManagementView(ModelView):
+    # Admin view for managing extra time
+    form_columns = ['company', 'area', 'subarea', 'extra_time_end']
+
+    # Logic for managing extra time authorization
+    def on_model_change(self, form, model, is_created):
+        # Ensure that extra time is set properly
+        if is_created or model.extra_time_end:
+            model.extra_time_end = form.extra_time_end.data
 
 
 class DocumentsView(ModelView):
@@ -573,17 +584,156 @@ class DocumentsBaseDataView(ModelView):
     can_create = True
     can_edit = True
     can_delete = True
+    can_set_page_size = True
+    can_export = False
+    can_view_details = True
+    name = 'Documents'
+
+    # Define the columns to display in the list view
+    column_list = [
+        'number_of_doc', 'date_of_doc', 'company', 'user',
+        'fi0', 'interval', 'interval_ord', 'record_type',
+        'area', 'subarea', 'subject', 'lexic', 'file_path', 'no_action', 'fc1', 'created_on', 'updated_on', 'audit_log'
+    ]
+
+    # Add labels for better readability
+    column_labels = {
+        'number_of_doc': 'Document #', 'date_of_doc': 'Date', 'company': 'Company', 'user': 'User',
+        'fi0': 'Year', 'interval_id': 'Interval', 'interval_ord': 'Interval Order', 'record_type': 'Type',
+        'area_id': 'Area', 'subarea_id': 'Subarea', 'subject_id': 'Subject', 'lexic_id': 'Action',  # Renamed
+        'file_path': 'File Path', 'no_action': 'No Action', 'fc1': 'Comments', 'created_on': 'Created On',
+        'updated_on': 'Last Update',  # Renamed
+        'audit_log': 'Audit Log'
+    }
+
+    # Form columns - control field order
+    form_columns = [
+        'number_of_doc', 'date_of_doc', 'fi0',
+        'interval', 'interval_ord',
+        'area', 'subarea', 'subject', 'lexic',  # Renamed
+        'file_path', 'no_action',  # Ensure no_action comes immediately after file_path
+        'fc1', 'created_on', 'updated_on',  # Renamed
+        'audit_log'
+    ]
+
+
+    # Exclude fields
+    form_excluded_columns = [
+        'company', 'user', 'interval', 'interval_ord', 'created_by', 'legal_document_id',
+        'DocumentWorkflowHistory', 'base_data_inlines', 'record_type', 'data_type', 'record_type',
+        'fc2', 'fc3', 'fc4', 'fc5', 'fc6', 'ft1', 'ft2', 'ft3',
+        'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fi6', 'fi7', 'fi8', 'fi9',
+        'fi10', 'fi11', 'fi12', 'fi13', 'fi14', 'fi15',' fi16',
+        'fb1',
+        'fn0', 'fn1', 'fn2', 'fn3', 'fn4', 'fn5', 'fn6', 'fn7', 'fn8', 'fn9'
+    ]
+
+    # Read-only fields
+    form_widget_args = {
+        'company': {'readonly': True},
+        'user': {'readonly': True},
+        'audit_log': {'readonly': True},
+        'created_on': {'readonly': True},
+        'updated_on': {'readonly': True}
+    }
+
+    def get_query(self):
+        query = super(DocumentsBaseDataView, self).get_query()
+
+        if current_user.is_authenticated:
+            if current_user.has_role('Admin'):
+                query = query
+            elif current_user.has_role('Manager'):
+                company_id = current_user.company_id
+                query = query.filter(BaseData.company_id == company_id)
+            elif current_user.has_role('Employee'):
+                user_id = current_user.id
+                query = query.filter(BaseData.user_id == user_id)
+
+        query = query.filter(
+            (BaseData.area_id.in_([1, 3])) | (BaseData.record_type == 'document')
+        )
+
+        return query.order_by(BaseData.updated_on.desc())
+
+    def scaffold_form(self):
+        """
+        Scaffold the form to set custom field handling like upload path and read-only fields.
+        """
+        form_class = super(DocumentsBaseDataView, self).scaffold_form()
+
+        # Set the upload path dynamically from the current app context
+        upload_folder = current_app.config.get('UPLOAD_FOLDER', 'uploads')
+
+        # Customize the form fields
+        form_class.file_path = FileUploadField('File', base_path=upload_folder)
+        form_class.date_of_doc = DateField('Date of Document', format='%Y-%m-%d', render_kw={'class': 'form-control'})
+
+        return form_class
+
+    def on_model_change(self, form, model, is_created):
+        # Automatically set fields like company_id, user_id, and updated_on
+        if is_created:
+            model.company_id = current_user.company_id
+            model.user_id = current_user.id
+
+        model.updated_on = datetime.now()
+        model.fi0 = form.date_of_doc.data.year if form.date_of_doc.data else datetime.now().year
+
+    @action('attach_to_audit', 'Attach to Audit', 'Are you sure you want to assign these documents to an Audit Dossier?')
+    def action_attach_to_audit(self, ids):
+        try:
+            with current_app.app_context():  # Ensure app context is available
+                document_ids = [int(id_1) for id_1 in ids]
+                selected_documents = BaseData.query.filter(BaseData.id.in_(document_ids)).all()
+
+                # Query the dossiers of type 'audit' for the current user's company
+                audit_dossiers = Dossier.query.filter_by(company_id=current_user.company_id, type='audit').all()
+
+                return render_template('admin/attach_to_dossier.html',
+                                       dossiers=audit_dossiers,
+                                       selected_documents=selected_documents,
+                                       dossier_type='Audit')
+        except Exception as e:
+            app.logger.error(f"Error in action_attach_to_audit: {e}")
+            flash(f"Error attaching documents to Audit Dossier: {e}", 'error')
+            return redirect(url_for('open_admin_3.index'))
+
+    @action('attach_to_remediation', 'Attach to Remediation', 'Are you sure you want to assign these documents to a Remediation Dossier?')
+    def action_attach_to_remediation(self, ids):
+        try:
+            with current_app.app_context():  # Ensure app context is available
+                document_ids = [int(id_1) for id_1 in ids]
+                selected_documents = BaseData.query.filter(BaseData.id.in_(document_ids)).all()
+
+                # Query the dossiers of type 'remediation' for the current user's company
+                remediation_dossiers = Dossier.query.filter_by(company_id=current_user.company_id, type='remediation').all()
+
+                return render_template('admin/attach_to_dossier.html',
+                                       dossiers=remediation_dossiers,
+                                       selected_documents=selected_documents,
+                                       dossier_type='Remediation')
+        except Exception as e:
+            app.logger.error(f"Error in action_attach_to_remediation: {e}")
+            flash(f"Error attaching documents to Remediation Dossier: {e}", 'error')
+            return redirect(url_for('open_admin_3.index'))
+
+
+class DocumentsBaseDataView_kookay(ModelView):
+    can_create = True
+    can_edit = True
+    can_delete = True
     name = 'Documents'
     menu_icon_type = 'glyph'
     menu_icon_value = 'glyphicon-list-alt'
 
     column_list = [
-        'id', 'company_name', 'user_name',
-        'interval_name', 'interval_ord', 'fi0',
+        'number_of_doc', 'date_of_doc', 'company_name', 'user_name',
+        'fi0', 'interval_name', 'interval_ord',
         'record_type', 'area_name', 'subarea_name',
         'data_type', 'subject_name', 'legal_name',
-        'file_path', 'created_on', 'number_of_doc',
-        'fc1', 'no_action'
+        'file_path', 'no_action',
+        'fc1'
     ]
 
     column_labels = {
@@ -596,19 +746,17 @@ class DocumentsBaseDataView(ModelView):
     }
 
     form_columns = [
-        'number_of_doc', 'date_of_doc',
-        'interval_id', 'interval_ord',
-        'area_id', 'subarea_id',
-        'subject_id', 'lexic_id',
-        'file_path', 'no_action',
-        'fc1'
+        'number_of_doc', 'date_of_doc', 'interval_id', 'interval_ord',
+        'area_id', 'subarea_id', 'subject_id', 'lexic_id', 'file_path',
+        'no_action', 'fc1'
     ]
 
     column_default_sort = ('created_on', True)
     column_searchable_list = ('company_id', 'user_id', 'fi0', 'subject_id', 'legal_document_id', 'file_path')
     column_filters = ('company_id', 'user_id', 'fi0', 'subject_id', 'legal_document_id', 'file_path')
 
-    form_excluded_columns = ('company_id', 'user_id', 'status_id', 'created_by', 'created_on', 'updated_on', 'record_type')
+    form_excluded_columns = (
+    'company_id', 'user_id', 'status_id', 'created_by', 'created_on', 'updated_on', 'record_type')
 
     form_extra_fields = {
         'file_path': FileField('Attachment', render_kw={'class': 'form-control'}),
@@ -634,107 +782,182 @@ class DocumentsBaseDataView(ModelView):
         'fc1': TextAreaField('Comments')
     }
 
-
     def scaffold_form(self):
         """
-        Scaffold the form to ensure the fields are correctly generated.
+        Scaffold the form to ensure fields are correctly generated and debug each field.
         """
-        # Use the base class scaffold_form to generate the form
         form_class = super(DocumentsBaseDataView, self).scaffold_form()
 
-        # Customize fields as necessary
-        form_class.file_path = FileUploadField('Attachment', base_path=current_app.config.get('UPLOAD_FOLDER', 'uploads'))
+        print("Scaffold Form - Initializing form fields")
+
+        print("Scaffold Form - Adding number_of_doc field")
+        form_class.number_of_doc = IntegerField('Document Number', render_kw={'class': 'form-control'})
+
+        print("Scaffold Form - Adding date_of_doc field")
         form_class.date_of_doc = DateField('Date of Document', format='%Y-%m-%d', render_kw={'class': 'form-control'})
+
+        print("Scaffold Form - Adding interval_id field")
+        form_class.interval_id = QuerySelectField('Interval', query_factory=lambda: Interval.query.all(),
+                                                  get_label='name', allow_blank=True,
+                                                  render_kw={'class': 'form-control'})
+
+        print("Scaffold Form - Adding interval_ord field")
+        form_class.interval_ord = SelectField('Interval Order', coerce=int,
+                                              choices=[(i, i) for i in range(1, 6)],
+                                              render_kw={'class': 'form-control'})
+
+        print("Scaffold Form - Adding area_id field")
         form_class.area_id = QuerySelectField('Area', query_factory=lambda: Area.query.all(),
                                               get_label='name', allow_blank=True, render_kw={'class': 'form-control'})
+
+        print("Scaffold Form - Adding subarea_id field")
         form_class.subarea_id = QuerySelectField('Subarea', query_factory=lambda: Subarea.query.all(),
-                                                 get_label='name', allow_blank=True, render_kw={'class': 'form-control'})
-        form_class.interval_id = QuerySelectField('Interval', query_factory=lambda: Interval.query.all(),
-                                                  get_label='name', allow_blank=True, render_kw={'class': 'form-control'})
-        form_class.interval_ord = SelectField('Interval Order', coerce=int,
-                                              choices=[(i, i) for i in range(1, 6)], render_kw={'class': 'form-control'})
+                                                 get_label='name', allow_blank=True,
+                                                 render_kw={'class': 'form-control'})
+
+        print("Scaffold Form - Adding subject_id field")
         form_class.subject_id = QuerySelectField('Subject', query_factory=lambda: Subject.query.all(),
-                                                 get_label='name', allow_blank=True, render_kw={'class': 'form-control'})
+                                                 get_label='name', allow_blank=True,
+                                                 render_kw={'class': 'form-control'})
+
+        print("Scaffold Form - Adding lexic_id field")
+        form_class.lexic_id = QuerySelectField('Lexic', query_factory=lambda: Lexic.query.all(),
+                                               get_label='name', allow_blank=True, render_kw={'class': 'form-control'})
+
+        print("Scaffold Form - Adding file_path field")
+        form_class.file_path = FileUploadField('Attachment',
+                                               base_path=current_app.config.get('UPLOAD_FOLDER', 'uploads'))
+
+        print("Scaffold Form - Adding no_action field")
         form_class.no_action = BooleanField('No Action', render_kw={'class': 'form-control'})
+
+        print("Scaffold Form - Adding fc1 (comments) field")
         form_class.fc1 = TextAreaField('Comments', render_kw={'class': 'form-control'})
+
+        print("Scaffold Form - Finished scaffolding form")
 
         return form_class
 
     def on_form_prefill(self, form, id):
         """
-        Populates area, subarea, and interval_ord dropdowns based on current record.
+        Populates the form with data from the record when editing.
         """
-        # Populate Area choices
-        form.area_id.choices = [(area.id, area.name) for area in Area.query.all()]
+        # Retrieve the record from the database using the provided ID
+        record = BaseData.query.get(id)
 
-        # Populate Subarea choices based on the selected Area
-        form.subarea_id.choices = [(subarea.id, subarea.name) for subarea in Subarea.query
-        .join(AreaSubareas)
-        .filter(AreaSubareas.area_id == form.area_id.data).all()]
+        # Debug: Print the fetched record
+        print(f"Prefill - Record fetched: {record}")
 
-        # Fetch the selected interval
-        selected_interval = Interval.query.filter_by(id=form.interval_id.data).first()
+        if record:
+            # Debug: Print each field to verify it exists in the record and is being assigned to the form field
+            print(f"Prefill - number_of_doc: {record.number_of_doc}")
+            form.number_of_doc.data = record.number_of_doc
 
-        if selected_interval:
-            # Prefill interval_ord with numbers from 1 to the interval range
-            form.interval_ord.choices = [(i, str(i)) for i in range(1, selected_interval.interval_id + 1)]
+            print(f"Prefill - date_of_doc: {record.date_of_doc}")
+            form.date_of_doc.data = record.date_of_doc
+
+            print(f"Prefill - interval_id: {record.interval_id}")
+            form.interval_id.data = record.interval_id
+
+            print(f"Prefill - interval_ord: {record.interval_ord}")
+            form.interval_ord.data = record.interval_ord
+
+            print(f"Prefill - area_id: {record.area_id}")
+            form.area_id.data = record.area_id
+
+            print(f"Prefill - subarea_id: {record.subarea_id}")
+            form.subarea_id.data = record.subarea_id
+
+            print(f"Prefill - subject_id: {record.subject_id}")
+            form.subject_id.data = record.subject_id
+
+            print(f"Prefill - lexic_id: {record.lexic_id}")
+            form.lexic_id.data = record.lexic_id
+
+            print(f"Prefill - file_path: {record.file_path}")
+            form.file_path.data = record.file_path
+
+            print(f"Prefill - no_action: {record.no_action}")
+            form.no_action.data = record.no_action
+
+            print(f"Prefill - fc1: {record.fc1}")
+            form.fc1.data = record.fc1
         else:
-            form.interval_ord.choices = [(1, '1')]  # Default choice in case no interval is selected
+            print(f"Prefill - No record found for ID: {id}")
 
-        return super(DocumentsBaseDataView, self).on_form_prefill(form, id)
+        super(DocumentsBaseDataView, self).on_form_prefill(form, id)
 
     def on_model_change(self, form, model, is_created):
         """
         Custom logic to handle model data and form inputs before commit.
         """
-        form.populate_obj(model)  # Populate the model with form data
+        # Populate the model with form data
+        form.populate_obj(model)
 
-        # Set fields automatically
+        # Automatically set fields upon creation
         if is_created:
-            model.created_by = current_user.id  # Set the creator
+            model.created_by = current_user.id  # Set the creator as the current user
             model.created_on = datetime.now()
-        model.updated_on = datetime.now()
-        model.company_id = current_user.company_id
-        model.user_id = current_user.id
-        model.record_type = 'document'  # Automatically set the record type
 
-        # Handle interval_ord if null or 0
+        # Set the updated timestamp on every change
+        model.updated_on = datetime.now()
+
+        # Set company_id from the session
+        model.company_id = session.get('company_id')  # Ensure company_id is set from the session
+        print('company_id from session:', session.get('company_id'))
+
+        # Set the user_id from the current user
+        model.user_id = current_user.id
+        print('user_id from session:', current_user.id)
+
+        # Automatically set the record type to 'document'
+        model.record_type = 'document'
+
+        # Handle interval_ord; default to 1 if null or 0
         model.interval_ord = form.interval_ord.data if form.interval_ord.data not in [None, 0] else 1
 
-        # If date_of_doc is provided, extract the year and assign it to fi0, otherwise set to the current year
+        # Handle date_of_doc; set fi0 to the year of date_of_doc or default to the current year
         if form.date_of_doc.data:
-            model.fi0 = form.date_of_doc.data.year  # Extract year from date_of_doc and set to fi0
+            model.fi0 = form.date_of_doc.data.year  # Extract the year from date_of_doc and set it to fi0
         else:
-            model.fi0 = datetime.now().year  # Set to the current year if date_of_doc is not provided
+            model.fi0 = datetime.now().year  # Default to the current year if date_of_doc is not provided
 
-        # Ensure area_id, subarea_id, interval_id, lexic_id, and subject_id are stored as integers (IDs)
+        # Handle area_id, subarea_id, interval_id, lexic_id, subject_id to ensure IDs are stored
         if form.area_id.data:
-            model.area_id = form.area_id.data.id  # Use the ID of the Area object
+            model.area_id = form.area_id.data.id  # Store the ID of the selected Area
         if form.subarea_id.data:
-            model.subarea_id = form.subarea_id.data.id  # Use the ID of the Subarea object
+            model.subarea_id = form.subarea_id.data.id  # Store the ID of the selected Subarea
         if form.interval_id.data:
-            model.interval_id = form.interval_id.data.id  # Use the ID of the Interval object
+            model.interval_id = form.interval_id.data.id  # Store the ID of the selected Interval
         if form.lexic_id.data:
-            model.lexic_id = form.lexic_id.data.id  # Use the ID of the Lexic object
+            model.lexic_id = form.lexic_id.data.id  # Store the ID of the selected Lexic
         if form.subject_id.data:
-            model.subject_id = form.subject_id.data.id  # Use the ID of the Subject object
+            model.subject_id = form.subject_id.data.id  # Store the ID of the selected Subject
 
-        # Handle file upload
+        # Handle file uploads
         if form.file_path.data:
+            # Ensure the filename is secure
             filename = secure_filename(form.file_path.data.filename)
+            # Get the directory where files should be uploaded
             file_directory = current_app.config.get('UPLOAD_FOLDER', 'uploads')
+            # Construct the full file path
             file_path = os.path.join(file_directory, filename)
+            # Save the file to the file system
             form.file_path.data.save(file_path)
-            model.file_path = file_path  # Store the path to the file in the database
+            # Store the path to the file in the database
+            model.file_path = file_path
 
-        # Add the model to the session
+        # Add the model to the session for database operations
         db.session.add(model)
 
-        # Commit the changes
+        # Commit the changes to the database
         try:
             db.session.commit()
+            flash(f"Document {model.id} has been successfully updated.", 'success')
         except Exception as e:
-            db.session.rollback()  # Rollback in case of error
+            # Rollback the session in case of an error
+            db.session.rollback()
+            # Flash an error message and raise the exception
             flash(f"Error committing changes: {str(e)}", 'danger')
             raise e
 
@@ -755,7 +978,7 @@ class DocumentsBaseDataView(ModelView):
             (BaseData.area_id.in_([1, 3])) | (BaseData.record_type == 'document')
         )
 
-        return query.order_by(BaseData.updated_on.desc(), BaseData.date_of_doc.desc())
+        return query.order_by(BaseData.updated_on.desc())
 
     def get_list(self, page, sort_column, sort_desc, search, filters, page_size=None):
         count, data = super().get_list(page, sort_column, sort_desc, search, filters, page_size)
@@ -2129,6 +2352,12 @@ class Tabella24_dataView(ModelView):
         record_type = 'control_area'
         data_type = self.subarea_name
 
+        document_year = form.fi0.data
+        document_interval = form.interval_ord.data
+        if not is_extratime(company_id, self.area_id, self.subarea_id, document_year,
+                            document_interval):
+            raise ValidationError("You do not have permission to create this record (close period?).")
+
         if form.fi0.data == None or form.interval_ord.data == None:
             raise ValidationError(f"Time interval reference fields cannot be null")
 
@@ -2459,6 +2688,12 @@ class Tabella25_dataView(ModelView):
         subject_id = form.subject_id.data
         legal_document_id = None
         record_type = 'control_area'
+
+        document_year = form.fi0.data
+        document_interval = form.interval_ord.data
+        if not is_extratime(company_id, self.area_id, self.subarea_id, document_year,
+                            document_interval):
+            raise ValidationError("You do not have permission to create this record (close period?).")
 
         if form.fi0.data == None or form.interval_ord.data == None:
             raise ValidationError(f"Time interval reference fields cannot be null")
@@ -2794,6 +3029,12 @@ class Tabella26_dataView(ModelView):
         legal_document_id = None
         record_type = 'control_area'
 
+        document_year = form.fi0.data
+        document_interval = form.interval_ord.data
+        if not is_extratime(company_id, self.area_id, self.subarea_id, document_year,
+                            document_interval):
+            raise ValidationError("You do not have permission to create this record (close period?).")
+
         if form.fi0.data == None or form.interval_ord.data == None:
             raise ValidationError(f"Time interval reference fields cannot be null")
 
@@ -3102,6 +3343,12 @@ class Tabella27_dataView(ModelView):
         legal_document_id = None
         record_type = 'control_area'
 
+        document_year = form.fi0.data
+        document_interval = form.interval_ord.data
+        if not is_extratime(company_id, self.area_id, self.subarea_id, document_year,
+                            document_interval):
+            raise ValidationError("You do not have permission to create this record (close period?).")
+
         if form.fi0.data == None or form.interval_ord.data == None:
             raise ValidationError(f"Time interval reference fields cannot be null")
 
@@ -3386,6 +3633,11 @@ class CombinedDocumentAdminView(BaseDataViewCommon):
 
     column_searchable_list = ('company_id', 'user_id', 'fi0', 'subject_id', 'legal_document_id', 'file_path')
     column_filters = ('company_id', 'user_id', 'fi0', 'subject_id', 'legal_document_id', 'file_path')
+
+    # Restrict access to only Admin users
+    # =============# =============# =============# =============# =============# =============# =============
+    def is_accessible(self):
+        return current_user.is_authenticated and current_user.has_role('Admin')
 
     def get_query(self):
         query = self.session.query(self.model).filter(
@@ -4018,6 +4270,7 @@ class AttiDataView(BaseDataView):
 
         return form_class
 
+    # TODO add is_extratime
     def on_model_change(self, form, model, is_created):
 
         # Custom validation logic
@@ -4243,6 +4496,12 @@ class ContenziosiDataView(BaseDataView):
         if existing_document and existing_document.id != model.id:
             raise ValidationError('A document with the same number, date, subarea, area, and subject already exists.')
 
+        document_year = form.fi0.data
+        document_interval = form.interval_ord.data
+        if not is_extratime(model.company_id, self.area_id, self.subarea_id, document_year,
+                            document_interval):
+            raise ValidationError("You do not have permission to create this record (close period?).")
+
         if is_created:
             model.status_id = 1
             model.created_on = datetime.now()
@@ -4428,6 +4687,12 @@ class ContingenciesDataView(BaseDataView):
         ).first()
         if existing_document and existing_document.id != model.id:
             raise ValidationError('A document with the same number, date, subarea, area, and subject already exists.')
+
+        document_year = form.fi0.data
+        document_interval = form.interval_ord.data
+        if not is_extratime(model.company_id, self.area_id, self.subarea_id, document_year,
+                            document_interval):
+            raise ValidationError("You do not have permission to create this record (close period?).")
 
         if is_created:
             model.status_id = 1
@@ -4615,6 +4880,12 @@ class IniziativeDsoAsDataView(BaseDataView):
         if existing_document and existing_document.id != model.id:
             raise ValidationError('A document with the same number, date, subarea, area, and subject already exists.')
 
+        document_year = form.fi0.data
+        document_interval = form.interval_ord.data
+        if not is_extratime(model.company_id, self.area_id, self.subarea_id, document_year,
+                            document_interval):
+            raise ValidationError("You do not have permission to create this record (close period?).")
+
         if is_created:
             model.status_id = 1
             model.created_on = datetime.now()
@@ -4659,8 +4930,6 @@ class IniziativeDsoAsDataView(BaseDataView):
         form.interval_ord = form.interval_ord
         form.fc2 = form.fc2
         return form
-
-
 
 
 class IniziativeAsDsoDataView(BaseDataView):
@@ -4802,6 +5071,12 @@ class IniziativeAsDsoDataView(BaseDataView):
         ).first()
         if existing_document and existing_document.id != model.id:
             raise ValidationError('A document with the same number, date, subarea, area, and subject already exists.')
+
+        document_year = form.fi0.data
+        document_interval = form.interval_ord.data
+        if not is_extratime(model.company_id, self.area_id, self.subarea_id, document_year,
+                            document_interval):
+            raise ValidationError("You do not have permission to create this record (close period?).")
 
         if is_created:
             model.status_id = 1
@@ -4988,6 +5263,12 @@ class IniziativeDsoDsoDataView(BaseDataView):
         if existing_document and existing_document.id != model.id:
             raise ValidationError('A document with the same number, date, subarea, area, and subject already exists.')
 
+        document_year = form.fi0.data
+        document_interval = form.interval_ord.data
+        if not is_extratime(model.company_id, self.area_id, self.subarea_id, document_year,
+                            document_interval):
+            raise ValidationError("You do not have permission to create this record (close period?).")
+
         if is_created:
             model.status_id = 1
             model.created_on = datetime.now()
@@ -5050,8 +5331,11 @@ def create_admin_views(app, intervals):
             def __init__(self, *args, **kwargs):
                 self.intervals = kwargs.pop('intervals', None)
                 super().__init__(*args, **kwargs)
+                self.area_id = CustomFlussiDataView.area_id  # Initialize area_id in __init__
+                self.subarea_id = CustomFlussiDataView.subarea_id  # Initialize subarea_id in __init__
                 self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
 
+                print('area, subarea, name', self.area_id, self.subarea_id, self.subarea_name)
             form_extra_fields = {
                 'file_path': CustomFileUploadField('File', base_path=config.UPLOAD_FOLDER)
             }
@@ -5148,6 +5432,7 @@ def create_admin_views(app, intervals):
                 # in your model, like specific dates, statuses, etc.
 
                 return query
+
             def create_model(self, form):
 
                 try:
@@ -5177,7 +5462,6 @@ def create_admin_views(app, intervals):
                     model.area_id = self.area_id
                     model.subarea_id = self.subarea_id
 
-
                     # Determine company_id based on user role or logic (handle None case)
                     try:
                         company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
@@ -5187,6 +5471,11 @@ def create_admin_views(app, intervals):
 
                     # Set user_id from current user
                     model.user_id = current_user.id
+                    document_year = form.fi0.data
+                    document_interval = form.interval_ord.data
+                    if not is_extratime(company_id, self.area_id, self.subarea_id, document_year,
+                                                  document_interval):
+                        raise ValidationError("You do not have permission to create this record (close period?).")
 
                     self.session.add(model)
                     self.session.commit()
@@ -5240,6 +5529,12 @@ def create_admin_views(app, intervals):
                 record_type = 'control_area'
                 data_type = self.subarea_name
                 legal_document_id = None
+
+                document_year = form.fi0.data
+                document_interval = form.interval_ord.data
+                if not is_extratime(company_id, self.area_id, self.subarea_id, document_year,
+                                    document_interval):
+                    raise ValidationError("You do not have permission to create this record (close period?).")
 
                 if form.fi2.data is None or form.fi3.data is None:
                     raise ValidationError("Please enter all required data.")
@@ -5545,6 +5840,12 @@ def create_admin_views(app, intervals):
                 record_type = 'control_area'
                 data_type = self.subarea_name
 
+                document_year = form.fi0.data
+                document_interval = form.interval_ord.data
+                if not is_extratime(company_id, self.area_id, self.subarea_id, document_year,
+                                    document_interval):
+                    raise ValidationError("You do not have permission to create this record (close period?).")
+
                 if form.fi0.data is None or form.interval_ord.data is None:
                     raise ValidationError(f"Time interval reference fields cannot be null")
 
@@ -5729,8 +6030,6 @@ def create_admin_views(app, intervals):
                            template_mode='bootstrap4',
                            endpoint='open_admin_3',
                            )
-
-        DocumentsBaseDataView
 
         admin_app3.add_view(DocumentsBaseDataView(
                                                 name='Documents',
@@ -6583,6 +6882,7 @@ class StepView(StepForm):
     pass  # No customizations needed for StepView
 
 class QuestionnaireQuestionsView(QuestionnaireQuestionsForm):
+    # =============
     pass
 
 class QuestionnaireCompaniesView(QuestionnaireCompaniesForm):

@@ -636,28 +636,67 @@
                             "display": false
                         },
                         "submenus": {
-                            "Manage Association of users to companies": {
-                                "label": "Associate users to companies",
+                            "Admin Relational Users": {
+                                "label": "Users",
                                 "url": "/association/manage_company_users",
-                                "protected": true,
-                                "allowed_roles": ["Admin"],
-                                "widget": {
-                                    "display": false
-                                }
-                            },
-                            "Manage Association of roles to users": {
-                                "label": "Associate roles to user",
-                                "url": "/association/manage_user_roles",
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"
                                 ],
                                 "widget": {
                                     "display": false
+                                },
+                                "submenus": {
+                                    "Manage Association of users to companies": {
+                                        "label": "Associate users to companies",
+                                        "url": "/association/manage_company_users",
+                                        "protected": true,
+                                        "allowed_roles": [
+                                            "Admin"
+                                        ],
+                                        "widget": {
+                                            "display": false
+                                        }
+                                    },
+                                    "Manage Association of roles to users": {
+                                        "label": "Associate roles to user",
+                                        "url": "/association/manage_user_roles",
+                                        "protected": true,
+                                        "allowed_roles": [
+                                            "Admin"
+                                        ],
+                                        "widget": {
+                                            "display": false
+                                        }
+                                    }
                                 }
                             },
-                            "Assign Questions to Questionnaires": {
-                                "label": "Attach questions to questionnaire",
+                            "Admin Relational Areas": {
+                                "label": "Areas",
+                                "url": "/association/manage_area_subareas",
+                                "protected": true,
+                                "allowed_roles": [
+                                    "Admin"
+                                ],
+                                "widget": {
+                                    "display": false
+                                },
+                                "submenus": {
+                                    "Manage Areas Subareas": {
+                                        "label": "Areas and Subareas",
+                                        "url": "/association/manage_area_subareas",
+                                        "protected": true,
+                                        "allowed_roles": [
+                                            "Admin"
+                                        ],
+                                        "widget": {
+                                            "display": false
+                                        }
+                                    }
+                                }
+                            },
+                            "Admin Relational Questionnaires": {
+                                "label": "Surveys & Questionnaires",
                                 "url": "/association/manage_questionnaire_questions",
                                 "protected": true,
                                 "allowed_roles": [
@@ -665,50 +704,76 @@
                                 ],
                                 "widget": {
                                     "display": false
+                                },
+                                "submenus": {
+                                    "Assign Questions to Questionnaires": {
+                                        "label": "Attach questions to questionnaire",
+                                        "url": "/association/manage_questionnaire_questions",
+                                        "protected": true,
+                                        "allowed_roles": [
+                                            "Admin"
+                                        ],
+                                        "widget": {
+                                            "display": false
+                                        }
+                                    },
+                                    "Assign Questionnaires to Companies": {
+                                        "label": "Assign questionnaire to company",
+                                        "url": "/association/manage_questionnaire_companies",
+                                        "protected": true,
+                                        "allowed_roles": [
+                                            "Admin"
+                                        ],
+                                        "widget": {
+                                            "display": false
+                                        }
+                                    }
                                 }
                             },
-                            "Assign Questionnaires to Companies": {
-                                "label": "Assign questionnaire to company",
-                                "url": "/association/manage_questionnaire_companies",
+                            "Admin Relational Workflows": {
+                                "label": "Workflows",
+                                "url": "/association/manage_questionnaire_questions",
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"
                                 ],
                                 "widget": {
                                     "display": false
-                                }
-                            },
-                            "Assign Steps to Workflows": {
-                                "label": "Assign steps (phases) to workflow",
-                                "url": "/association/manage_workflow_steps",
-                                "protected": true,
-                                "allowed_roles": [
-                                    "Admin"
-                                ],
-                                "widget": {
-                                    "display": false
-                                }
-                            },
-                            "Assign Documents to Workflows": {
-                                "label": "Assign documents to workflow",
-                                "url": "/manage_workflow_base_data",
-                                "protected": true,
-                                "allowed_roles": [
-                                    "Admin"
-                                ],
-                                "widget": {
-                                    "display": false
-                                }
-                            },
-                            "Assign Documents to Steps": {
-                                "label": "Documents-workflow-steps management",
-                                "url": "/manage_base_data_workflow_step",
-                                "protected": true,
-                                "allowed_roles": [
-                                    "Admin"
-                                ],
-                                "widget": {
-                                    "display": false
+                                },
+                                "submenus": {
+                                    "Assign Steps to Workflows": {
+                                        "label": "Assign steps (phases) to workflow",
+                                        "url": "/association/manage_workflow_steps",
+                                        "protected": true,
+                                        "allowed_roles": [
+                                            "Admin"
+                                        ],
+                                        "widget": {
+                                            "display": false
+                                        }
+                                    },
+                                    "Assign Documents to Workflows": {
+                                        "label": "Assign documents to workflow",
+                                        "url": "/manage_workflow_base_data",
+                                        "protected": true,
+                                        "allowed_roles": [
+                                            "Admin"
+                                        ],
+                                        "widget": {
+                                            "display": false
+                                        }
+                                    },
+                                    "Assign Documents to Steps": {
+                                        "label": "Documents-workflow-steps management",
+                                        "url": "/manage_base_data_workflow_step",
+                                        "protected": true,
+                                        "allowed_roles": [
+                                            "Admin"
+                                        ],
+                                        "widget": {
+                                            "display": false
+                                        }
+                                    }
                                 }
                             }
                         }
@@ -749,6 +814,17 @@
                             "Admin AreasSubareas": {
                                 "label": "Control Areas and Subareas",
                                 "url": "/dashboard_setup_area_subareas",
+                                "protected": true,
+                                "allowed_roles": [
+                                    "Admin"
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
+                            },
+                            "Admin ExtraTime": {
+                                "label": "Manage Extra Time",
+                                "url": "/manage_extra_time",
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"

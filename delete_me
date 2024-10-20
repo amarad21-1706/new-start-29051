@@ -162,3 +162,70 @@ class MoveDocumentForm(FlaskForm):
         return True
 
 
+
+
+
+
+            def is_accessible(self):
+                """
+                Restrict write access unless the user is in the current interval or has extra time authorization.
+                """
+                # form_class.fi0 = MyIntegerField('Anno', validators=[InputRequired()])
+                # Get the current year
+
+                current_year = datetime.now().year
+                year_choices = [(str(year), str(year)) for year in range(current_year - 5, current_year + 2)]
+                default_year = str(current_year)
+
+                print('--->>> extra_time_auth 1', default_year)
+                # NEW
+                config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
+                                                  subarea_id=self.subarea_id)
+                nr_intervals = config_values[0]
+
+                # OLD
+                # nr_intervals = get_subarea_interval_type(self.area_id, self.subarea_id)
+
+                current_interval = [t[2] for t in self.intervals if
+                                    t[0] == nr_intervals]  # int(get_current_interval(3))  # quadriester
+                first_element = current_interval[0] if current_interval else None
+                interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
+
+                print('--->>> extra_time_auth 2 - last is year/current_interval',
+                      interval_choices, nr_intervals, current_year, '/', current_interval)
+
+                current_interval = get_current_interval(current_interval[0]) #to be adapted!
+                document_interval = self.model.interval_id
+                print('--->>> extra_time_auth 3', current_interval)
+
+                # Check if the document is in the current interval
+                if document_interval == current_interval:
+                    return True
+
+                # Check if the user's company has extra time authorization
+                extra_time_auth = ExtraTimeAuthorization.query.filter_by(
+                    company_id=current_user.company_id,
+                    area_id=self.model.area_id,
+                    subarea_id=self.model.subarea_id
+                ).first()
+
+                print('--->>> extra_time_auth', extra_time_auth)
+
+                if extra_time_auth and extra_time_auth.has_extra_time():
+                    return True
+
+                return False
+
+            def inaccessible_callback(self, name, **kwargs):
+                """
+                Handle unauthorized access gracefully by redirecting or displaying a message.
+                """
+                # Option 1: Redirect to the home page or another page
+                flash("You do not have permission to access this page.", "danger")
+                return redirect(url_for('index'))  # Redirect to admin index or a custom page
+
+                # Option 2: You can also render a custom template if desired:
+                # retru
+
+
+
