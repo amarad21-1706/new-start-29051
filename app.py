@@ -304,8 +304,16 @@ def set_language(language=None):
     return redirect(request.referrer or '/')
 '''
 
-# Serve the React app
 
+def get_version_from_file():
+    try:
+        with open('version.txt', 'r') as file:
+            print('version')
+            return file.read().strip()
+    except Exception as e:
+        return "Version information not available"
+
+# Serve the React app
 @app.errorhandler(OperationalError)
 def handle_db_connection_error(e):
     app.logger.error(f"Database connection issue: {e}")
@@ -1643,12 +1651,14 @@ def index():
         app.logger.error(f"Error checking for events: {e}")
         has_events = False
 
-    return render_template('home/home.html',
-                           analytics=analytics, marketing=marketing,
-                           generated_menu=generated_menu,
-                           show_cookie_banner=show_cookie_banner,
-                           has_events=has_events)
+    git_version = get_version_from_file()  # Get version from file
 
+    return render_template('home/home.html',
+                        analytics=analytics, marketing=marketing,
+                        generated_menu=generated_menu,
+                        show_cookie_banner=show_cookie_banner,
+                        has_events=has_events,
+                        git_version=git_version)
 
 
 @app.route('/access/logout', methods=['GET'])
