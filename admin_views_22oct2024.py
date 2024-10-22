@@ -1730,9 +1730,6 @@ class Tabella21_dataView(ModelView):
                 model.created_on = datetime.now()  # Set the created_on
             except AttributeError:
                 pass
-
-            # is_extra
-
             return model
         else:
             # Handle the case where the user is not authenticated
@@ -1802,13 +1799,6 @@ class Tabella21_dataView(ModelView):
         config_values = get_config_values(config_type='area_interval', company_id=company_id, area_id=self.area_id,
                                           subarea_id=self.subarea_id)
         interval_id = config_values[0]
-
-        # Set user_id from current user
-        document_year = form.fi0.data
-        document_interval = form.interval_ord.data
-        if not is_extratime(company_id, self.area_id, self.subarea_id, document_year,
-                            document_interval):
-            raise ValidationError("You do not have permission to create this record (close period?).")
 
         subject_id = None
         lexic_id = None
@@ -2093,16 +2083,6 @@ class Tabella22_dataView(ModelView):
         config_values = get_config_values(config_type='area_interval', company_id=company_id, area_id=self.area_id,
                                           subarea_id=self.subarea_id)
         interval_id = config_values[0]
-
-
-        # Set user_id from current user
-        document_year = form.fi0.data
-        document_interval = form.interval_ord.data
-        if not is_extratime(company_id, self.area_id, self.subarea_id, document_year,
-                            document_interval):
-            raise ValidationError("You do not have permission to create this record (close period?).")
-
-
         subject_id = None
         lexic_id = None
         legal_document_id = None
@@ -4188,12 +4168,10 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
         if form.file_path.data:
             form.no_action.data = False
 
-
 class AttiDataView(BaseDataView):
-    create_template = 'admin/area_1/create_base_data_1.html'
+    create_template = 'admin/area_1/create_base_data_2.html'
     area_id = 1
-    subarea_id = 1
-    record_type = 'control_area'
+    subarea_id = 2
 
     # Adjusted order of fields
     column_list = ('company_id', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
@@ -4223,13 +4201,14 @@ class AttiDataView(BaseDataView):
         'fc2': 'Note',
     }
 
-    column_filters = ('company_id', 'number_of_doc', 'date_of_doc', 'subject_id', 'fi0', 'interval_ord', 'fc2')
-    form_excluded_columns = ('company_id', 'user_id', 'status_id', 'created_on', 'updated_on', 'data_type')
-
+    # Define column formatters to display the first 5 letters of the company name
     column_formatters = {
         'company_id': lambda view, context, model, name: (
             model.company.name[:5] if model.company and model.company.name else 'N/A')
     }
+
+    column_filters = ('company_id', 'number_of_doc', 'date_of_doc', 'subject_id', 'fi0', 'interval_ord', 'fc2')
+    form_excluded_columns = ('company_id', 'user_id', 'status_id', 'created_on', 'updated_on', 'data_type')
 
     def __init__(self, model, session, **kwargs):
         self.intervals = kwargs.pop('intervals', [])
@@ -4291,6 +4270,7 @@ class AttiDataView(BaseDataView):
 
         return form_class
 
+    # TODO add is_extratime
     def on_model_change(self, form, model, is_created):
 
         # Custom validation logic
@@ -4316,7 +4296,6 @@ class AttiDataView(BaseDataView):
         model.company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
         model.area_id = self.area_id
         model.subarea_id = self.subarea_id
-        model.record_type = 'control_area'
         model.interval_id = form.interval_ord.data  # Assuming interval_id is same as interval_ord
         model.created_by = current_user.id
         # Check for duplicate documents
@@ -4330,12 +4309,6 @@ class AttiDataView(BaseDataView):
         ).first()
         if existing_document and existing_document.id != model.id:
             raise ValidationError('A document with the same number, date, subarea, area, and subject already exists.')
-
-        document_year = form.fi0.data
-        document_interval = form.interval_ord.data
-        if not is_extratime(model.company_id, self.area_id, self.subarea_id, document_year,
-                            document_interval):
-            raise ValidationError("You do not have permission to create this record (close period?).")
 
         if is_created:
             model.status_id = 1
@@ -4381,7 +4354,6 @@ class AttiDataView(BaseDataView):
         form.interval_ord = form.interval_ord
         form.fc2 = form.fc2
         return form
-
 
 
 class ContenziosiDataView(BaseDataView):
