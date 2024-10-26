@@ -436,7 +436,7 @@
                         }
                     },
                     "Admin Audit": {
-                        "label": "Audit",
+                        "label": "Audit Trail",
                         "url": "/dashboard_company_audit",
                         "protected": true,
                         "allowed_roles": [
@@ -510,6 +510,15 @@
                         "allowed_roles": [
                             "Admin"
                         ],
+                        "widget": {
+                            "display": false
+                        }
+                    },
+                    "AI Insights": {
+                        "label": "AI Insights",
+                        "url": "/ai/ai_dashboard",
+                        "protected": true,
+                        "allowed_roles": ["Admin", "Manager", "Employee"],
                         "widget": {
                             "display": false
                         }
@@ -612,15 +621,6 @@
                                 "url": "/charts/charts",
                                 "protected": true,
                                 "allowed_roles": ["Admin"],
-                                "widget": {
-                                    "display": false
-                                }
-                            },
-                            "AI Insights": {
-                                "label": "AI Insights",
-                                "url": "/ai/ai_dashboard",
-                                "protected": true,
-                                "allowed_roles": ["Admin", "Manager", "Employee"],
                                 "widget": {
                                     "display": false
                                 }

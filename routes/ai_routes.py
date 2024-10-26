@@ -73,14 +73,29 @@ def get_feedback_texts():
         # Add more feedbacks as needed
     ]
 
+
 def get_comparative_data():
-    # Fetch or simulate comparative data for companies or metrics
-    return [
-        {'company_id': 1, 'target_metric': 75},
-        {'company_id': 2, 'target_metric': 60},
-        {'company_id': 3, 'target_metric': 85},
-        # Add more records as needed
+    # Define all metrics
+    metrics = [f'fi{i}' for i in range(1, 15)]
+
+    # Simulate or fetch data, filtering only for area_id in [1, 2]
+    data = [
+        {'company_id': 1, 'area_id': 1, 'subarea_id': 101, 'fi1': 75, 'fi2': 60},
+        {'company_id': 1, 'area_id': 2, 'subarea_id': 102, 'fi1': 85, 'fi3': 78},
+        {'company_id': 2, 'area_id': 1, 'subarea_id': 101, 'fi2': 88, 'fi3': 82},
+        {'company_id': 2, 'area_id': 2, 'subarea_id': 102, 'fi1': 76, 'fi4': 80},
+        # Add more records as necessary
     ]
+
+    # Filter for area_id in [1, 2]
+    filtered_data = [record for record in data if record['area_id'] in [1, 2]]
+
+    # Ensure all records have all metrics, filling missing values with NaN
+    for record in filtered_data:
+        for metric in metrics:
+            record.setdefault(metric, None)  # Set to None if metric is missing
+
+    return filtered_data
 
 
 @ai_bp.route('/anomalies')
@@ -99,7 +114,10 @@ def api_anomalies():
 @ai_bp.route('/predict', methods=['GET'])
 @login_required
 def predict_view():
-    forecast_data = predict_future_trends(get_time_series_data(), 'metric_column')
+    metrics = [f'fi{i}' for i in range(1, 13)]
+    data = get_time_series_data()  # Replace this with your actual data-fetching logic
+    forecast_data = predict_future_trends(data, metrics, periods=4)  # Get forecast data for all metrics
+
     return render_template('ai-dashboard/predict.html', forecast=forecast_data)
 
 @ai_bp.route('/api/predict', methods=['POST'])
@@ -123,11 +141,22 @@ def api_sentiment():
     sentiment = analyze_sentiment(feedback_text)
     return jsonify({"sentiment": sentiment})
 
+
 @ai_bp.route('/comparative', methods=['GET'])
 @login_required
 def comparative_view():
-    comparative_data = comparative_analysis(get_comparative_data(), company_id=1, metric='target_metric')
+    # Fetch data
+    data = get_comparative_data()
+    # Perform comparative analysis for a specific company and set of metrics
+    company_id = 1  # Example company_id to analyze
+    metrics = ['fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fi6', 'fi7', 'fi8', 'fi9', 'fi10', 'fi11', 'fi12']
+
+    # Get analysis results
+    comparative_data = comparative_analysis(data, company_id, metrics)
+
+    # Render the template
     return render_template('ai-dashboard/comparative.html', comparative=comparative_data)
+
 
 @ai_bp.route('/api/comparative', methods=['POST'])
 @login_required

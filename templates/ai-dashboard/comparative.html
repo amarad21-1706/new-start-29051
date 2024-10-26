@@ -8,6 +8,7 @@
             <thead>
                 <tr>
                     <th>Metric</th>
+                    <th>Value</th>
                     <th>Percentile Rank</th>
                 </tr>
             </thead>
@@ -15,7 +16,8 @@
                 {% for record in comparative %}
                     <tr>
                         <td>{{ record['metric'] }}</td>
-                        <td>{{ record['metric_percentile'] }}</td>
+                        <td>{{ record['value'] }}</td>
+                        <td>{{ record['percentile'] }}</td>
                     </tr>
                 {% endfor %}
             </tbody>

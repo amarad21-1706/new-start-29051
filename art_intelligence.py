@@ -36,26 +36,29 @@ def detect_anomalies(data):
 
 
 # Predictive Modeling for Time Series Data
-
-def predict_future_trends(data, metric_column, periods=4):
-    # Convert data to DataFrame and check if it's non-empty
+def predict_future_trends(data, metrics, periods=4):
+    # Convert data to DataFrame
     df = pd.DataFrame(data)
 
-    # Ensure metric_column exists and has data
-    if metric_column not in df or df[metric_column].empty:
-        raise ValueError(f"The specified metric column '{metric_column}' is missing or has no data.")
+    forecasts = {}
+    for metric in metrics:
+        if metric in df.columns and not df[metric].dropna().empty:
+            try:
+                # Prepare and fit the ARIMA model only if the metric has data
+                model = ARIMA(df[metric].dropna(), order=(1, 1, 1))  # Handle non-null values only
+                model_fit = model.fit()
 
-    try:
-        # Fit the ARIMA model
-        model = ARIMA(df[metric_column], order=(1, 1, 1))
-        model_fit = model.fit()
+                # Forecast for the specified number of periods
+                forecast = model_fit.forecast(steps=periods)
+                forecasts[metric] = forecast.tolist()  # Store forecast as list for each metric
+            except Exception as e:
+                print(f"Error fitting ARIMA model for metric {metric}: {e}")
+                forecasts[metric] = []  # Handle any issues per metric
+        else:
+            print(f"Metric '{metric}' is missing or has insufficient data.")
+            forecasts[metric] = []  # Mark as empty if no data is available
 
-        # Forecast the next few periods
-        forecast = model_fit.forecast(steps=periods)
-        return forecast.tolist()  # Return as list for easy JSON serialization
-    except Exception as e:
-        print("Error fitting ARIMA model:", e)
-        return []
+    return forecasts
 
 
 # 3. Sentiment Analysis for Customer Feedback
@@ -73,13 +76,29 @@ def analyze_sentiment(feedback_text):
 
 
 # 4. Comparative Analysis Across Companies
-
-def comparative_analysis(data, company_id, metric):
+def comparative_analysis(data, company_id, metrics):
+    # Convert data to DataFrame and ensure all metrics are columns
     df = pd.DataFrame(data)
+    df = df[["company_id"] + metrics].fillna(np.nan)  # Use NaN for missing metrics
 
-    # Calculate percentile rank for each company in the metric
-    df[f'{metric}_percentile'] = df[metric].rank(pct=True)
-    target_company = df[df['company_id'] == company_id]
+    # Calculate percentile rank for each metric
+    results = {}
+    for metric in metrics:
+        if metric in df.columns:
+            df_metric = df[df[metric].notnull()]  # Filter for non-null values of the metric
+            df[f'{metric}_percentile'] = df_metric[metric].rank(pct=True)
+            # Store percentile values for the target company
+            results[metric] = df.loc[df['company_id'] == company_id, [metric, f'{metric}_percentile']].to_dict(
+                orient='records')
 
-    return target_company[[metric, f'{metric}_percentile']].to_dict(orient='records')
+    # Flatten the results for rendering
+    flattened_results = []
+    for metric, values in results.items():
+        for value in values:
+            flattened_results.append({
+                'metric': metric,
+                'value': value[metric],
+                'percentile': value[f'{metric}_percentile']
+            })
 
+    return flattened_results
