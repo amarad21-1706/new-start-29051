@@ -49,7 +49,7 @@
                     "Guest"
                 ],
                 "widget": {
-                    "display": true,
+                    "display": false,
                     "type": "button",
                     "style": "btn-warning",
                     "color": "#ff8800",
@@ -206,7 +206,7 @@
                 "protected": true,
                 "allowed_roles": ["Admin", "Employee", "Manager", "Authority"],
                 "widget": {
-                    "display": true,
+                    "display": false,
                     "type": "button",
                     "submit_url": "/deadlines",
                     "style": "btn-info",
@@ -884,7 +884,7 @@
             "Provider"
         ],
         "widget": {
-            "display": true,
+            "display": false,
             "type": "button",
             "submit_url": "/public_news",
             "style": "btn-link",
@@ -1103,7 +1103,7 @@
                             "Guest"
                         ],
                         "widget": {
-                            "display": true,
+                            "display": false,
                             "type": "button",
                             "style": "btn-info",
                             "color": "#99bb00",

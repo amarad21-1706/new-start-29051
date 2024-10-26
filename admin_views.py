@@ -593,7 +593,8 @@ class DocumentsBaseDataView(ModelView):
     column_list = [
         'number_of_doc', 'date_of_doc', 'company', 'user',
         'fi0', 'interval', 'interval_ord', 'record_type',
-        'area', 'subarea', 'subject', 'lexic', 'file_path', 'no_action', 'fc1', 'created_on', 'updated_on', 'audit_log'
+        'area', 'subarea', 'subject', 'lexic', 'file_path', 'no_action', 'fc1', 'created_on', 'updated_on',
+        'dossiers'
     ]
 
     # Add labels for better readability
@@ -603,7 +604,7 @@ class DocumentsBaseDataView(ModelView):
         'area_id': 'Area', 'subarea_id': 'Subarea', 'subject_id': 'Subject', 'lexic_id': 'Action',  # Renamed
         'file_path': 'File Path', 'no_action': 'No Action', 'fc1': 'Comments', 'created_on': 'Created On',
         'updated_on': 'Last Update',  # Renamed
-        'audit_log': 'Audit Log'
+        'dossiers': 'Audit or Remediation Info'
     }
 
     # Form columns - control field order
@@ -613,7 +614,7 @@ class DocumentsBaseDataView(ModelView):
         'area', 'subarea', 'subject', 'lexic',  # Renamed
         'file_path', 'no_action',  # Ensure no_action comes immediately after file_path
         'fc1', 'created_on', 'updated_on',  # Renamed
-        'audit_log'
+        'dossiers'
     ]
 
 
@@ -637,6 +638,14 @@ class DocumentsBaseDataView(ModelView):
         'updated_on': {'readonly': True}
     }
 
+    # Add a column formatter for dossier_info
+    column_formatters = {
+        'dossiers': lambda view, context, model, name: ', '.join(
+            f"{dossier.code} - {dossier.type}" for dossier in model.dossiers) or "No Dossier Attached",
+        'company_id': lambda view, context, model, name: (
+            model.company.name[:5] if model.company and model.company.name else 'N/A')
+    }
+
     def get_query(self):
         query = super(DocumentsBaseDataView, self).get_query()
 
@@ -644,7 +653,7 @@ class DocumentsBaseDataView(ModelView):
             if current_user.has_role('Admin'):
                 query = query
             elif current_user.has_role('Manager'):
-                company_id = current_user.company_id
+                company_id = session['company_id'] #current_user.company_id
                 query = query.filter(BaseData.company_id == company_id)
             elif current_user.has_role('Employee'):
                 user_id = current_user.id
@@ -674,45 +683,52 @@ class DocumentsBaseDataView(ModelView):
     def on_model_change(self, form, model, is_created):
         # Automatically set fields like company_id, user_id, and updated_on
         if is_created:
-            model.company_id = current_user.company_id
+            model.company_id = session['company_id']
             model.user_id = current_user.id
 
         model.updated_on = datetime.now()
         model.fi0 = form.date_of_doc.data.year if form.date_of_doc.data else datetime.now().year
 
-    @action('attach_to_audit', 'Attach to Audit', 'Are you sure you want to assign these documents to an Audit Dossier?')
+    @action('attach_to_audit', 'Attach to Audit',
+            'Are you sure you want to assign these documents to an Audit Dossier?')
+
+
+    @action('attach_to_audit', 'Attach to Audit',
+            'Are you sure you want to assign these documents to an Audit Dossier?')
     def action_attach_to_audit(self, ids):
         try:
-            with current_app.app_context():  # Ensure app context is available
+            with current_app.app_context():
                 document_ids = [int(id_1) for id_1 in ids]
                 selected_documents = BaseData.query.filter(BaseData.id.in_(document_ids)).all()
-
-                # Query the dossiers of type 'audit' for the current user's company
-                audit_dossiers = Dossier.query.filter_by(company_id=current_user.company_id, type='audit').all()
+                audit_dossiers = Dossier.query.filter_by(company_id=session['company_id'], type='audit').all()
+                referrer_url = request.referrer  # Capture the referring URL
 
                 return render_template('admin/attach_to_dossier.html',
                                        dossiers=audit_dossiers,
                                        selected_documents=selected_documents,
-                                       dossier_type='Audit')
+                                       dossier_type='Audit',
+                                       referrer_url=referrer_url)  # Pass to the template
         except Exception as e:
             app.logger.error(f"Error in action_attach_to_audit: {e}")
             flash(f"Error attaching documents to Audit Dossier: {e}", 'error')
             return redirect(url_for('open_admin_3.index'))
 
-    @action('attach_to_remediation', 'Attach to Remediation', 'Are you sure you want to assign these documents to a Remediation Dossier?')
+    @action('attach_to_remediation', 'Attach to Remediation',
+            'Are you sure you want to assign these documents to a Remediation Dossier?')
     def action_attach_to_remediation(self, ids):
         try:
-            with current_app.app_context():  # Ensure app context is available
+            with current_app.app_context():
                 document_ids = [int(id_1) for id_1 in ids]
                 selected_documents = BaseData.query.filter(BaseData.id.in_(document_ids)).all()
-
-                # Query the dossiers of type 'remediation' for the current user's company
-                remediation_dossiers = Dossier.query.filter_by(company_id=current_user.company_id, type='remediation').all()
+                remediation_dossiers = Dossier.query.filter_by(company_id=session['company_id'],
+                                                               type='remediation').all()
+                referrer_url = request.referrer
 
                 return render_template('admin/attach_to_dossier.html',
                                        dossiers=remediation_dossiers,
                                        selected_documents=selected_documents,
-                                       dossier_type='Remediation')
+                                       dossier_type='Remediation',
+                                       referrer_url=referrer_url)
         except Exception as e:
             app.logger.error(f"Error in action_attach_to_remediation: {e}")
             flash(f"Error attaching documents to Remediation Dossier: {e}", 'error')
@@ -968,7 +984,7 @@ class DocumentsBaseDataView_kookay(ModelView):
             if current_user.has_role('Admin'):
                 query = query
             elif current_user.has_role('Manager'):
-                company_id = current_user.company_id
+                company_id = session['company_id']
                 query = query.filter(BaseData.company_id == company_id)
             elif current_user.has_role('Employee'):
                 user_id = current_user.id
@@ -1001,7 +1017,7 @@ class DocumentsBaseDataView_kookay(ModelView):
             selected_documents = BaseData.query.filter(BaseData.id.in_(document_ids)).all()
 
             # Query the dossiers of type 'audit' for the current user's company
-            audit_dossiers = Dossier.query.filter_by(company_id=current_user.company_id, type='audit').all()
+            audit_dossiers = Dossier.query.filter_by(company_id=session['company_id'], type='audit').all()
 
             return render_template('admin/attach_to_dossier.html',
                                    dossiers=audit_dossiers,
@@ -1019,7 +1035,7 @@ class DocumentsBaseDataView_kookay(ModelView):
             selected_documents = BaseData.query.filter(BaseData.id.in_(document_ids)).all()
 
             # Query the dossiers of type 'remediation' for the current user's company
-            remediation_dossiers = Dossier.query.filter_by(company_id=current_user.company_id, type='remediation').all()
+            remediation_dossiers = Dossier.query.filter_by(company_id=session['company_id'], type='remediation').all()
 
             return render_template('admin/attach_to_dossier.html',
                                    dossiers=remediation_dossiers,
@@ -1175,7 +1191,7 @@ class UnassignedDocumentsBaseDataView(ModelView):
                 query = query
             elif current_user.has_role('Manager'):
                 # Managers can access records from their own company
-                company_id = current_user.company_id  # Assuming current_user has a company_id attribute
+                company_id = session['company_id']  # Assuming current_user has a company_id attribute
                 query = query.filter(BaseData.company_id == company_id)
             elif current_user.has_role('Employee'):
                 # Employees can only access their own records
@@ -1405,7 +1421,7 @@ class DocumentsBaseDataDetails(ModelView):
                 query = query
             elif current_user.has_role('Manager'):
                 # Managers can access records from their own company
-                company_id = current_user.company_id  # Assuming current_user has a company_id attribute
+                company_id = session['company_id']  # Assuming current_user has a company_id attribute
                 query = query.filter(BaseData.company_id == company_id)
             elif current_user.has_role('Employee'):
                 # Employees can only access their own records
@@ -1715,7 +1731,7 @@ class Tabella21_dataView(ModelView):
         if current_user.is_authenticated:
             try:
                 model.user_id = current_user.id  # Set the user_id
-                model.company_id = current_user.company_id  # Set the company_id
+                model.company_id = session['company_id']  # Set the company_id
                 model.data_type = self.subarea_name
                 created_by = current_user.username  # Set the created_by
                 user_id = current_user.id
@@ -2002,7 +2018,7 @@ class Tabella22_dataView(ModelView):
         if current_user.is_authenticated:
             try:
                 model.user_id = current_user.id  # Set the user_id
-                model.company_id = current_user.company_id  # Set the company_id
+                model.company_id = session['company_id']  # Set the company_id
                 model.data_type = self.subarea_name
                 created_by = current_user.username  # Set the created_by
                 user_id = current_user.id
@@ -2271,7 +2287,7 @@ class Tabella24_dataView(ModelView):
         if current_user.is_authenticated:
             try:
                 model.user_id = current_user.id  # Set the user_id
-                model.company_id = current_user.company_id  # Set the company_id
+                model.company_id = session['company_id'] #current_user.company_id  # Set the company_id
                 model.data_type = self.subarea_name
                 created_by = current_user.username  # Set the created_by
                 user_id = current_user.id
@@ -2984,7 +3000,7 @@ class Tabella26_dataView(ModelView):
         if current_user.is_authenticated:
             try:
                 model.user_id = current_user.id  # Set the user_id
-                model.company_id = current_user.company_id  # Set the company_id
+                model.company_id = session['company_id'] #current_user.company_id  # Set the company_id
                 model.data_type = self.subarea_name
                 created_by = current_user.username  # Set the created_by
                 user_id = current_user.id
@@ -3263,7 +3279,7 @@ class Tabella27_dataView(ModelView):
         if current_user.is_authenticated:
             try:
                 model.user_id = current_user.id  # Set the user_id
-                model.company_id = current_user.company_id  # Set the company_id
+                model.company_id = session['company_id'] #current_user.company_id  # Set the company_id
                 model.data_type = self.subarea_name
                 created_by = current_user.username  # Set the created_by
                 user_id = current_user.id
@@ -3627,6 +3643,7 @@ def get_query(self):
         )
 
     return query
+
 class CombinedDocumentAdminView(BaseDataViewCommon):
     can_create = False
     can_edit = True
@@ -5763,7 +5780,7 @@ def create_admin_views(app, intervals):
                 if current_user.is_authenticated:
                     try:
                         model.user_id = current_user.id  # Set the user_id
-                        model.company_id = current_user.company_id  # Set the company_id
+                        model.company_id = session['company_id'] #current_user.company_id  # Set the company_id
                         model.data_type = self.subarea_name
                         created_by = current_user.username  # Set the created_by
                         user_id = current_user.id
@@ -6439,7 +6456,7 @@ class OpenSurveysView(BaseView):
         today = datetime.now().date()
 
         print('current user, comp, quest', current_user, db.session.query(Questionnaire).join(QuestionnaireCompanies).filter(
-            QuestionnaireCompanies.company_id == current_user.company_id).first())
+            QuestionnaireCompanies.company_id == session['company_id']).first())
 
         # Query surveys open for editing for the current user's company
         '''

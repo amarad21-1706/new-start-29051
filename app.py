@@ -5914,25 +5914,55 @@ def show_message_modal(ids):
     # If it's a GET request, render the modal form
     return render_template('admin/send_message_modal.html', users=Users.query.filter(Users.id.in_(ids_list)).all())
 
-
 @app.route('/finalize_attach_to_dossier', methods=['POST'])
 @login_required
 def finalize_attach_to_dossier():
     dossier_id = request.form['dossier_id']
     document_ids = request.form['document_ids'].split(',')
+    referrer_url = request.form.get('referrer_url', url_for('open_admin_3.index'))  # Default to admin index
 
     dossier = Dossier.query.get(dossier_id)
 
-    # Attach each document to the selected Dossier
     for doc_id in document_ids:
         document = BaseData.query.get(doc_id)
-        document.dossier_id = dossier_id
+        document.dossiers.append(dossier)
         db.session.add(document)
 
     db.session.commit()
 
     flash(f'Documents successfully attached to {dossier.type} Dossier!', 'success')
-    return redirect(url_for('open_admin_3.index'))  # Adjust to your admin index
+    return redirect(referrer_url)
+
+@app.route('/finalize_attach_to_dossier_two', methods=['POST'])
+@login_required
+def finalize_attach_to_dossier_two():
+    try:
+        dossier_id = request.form['dossier_id']
+        document_ids = request.form['document_ids'].split(',')
+
+        dossier = Dossier.query.get(dossier_id)
+        if not dossier:
+            flash("Dossier not found.", "error")
+            return redirect(url_for('open_admin_3.index'))
+
+        # Attach each document to the selected Dossier
+        for doc_id in document_ids:
+            document = BaseData.query.get(doc_id)
+            if document:
+                document.dossier_id = dossier_id
+                db.session.add(document)
+            else:
+                flash(f"Document ID {doc_id} not found.", "warning")
+
+        db.session.commit()
+        flash(f'Documents successfully attached to {dossier.type} {dossier_id} Dossier!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error in finalize_attach_to_dossier: {e}")
+        flash("An error occurred while attaching documents to the dossier.", "error")
+
+    return redirect(url_for('open_admin_3.index'))
+
 
 @app.route('/manage_extra_time', methods=['GET', 'POST'])
 @login_required

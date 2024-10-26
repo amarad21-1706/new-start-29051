@@ -39,6 +39,7 @@ from sqlalchemy.orm import relationship
 from db import db  # Your SQLAlchemy instance
 
 from serializers import serialize_step, serialize_workflow
+from datetime import timedelta
 
 # Add an event listener to set 'article_id' before inserting
 
@@ -664,6 +665,12 @@ class LegalDocument(db.Model):
         return (f"{self.name} ({self.tier_1})")
 
 
+document_dossier = db.Table('document_dossier',
+    db.Column('document_id', db.Integer, db.ForeignKey('base_data.id'), primary_key=True),
+    db.Column('dossier_id', db.Integer, db.ForeignKey('dossier.id'), primary_key=True)
+)
+
+
 class BaseData(db.Model):
     __tablename__ = 'base_data'
 
@@ -744,7 +751,7 @@ class BaseData(db.Model):
     document_workflow_history = db.relationship('DocumentWorkflowHistory', back_populates='base_data')
 
     # Add a back-reference to Dossier
-    dossier = db.relationship('Dossier', back_populates='documents')
+    dossiers = db.relationship('Dossier', secondary=document_dossier, back_populates='documents')
 
     def __repr__(self):
         return f"{self.id}-{self.ft1}"
@@ -1857,8 +1864,6 @@ class ChartMetric(db.Model):
         return f"<ChartMetric {self.metric_name} ({self.display_label}) linked to Chart {self.config_chart_id}>"
 
 
-
-
 class Dossier(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     code = db.Column(db.String(100), unique=True, nullable=False)
@@ -1890,7 +1895,7 @@ class Dossier(db.Model):
     # Relationship to initiator (user who created the dossier)
     initiator = db.relationship('Users', backref='initiated_dossiers')
     # Relationship to base_data (documents)
-    documents = db.relationship('BaseData', back_populates='dossier')
+    documents = db.relationship('BaseData', secondary=document_dossier, back_populates='dossiers')
 
     actions = db.relationship('Action', backref='dossier', lazy=True)
 

@@ -17,6 +17,17 @@
         </div>
     </div>
 
+    <!-- Edit and Delete Buttons -->
+    <div class="mt-4">
+        <!-- Corrected endpoint name to include 'argon.' -->
+        <form action="{{ url_for('argon.edit_dossier', dossier_id=dossier.id) }}" method="get" style="display:inline;">
+            <button type="submit" class="btn btn-warning">Edit Dossier</button>
+        </form>
+        <form action="{{ url_for('argon.delete_dossier', dossier_id=dossier.id) }}" method="post" style="display:inline;">
+            <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this dossier?');">Delete Dossier</button>
+        </form>
+    </div>
+
     <!-- Action Form -->
     <div class="mt-4">
         <h3>Take Action</h3>

@@ -28,6 +28,10 @@ from sqlalchemy import func, extract
 
 from app_factory import roles_required, subscription_required
 
+from datetime import datetime
+from datetime import timedelta
+
+
 # from app_factory import create_app
 
 # app = Flask(__name__)
@@ -981,16 +985,58 @@ def remediation_archive():
     # return render_template('argon-dashboard/remediation_archive.html')
     return render_template('argon-dashboard/dossier_view.html', area_ids=[3], initiator_id='Authority')
 
+'''
+S3 cloud storage
+import boto3
+import os
+from werkzeug.utils import secure_filename
+from flask import current_app
+
+def save_document(document):
+    # Secure the filename to prevent malicious filenames
+    filename = secure_filename(document.filename)
+
+    # Upload to S3
+    s3 = boto3.client('s3', 
+                      aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'), 
+                      aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'))
+    
+    bucket_name = os.getenv('AWS_S3_BUCKET_NAME')
+
+    try:
+        s3.upload_fileobj(document, bucket_name, filename)
+        file_url = f"https://{bucket_name}.s3.amazonaws.com/{filename}"
+        return file_url
+    except Exception as e:
+        print(f"Error uploading file to S3: {e}")
+        return None
+        
+        
+Example Configuration in Render Dashboard:
+Key: AWS_ACCESS_KEY_ID
+
+Value: <Your AWS Access Key>
+
+Key: AWS_SECRET_ACCESS_KEY
+
+Value: <Your AWS Secret Key>
+
+Key: AWS_S3_BUCKET_NAME
+
+Value: <Your S3 Bucket Name>        
+'''
+
+
 
 @argon_bp.route('/create_dossier', methods=['GET'])
 @login_required
+@roles_required('Admin', 'Authority')
 def create_dossier():
     companies = Company.query.all()  # Fetch all companies for the dropdown
 
     # Logic to enable/disable the button based on role and block
     enable_create_dossier = False
-    if (current_user.has_role('Admin') or \
-            (current_user.has_role('Authority'))):
+    if current_user.has_role('Admin') or current_user.has_role('Authority'):
         enable_create_dossier = True
 
     # Pre-set dossier type based on user role
@@ -999,8 +1045,18 @@ def create_dossier():
     elif current_user.has_role('Authority'):
         default_type = 'remediation'
     else:
-        default_type = 'other'  # Default to 'other' or adjust based on requirements
+        default_type = 'other'
 
+    # Check if a dossier already exists for this user and type
+    existing_dossier = Dossier.query.filter_by(
+        type=default_type,
+        company_id=current_user.company_id  # Adjust based on your conditions
+    ).first()
+
+    # If an existing dossier is found, disable creation and show a flash message
+    if existing_dossier:
+        enable_create_dossier = False
+        flash(f"A {default_type} dossier already exists for this company.", "warning")
 
     print('enable_create_dossier', enable_create_dossier)
     return render_template('argon-dashboard/create_dossier.html',
@@ -1009,11 +1065,10 @@ def create_dossier():
                            enable_create_dossier=enable_create_dossier,
                            default_type=default_type)
 
-
-from datetime import datetime
-
 @argon_bp.route('/submit_create_dossier', methods=['POST'])
 @login_required
+
+@roles_required('Admin', 'Authority')
 def submit_create_dossier():
     # Get form data
     code = request.form['code']
@@ -1063,7 +1118,6 @@ def submit_create_dossier():
     return redirect(url_for('argon.dossier_view', dossier_id=new_dossier.id))
 
 
-
 @argon_bp.route('/dossier/<int:dossier_id>', methods=['GET'])
 @login_required
 def dossier_details(dossier_id):
@@ -1071,15 +1125,57 @@ def dossier_details(dossier_id):
     return render_template('argon-dashboard/dossier_details.html', dossier=dossier)
 
 
-@argon_bp.route('/dossier/<int:dossier_id>', methods=['GET'])
+@argon_bp.route('/dossier_view', methods=['GET'])
 @login_required
-def dossier_view(dossier_id):
-    dossier = Dossier.query.get_or_404(dossier_id)
-    # Render the dossier view template with the dossier data
-    return render_template('argon-dashboard/dossier_view.html', dossier=dossier)
+def dossier_view():
+    # Filter and search parameters
+    code = request.args.get('code', '')
+    company_id = request.args.get('company_id', '')
+    year = request.args.get('year', '')
+    dossier_type = request.args.get('type', '')
+    status = request.args.get('status', '')
+
+    # Start with base query
+    query = Dossier.query
+
+    # Apply role-based filters
+    if current_user.has_role('Admin') or current_user.has_role('Authority'):
+        pass  # Admins/Authorities see all
+    elif current_user.has_role('Manager') or current_user.has_role('Employee'):
+        query = query.filter(Dossier.company_id == current_user.company_id)
+    else:
+        query = query.filter(False)
+
+    # Apply filters
+    if code:
+        query = query.filter(Dossier.code.ilike(f'%{code}%'))
+    if company_id:
+        query = query.filter(Dossier.company_id == company_id)
+    if year:
+        query = query.filter(extract('year', Dossier.created_at) == year)
+    if dossier_type:
+        query = query.filter(Dossier.type == dossier_type)
+    if status:
+        query = query.filter(Dossier.status == status)
+
+    # Execute the filtered query
+    dossiers = query.all()
+    companies = Company.query.all()
+    dossier_codes = db.session.query(Dossier.code).distinct().all()
+    years = [year[0] for year in db.session.query(extract('year', Dossier.created_at)).distinct().all()]
+
+    return render_template(
+        'argon-dashboard/dossier_view.html',
+        dossiers=dossiers,
+        companies=companies,
+        dossier_codes=[code[0] for code in dossier_codes],
+        years=years
+    )
+
 
 @argon_bp.route('/submit_action/<int:dossier_id>', methods=['POST'])
 @login_required
+@roles_required('Admin', 'Authority', 'Manager', 'Employee')
 def submit_action(dossier_id):
     dossier = Dossier.query.get_or_404(dossier_id)
     action_type = request.form['action_type']
@@ -1154,49 +1250,6 @@ def save_document(document):
 
     return file_path
 
-'''
-S3 cloud storage
-import boto3
-import os
-from werkzeug.utils import secure_filename
-from flask import current_app
-
-def save_document(document):
-    # Secure the filename to prevent malicious filenames
-    filename = secure_filename(document.filename)
-
-    # Upload to S3
-    s3 = boto3.client('s3', 
-                      aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'), 
-                      aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY'))
-    
-    bucket_name = os.getenv('AWS_S3_BUCKET_NAME')
-
-    try:
-        s3.upload_fileobj(document, bucket_name, filename)
-        file_url = f"https://{bucket_name}.s3.amazonaws.com/{filename}"
-        return file_url
-    except Exception as e:
-        print(f"Error uploading file to S3: {e}")
-        return None
-        
-        
-Example Configuration in Render Dashboard:
-Key: AWS_ACCESS_KEY_ID
-
-Value: <Your AWS Access Key>
-
-Key: AWS_SECRET_ACCESS_KEY
-
-Value: <Your AWS Secret Key>
-
-Key: AWS_S3_BUCKET_NAME
-
-Value: <Your S3 Bucket Name>        
-'''
-
-
-
 @argon_bp.route('/dossier_view', methods=['GET'])
 @login_required
 def search_dossiers():
@@ -1254,3 +1307,57 @@ def search_dossiers():
         dossier_codes=[code[0] for code in dossier_codes],
         years=years
     )
+
+# Route to edit an existing Dossier
+@argon_bp.route('/edit_dossier/<int:dossier_id>', methods=['GET', 'POST'])
+@login_required
+@roles_required('Admin', 'Authority')
+def edit_dossier(dossier_id):
+    # Retrieve the dossier to be edited
+    dossier = Dossier.query.get_or_404(dossier_id)
+    companies = Company.query.all()
+
+    if request.method == 'POST':
+        # Retrieve form data
+        new_code = request.form['code']
+        new_type = request.form['type']
+        new_company_id = int(request.form['company_id'])
+        new_status = request.form['status']
+
+        # Check if a different dossier with the same details already exists
+        existing_dossier = Dossier.query.filter(
+            Dossier.id != dossier_id,  # Exclude the current dossier being edited
+            Dossier.code == new_code,
+            Dossier.type == new_type,
+            Dossier.company_id == new_company_id
+        ).first()
+
+        if existing_dossier:
+            # If a duplicate exists, show a warning and prevent the update
+            flash(f"A dossier with code '{new_code}', type '{new_type}', and the selected company already exists.", "warning")
+            return render_template('argon-dashboard/edit_dossier.html', dossier=dossier, companies=companies)
+
+        # Update dossier fields if no duplicate was found
+        dossier.code = new_code
+        dossier.type = new_type
+        dossier.company_id = new_company_id
+        dossier.status = new_status
+        db.session.commit()
+
+        flash("Dossier updated successfully", "success")
+        return redirect(url_for('argon.dossier_view'))
+
+    return render_template('argon-dashboard/edit_dossier.html', dossier=dossier, companies=companies)
+
+
+# Route to delete a Dossier
+@argon_bp.route('/delete_dossier/<int:dossier_id>', methods=['POST'])
+@login_required
+@roles_required('Admin', 'Authority')
+def delete_dossier(dossier_id):
+    dossier = Dossier.query.get_or_404(dossier_id)
+    db.session.delete(dossier)
+    db.session.commit()
+    flash("Dossier deleted successfully", "success")
+    return redirect(url_for('argon.dossier_view'))
+

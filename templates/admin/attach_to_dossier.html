@@ -1,16 +1,29 @@
 <!-- attach_to_dossier.html -->
-<h2>Attach Documents to {{ dossier_type }} Dossier</h2>
-<form method="POST" action="{{ url_for('finalize_attach_to_dossier') }}">
-    <div class="form-group">
-        <label for="dossier">Select {{ dossier_type }} Dossier</label>
-        <select name="dossier_id" class="form-control" required>
-            {% for dossier in dossiers %}
-                <option value="{{ dossier.id }}">{{ dossier.code }} - {{ dossier.type }}</option>
-            {% endfor %}
-        </select>
-    </div>
+{% extends "base.html" %}
 
-    <input type="hidden" name="document_ids" value="{{ selected_documents | join(',') }}">
+{% block content %}
+    <h2>Attach Documents to {{ dossier_type }} Dossier</h2>
 
-    <button type="submit" class="btn btn-primary">Attach</button>
-</form>
+    <form method="POST" action="{{ url_for('finalize_attach_to_dossier') }}">
+        <input type="hidden" name="referrer_url" value="{{ referrer_url }}">
+        <input type="hidden" name="document_ids" value="{{ selected_documents | map(attribute='id') | join(',') }}">
+
+        <div class="form-group">
+            <label for="dossier">Select {{ dossier_type }} Dossier</label>
+            <select name="dossier_id" class="form-control" required>
+
+                {% for dossier in dossiers %}
+                    <option value="{{ dossier.id }}">{{ dossier.code }} - {{ dossier.type }}</option>
+                {% else %}
+                    <option disabled>No audit dossiers available</option>
+                {% endfor %}
+
+            </select>
+        </div>
+
+        <!-- Hidden input to pass selected document IDs to the backend -->
+        <input type="hidden" name="document_ids" value="{{ selected_documents | map(attribute='id') | join(',') }}">
+
+        <button type="submit" class="btn btn-primary">Attach</button>
+    </form>
+{% endblock %}

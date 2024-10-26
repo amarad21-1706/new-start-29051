@@ -1,0 +1,46 @@
+{% extends "argon-dashboard/argon_base_main_areas.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Edit Dossier: {{ dossier.code }}</h2>
+
+    <form method="POST" action="{{ url_for('argon.edit_dossier', dossier_id=dossier.id) }}">
+
+        <div class="row">
+            <div class="col-md-6">
+                <label for="code">Dossier Code</label>
+                <input type="text" name="code" class="form-control" value="{{ dossier.code }}" required>
+            </div>
+            <div class="col-md-6">
+                <label for="type">Dossier Type</label>
+                <select name="type" class="form-control" required>
+                    <option value="audit" {% if dossier.type == 'audit' %}selected{% endif %}>Audit</option>
+                    <option value="remediation" {% if dossier.type == 'remediation' %}selected{% endif %}>Remediation</option>
+                    <option value="survey" {% if dossier.type == 'survey' %}selected{% endif %}>Survey</option>
+                    <option value="other" {% if dossier.type == 'other' %}selected{% endif %}>Other</option>
+                </select>
+            </div>
+        </div>
+        <div class="row mt-3">
+            <div class="col-md-6">
+                <label for="company">Company</label>
+                <select name="company_id" class="form-control" required>
+                    {% for company in companies %}
+                        <option value="{{ company.id }}" {% if dossier.company_id == company.id %}selected{% endif %}>{{ company.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-6">
+                <label for="status">Dossier Status</label>
+                <select name="status" class="form-control" required>
+                    <option value="pending" {% if dossier.status == 'pending' %}selected{% endif %}>Pending</option>
+                    <option value="in_progress" {% if dossier.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                    <option value="completed" {% if dossier.status == 'completed' %}selected{% endif %}>Completed</option>
+                    <option value="archived" {% if dossier.status == 'archived' %}selected{% endif %}>Archived</option>
+                </select>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-warning mt-3">Update Dossier</button>
+    </form>
+</div>
+{% endblock %}
