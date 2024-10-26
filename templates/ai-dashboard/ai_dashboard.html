@@ -1,0 +1,36 @@
+{% extends "ai-dashboard/argon_base_ai.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>AI Insights Dashboard</h2>
+    <div class="row">
+        <!-- Anomalies Button -->
+        <div class="col-md-3 mb-3">
+            <a href="{{ url_for('ai.anomalies_view') }}" class="btn btn-warning btn-block">
+                Anomalies
+            </a>
+        </div>
+
+        <!-- Forecasting Button -->
+        <div class="col-md-3 mb-3">
+            <a href="{{ url_for('ai.predict_view') }}" class="btn btn-success btn-block">
+                Forecasting
+            </a>
+        </div>
+
+        <!-- Sentiment Analysis Button -->
+        <div class="col-md-3 mb-3">
+            <a href="{{ url_for('ai.sentiment_view') }}" class="btn btn-primary btn-block">
+                Sentiment Analysis
+            </a>
+        </div>
+
+        <!-- Comparative Analysis Button -->
+        <div class="col-md-3 mb-3">
+            <a href="{{ url_for('ai.comparative_view') }}" class="btn btn-info btn-block">
+                Comparative Analysis
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

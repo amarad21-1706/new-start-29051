@@ -100,6 +100,7 @@ from routes.argon_routes import argon_bp
 from routes.plan_routes import plan_bp
 from routes.chart_routes import chart_bp
 from routes.association_routes import association_bp
+from routes.ai_routes import ai_bp
 
 from mail_service import send_simple_message, send_simple_message333
 from wtforms import Form
@@ -211,8 +212,10 @@ print('geo-names blueprint registered')
 
 # Register the Argon blueprint
 app.register_blueprint(argon_bp, url_prefix='/argon') # Add a prefix if needed
-
 print('Argon blueprint registered')
+
+app.register_blueprint(ai_bp, url_prefix='/ai')
+print('A.I. blueprint registered')
 
 # Register the Argon blueprint
 app.register_blueprint(association_bp, url_prefix='/association') # Add a prefix if needed
@@ -226,8 +229,7 @@ print('plan blueprint registered')
 app.register_blueprint(chart_bp, url_prefix='/charts', name='charts')
 print('chart blueprint registered')
 
-# ======= PRINT URL LIST
-# print(app.url_map)
+
 
 # Load API key from environment variable
 openai.api_key = os.getenv("OPENAI_API_KEY")
@@ -6063,7 +6065,6 @@ def delete_extra_time(record_id):
     db.session.commit()
     flash("Extra time authorization deleted successfully.", "success")
     return redirect(url_for('manage_extra_time'))
-
 
 
 @app.route('/checkout_success')
