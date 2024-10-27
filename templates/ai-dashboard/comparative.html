@@ -7,6 +7,9 @@
         <table class="table table-bordered">
             <thead>
                 <tr>
+                    <th>Company</th>
+                    <th>Area</th>
+                    <th>Subarea</th>
                     <th>Metric</th>
                     <th>Value</th>
                     <th>Percentile Rank</th>
@@ -15,9 +18,12 @@
             <tbody>
                 {% for record in comparative %}
                     <tr>
+                        <td>{{ record['company_name'] }}</td>
+                        <td>{{ record['area_name'] }}</td>
+                        <td>{{ record['subarea_name'] }}</td>
                         <td>{{ record['metric'] }}</td>
                         <td>{{ record['value'] }}</td>
-                        <td>{{ record['percentile'] }}</td>
+                        <td>{{ "{:.2f}".format(record['percentile']) }}</td>
                     </tr>
                 {% endfor %}
             </tbody>

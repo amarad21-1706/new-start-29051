@@ -5,6 +5,7 @@ import pandas as pd
 from statsmodels.tsa.arima.model import ARIMA
 from textblob import TextBlob
 import numpy as np
+from models.user import Company, Area, Subarea
 
 '''
 Integrating Results into the React Dashboard
@@ -76,29 +77,53 @@ def analyze_sentiment(feedback_text):
 
 
 # 4. Comparative Analysis Across Companies
-def comparative_analysis(data, company_id, metrics):
-    # Convert data to DataFrame and ensure all metrics are columns
-    df = pd.DataFrame(data)
-    df = df[["company_id"] + metrics].fillna(np.nan)  # Use NaN for missing metrics
+'''
+Percentile Rank: This ranks each company relative to others for each metric on a scale from 0 to 1.
+A percentile near 0 indicates the company ranks low in that metric compared to peers.
+A percentile near 1 indicates the company ranks high in that metric.
+Metric Value: This shows the actual value of the metric for the company.
+'''
 
-    # Calculate percentile rank for each metric
-    results = {}
+
+def comparative_analysis(data, metrics):
+    import numpy as np
+    import pandas as pd
+
+    # Convert data to DataFrame and ensure all required columns are present
+    df = pd.DataFrame(data)
+    df = df[["company_id", "area_id", "subarea_id"] + metrics].infer_objects()  # Type inference for better handling
+
+    # Fetch names for company, area, and subarea
+    company_ids = [int(id) for id in df["company_id"].unique()]
+    area_ids = [int(id) for id in df["area_id"].unique()]
+    subarea_ids = [int(id) for id in df["subarea_id"].unique()]
+
+    # Fetch and map names to IDs
+    company_names = {c.id: c.name for c in Company.query.filter(Company.id.in_(company_ids)).all()}
+    area_names = {a.id: a.name for a in Area.query.filter(Area.id.in_(area_ids)).all()}
+    subarea_names = {s.id: s.name for s in Subarea.query.filter(Subarea.id.in_(subarea_ids)).all()}
+
+    df["company_name"] = df["company_id"].map(company_names)
+    df["area_name"] = df["area_id"].map(area_names)
+    df["subarea_name"] = df["subarea_id"].map(subarea_names)
+
+    # Calculate percentile ranks for each metric, grouped by company, area, and subarea
+    results = []
     for metric in metrics:
         if metric in df.columns:
-            df_metric = df[df[metric].notnull()]  # Filter for non-null values of the metric
-            df[f'{metric}_percentile'] = df_metric[metric].rank(pct=True)
-            # Store percentile values for the target company
-            results[metric] = df.loc[df['company_id'] == company_id, [metric, f'{metric}_percentile']].to_dict(
-                orient='records')
+            # Calculate the percentile rank only for non-null metric values using .loc
+            df_metric = df.loc[df[metric].notnull(), :]
+            df.loc[df[metric].notnull(), f"{metric}_percentile"] = df_metric[metric].rank(pct=True)
 
-    # Flatten the results for rendering
-    flattened_results = []
-    for metric, values in results.items():
-        for value in values:
-            flattened_results.append({
-                'metric': metric,
-                'value': value[metric],
-                'percentile': value[f'{metric}_percentile']
-            })
+            # Append each combination result to results list
+            for _, row in df.loc[df[metric].notnull(), :].iterrows():
+                results.append({
+                    "company_name": row["company_name"],
+                    "area_name": row["area_name"],
+                    "subarea_name": row["subarea_name"],
+                    "metric": metric,
+                    "value": row[metric],
+                    "percentile": row[f"{metric}_percentile"]
+                })
 
-    return flattened_results
+    return results

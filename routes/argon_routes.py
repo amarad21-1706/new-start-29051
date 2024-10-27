@@ -206,10 +206,10 @@ def plans_view():
     return render_template('argon-dashboard/plans.html', plans=plans, form=form)
 
 
-@argon_bp.route('/argon/<int:id>', methods=['GET'])
+@argon_bp.route('/view_plan/<int:plan_id>', methods=['GET'])
 @login_required
-def view_plan(id):
-    plan = Plan.query.get_or_404(id)  # Fetch the plan or return 404 if not found
+def view_plan(plan_id):
+    plan = Plan.query.get_or_404(plan_id)
     return render_template('argon-dashboard/view_plan.html', plan=plan)
 
 

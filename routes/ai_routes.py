@@ -152,7 +152,8 @@ def comparative_view():
     metrics = ['fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fi6', 'fi7', 'fi8', 'fi9', 'fi10', 'fi11', 'fi12']
 
     # Get analysis results
-    comparative_data = comparative_analysis(data, company_id, metrics)
+    print(f"Calling comparative_analysis with data: {data}, metrics: {metrics}")
+    comparative_data = comparative_analysis(data, metrics)
 
     # Render the template
     return render_template('ai-dashboard/comparative.html', comparative=comparative_data)
