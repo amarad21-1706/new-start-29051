@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Benchmark Data</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Contract Type</th>
+                <th>Benchmark Price</th>
+                <th>Conditions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for data in benchmark_data %}
+            <tr>
+                <td>{{ data.contract_type }}</td>
+                <td>{{ data.benchmark_price }}</td>
+                <td>{{ data.benchmark_conditions }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

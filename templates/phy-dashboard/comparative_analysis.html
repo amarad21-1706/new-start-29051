@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Comparative Analysis</h2>
+
+    <h3>Physical Contracts</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Contract ID</th>
+                <th>Price</th>
+                <th>Costs</th>
+                <th>Margins</th>
+                <th>Market Price</th>
+                <th>Futures Prices</th>
+                <th>Terms</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for contract in contracts %}
+            <tr>
+                <td>{{ contract.contract_id }}</td>
+                <td>{{ contract.price }}</td>
+                <td>{{ contract.costs }}</td>
+                <td>{{ contract.margins }}</td>
+                <td>{{ contract.market_price }}</td>
+                <td>{{ contract.futures_prices }}</td>
+                <td>{{ contract.terms }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h3>Futures Prices</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Future Price</th>
+                <th>Contract Period</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for data in futures_data %}
+            <tr>
+                <td>{{ data.date }}</td>
+                <td>{{ data.future_price }}</td>
+                <td>{{ data.contract_period }}</td>
+            </tr```html
+                <td>{{ data.contract_period }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

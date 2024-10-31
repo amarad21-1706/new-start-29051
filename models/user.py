@@ -1909,3 +1909,50 @@ class Action(db.Model):
     description = db.Column(db.String(255))
 
 
+
+# GAS MARKET DATA
+
+# Modello del database
+class PhysicalContract(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    contract_id = db.Column(db.String(50), nullable=False)
+    price = db.Column(db.Float, nullable=False)
+    costs = db.Column(db.Float)
+    margins = db.Column(db.Float)
+    market_price = db.Column(db.Float)
+    futures_prices = db.Column(db.Float)
+    terms = db.Column(db.Integer)
+
+
+class FuturesPrice(db.Model):
+    __tablename__ = 'futures_prices'
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.Date, nullable=False)
+    future_price = db.Column(db.Numeric(10, 2), nullable=False)
+    contract_period = db.Column(db.String(50))
+
+class ExchangeRate(db.Model):
+    __tablename__ = 'exchange_rates'
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.Date, nullable=False)
+    currency = db.Column(db.String(10))
+    exchange_rate = db.Column(db.Numeric(10, 4), nullable=False)
+
+class InflationData(db.Model):
+    __tablename__ = 'inflation_data'
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.Date, nullable=False)
+    inflation_rate = db.Column(db.Numeric(5, 2), nullable=False)
+
+class HistoricalPrice(db.Model):
+    __tablename__ = 'historical_prices'
+    id = db.Column(db.Integer, primary_key=True)
+    date = db.Column(db.Date, nullable=False)
+    historical_price = db.Column(db.Numeric(10, 2), nullable=False)
+
+class BenchmarkData(db.Model):
+    __tablename__ = 'benchmark_data'
+    id = db.Column(db.Integer, primary_key=True)
+    contract_type = db.Column(db.String(50))
+    benchmark_price = db.Column(db.Numeric(10, 2))
+    benchmark_conditions = db.Column(db.Text)

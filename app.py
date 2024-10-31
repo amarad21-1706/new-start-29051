@@ -10,7 +10,7 @@ import traceback
 import re
 import requests
 import stripe
-
+from fredapi import Fred
 import openai
 
 import logging
@@ -101,6 +101,7 @@ from routes.plan_routes import plan_bp
 from routes.chart_routes import chart_bp
 from routes.association_routes import association_bp
 from routes.ai_routes import ai_bp
+from routes.phy_routes import phy_bp
 
 from mail_service import send_simple_message, send_simple_message333
 from wtforms import Form
@@ -217,6 +218,9 @@ print('Argon blueprint registered')
 app.register_blueprint(ai_bp, url_prefix='/ai')
 print('A.I. blueprint registered')
 
+app.register_blueprint(phy_bp, url_prefix='/phy')
+print('NatGas contracts benchmarking blueprint registered')
+
 # Register the Argon blueprint
 app.register_blueprint(association_bp, url_prefix='/association') # Add a prefix if needed
 print('Association routes blueprint registered')
@@ -234,6 +238,8 @@ print('chart blueprint registered')
 # Load API key from environment variable
 openai.api_key = os.getenv("OPENAI_API_KEY")
 print('openAI ready')
+
+#fred = Fred(api_key='FRED_API_KEY')
 
 # Setup Limiter
 limiter = Limiter(

@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Historical Prices</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Historical Price</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for data in historical_data %}
+            <tr>
+                <td>{{ data.date }}</td>
+                <td>{{ data.historical_price }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

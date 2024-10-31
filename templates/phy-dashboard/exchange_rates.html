@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Exchange Rates</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Currency</th>
+                <th>Exchange Rate</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for data in exchange_data %}
+            <tr>
+                <td>{{ data.date }}</td>
+                <td>{{ data.currency }}</td>
+                <td>{{ data.exchange_rate }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

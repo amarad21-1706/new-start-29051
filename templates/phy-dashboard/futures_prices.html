@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>Futures Prices</h2>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Future Price</th>
+                <th>Contract Period</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for data in futures_data %}
+            <tr>
+                <td>{{ data.date }}</td>
+                <td>{{ data.future_price }}</td>
+                <td>{{ data.contract_period }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

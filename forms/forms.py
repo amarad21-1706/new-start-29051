@@ -41,13 +41,25 @@ from models.user import (Users, Company, Event, Subject, Step, Workflow, #StepBa
                          Area, Subarea, AreaSubareas, Lexic, Workflow, Interval, Step,
                          Contract, ContractParty, ContractTerm, ContractDocument,
                          ContractStatusHistory, ContractArticle, Party,
-                         BaseData, DocumentWorkflow
+                         BaseData, DocumentWorkflow, PhysicalContract
                          )
 from flask_admin.model.form import InlineFormAdmin
 from enum import Enum
 from flask_admin.contrib.sqla.ajax import QueryAjaxModelLoader
 from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as _
 # from werkzeug.security import generate_password_hash, check_password_hash
+
+
+class PhysicalContractForm(FlaskForm):
+    contract_id = StringField('ID Contratto', validators=[DataRequired()])
+    price = FloatField('Prezzo Contrattuale', validators=[DataRequired()])
+    costs = FloatField('Costi Totali', validators=[DataRequired()])
+    margins = FloatField('Margine di Profitto', validators=[DataRequired()])
+    market_price = FloatField('Prezzo di Mercato', validators=[DataRequired()])
+    futures_prices = FloatField('Prezzi Futures', validators=[DataRequired()])
+    economic_factors = StringField('Fattori Economici')
+    terms = IntegerField('Durata Contratto (mesi)', validators=[DataRequired()])
+    submit = SubmitField('Confronta Condizioni')
 
 
 # Document Workflow forms
