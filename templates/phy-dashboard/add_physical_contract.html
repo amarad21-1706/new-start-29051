@@ -3,6 +3,25 @@
 {% block title %}Add Physical Contract{% endblock %}
 
 {% block content %}
+
+    <style>
+        .custom-spinner {
+            border: 2px solid #f3f3f3; /* Light grey */
+            border-top: 2px solid #3498db; /* Blue */
+            border-radius: 50%;
+            width: 15px; /* Smaller width */
+            height: 15px; /* Smaller height */
+            animation: spin 0.8s linear infinite; /* Slightly faster spin */
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+    </style>
+
     <!-- Flash Message Section -->
     {% with messages = get_flashed_messages(with_categories=True) %}
         {% if messages %}
@@ -60,29 +79,30 @@
 
     <!-- Loading Spinner (initially hidden) -->
     <div id="loadingSpinner" style="display: none;">
-        <img src="{{ url_for('static', filename='images/spinner.gif') }}" alt="Loading..." />
+        <div class="custom-spinner"></div>
         <p>Loading data from FRED, please wait...</p>
     </div>
 
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 
     <script>
+
         $(document).ready(function(){
             $("#loadDataBtn").on("click", function(){
-                // Show spinner and disable button
+                // Show spinner and disable button only on click
                 $("#loadingSpinner").show();
                 $("#loadDataBtn").prop("disabled", true);
 
                 // Perform AJAX request
                 $.post("{{ url_for('phy.load_data') }}", function(response) {
-                    // Hide spinner and re-enable button
+                    // Hide spinner and re-enable button upon success
                     $("#loadingSpinner").hide();
                     $("#loadDataBtn").prop("disabled", false);
 
                     // Show success message
                     $(".flash-messages").html('<div class="alert alert-success">Data loaded successfully!</div>');
                 }).fail(function() {
-                    // Hide spinner and re-enable button
+                    // Hide spinner and re-enable button upon failure
                     $("#loadingSpinner").hide();
                     $("#loadDataBtn").prop("disabled", false);
 
@@ -91,5 +111,7 @@
                 });
             });
         });
+
     </script>
+
 {% endblock %}
