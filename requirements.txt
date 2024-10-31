@@ -114,7 +114,9 @@ Flask-WTF==1.2.1
 Flask-WTF-Ext==0.2
 Flask-WTF-FlexWidgets==0.1.25
 fonttools==4.43.1
+forex-python==1.8
 fqdn==1.5.1
+fredapi==0.5.2
 frozendict==2.3.8
 frozenlist==1.4.0
 future==0.18.3
@@ -219,6 +221,7 @@ passlib==1.7.4
 PasteDeploy==3.1.0
 pathy==0.10.2
 patsy==0.5.6
+peewee==3.17.7
 Persistence==4.1
 persistent==5.2
 pexpect==4.8.0
@@ -368,6 +371,7 @@ WTForms-SQLAlchemy==0.4.1
 wtforms_extras==1.1.4
 yarg==0.1.9
 yarl==1.9.2
+yfinance==0.2.48
 z3c.pt==4.3
 zc.lockfile==3.0.post1
 ZConfig==4.0

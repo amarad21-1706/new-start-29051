@@ -81,13 +81,13 @@ def add_contract():
 @phy_bp.route('/futures_prices')
 def futures_prices_view():
     futures_data = FuturesPrice.query.all()
-    return render_template('futures_prices.html', futures_data=futures_data)
+    return render_template('phy-dashboard/futures_prices.html', futures_data=futures_data)
 
 # Route to view exchange rates data
 @phy_bp.route('/exchange_rates')
 def exchange_rates_view():
     exchange_data = ExchangeRate.query.all()
-    return render_template('exchange_rates.html', exchange_data=exchange_data)
+    return render_template('phy-dashboard/exchange_rates.html', exchange_data=exchange_data)
 
 # Route to view inflation data
 @phy_bp.route('/inflation_data')
@@ -105,7 +105,7 @@ def historical_prices_view():
 @phy_bp.route('/benchmark_data')
 def benchmark_data_view():
     benchmark_data = BenchmarkData.query.all()
-    return render_template('benchmark_data.html', benchmark_data=benchmark_data)
+    return render_template('phy-dashboard/benchmark_data.html', benchmark_data=benchmark_data)
 
 # Route for comparative analysis (optional)
 @phy_bp.route('/comparative_analysis')
@@ -114,7 +114,7 @@ def comparative_analysis():
     # Assuming you need to load both PhysicalContract and FuturesPrice for comparison
     contracts = PhysicalContract.query.all()
     futures_data = FuturesPrice.query.all()
-    return render_template('comparative_analysis.html', contracts=contracts, futures_data=futures_data)
+    return render_template('phy-dashboard/comparative_analysis.html', contracts=contracts, futures_data=futures_data)
 
 
 # Separate route to load data from FRED or other sources
