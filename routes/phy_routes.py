@@ -48,6 +48,136 @@ def ai_dashboard():
     return render_template('phy-dashboard/phy_dashboard.html')
 
 
+# Placeholder function for external benchmark data (e.g., industry data or indices)
+def get_external_benchmark_data():
+    # Replace with logic to fetch data from an external source, like ARERA indices or market reports
+    return 100  # Example benchmark value
+
+# Placeholder function for internal benchmark data (e.g., contracts within the company)
+def get_internal_benchmark_data(contract):
+    # Replace with logic to find similar contracts in the company for internal comparison
+    return 95  # Example internal benchmark value
+
+# Placeholder function for transportation cost
+def get_transportation_cost(contract):
+    # Replace with actual transportation cost calculation
+    return 10  # Example transportation cost
+
+# Placeholder function for storage cost
+def get_storage_cost(contract):
+    # Replace with actual storage cost calculation
+    return 5  # Example storage cost
+
+# Placeholder function to fetch future price data based on date
+def get_future_price(date):
+    # Replace with logic to fetch the appropriate future price
+    return 120  # Example future price
+
+# Placeholder function to get inflation rate for econometric modeling
+def get_inflation_rate(date):
+    # Replace with logic to retrieve the inflation rate for a specific date
+    return 0.02  # Example inflation rate
+
+# Placeholder function to get exchange rate for econometric modeling
+def get_exchange_rate(date):
+    # Replace with logic to retrieve the exchange rate for a specific date
+    return 1.2  # Example exchange rate
+
+# Placeholder function for calculating OECD compliant price for transfer pricing
+def calculate_oecd_compliant_price(contract):
+    # Replace with logic following OECD guidelines
+    return 110  # Example OECD-compliant price
+
+
+def comparative_benchmarking(contract):
+    external_benchmark = get_external_benchmark_data()  # e.g., market reports, ARERA indices
+    internal_benchmark = get_internal_benchmark_data(contract)  # Contracts within the group
+
+    # Example comparison output
+    return {
+        "external": {
+            "benchmark": external_benchmark,
+            "comparison": "Above Benchmark" if contract.market_price > external_benchmark else "Below Benchmark"
+        },
+        "internal": {
+            "benchmark": internal_benchmark,
+            "comparison": "Above Internal Benchmark" if contract.market_price > internal_benchmark else "Below Internal Benchmark"
+        }
+    }
+
+
+def cost_plus_analysis(contract):
+    procurement_cost = contract.price  # Assuming this represents the base procurement cost
+    transportation_cost = get_transportation_cost(contract)
+    storage_cost = get_storage_cost(contract)
+
+    # Add a profit margin
+    reference_price = procurement_cost + transportation_cost + storage_cost + (procurement_cost * 0.1)  # 10% margin
+    return {
+        "reference_price": reference_price,
+        "comparison": "Above Cost Plus" if contract.market_price > reference_price else "Below Cost Plus"
+    }
+
+def shadow_pricing(contract):
+    future_price = get_future_price(contract.contract_date)  # TTF or another index
+    return {
+        "future_price": future_price,
+        "comparison": "Above Shadow Price" if contract.market_price > future_price else "Below Shadow Price"
+    }
+
+
+def econometric_modeling(contract):
+    inflation_rate = get_inflation_rate(contract.contract_date)
+    exchange_rate = get_exchange_rate(contract.contract_date)
+
+    # Simple example regression model
+    predicted_price = (contract.price * 1.02) + (exchange_rate * 0.05) - (inflation_rate * 0.03)
+    return {
+        "predicted_price": predicted_price,
+        "comparison": "Above Modeled Price" if contract.market_price > predicted_price else "Below Modeled Price"
+    }
+
+def transfer_pricing(contract):
+    # Assume a function to verify OECD compliance for intra-group transactions
+    oecd_compliant_price = calculate_oecd_compliant_price(contract)
+    return {
+        "oecd_compliant_price": oecd_compliant_price,
+        "comparison": "Compliant" if contract.market_price == oecd_compliant_price else "Non-compliant"
+    }
+
+
+@phy_bp.route('/compare/<int:contract_id>', endpoint='compare_physical_contracts')
+def compare_physical_contracts(contract_id):
+    # Fetch the specific PhysicalContract by ID
+    contract = PhysicalContract.query.get(contract_id)
+    if not contract:
+        flash("Contract not found.", "danger")
+        return redirect(url_for('phy.add_contract'))
+
+    # Perform multi-faceted comparative analysis
+    results = {
+        "comparative_benchmarking": comparative_benchmarking(contract),
+        "cost_plus_analysis": cost_plus_analysis(contract),
+        "shadow_pricing": shadow_pricing(contract),
+        "econometric_modeling": econometric_modeling(contract),
+        "transfer_pricing": transfer_pricing(contract),
+    }
+
+    # Render template with results
+    return render_template('phy-dashboard/compare_physical_contracts.html', contract=contract, results=results)
+
+
+@phy_bp.route('/search_contract', methods=['GET', 'POST'])
+def search_contract():
+    contract_id = request.args.get('contract_id')
+    if contract_id:
+        # Redirect to the compare_physical_contracts with the provided contract_id
+        return redirect(url_for('phy.compare_physical_contracts', contract_id=contract_id))
+    else:
+        flash("Please enter a valid Contract ID.", "warning")
+        return redirect(url_for('phy.phy_dashboard'))  # Redirect back to dashboard or appropriate page
+
+
 @phy_bp.route('/add', methods=['GET', 'POST'])
 def add_contract():
     form = PhysicalContractForm()
@@ -70,7 +200,9 @@ def add_contract():
         )
         db.session.add(new_contract)
         db.session.commit()
-        return redirect(url_for('phy.compare_physical_contracts', contract_id=new_contract.id))
+
+        # Pass new_contract.id to the template for use with url_for
+        return render_template('phy-dashboard/add_physical_contract.html', form=form, new_contract_id=new_contract.id)
 
     return render_template('phy-dashboard/add_physical_contract.html', form=form)
 
@@ -121,7 +253,7 @@ def comparative_analysis():
     comparative_results = []
     for contract in contracts:
         # Get the future price for the contract's period, if it exists
-        future_price = futures_prices_by_date.get(contract.date)
+        future_price = futures_prices_by_date.get(contract.expiration_date)
 
         if future_price:
             # Compare market price with future price and annotate results

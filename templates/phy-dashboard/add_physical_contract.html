@@ -23,6 +23,7 @@
     </style>
 
     <!-- Flash Message Section -->
+    {# <!-- Flash Message Section -->
     {% with messages = get_flashed_messages(with_categories=True) %}
         {% if messages %}
             <div class="flash-messages">
@@ -32,47 +33,80 @@
             </div>
         {% endif %}
     {% endwith %}
+    #}
+
+    {% with messages = get_flashed_messages(with_categories=True) %}
+        {% if messages %}
+            <div class="alert alert-success">
+                {{ messages[0][1] }}
+                <a href="{{ url_for('phy.compare_physical_contracts', contract_id=new_contract_id) }}" class="btn btn-secondary">
+                    View Comparison
+                </a>
+            </div>
+        {% endif %}
+    {% endwith %}
+
 
     <h1 class="mb-4">Add Physical Contract</h1>
-    <form method="post" action="{{ url_for('phy.add_contract') }}">
+    <form method="post">
         {{ form.hidden_tag() }}
 
         <div class="form-group">
-            {{ form.contract_id.label }}:
+            {{ form.contract_id.label }}
             {{ form.contract_id(class="form-control", placeholder="Enter Contract ID") }}
         </div>
 
         <div class="form-group">
-            {{ form.price.label }}:
-            {{ form.price(class="form-control", placeholder="Enter Price") }}
+            {{ form.price.label }}
+            {{ form.price(class="form-control", placeholder="Enter Contract Price") }}
         </div>
 
         <div class="form-group">
-            {{ form.costs.label }}:
-            {{ form.costs(class="form-control", placeholder="Enter Costs") }}
+            {{ form.costs.label }}
+            {{ form.costs(class="form-control", placeholder="Enter Total Costs") }}
         </div>
 
         <div class="form-group">
-            {{ form.margins.label }}:
-            {{ form.margins(class="form-control", placeholder="Enter Margins") }}
+            {{ form.margins.label }}
+            {{ form.margins(class="form-control", placeholder="Enter Profit Margin") }}
         </div>
 
         <div class="form-group">
-            {{ form.market_price.label }}:
+            {{ form.market_price.label }}
             {{ form.market_price(class="form-control", placeholder="Enter Market Price") }}
         </div>
 
         <div class="form-group">
-            {{ form.futures_prices.label }}:
+            {{ form.futures_prices.label }}
             {{ form.futures_prices(class="form-control", placeholder="Enter Futures Prices") }}
         </div>
 
         <div class="form-group">
-            {{ form.terms.label }}:
-            {{ form.terms(class="form-control", placeholder="Enter Terms") }}
+            {{ form.economic_factors.label }}
+            {{ form.economic_factors(class="form-control", placeholder="Enter Economic Factors") }}
         </div>
 
-        <button type="submit" class="btn btn-primary btn-custom">Submit Contract</button>
+        <div class="form-group">
+            {{ form.terms.label }}
+            {{ form.terms(class="form-control", placeholder="Enter Contract Duration (months)") }}
+        </div>
+
+        <div class="form-group">
+            {{ form.contract_date.label }}
+            {{ form.contract_date(class="form-control") }}
+        </div>
+
+        <div class="form-group">
+            {{ form.created_at.label }}
+            {{ form.created_at(class="form-control") }}
+        </div>
+
+        <div class="form-group">
+            {{ form.expiration_date.label }}
+            {{ form.expiration_date(class="form-control") }}
+        </div>
+
+        <button type="submit" class="btn btn-primary">{{ form.submit.label }}</button>
     </form>
 
     <button id="loadDataBtn" class="btn btn-secondary mt-3">Load Data from FRED</button>

@@ -969,54 +969,54 @@
 
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/tsparticles@3.1.0/dist/tsparticles.min.js"></script>
+
     <script type="module">
         import { tsParticles } from "https://cdn.jsdelivr.net/npm/@tsparticles/engine@3.1.0/+esm";
         import { loadAll } from "https://cdn.jsdelivr.net/npm/@tsparticles/all@3.1.0/+esm";
 
         async function loadParticles(options) {
-          await loadAll(tsParticles);
-          await tsParticles.load({ id: "tsparticles", options });
+            await loadAll(tsParticles);
+            await tsParticles.load({ id: "tsparticles", options });
         }
 
         const configs = {
-          particles: {
-            number: {
-              value: 10
+            particles: {
+                number: {
+                    value: 10
+                },
+                color: {
+                    value: "#77ccdd"
+                },
+                links: {
+                    enable: true,
+                    distance: 200
+                },
+                shape: {
+                    type: "diamond"
+                },
+                opacity: {
+                    value: 0.33
+                },
+                size: {
+                    value: {
+                        min: 4,
+                        max: 12
+                    }
+                },
+                move: {
+                    enable: true,
+                    speed: 1
+                }
             },
-            color: {
-              value: "#77ccdd"
-            },
-            links: {
-              enable: true,
-              distance: 200
-            },
-            shape: {
-              type: "diamond"
-            },
-            opacity: {
-              value: .33
-            },
-            size: {
-              value: {
-                min: 4,
-                max: 12
-              }
-            },
-            move: {
-              enable: true,
-              speed: 1
+            background: {
+                color: "#000003"
             }
-          },
-          background: {
-            color: "#000003"
-          },
-          poisson: {
-            enable: true
-          }
         };
 
         loadParticles(configs);
     </script>
+
     <script>
         $(document).ready(function() {
             function toggleImmediateChildren(submenu) {

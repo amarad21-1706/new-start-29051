@@ -59,6 +59,9 @@ class PhysicalContractForm(FlaskForm):
     futures_prices = FloatField('Prezzi Futures', validators=[DataRequired()])
     economic_factors = StringField('Fattori Economici')
     terms = IntegerField('Durata Contratto (mesi)', validators=[DataRequired()])
+    contract_date = DateField('Data Contratto', validators=[DataRequired()])
+    created_at = DateField('Data di Creazione', default=datetime.utcnow, validators=[DataRequired()])
+    expiration_date = DateField('Data di Scadenza', validators=[DataRequired()])
     submit = SubmitField('Confronta Condizioni')
 
 

@@ -1909,20 +1909,22 @@ class Action(db.Model):
     description = db.Column(db.String(255))
 
 
-
 # GAS MARKET DATA
-
 # Modello del database
 class PhysicalContract(db.Model):
+    __tablename__ = 'physical_contract'
     id = db.Column(db.Integer, primary_key=True)
-    contract_id = db.Column(db.String(50), nullable=False)
+    contract_id = db.Column(db.String(50), unique=True, nullable=False)
     price = db.Column(db.Float, nullable=False)
-    costs = db.Column(db.Float)
-    margins = db.Column(db.Float)
-    market_price = db.Column(db.Float)
-    futures_prices = db.Column(db.Float)
-    terms = db.Column(db.Integer)
-
+    costs = db.Column(db.Float, nullable=False)
+    margins = db.Column(db.Float, nullable=False)
+    market_price = db.Column(db.Float, nullable=False)
+    futures_prices = db.Column(db.Float, nullable=False)
+    economic_factors = db.Column(db.String(255), nullable=True)
+    terms = db.Column(db.Integer, nullable=False)
+    contract_date = db.Column(db.Date, nullable=False)
+    created_at = db.Column(db.Date, default=datetime.utcnow, nullable=False)  # Default to current date
+    expiration_date = db.Column(db.Date, nullable=False)
 
 class FuturesPrice(db.Model):
     __tablename__ = 'futures_prices'

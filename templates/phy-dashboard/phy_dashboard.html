@@ -53,6 +53,17 @@
                 Comparative Analysis
             </a>
         </div>
+
+        <!-- Contract Filter/Search -->
+        <!-- Contract Filter/Search -->
+        <form action="{{ url_for('phy.search_contract') }}" method="get" class="form-inline">
+            <div class="form-group mb-2">
+                <label for="contract_id" class="text-white mr-2">Enter Contract ID</label>
+                <input type="number" name="contract_id" id="contract_id" class="form-control" placeholder="Contract ID" required>
+            </div>
+            <button type="submit" class="btn btn-primary mb-2">View Comparison</button>
+        </form>
+
     </div>
 </div>
 {% endblock %}
