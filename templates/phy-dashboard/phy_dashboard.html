@@ -6,28 +6,28 @@
     <div class="row">
         <!-- Add Contract Data Button -->
         <div class="col-md-3 mb-3">
-            <a href="{{ url_for('phy.add_contract') }}" class="btn btn-warning btn-block">
+            <a href="{{ url_for('phy.add_contract') }}" class="btn btn-warning btn-block" onclick="showSpinner()">
                 Add Contract Data
             </a>
         </div>
 
         <!-- Futures Prices Button -->
         <div class="col-md-3 mb-3">
-            <a href="{{ url_for('phy.futures_prices_view') }}" class="btn btn-success btn-block">
+            <a href="{{ url_for('phy.futures_prices_view') }}" class="btn btn-success btn-block" onclick="showSpinner()">
                 Futures Prices
             </a>
         </div>
 
         <!-- Exchange Rates Button -->
         <div class="col-md-3 mb-3">
-            <a href="{{ url_for('phy.exchange_rates_view') }}" class="btn btn-primary btn-block">
+            <a href="{{ url_for('phy.exchange_rates_view') }}" class="btn btn-primary btn-block" onclick="showSpinner()">
                 Exchange Rates
             </a>
         </div>
 
         <!-- Inflation Data Button -->
         <div class="col-md-3 mb-3">
-            <a href="{{ url_for('phy.inflation_data_view') }}" class="btn btn-info btn-block">
+            <a href="{{ url_for('phy.inflation_data_view') }}" class="btn btn-info btn-block" onclick="showSpinner()">
                 Inflation Data
             </a>
         </div>
@@ -35,35 +35,71 @@
     <div class="row">
         <!-- Historical Prices Button -->
         <div class="col-md-3 mb-3">
-            <a href="{{ url_for('phy.historical_prices_view') }}" class="btn btn-secondary btn-block">
+            <a href="{{ url_for('phy.historical_prices_view') }}" class="btn btn-secondary btn-block" onclick="showSpinner()">
                 Historical Prices
             </a>
         </div>
 
         <!-- Benchmark Data Button -->
         <div class="col-md-3 mb-3">
-            <a href="{{ url_for('phy.benchmark_data_view') }}" class="btn btn-dark btn-block">
+            <a href="{{ url_for('phy.benchmark_data_view') }}" class="btn btn-dark btn-block" onclick="showSpinner()">
                 Benchmark Data
             </a>
         </div>
 
-        <!-- Comparative Analysis Button (Optional) -->
+        <!-- Comparative Analysis Button -->
         <div class="col-md-3 mb-3">
-            <a href="{{ url_for('phy.comparative_analysis') }}" class="btn btn-info btn-block">
+            <a href="{{ url_for('phy.comparative_analysis') }}" class="btn btn-info btn-block" onclick="showSpinner()">
                 Comparative Analysis
             </a>
         </div>
 
-        <!-- Contract Filter/Search -->
         <!-- Contract Filter/Search -->
         <form action="{{ url_for('phy.search_contract') }}" method="get" class="form-inline">
             <div class="form-group mb-2">
                 <label for="contract_id" class="text-white mr-2">Enter Contract ID</label>
                 <input type="number" name="contract_id" id="contract_id" class="form-control" placeholder="Contract ID" required>
             </div>
-            <button type="submit" class="btn btn-primary mb-2">View Comparison</button>
+            <button type="submit" class="btn btn-primary mb-2" onclick="showSpinner()">View Comparison</button>
         </form>
+    </div>
 
+    <!-- Loading Spinner (initially hidden by default) -->
+    <div id="loadingSpinner" style="display: none; text-align: center; margin-top: 20px;">
+        <div class="custom-spinner"></div>
+        <p>Loading data, please wait...</p>
     </div>
 </div>
+
+<!-- Spinner CSS -->
+<style>
+    .custom-spinner {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #3498db;
+        border-radius: 50%;
+        width: 30px;
+        height: 30px;
+        animation: spin 1s linear infinite;
+        margin: 0 auto;
+    }
+
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+</style>
+
+<!-- Spinner JavaScript -->
+<script>
+    function showSpinner() {
+        // Show the spinner when a button is clicked
+        document.getElementById('loadingSpinner').style.display = 'block';
+    }
+
+    // Hide the spinner when the page loads
+    window.onload = function() {
+        document.getElementById('loadingSpinner').style.display = 'none';
+    };
+</script>
+
 {% endblock %}
