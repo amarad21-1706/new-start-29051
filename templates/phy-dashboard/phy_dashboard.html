@@ -1,3 +1,4 @@
+
 {% extends "phy-dashboard/argon_base_phy.html" %}
 
 {% block content %}
@@ -64,7 +65,7 @@
         </form>
     </div>
 
-    <!-- Loading Spinner (initially hidden by default) -->
+    <!-- Unified Spinner Element (initially hidden) -->
     <div id="loadingSpinner" style="display: none; text-align: center; margin-top: 20px;">
         <div class="custom-spinner"></div>
         <p>Loading data, please wait...</p>
@@ -94,11 +95,15 @@
     function showSpinner() {
         // Show the spinner when a button is clicked
         document.getElementById('loadingSpinner').style.display = 'block';
+        // Optionally, set a session item (in case you need to check it later)
+        sessionStorage.setItem('show_spinner', 'true');
     }
 
-    // Hide the spinner when the page loads
+    // Always hide the spinner when the page loads
     window.onload = function() {
         document.getElementById('loadingSpinner').style.display = 'none';
+        // Clear sessionStorage if it's used
+        sessionStorage.removeItem('show_spinner');
     };
 </script>
 

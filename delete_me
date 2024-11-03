@@ -1,4 +1,22 @@
 
+Search for string in all tables:
+
+DO $$
+DECLARE
+    tbl RECORD;
+    col RECORD;
+BEGIN
+    FOR tbl IN SELECT table_name FROM information_schema.tables WHERE table_schema = 'public' LOOP
+        FOR col IN SELECT column_name FROM information_schema.columns
+                   WHERE table_name = tbl.table_name AND data_type IN ('character varying', 'text') LOOP
+            EXECUTE format('SELECT * FROM %I.%I WHERE %I::text LIKE %L',
+                           'public', tbl.table_name, col.column_name, '%string%');
+        END LOOP;
+    END LOOP;
+END $$;
+
+
+
 # Example use within the Flask view function
 @login_required
 @app.route('/show_survey_sqlite/<int:questionnaire_id>', methods=['GET', 'POST'])

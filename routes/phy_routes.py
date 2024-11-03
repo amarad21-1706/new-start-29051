@@ -21,7 +21,7 @@ from werkzeug.utils import secure_filename
 from flask_login import current_user
 from datetime import datetime, timedelta
 
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, session
 from flask import flash, jsonify, redirect, url_for, render_template, request, redirect
 from db import db
 from forms.forms import (PhysicalContractForm) # Assuming your form is in forms.py
@@ -44,9 +44,18 @@ phy_bp = Blueprint('phy', __name__)
 # Route for the main dashboard
 @phy_bp.route('/phy_dashboard')
 @login_required
-def ai_dashboard():
+def phy_dashboard():
+    # Ensure the session flag is reset when the dashboard loads
+    session['show_spinner'] = False
+    print('spinner off')
     return render_template('phy-dashboard/phy_dashboard.html')
 
+
+@phy_bp.route('/trigger_spinner')
+def trigger_spinner():
+    # Set the spinner status to true when the button is clicked
+    session['show_spinner'] = True
+    return redirect(url_for('page_a'))
 
 # Placeholder function for external benchmark data (e.g., industry data or indices)
 def get_external_benchmark_data():
@@ -283,6 +292,8 @@ def comparative_analysis():
 
 @phy_bp.route('/load_data', methods=['POST'])
 def load_data():
+
+    session['show_spinner'] = False
     try:
         print('loading data from Fred triggered')
         load_data_from_fred()  # Fetch and load data from FRED

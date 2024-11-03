@@ -3,7 +3,7 @@ import os
 print(f"FLASK_APP: {os.getenv('FLASK_APP')}")
 print(f"FLASK_ENV: {os.getenv('FLASK_ENV')}")
 print(f"FLASK_DEBUG: {os.getenv('FLASK_DEBUG')}")
-# DEBUG LOGGING LOGGER TOOLBAR: see app_factory.py
+# DEBUG LOGGING LOGGER TOOLBAR: see app_factory.py 
 '''
 # app.py (or run.py)
 import traceback
@@ -426,6 +426,13 @@ def check_internet():
     except (requests.ConnectionError, requests.Timeout) as exception:
         return False
 
+'''
+@app.before_request
+def log_request():
+    if "sample_1280x720_surfing_with_audio.mp4" in request.path:
+        print(f"Request path: {request.path} - Method: {request.method}")
+
+'''
 
 @app.before_request
 def before_request():
@@ -1088,8 +1095,8 @@ def process_menu_items(menu_items, is_authenticated, user_roles):
                 # Find the intersection between user_roles and allowed_roles
                 intersection = set(user_roles).intersection(allowed_roles)
 
-                print('Widget to display:', key, is_authenticated, user_roles, allowed_roles, 'Intersection:',
-                      intersection)
+                # print('Widget to display:', key, is_authenticated, user_roles, allowed_roles, 'Intersection:',
+                #      intersection)
 
                 if intersection:
                     widgets_to_display.append(item)
@@ -1515,6 +1522,7 @@ def login():
                         session['user_id'] = user.id
                         session['username'] = username
                         session['email'] = user.email
+                        session['show_spinner'] = False
 
                         try:
                             company_user = CompanyUsers.query.filter_by(user_id=user.id).first()

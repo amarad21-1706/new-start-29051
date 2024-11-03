@@ -3,7 +3,7 @@ from datetime import datetime
 from models.user import Post, UserRoles, Role, Users, AuditLog
 from sqlalchemy.exc import IntegrityError
 
-# Initialize variables for admin instances
+# Initialize variables for admin instances gallery
 admin_app1 = None
 admin_app2 = None
 admin_app3 = None

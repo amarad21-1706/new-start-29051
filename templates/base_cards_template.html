@@ -332,9 +332,9 @@
                     {% elif container.content_type == 'documents' %}
                     <a href="{{ url_for('static', filename=container.content['file_path']) }}">Download</a>
                     {% elif container.content_type == 'gallery' %}
-                        {% set video_path = container.content['file_name'].lstrip('/') %}
-                        <p>Debug: Video Path - {{ video_path }}</p>
-                        <video class="video-fixed-dimensions" src="{{ url_for('static', filename=video_path) }}" controls>
+
+                        {% set video_path = container.content['file_name'].strip('/') %}
+                        <video class="video-fixed-dimensions" src="{{ url_for('static', filename='gallery/' + video_path).replace('//', '/') }}" controls>
                             Your browser does not support the video tag.
                         </video>
 

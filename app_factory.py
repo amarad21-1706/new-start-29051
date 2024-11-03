@@ -1,4 +1,4 @@
-# app_factory.py
+# app_factory.py favicon
 
 import os
 from sqlalchemy.exc import OperationalError

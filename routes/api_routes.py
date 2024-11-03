@@ -14,7 +14,7 @@ from werkzeug.utils import secure_filename
 from flask_login import current_user
 from datetime import datetime, timedelta
 
-from flask import Blueprint, render_template
+from flask import Blueprint, render_template, session
 from flask import flash, jsonify, redirect, url_for, render_template, request, redirect
 from db import db
 from forms.forms import (PhysicalContractForm) # Assuming your form is in forms.py
@@ -43,6 +43,7 @@ market_api_bp = Blueprint('market_api', __name__)
 
 @market_api_bp.route('/api-dashboard')
 def dashboard():
+    session['show_spinner'] = False
     return render_template('api-dashboard/api_dashboard.html')
 
 @market_api_bp.route('/api-dashboard/fetch_financial_data/<ticker>')
