@@ -1,0 +1,37 @@
+{% extends 'argon-dashboard/question_base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>Edit Question</h2>
+    <form action="{{ url_for('argon.edit_question', id=question.id) }}" method="POST">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+            <label for="question_id">Question ID</label>
+            {{ form.question_id(class="form-control") }}
+        </div>
+
+        <div class="form-group">
+            <label for="text">Question Text</label>
+            {{ form.text(class="form-control", value=question.text) }}
+        </div>
+
+        <div class="form-group">
+            <label for="answer_type">Answer Type</label>
+            {{ form.answer_type(class="form-control", value=question.answer_type) }}
+        </div>
+
+        <div class="form-group">
+            <label for="answer_type">Answer Column Width</label>
+            {{ form.answer_width(class="form-control", value=question.answer_width) }}
+        </div>
+
+        <div class="form-group">
+            <label for="answer_fields">Answer Fields (JSON)</label>
+            {{ form.answer_fields(class="form-control", value=question.answer_fields) }}
+        </div>
+
+        <button type="submit" class="btn btn-primary">Update Question</button>
+    </form>
+</div>
+{% endblock %}

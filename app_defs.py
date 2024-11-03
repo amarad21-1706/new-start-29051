@@ -3,6 +3,16 @@ from datetime import datetime
 from models.user import Post, UserRoles, Role, Users, AuditLog
 from sqlalchemy.exc import IntegrityError
 
+# Initialize variables for admin instances gallery
+admin_app1 = None
+admin_app2 = None
+admin_app3 = None
+admin_app4 = None
+admin_app5 = None
+admin_app6 = None
+admin_app7 = None
+admin_app10 = None
+
 def get_user_roles(session=None, user_id=None):
     # Query UserRoles to get the roles for the given user ID
     user_roles = session.query(UserRoles).filter(UserRoles.user_id == user_id).all()
@@ -11,15 +21,14 @@ def get_user_roles(session=None, user_id=None):
     # Query Role table to get role names for the extracted role IDs
     roles = session.query(Role).filter(Role.id.in_(role_ids)).all()
     # Extract role names from roles
-    role_names = [role.name.lower() for role in roles]
-    print('Roles for user', user_id, 'are:', role_names)
+    role_names = [role.name for role in roles]
     if not role_names:
         return None
     return role_names
 
 import sqlalchemy
 from sqlalchemy.exc import IntegrityError
-import logging
+# import logging
 
 
 def create_message(session=None, user_id=None, message_type=None, subject=None, body=None, sender=None, company_id=None,
@@ -37,10 +46,11 @@ def create_message(session=None, user_id=None, message_type=None, subject=None, 
                 existing_message.sender = sender
                 existing_message.created_at = datetime.utcnow()
                 session.commit()  # Commit the transaction
-                logging.info("Message updated successfully.")
+                #logging.info("Message updated successfully.")
             else:
                 # Append the message if overwriting is not allowed
-                logging.warning("Message already exists and overwriting is not allowed.")
+                # logging.warning("Message already exists and overwriting is not allowed.")
+                pass
         else:
             # Create a new Message instance
             message_content = Post(
@@ -56,19 +66,19 @@ def create_message(session=None, user_id=None, message_type=None, subject=None, 
             # Add the message to the session
             session.add(message_content)
             session.commit()  # Commit the transaction
-            logging.info("Message created successfully.")
+            #logging.info("Message created successfully.")
 
     except IntegrityError as e:
         session.rollback()  # Rollback the transaction
-        logging.error("Integrity error occurred while creating message: %s", str(e))
+        #logging.error("Integrity error occurred while creating message: %s", str(e))
 
     except sqlalchemy.exc.SQLAlchemyError as e:
         session.rollback()  # Rollback the transaction
-        logging.error("Error occurred while creating message: %s", str(e))
+        # logging.error("Error occurred while creating message: %s", str(e))
 
     except Exception as e:
         session.rollback()  # Rollback the transaction
-        logging.error("Unexpected error occurred while creating message: %s", str(e))
+        # logging.error("Unexpected error occurred while creating message: %s", str(e))
 
 
 # Example usage:

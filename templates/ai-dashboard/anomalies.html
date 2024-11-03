@@ -1,0 +1,29 @@
+{% extends "ai-dashboard/argon_base_ai.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Anomalies</h2>
+    {% if anomalies %}
+        <table class="table table-striped">
+            <thead>
+                <tr>
+                    <th>Metric</th>
+                    <th>Volume Z-Score</th>
+                    <th>Percentage Z-Score</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for anomaly in anomalies %}
+                    <tr>
+                        <td>{{ anomaly['metric_name'] }}</td>
+                        <td>{{ anomaly['volume_zscore'] }}</td>
+                        <td>{{ anomaly['percentage_zscore'] }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No anomalies detected.</p>
+    {% endif %}
+</div>
+{% endblock %}

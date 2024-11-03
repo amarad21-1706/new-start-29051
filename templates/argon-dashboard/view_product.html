@@ -1,0 +1,30 @@
+{% extends 'argon-dashboard/plan_base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>Product Details</h2>
+    <ul>
+        <li><strong>Name:</strong> {{ product.name }}</li>
+        <li><strong>Type:</strong> {{ product.type }}</li>
+        <li><strong>Description:</strong> {{ product.description }}</li>
+        <li><strong>Price:</strong> {{ product.price }}</li>
+        <li><strong>Currency:</strong> {{ product.currency }}</li>
+        <li><strong>Stripe Product ID:</strong> {{ product.stripe_product_id }}</li>
+        <li><strong>Stripe Price ID:</strong> {{ product.stripe_price_id }}</li>
+        <li><strong>Path:</strong> {{ product.path }}</li>
+        <li><strong>Icon:</strong> {{ product.icon }}</li>
+        <li>
+            <strong>Plans:</strong>
+            <ul>
+                {% for plan_product in product.plan_products %}
+                <li>{{ plan_product.plan.name }} (Billing Cycle: {{ plan_product.plan.billing_cycle }})</li>
+                {% endfor %}
+            </ul>
+        </li>
+    </ul>
+    <a href="{{ url_for('argon.edit_product', id=product.id) }}" class="btn btn-warning">Edit</a>
+    <form action="{{ url_for('argon.delete_product', id=product.id) }}" method="POST" style="display:inline-block;">
+        <button type="submit" class="btn btn-danger" onclick="return confirm('Are you sure you want to delete this product?')">Delete</button>
+    </form>
+</div>
+{% endblock %}

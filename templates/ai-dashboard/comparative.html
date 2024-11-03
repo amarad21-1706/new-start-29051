@@ -1,0 +1,35 @@
+{% extends "ai-dashboard/argon_base_ai.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Comparative Analysis</h2>
+    {% if comparative %}
+        <table class="table table-bordered">
+            <thead>
+                <tr>
+                    <th>Company</th>
+                    <th>Area</th>
+                    <th>Subarea</th>
+                    <th>Metric</th>
+                    <th>Value</th>
+                    <th>Percentile Rank</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for record in comparative %}
+                    <tr>
+                        <td>{{ record['company_name'] }}</td>
+                        <td>{{ record['area_name'] }}</td>
+                        <td>{{ record['subarea_name'] }}</td>
+                        <td>{{ record['metric'] }}</td>
+                        <td>{{ record['value'] }}</td>
+                        <td>{{ "{:.2f}".format(record['percentile']) }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    {% else %}
+        <p>No comparative data available.</p>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends 'argon-dashboard/questionnaire_base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>Surveys and Questions</h2>
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Survey Code</th>
+                <th>Survey Name</th>
+                <th>Survey Type</th>
+                <th>Question Code</th>
+                <th>Question Text</th>
+                <th>Extra Data</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in questionnaire_questions %}
+            <tr>
+                <td>{{ row.questionnaire_code }}</td> <!-- Survey code -->
+                <td>{{ row.questionnaire_name }}</td> <!-- Survey name -->
+                <td>{{ row.questionnaire_type }}</td> <!-- Survey type -->
+                <td>{{ row.question_code }}</td> <!-- Question code -->
+                <td>{{ row.question_text }}</td> <!-- Question text -->
+                <td>{{ row.QuestionnaireQuestions.extra_data }}</td> <!-- Extra data -->
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

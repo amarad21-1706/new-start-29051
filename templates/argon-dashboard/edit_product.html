@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Product</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='argon-dashboard/css/argon-dashboard.css') }}">
+</head>
+<body>
+    <div class="container mt-4">
+        <h1>Edit Product</h1>
+        <form method="POST">
+            {{ form.hidden_tag() }}
+
+            <!-- Product Name -->
+            <div class="form-group">
+                {{ form.name.label(class="form-label") }}
+                {{ form.name(class="form-control", placeholder="Enter product name") }}
+                {% if form.name.errors %}
+                    <small class="text-danger">{{ form.name.errors[0] }}</small>
+                {% endif %}
+            </div>
+
+            <!-- Product Description -->
+            <div class="form-group">
+                {{ form.description.label(class="form-label") }}
+                {{ form.description(class="form-control", rows="3", placeholder="Enter product description") }}
+                {% if form.description.errors %}
+                    <small class="text-danger">{{ form.description.errors[0] }}</small>
+                {% endif %}
+            </div>
+
+            <!-- Stripe Product ID -->
+            <div class="form-group">
+                {{ form.stripe_product_id.label(class="form-label") }}
+                {{ form.stripe_product_id(class="form-control", placeholder="Enter Stripe Product ID") }}
+                {% if form.stripe_product_id.errors %}
+                    <small class="text-danger">{{ form.stripe_product_id.errors[0] }}</small>
+                {% endif %}
+            </div>
+
+            <!-- Stripe Price ID -->
+            <div class="form-group">
+                {{ form.stripe_price_id.label(class="form-label") }}
+                {{ form.stripe_price_id(class="form-control", placeholder="Enter Stripe Price ID") }}
+                {% if form.stripe_price_id.errors %}
+                    <small class="text-danger">{{ form.stripe_price_id.errors[0] }}</small>
+                {% endif %}
+            </div>
+
+            <!-- Product Price -->
+            <div class="form-group">
+                {{ form.price.label(class="form-label") }}
+                {{ form.price(class="form-control", placeholder="Enter price") }}
+                {% if form.price.errors %}
+                    <small class="text-danger">{{ form.price.errors[0] }}</small>
+                {% endif %}
+            </div>
+
+            <!-- Currency -->
+            <div class="form-group">
+                {{ form.currency.label(class="form-label") }}
+                {{ form.currency(class="form-control", placeholder="Enter currency (e.g., EUR)") }}
+                {% if form.currency.errors %}
+                    <small class="text-danger">{{ form.currency.errors[0] }}</small>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                {{ form.path.label(class="form-label") }}
+                {{ form.path(class="form-control", placeholder="Enter product path") }}
+                <small class="form-text text-muted">Example: /applications/your_app</small>
+                {% if form.path.errors %}
+                    <small class="text-danger">{{ form.path.errors[0] }}</small>
+                {% endif %}
+            </div>
+
+            <!-- Icon (Optional) -->
+            <div class="form-group">
+                {{ form.icon.label(class="form-label") }}
+                <div class="input-group">
+                    {{ form.icon(class="form-control", id="icon-input", placeholder="Enter icon URL (optional)") }}
+                    <div class="input-group-append">
+                        <button type="button" class="btn btn-info" id="select-icon-btn" onclick="window.open('/argon/list_icons', '_blank')">Select Icon</button>
+                    </div>
+                </div>
+                {% if form.icon.errors %}
+                    <small class="text-danger">{{ form.icon.errors[0] }}</small>
+                {% endif %}
+            </div>
+
+            <!-- Type (Dropdown) -->
+            <div class="form-group">
+                {{ form.type.label(class="form-label") }}
+                {{ form.type(class="form-control") }}
+                {% if form.type.errors %}
+                    <small class="text-danger">{{ form.type.errors[0] }}</small>
+                {% endif %}
+            </div>
+
+            <!-- Submit Button -->
+            <button type="submit" class="btn btn-primary">Update Product</button>
+
+            <!-- Back Button -->
+            <a href="{{ url_for('argon.products_view') }}" class="btn btn-secondary">Back to Products</a>
+        </form>
+    </div>
+</body>
+
+    <script>
+        document.getElementById('select-icon-btn').addEventListener('click', function() {
+            // Open the icons page in a new tab
+            window.open('/list_icons', '_blank');
+        });
+    </script>
+</html>

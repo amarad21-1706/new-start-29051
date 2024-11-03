@@ -1,0 +1,55 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="text-white">Comparative Analysis</h2>
+
+    <h3 class="text-white">Physical Contracts</h3>
+    <table class="table table-dark table-striped">
+        <thead>
+            <tr>
+                <th class="text-white">Contract ID</th>
+                <th class="text-white">Price</th>
+                <th class="text-white">Costs</th>
+                <th class="text-white">Margins</th>
+                <th class="text-white">Market Price</th>
+                <th class="text-white">Futures Prices</th>
+                <th class="text-white">Terms</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for contract in contracts %}
+            <tr>
+                <td class="text-white">{{ contract.contract_id }}</td>
+                <td class="text-white">{{ contract.price }}</td>
+                <td class="text-white">{{ contract.costs }}</td>
+                <td class="text-white">{{ contract.margins }}</td>
+                <td class="text-white">{{ contract.market_price }}</td>
+                <td class="text-white">{{ contract.futures_prices }}</td>
+                <td class="text-white">{{ contract.terms }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <h3 class="text-white">Futures Prices</h3>
+    <table class="table table-dark table-striped">
+        <thead>
+            <tr>
+                <th class="text-white">Date</th>
+                <th class="text-white">Future Price</th>
+                <th class="text-white">Contract Period</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for data in futures_data %}
+            <tr>
+                <td class="text-white">{{ data.date }}</td>
+                <td class="text-white">{{ data.future_price }}</td>
+                <td class="text-white">{{ data.contract_period }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

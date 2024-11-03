@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Plans and Their Associated Products</h2>
+{% for plan in plans_with_products %}
+    <h3>{{ plan.name }}</h3>
+    <p>{{ plan.description }}</p>
+    <ul>
+        {% for product in plan.products %}
+            <li>
+                <strong>{{ product.name }}</strong>: {{ product.description }}
+            </li>
+        {% endfor %}
+    </ul>
+{% endfor %}
+{% endblock %}

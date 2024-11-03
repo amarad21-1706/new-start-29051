@@ -1,0 +1,51 @@
+<!-- argon_base.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>{% block title %}Dashboard{% endblock %}</title>
+    <link href="{{ url_for('static', filename='argon-dashboard/css/argon-dashboard.css') }}" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet">
+</head>
+<body>
+    <!-- Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-wrapper">
+            <ul class="nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="/argon/teams">
+                        <i class="ni ni-single-02 text-yellow"></i> Project Teams
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/argon/contracts">
+                        <i class="ni ni-paper-diploma text-blue"></i> Contracts
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/argon/members">
+                        <i class="ni ni-circle-08 text-gray"></i> Team Members
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <div class="header bg-primary pb-6 pt-5">
+            <div class="container-fluid">
+                <div class="header-body">
+                    <h1 class="text-white">Admin Dashboard</h1>
+                </div>
+            </div>
+        </div>
+        <div class="container-fluid mt--6">
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='argon-dashboard/js/argon-dashboard.js') }}"></script>
+</body>
+</html>

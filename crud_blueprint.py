@@ -7,7 +7,7 @@ from db import db  # Assuming you have a SQLAlchemy database instance
 from models.user import (Users, UserRoles, Role, Table, Questionnaire, Question, Answer, Company, CompanyUsers,
                          QuestionnaireQuestions, QuestionnaireCompanies, CompanyUsers, Subject, Status,
                          Config, Workflow, Step, BaseData, Lexic, Question,
-                         WorkflowSteps, WorkflowBaseData, StepBaseData, Area, Subarea, AreaSubareas,
+                         WorkflowSteps, WorkflowBaseData, DocumentWorkflow, Area, Subarea, AreaSubareas,
                          Post)
 # crud_blueprint.py
 from sqlalchemy import inspect
@@ -99,7 +99,7 @@ def get_model_by_name(model_name):
         'model_lexic': Lexic, 'model_area': Area, 'model_subareas': Subarea, 'model_area_subareas': AreaSubareas,
         'model_base_data': BaseData,
         'model_subject': Subject, 'model_document': BaseData.get_documents(), 'model_step': Step,
-        'model_step_base_data': StepBaseData, 'model_workflow': Workflow, 'model_workflow_steps': WorkflowSteps,
+        'model_document_workflows': DocumentWorkflow, 'model_workflow': Workflow, 'model_workflow_steps': WorkflowSteps,
         'model_workflow_base_data': WorkflowBaseData,
         }
     # Adjust as per your actual model classes
@@ -135,7 +135,7 @@ def create_crud_blueprint(model, model_name):
             elif model == WorkflowBaseData:
                 filtered_items = filtered_items.options(joinedload('workflow'), joinedload('base_data'))
 
-            elif model == StepBaseData:
+            elif model == DocumentWorkflow:
                 filtered_items = filtered_items.options(joinedload('step'), joinedload('base_data'))
 
             elif model == WorkflowSteps:
@@ -366,18 +366,6 @@ def create_crud_blueprint(model, model_name):
             add_form=True,
         )
 
-        '''
-        return render_template(
-            'crud_add_template.html',
-            field_labels=field_labels,
-            field_names=field_names,
-            paginated_items=paginated_items,
-            items_for_current_page=paginated_items.items,
-            model=model,
-            model_name=model_name,
-            add_form=True,
-        )
-        '''
 
     @blueprint.route('/<string:model_name>/<int:item_id>/update', methods=['GET', 'POST'])
     def update(model_name, item_id):

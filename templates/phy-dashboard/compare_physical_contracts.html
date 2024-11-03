@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="text-white">Contract Comparison (ID: {{ contract.contract_id }})</h2>
+    <table class="table table-dark table-striped">
+        <thead>
+            <tr>
+                <th class="text-white">Analysis Type</th>
+                <th class="text-white">Benchmark/Price</th>
+                <th class="text-white">Comparison Result</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td class="text-white">Comparative Benchmarking (External)</td>
+                <td class="text-white">{{ results.comparative_benchmarking.external.benchmark }}</td>
+                <td class="text-white">{{ results.comparative_benchmarking.external.comparison }}</td>
+            </tr>
+            <tr>
+                <td class="text-white">Comparative Benchmarking (Internal)</td>
+                <td class="text-white">{{ results.comparative_benchmarking.internal.benchmark }}</td>
+                <td class="text-white">{{ results.comparative_benchmarking.internal.comparison }}</td>
+            </tr>
+            <tr>
+                <td class="text-white">Cost Plus Analysis</td>
+                <td class="text-white">{{ results.cost_plus_analysis.reference_price }}</td>
+                <td class="text-white">{{ results.cost_plus_analysis.comparison }}</td>
+            </tr>
+            <tr>
+                <td class="text-white">Shadow Pricing</td>
+                <td class="text-white">{{ results.shadow_pricing.future_price }}</td>
+                <td class="text-white">{{ results.shadow_pricing.comparison }}</td>
+            </tr>
+            <tr>
+                <td class="text-white">Econometric Modeling</td>
+                <td class="text-white">{{ results.econometric_modeling.predicted_price }}</td>
+                <td class="text-white">{{ results.econometric_modeling.comparison }}</td>
+            </tr>
+            <tr>
+                <td class="text-white">Transfer Pricing (OECD Compliance)</td>
+                <td class="text-white">{{ results.transfer_pricing.oecd_compliant_price }}</td>
+                <td class="text-white">{{ results.transfer_pricing.comparison }}</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+{% endblock %}

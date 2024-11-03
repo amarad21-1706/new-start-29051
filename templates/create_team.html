@@ -1,0 +1,28 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h2>Create New Team</h2>
+
+<!-- Flash Messages Section -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="alert-container">
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+<!-- End of Flash Messages Section -->
+
+<form method="post">
+   {{ form.hidden_tag() }} <!-- Automatically includes CSRF token -->
+   <div class="form-group">
+       {{ form.team_name.label }} {{ form.team_name(class="form-control") }}
+   </div>
+   <div class="form-group">
+       {{ form.description.label }} {{ form.description(class="form-control") }}
+   </div>
+   {{ form.submit(class="btn btn-primary") }}
+</form>
+{% endblock %}

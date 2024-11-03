@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Dashboard</title>
+    <link href="{{ url_for('static', filename='argon-dashboard/css/argon-dashboard.css') }}" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Top Navbar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <div class="container-fluid">
+            <a class="navbar-brand" href="/">Home</a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                    <li class="nav-item">
+                        <a class="nav-link" href="javascript:history.back()">Back</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main content -->
+    <div class="main-content">
+        <div class="header bg-primary pb-6 pt-5">
+            <div class="container-fluid">
+                <div class="header-body">
+                    <h1 class="text-white">Dashboard</h1>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dropdown filters -->
+        <div class="container mt-4">
+            <form id="filter-form">
+                <div class="row">
+                    <!-- Combo Boxes (now fit into one row) -->
+                    <div class="col-md-2">
+                        <label for="company">Company</label>
+                        <select id="company" name="company_id" class="form-control">
+                            <option value="">All</option>
+                            {% for company in companies %}
+                                <option value="{{ company.id }}">{{ company.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label for="area">Area</label>
+                        <select id="area" name="area_id" class="form-control">
+                            <option value="">All Areas</option>
+                            {% for area in areas %}
+                                <option value="{{ area.id }}">{{ area.name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label for="subarea">Subarea</label>
+                        <select id="subarea" name="subarea_id" class="form-control">
+                            <option value="">All Subareas</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label for="year">Year</label>
+                        <select id="year" name="year" class="form-control">
+                            <option value="">All Years</option>
+                            {% for year in years %}
+                                <option value="{{ year }}">{{ year }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-md-2">
+                        <label for="record_type">Record Type</label>
+                        <select id="record_type" name="record_type" class="form-control">
+                            <option value="">All Record Types</option>
+                            {% for record_type in record_types %}
+                                <option value="{{ record_type }}">{{ record_type }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Three Containers Horizontally -->
+        <div class="container mt-5">
+            <div class="row">
+                <!-- Pie Chart for Document Types -->
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Document Types</h5>
+                            <div id="document-type-chart" style="width: 100%; height: 400px;"></div> <!-- ECharts container for document types -->
+                        </div>
+                    </div>
+                </div>
+                <!-- Pie Chart for Document Areas -->
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Document Areas</h5>
+                            <div id="document-area-chart" style="width: 100%; height: 400px;"></div> <!-- ECharts container for document areas -->
+                        </div>
+                    </div>
+                </div>
+                <!-- Container 3 -->
+                <div class="col-md-4">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Workflow Data</h5>
+                            <div id="workflow-chart" style="width: 100%; height: 400px;"></div> <!-- ECharts container for workflow -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Containers for Data Table and Charts -->
+        <div class="container mt-5">
+            <div class="row">
+                <!-- Data Table -->
+                <div class="col-md-12">
+                    <h4>Data Table</h4>
+                    <table class="table table-hover" id="data-table">
+                        <thead>
+                            <tr>
+                                <th>Number of Records</th>
+                                <th>Abs values</th>
+                                <th>Rel values</th>
+                                <th>Min/max abs & rel</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <!-- Dynamic content will be inserted here by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Candlestick Charts -->
+                <div class="col-md-6">
+                    <h4>Absolute Metrics</h4>
+                    <div id="fi-chart" style="width: 100%; height: 400px;"></div>
+                </div>
+                <div class="col-md-6">
+                    <h4>Relative Metrics</h4>
+                    <div id="fn-chart" style="width: 100%; height: 400px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Include ECharts library -->
+    <script src="https://cdn.jsdelivr.net/npm/echarts/dist/echarts.min.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            updateDashboard();
+        });
+
+        // Function to update the data table
+        function updateTable(data) {
+            const tbody = document.getElementById('data-table').getElementsByTagName('tbody')[0];
+            tbody.innerHTML = '';  // Clear table
+
+            if (data && data.candlestick_data_fi.length > 0 && data.candlestick_data_fn.length > 0) {
+                const numRecords = data.candlestick_data_fi.length;  // Assume equal length for FI/FN records
+                const numFiNonNull = data.candlestick_data_fi.filter(item => item.f !== null).length;
+                const numFnNonNull = data.candlestick_data_fn.filter(item => item.f !== null).length;
+
+                const minFi = Math.min(...data.candlestick_data_fi.map(item => item.f));
+                const maxFi = Math.max(...data.candlestick_data_fi.map(item => item.f));
+                const minFn = Math.min(...data.candlestick_data_fn.map(item => item.f));
+                const maxFn = Math.max(...data.candlestick_data_fn.map(item => item.f));
+
+                const row = `
+                    <tr>
+                        <td>${numRecords}</td>
+                        <td>${numFiNonNull}</td>
+                        <td>${numFnNonNull}</td>
+                        <td>Min abs: ${minFi}, Max: ${maxFi}, Min rel: ${minFn}, Max: ${maxFn}</td>
+                    </tr>
+                `;
+                tbody.innerHTML = row;
+            } else {
+                console.log("No data available to populate the table.");
+                tbody.innerHTML = '<tr><td colspan="4">No data available</td></tr>';
+            }
+        }
+
+        // Function to update both FI and FN candlestick charts
+        function updateCandlestickCharts(data) {
+            updateCandlestickChart(data.candlestick_data_fi, 'fi-chart');
+            updateCandlestickChart(data.candlestick_data_fn, 'fn-chart');
+        }
+
+        // Candlestick chart update function using ECharts
+        function updateCandlestickChart(data, chartElementId) {
+            var chart = echarts.init(document.getElementById(chartElementId));
+
+            if (data) {
+                var candlestickData = data.map(item => [item.f, item.s, item.l, item.h]);
+
+                var option = {
+                    title: {
+                        text: `${chartElementId}`,
+                        left: 'center'
+                    },
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: {
+                            type: 'cross'
+                        }
+                    },
+                    xAxis: {
+                        type: 'category',
+                        data: data.map(item => item.x)
+                    },
+                    yAxis: {
+                        scale: true
+                    },
+                    series: [{
+                        type: 'candlestick',
+                        data: candlestickData
+                    }]
+                };
+                chart.setOption(option);
+            } else {
+                console.log(`No data available for ${chartElementId}`);
+                chart.clear();  // Clear the chart if there's no data
+            }
+        }
+
+        // Function to update the pie charts using ECharts
+        function updatePieChart(chartElementId, data, chartTitle) {
+            var chart = echarts.init(document.getElementById(chartElementId));
+
+            var option = {
+                title: {
+                    text: chartTitle,
+                    left: 'center'
+                },
+                tooltip: {
+                    trigger: 'item'
+                },
+                series: [{
+                    name: chartTitle,
+                    type: 'pie',
+                    radius: '50%',
+                    data: data.map(item => ({ name: item.name, value: item.value })),
+                    emphasis: {
+                        itemStyle: {
+                            shadowBlur: 10,
+                            shadowOffsetX: 0,
+                            shadowColor: 'rgba(0, 0, 0, 0.5)'
+                        }
+                    }
+                }]
+            };
+
+            chart.setOption(option);
+        }
+
+
+        // Fetch data and update dashboard (table and both charts)
+        function updateDashboard() {
+            const company = document.getElementById('company').value;
+            const area = document.getElementById('area').value;
+            const subarea = document.getElementById('subarea').value;
+            const year = document.getElementById('year').value;
+            const recordType = document.getElementById('record_type').value;
+
+            console.log(`Fetching data with filters: company=${company}, area=${area}, subarea=${subarea}, year=${year}, record_type=${recordType}`);
+
+            fetch(`/argon/multi_format_dashboard_data?company_id=${company}&area_id=${area}&subarea_id=${subarea}&year=${year}&record_type=${recordType}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data) {
+                        // Update the pie chart for document types and areas
+                        updatePieChart('document-type-chart', data.document_type_data, 'Document Types');
+                        updatePieChart('document-area-chart', data.document_area_data, 'Document Areas');
+
+                        console.log("Data received:", data);
+                    } else {
+                        console.error('No data received');
+                    }
+                    // Update both table and charts
+                    updateCandlestickCharts(data);
+                    updateTable(data);
+                })
+                .catch(error => console.error('Error fetching dashboard data:', error));
+        }
+
+        // Event listener for filter changes
+        document.getElementById('filter-form').addEventListener('change', function(e) {
+            e.preventDefault();
+            updateDashboard();
+        });
+
+
+        // Event listener for subarea update based on selected area
+        document.getElementById('area').addEventListener('change', function() {
+            const areaId = this.value;
+
+            if (areaId) {
+                fetch(`/argon/api/subareas/${areaId}`)
+                    .then(response => response.json())
+                    .then(subareas => {
+                        const subareaSelect = document.getElementById('subarea');
+                        subareaSelect.innerHTML = '<option value="">All Subareas</option>';  // Reset subarea options
+
+                        subareas.forEach(subarea => {
+                            const option = document.createElement('option');
+                            option.value = subarea.id;
+                            option.textContent = subarea.name;
+                            subareaSelect.appendChild(option);
+                        });
+                    })
+                    .catch(error => console.error('Error fetching subareas:', error));
+            }
+        });
+    </script>
+
+</body>
+</html>

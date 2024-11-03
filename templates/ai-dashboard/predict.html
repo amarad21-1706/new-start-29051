@@ -1,0 +1,23 @@
+{% extends "ai-dashboard/argon_base_ai.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Forecasting</h2>
+    {% if forecast %}
+        {% for metric, forecast_values in forecast.items() %}
+            <h3>{{ metric }}</h3>
+            {% if forecast_values %}
+                <ul>
+                    {% for value in forecast_values %}
+                        <li>{{ value }}</li>
+                    {% endfor %}
+                </ul>
+            {% else %}
+                <p>No forecast data available for this metric.</p>
+            {% endif %}
+        {% endfor %}
+    {% else %}
+        <p>No forecasting data available.</p>
+    {% endif %}
+</div>
+{% endblock %}

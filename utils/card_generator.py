@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from flask import render_template
 from app_factory import create_app
 
-from models.user import BaseData, StepBaseData
+from models.user import BaseData, DocumentWorkflow
 # from card_generator import get_records_count_for_area, get_records_filled_by_area, get_documents_due_last_three_days,
 # get_documents_overdue, get_documents_completed
 
@@ -63,22 +63,22 @@ def get_documents_due_last_three_days():
     today = datetime.now().date()
     three_days_ago = today - timedelta(days=3)
     # Query the database to get documents due in the last three days
-    # Assuming deadline_date is a column in StepBaseData table
-    return StepBaseData.query.filter(StepBaseData.deadline_date <= today,
-                                     StepBaseData.deadline_date >= three_days_ago,
-                                     StepBaseData.base_data.has(BaseData.file_path.isnot(None))).count()
+    # Assuming deadline_date is a column in Step Base Data table
+    return DocumentWorkflow.query.filter(DocumentWorkflow.deadline_date <= today,
+                                     DocumentWorkflow.deadline_date >= three_days_ago,
+                                     DocumentWorkflow.base_data.has(BaseData.file_path.isnot(None))).count()
 
 def get_documents_overdue():
     today = datetime.now().date()
     # Query the database to get documents overdue
     # Assuming deadline_date is a column in StepBaseData table
-    return StepBaseData.query.filter(StepBaseData.deadline_date < today,
-                                     StepBaseData.base_data.has(BaseData.file_path.isnot(None))).count()
+    return DocumentWorkflow.query.filter(DocumentWorkflow.deadline_date < today,
+                                     DocumentWorkflow.base_data.has(BaseData.file_path.isnot(None))).count()
 
 def get_documents_completed():
     # Query the database to get documents completed
-    # Assuming is_completed is a column in StepBaseData table
-    return StepBaseData.query.filter(StepBaseData.is_completed == True, StepBaseData.base_data.has(BaseData.file_path.isnot(None))).count()
+    # Assuming is_completed is a column in Step Base Data table
+    return DocumentWorkflow.query.filter(DocumentWorkflow.is_completed == True, DocumentWorkflow.base_data.has(BaseData.file_path.isnot(None))).count()
 
 
 

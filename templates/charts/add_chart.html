@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <h2>{{ 'Edit' if form.chart_name.data else 'Add' }} Chart Configuration</h2>
+
+    <!-- Display form validation errors -->
+    {% if form.errors %}
+        <div class="alert alert-danger">
+            <ul>
+                {% for field, errors in form.errors.items() %}
+                    <li>{{ field }}: {{ errors | join(', ') }}</li>
+                {% endfor %}
+            </ul>
+        </div>
+    {% endif %}
+
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <!-- Chart Name -->
+        <div class="form-group">
+            {{ form.chart_name.label }}<br>
+            {{ form.chart_name(class="form-control") }}
+        </div>
+
+        <!-- Chart Type -->
+        <div class="form-group">
+            {{ form.chart_type.label }}<br>
+            {{ form.chart_type(class="form-control") }}
+        </div>
+
+        <!-- X Axis Label -->
+        <div class="form-group">
+            {{ form.x_axis_label.label }}<br>
+            {{ form.x_axis_label(class="form-control") }}
+        </div>
+
+        <!-- Y Axis Label -->
+        <div class="form-group">
+            {{ form.y_axis_label.label }}<br>
+            {{ form.y_axis_label(class="form-control") }}
+        </div>
+
+        <!-- Area ID -->
+        <div class="form-group">
+            {{ form.area_id.label }}<br>
+            {{ form.area_id(class="form-control") }}
+        </div>
+
+        <!-- Subarea ID -->
+        <div class="form-group">
+            {{ form.subarea_id.label }}<br>
+            {{ form.subarea_id(class="form-control") }}
+        </div>
+
+        <!-- Year (fi0) -->
+        <div class="form-group">
+            {{ form.fi0.label }}<br>
+            {{ form.fi0(class="form-control") }}
+        </div>
+
+        <h3>Select Metrics and Edit Labels</h3>
+        <div class="form-group">
+            {% for metric_entry in form.metrics %}
+                <div class="metric-row">
+                    <!-- Hidden Field for the column name -->
+                    {{ metric_entry.column_name() }}
+
+                    <!-- Display the column name (fi1, fn1, etc.) as a label -->
+                    <label><strong>{{ metric_entry.column_name.data }}</strong></label>
+
+                    <!-- Checkbox for selecting the metric -->
+                    {{ metric_entry.metric() }}
+
+                    <!-- Editable label input for the selected metric -->
+                    {{ metric_entry.label(class="form-control", placeholder="Edit label here") }}
+                </div>
+            {% endfor %}
+        </div>
+
+
+        <!-- Submit Button -->
+        <div class="form-group">
+            {{ form.submit(class="btn btn-primary") }}
+        </div>
+    </form>
+
+{% endblock %}

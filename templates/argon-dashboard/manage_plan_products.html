@@ -1,0 +1,87 @@
+{% extends 'base.html' %}
+
+{% block content %}
+
+    <h1 style="font-size: 2em;">Products associated to Plans</h1>  <!-- Title with larger font size -->
+
+    <form method="POST" class="my-8 mx-auto" style="max-width: 80%;">
+        {{ form.hidden_tag() }}
+
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <label for="plan" class="form-label">Select Plan:</label>
+                {{ form.plan_id(class="form-control", id="plan-select") }}  <!-- Plan selection field -->
+            </div>
+            <div class="col-md-6">
+                <label for="product" class="form-label">Select Product:</label>
+                {{ form.product_id(class="form-control", id="product-select") }}  <!-- Product selection field -->
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div id="associated-products" class="form-group">
+                    <!-- This section will be populated with associated products -->
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    {{ form.add(class="btn btn-primary me-md-2") }}
+                    {{ form.delete(class="btn btn-danger me-md-2") }}
+                    {{ form.cancel(class="btn btn-secondary") }}
+                </div>
+            </div>
+        </div>
+
+        {% if message %}
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div class="alert alert-info" role="alert" id="message-box">
+                    {{ message }}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+    </form>
+
+    <!-- Include jQuery for making AJAX requests -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        // Listen for changes to the plan select dropdown
+        $('#plan-select').on('change', function () {
+            var planId = $('#plan-select').val();  // Get selected plan ID
+            var messageBox = $('#message-box');  // Message box element
+
+            // Clear the existing message when selection changes
+            if (messageBox.length) {
+                messageBox.remove();
+            }
+
+            if (planId) {
+                // Make an AJAX request to fetch associated products
+                $.get('/argon/get_plan_products/' + planId, function (data) {
+                    var associatedProductsDiv = $('#associated-products');
+                    associatedProductsDiv.empty();  // Clear the existing content
+
+                    if (data.products && data.products.length > 0) {
+                        associatedProductsDiv.append('<h5>Associated Products:</h5>');
+                        var list = $('<ul></ul>');  // Create an unordered list
+                        data.products.forEach(function (p) {
+                            list.append('<li>' + p.name + '</li>');
+                        });
+                        associatedProductsDiv.append(list);
+                    } else {
+                        associatedProductsDiv.append('<p>No products are associated with this plan.</p>');
+                    }
+                });
+            } else {
+                $('#associated-products').empty();  // Clear the content if no plan is selected
+            }
+        });
+    </script>
+
+{% endblock %}

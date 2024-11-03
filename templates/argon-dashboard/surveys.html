@@ -1,0 +1,43 @@
+{% extends 'argon-dashboard/questionnaire_base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>Surveys and Questions</h2>
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Survey Code</th>
+                <th>Survey Name</th>
+                <th>Survey Type</th>
+                <th>Question Code</th>
+                <th>Question Text</th>
+                <th>Extra Data</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for row in questionnaire_questions %}
+            <tr>
+                <td>{{ row.questionnaire.questionnaire_id }}</td> <!-- Survey code -->
+                <td>{{ row.questionnaire.name }}</td> <!-- Survey name -->
+                <td>{{ row.questionnaire.questionnaire_type }}</td> <!-- Survey type -->
+                <td>{{ row.question.question_id }}</td> <!-- Question code -->
+                <td>{{ row.question.text }}</td> <!-- Question text -->
+                <td>{{ row.extra_data }}</td> <!-- Extra data -->
+                <td>
+                    <!-- Add Question Button -->
+                    <a href="{{ url_for('argon.add_question_to_survey', questionnaire_id=row.questionnaire_id) }}"
+                       class="btn btn-success btn-sm">Add Question</a>
+
+                    <!-- Remove Question Button -->
+                    <form action="{{ url_for('argon.remove_question_from_survey', id=row.id) }}" method="POST" style="display:inline;">
+                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('Are you sure you want to remove this question from survey?')">Remove</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+</div>
+{% endblock %}

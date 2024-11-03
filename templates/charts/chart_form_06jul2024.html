@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Chart Selector{% endblock %}
+
+{% block content %}
+<h1>Select Chart Parameters</h1>
+<form action="{{ url_for('chart_form') }}" method="POST">
+    <label for="chart_type">Select Chart Type:</label>
+    <select id="chart_type" name="chart_type" onchange="toggleCompanyDropdown()">
+        <option value="2d">2D Chart</option>
+        <option value="3d">3D Chart</option>
+    </select>
+
+    <div id="company_div">
+        <label for="company">Select Company:</label>
+        <select id="company" name="company_id">
+            {% for company in companies %}
+                <option value="{{ company.id }}">{{ company.name }}</option>
+            {% endfor %}
+        </select>
+    </div>
+
+    <label for="area">Select Area:</label>
+    <select id="area" name="area_id">
+        {% for area in areas %}
+            <option value="{{ area.id }}">{{ area.name }}</option>
+        {% endfor %}
+    </select>
+
+    <label for="subarea">Select Subarea:</label>
+    <select id="subarea" name="subarea_id">
+        {% for subarea in subareas %}
+            <option value="{{ subarea.id }}">{{ subarea.name }}</option>
+        {% endfor %}
+    </select>
+
+    <button type="submit">Generate Chart</button>
+</form>
+
+<script>
+    function toggleCompanyDropdown() {
+        var chartType = document.getElementById('chart_type').value;
+        var companyDiv = document.getElementById('company_div');
+        if (chartType === '2d') {
+            companyDiv.style.display = 'block';
+        } else {
+            companyDiv.style.display = 'none';
+        }
+    }
+
+    // Initial call to set the visibility based on default selection
+    toggleCompanyDropdown();
+</script>
+
+{% if chart_html %}
+    <div id="chart-container">
+        {% if chart_type == '2d' %}
+            <img src="data:image/png;base64,{{ chart_html }}" alt="Bar Chart">
+        {% else %}
+            {{ chart_html | safe }}
+        {% endif %}
+    </div>
+{% endif %}
+{% endblock %}

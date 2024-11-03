@@ -2,30 +2,35 @@
 import secrets
 import os
 from db import db
+
 from models.user import (Company, CompanyUsers, Users, Role, UserRoles,
                          Area, Subarea, AreaSubareas, Deadline, Interval,
                          QuestionnaireCompanies, Questionnaire, Question, QuestionnaireQuestions,
                          get_config_values, Workflow, Step, BaseData, WorkflowSteps,
-                         WorkflowBaseData, StepBaseData, Post, AuditLog)
-#from sqlalchemy import or_, and_, desc, func, null
-#import pandas as pd
-#from sqlalchemy.orm import subqueryload
-#from flask import Flask, session, redirect, url_for
+                         WorkflowBaseData, DocumentWorkflow, Post, AuditLog, DataMapping, ExtraTimeAuthorization)
+
+# from sqlalchemy import or_, and_, desc, func, null
+# import pandas as pd
+# from sqlalchemy.orm import subqueryload
+# from flask import Flask, session, redirect, url_for
 
 from dateutil.relativedelta import relativedelta
 
+from datetime import datetime
+
+from flask_login import current_user
 import pandas as pd
+from flask_admin import Admin
 
 from flask_login import current_user
 import json
 import pytz
-import secrets
-
+from flask_caching import Cache
 import os
 from dotenv import load_dotenv
+from sqlalchemy import func
 
 load_dotenv()  # Load environment variables from .env file if present
-
 
 def user_has_edit_workflow_permission(current_user):
     # Replace this with your logic to check user roles or permissions
@@ -47,6 +52,30 @@ def get_cet_time():
 
     return cet_now
 
+def generate_statistics_menu():
+    statistics_menu = {}
+
+    data_mappings = DataMapping.query.order_by(DataMapping.area_id, DataMapping.subarea_id).all()
+
+    if not data_mappings:
+        return statistics_menu  # Return an empty dictionary if no data is found
+
+    for mapping in data_mappings:
+        area_id = mapping.area_id
+        subarea_id = mapping.subarea_id
+        label = f"Area {area_id}/{subarea_id}"
+        url = f"/admin_dashboard/{area_id}/{subarea_id}"
+
+        statistics_menu[label] = {
+            "label": label,
+            "url": url,
+            "protected": True,
+            "allowed_roles": ["Admin", "Manager", "Employee"]
+        }
+
+    return statistics_menu
+
+
 class Config:
     def __init__(self):
         # Get the absolute path to the directory of the current script
@@ -63,15 +92,23 @@ class Config:
             "db1": f"sqlite:///{self.current_directory}/database/sysconfig.db",
         }
         '''
+
+        self.SECRET_KEY = os.environ.get('SECRET_KEY_2')
+        self.SECURITY_PASSWORD_SALT = os.environ.get('SECURITY_PASSWORD_SALT_')
+
         # PostgreSQL
         self.SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL')
         self.SQLALCHEMY_BINDS = {
             'db1': os.environ.get('DATABASE_URL_DB1')
         }
-        SQLALCHEMY_TRACK_MODIFICATIONS = False
+        # TODO DEBUG deactivate in prod or after first debug row
+        # self.DEBUG = True
+        self.SQLALCHEMY_ECHO = False  # This will log all or none of the SQL queries
+        self.SQLALCHEMY_TRACK_MODIFICATIONS = True
+        # self.DEBUG_TB_INTERCEPT_REDIRECTS = False
+
         self.BOOTSTRAP_USE_MINIFIED = False
         self.BOOTSTRAP_SERVE_LOCAL = True
-        self.SQLALCHEMY_ECHO = False
         self.EXCEPT_FIELDS = ["id", "email", "user_id", "role_id", "created_on", "updated_on",
                               "end_of_registration", "password", "company_id", "company"]
         self.CURRENT_DIRECTORY = self.current_directory
@@ -79,13 +116,61 @@ class Config:
         self.COMPANY_FILES_DIR =f"/{self.current_directory}/static/docs/company_files/"
         self.CRUD_ADD_TEMPLATE = f"/{self.current_directory}/templates/crud_add_template.html"
 
-        self.SECURITY_PASSWORD_SALT = some_keys['security_password_salt'] #'329d29b7bedc86e66ea3456b3a49ff9328b082649a1bc3b02ecb6f5881d2a380'
         self.STATIC_FOLDER = 'static'
         self.ASSETS_FOLDER = 'assets'
-        self.MAX_RECURSION_DEPTH = 12
+        self.MAX_RECURSION_DEPTH = 1000
+        self.TEMPLATES_AUTO_RELOAD = True
+        self.SQLALCHEMY_COMMIT_ON_TEARDOWN = True
+        self.PERMANENT_SESSION_LIFETIME = timedelta(minutes=60)  # Set session to expire in n minutes
+        self.SEND_FILE_MAX_AGE_DEFAULT = 0  # Disable caching for development
+
+        self.SESSION_TYPE = 'filesystem'
+
+        self.SEND_FILE_MAX_AGE_DEFAULT = 0  # Disable caching for development
+
+        self.RECAPTCHA_PUBLIC_KEY = os.environ.get('RECAPTCHA_PUBLIC_KEY')
+        self.RECAPTCHA_PRIVATE_KEY = os.environ.get('RECAPTCHA_PRIVATE_KEY')
+
+        # Configure Flask-Caching
+        self.CACHE_TYPE = 'RedisCache'
+        self.CACHE_REDIS_HOST = 'localhost'
+        self.CACHE_REDIS_PORT = 6379
+        self.CACHE_REDIS_DB = 0
+        self.CACHE_REDIS_URL = 'redis://localhost:6379/0'
+        self.CACHE_DEFAULT_TIMEOUT = 300
+        self.TEMPLATES_AUTO_RELOAD = True
+
+        # CAPTCHA
+        # selfRECAPTCHA_PUBLIC_KEY = some_keys['recaptcha_public_key']
+        # selfRECAPTCHA_PRIVATE_KEY = some_keys['recaptcha_private_key']
+        self.WTF_CSRF_ENABLED = False  # Disable CSRF protection for local development
+
+        '''
+        self.SQLALCHEMY_ENGINE_OPTIONS = {
+            'connect_args': {
+                'options': '-c statement_timeout=60000',  # Set timeout to 60 seconds
+                'connect_timeout': 30  # Set connection timeout to 30 seconds
+            }
+        }
+        '''
+
+        self.SQLALCHEMY_ENGINE_OPTIONS = {
+            'pool_size': 10,
+            'pool_timeout': 30,
+            'pool_recycle': 1800,  # Recycle connections after 30 minutes
+            'pool_pre_ping': True,  # Check connections before using them
+            'connect_args': {
+                'options': '-c statement_timeout=60000',  # Set timeout to 60 seconds
+                'connect_timeout': 30  # Set connection timeout to 30 seconds
+            }
+        }
+
+        self.TWILIO_ACCOUNT_SID = os.environ.get('TWILIO_ACCOUNT_SID')
+        self.TWILIO_AUTH_TOKEN = os.environ.get('TWILIO_AUTH_TOKEN')
+        self.TWILIO_AUTHY_API_KEY = os.environ.get('TWILIO_AUTHY_API_KEY')
+
         #self.SESSION_COOKIE_HTTPONLY = True
         #self.SESSION_COOKIE_SECURE = True  # Only set to True if using HTTPS
-
 
         # Emailing
         '''
@@ -104,6 +189,12 @@ class Config:
         self.MAIL_USE_TLS = True
         self.MAIL_USE_SSL = False
 
+        self.STRIPE_API_KEY = os.environ.get('STRIPE_API_KEY')
+        self.STRIPE_PUBLISHABLE_KEY = os.environ.get('STRIPE_PUBLISHABLE_KEY')
+
+        self.BABEL_DEFAULT_LOCALE = 'en'  # Default language
+        self.BABEL_TRANSLATION_DIRECTORIES = 'translations'  # Directory for translations
+        self.BABEL_DEFAULT_TIMEZONE = 'UTC'  # Default timezone
 
 # Define a custom JSON encoder class to handle datetime serialization
 class DateTimeEncoder(json.JSONEncoder):
@@ -113,12 +204,13 @@ class DateTimeEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, obj)
 
 some_keys = {
-    "security_password_salt": '329d29b7bedc86e66ea3456b3a49ff9328b082649a1bc3b02ecb6f5881d2a380',
-    "recaptcha_public_key": '6LdcYnkpAAAAADpQdytwQVK7UtxeJJ0C_nHsPc8R',
-    "recaptcha_private_key": '6LdcYnkpAAAAAKOWGB7_cEBlY-3UlBGZY9KS6zH9',
-    "secret_key_1": 'Doru-ghitica-mielus-dudu-s...etaru-.961',
+
     "secret_key_2": secrets.token_hex(16),
 }
+# "recaptcha_public_key": '6LdcYnkpAAAAADpQdytwQVK7UtxeJJ0C_nHsPc8R',
+# "recaptcha_private_key": '6LdcYnkpAAAAAKOWGB7_cEBlY-3UlBGZY9KS6zH9',
+# "security_password_salt": '329d29b7bedc86e66ea3456b3a49ff9328b082649a1bc3b02ecb6f5881d2a380',
+#    "secret_key_1": 'see .env',
 
 sample_answer = {
     "questionnaire_id": None,  # Initialize with appropriate values
@@ -131,7 +223,6 @@ sample_answer = {
     "comment": "",  # Initialize with appropriate values
     "date": None  # Initialize with appropriate values
 }
-
 
 encoding_scheme = {
   'TST': {'type': 'Text', 'characteristic': 'Short Text'},
@@ -149,31 +240,25 @@ encoding_scheme = {
 
 
 def decode_question_type(code, encoding_scheme):
-    print(f"Processing code: {code}")
 
     if '(' in code and ')' in code:
         base_code, extra_info = code.split('(')
-        print(f"Base code: {base_code}, Extra info: {extra_info}")
 
         if extra_info.endswith(')'):
             extra_info = extra_info[:-1]  # Remove the closing parenthesis
-            print(f"Processed extra info: {extra_info}")
 
             if '-' in extra_info:
                 min_value, max_value = extra_info.split('-')
-                print(f"Min value: {min_value}, Max value: {max_value}")
 
                 if min_value.isdigit() and max_value.isdigit():
                     min_value = int(min_value)
                     max_value = int(max_value)
                     base_code_with_parentheses = f"{base_code}({extra_info})"
-                    print(f"Base code with parentheses: {base_code_with_parentheses}")
 
                     if base_code_with_parentheses in encoding_scheme:
                         decoded = encoding_scheme[base_code_with_parentheses]
                         decoded['min'] = min_value
                         decoded['max'] = max_value
-                        print(f"Decoded type: {decoded['type']}, Decoded characteristic: {decoded['characteristic']}")
 
                         if decoded['type'] == 'Number' and decoded[
                             'characteristic'] == 'Integer' and min_value == 0 and max_value == 10:
@@ -190,11 +275,9 @@ def decode_question_type(code, encoding_scheme):
             return "Invalid code (Unmatched parentheses)"
     else:
         adjusted_code = code.upper() if 'FILE' in encoding_scheme.keys() else code
-        print(f"Adjusted code: {adjusted_code}")
 
         if adjusted_code in encoding_scheme:
             decoded = encoding_scheme[adjusted_code]
-            print(f"Decoded type: {decoded['type']}, Decoded characteristic: {decoded['characteristic']}")
 
             if 'min' in decoded and 'max' in decoded:
                 return f"Type: {decoded['type']}, Characteristic: {decoded['characteristic']}, Min: {decoded['min']}, Max: {decoded['max']}"
@@ -406,8 +489,6 @@ def extract_year_from_fy(fy_string):
     parts = fy_string.split()  # Split the string into parts based on spaces
     return parts[-1]  # Return the last part, which should be the year
 
-
-from datetime import datetime
 def get_current_interval(interval):
     now = datetime.now()
 
@@ -434,8 +515,6 @@ def get_current_interval(interval):
         return f'{quadrimester} {now.year}'
     else:
         raise ValueError(f"Unsupported interval: {interval}")
-
-from datetime import datetime, timedelta
 
 from datetime import datetime, timedelta
 
@@ -856,6 +935,51 @@ def get_time_qualifier(interval_id, interval_ord, year):
     elif year > current_year:
         result = "future"
     else:  # Same year as current year
+        # Handle null values for interval_id and interval_ord
+        if interval_id is None or interval_ord is None:
+            result = "unknown"
+        else:
+            if interval_id == 1:  # year
+                result = "current"
+            elif interval_id == 2:  # semester
+                current_interval_ord = (current_date.month + 5) // 6
+            elif interval_id == 3:  # quadrimester
+                current_interval_ord = (current_date.month + 3) // 4
+            elif interval_id == 4:  # quarter
+                current_interval_ord = (current_date.month + 2) // 3
+            elif interval_id == 5:  # month
+                current_interval_ord = current_date.month
+            elif interval_id == 6:  # fortnight
+                current_interval_ord = int(current_date.strftime('%W')) // 2
+            elif interval_id == 7:  # week
+                current_interval_ord = int(current_date.strftime('%W'))
+            else:
+                result = "unknown"
+
+            # Ensure current_interval_ord is defined before using it
+            if 'current_interval_ord' in locals():
+                if interval_ord < current_interval_ord:
+                    result = "past"
+                elif interval_ord > current_interval_ord:
+                    result = "future"
+                else:  # Same interval order as current interval order
+                    result = "current"
+            else:
+                result = "unknown"
+
+    return result
+
+
+
+def get_time_qualifier333(interval_id, interval_ord, year):
+    current_date = datetime.now()
+    current_year = current_date.year
+
+    if year < current_year:
+        result = "past"
+    elif year > current_year:
+        result = "future"
+    else:  # Same year as current year
         if interval_id == 1:  # year
             result = "current"
         elif interval_id == 2:  # semester
@@ -878,7 +1002,6 @@ def get_time_qualifier(interval_id, interval_ord, year):
         else:  # Same interval order as current interval order
             result = "current"
 
-    print(f'get_time_qualifier({interval_id}, {interval_ord}, {year}) -> {result}')
     return result
 
 
@@ -944,7 +1067,6 @@ def get_session_workflows(session, current_user):
 
 def get_pd_report_from_base_data(session):
     # Get the records without the time qualifier
-    print('db7')
     query = session.query(
         BaseData.company_id,
         Company.name.label('company_name'),  # Add the company name to the query
@@ -973,8 +1095,6 @@ def get_pd_report_from_base_data(session):
 
     # Apply the same logic as the loop for assigning time qualifier to each record
     df['time_qualifier'] = df.apply(lambda row: get_time_qualifier(row['interval_id'], row['interval_ord'], row['fi0']), axis=1)
-    # Print the updated DataFrame
-    print(df.head())
 
     # (debugging an error): Assuming df is your DataFrame
     #df['time_qualifier'] = df.apply(lambda row: get_time_qualifier(row['interval_id'], row['interval_ord'], row['fi0']),
@@ -991,13 +1111,13 @@ def get_pd_report_from_base_data(session):
     return sorted_records
 
 
-import pandas as pd
-from sqlalchemy import func
 
-def get_pd_report_from_base_data_wtq(session):
+def get_pd_report_from_base_data_wtq(engine):
     try:
-        # Get the records without the time qualifier
-        query = session.query(
+        # Assuming BaseData and Company are your SQLAlchemy models
+        connection = engine.connect()
+
+        query = db.session.query(
             BaseData.company_id,
             Company.name.label('company_name'),  # Add the company name to the query
             BaseData.area_id,
@@ -1017,18 +1137,13 @@ def get_pd_report_from_base_data_wtq(session):
             BaseData.interval_ord,
             BaseData.fi0
         )
-        # Compile the query and print it for debugging
-        compiled_query = query.statement.compile(session.bind)
 
         # Fetch query results into DataFrame
-        df = pd.read_sql(str(compiled_query), session.bind)
-
-        # Debugging: Print the DataFrame structure
-        print("DataFrame structure:\n", df.head())
+        df = pd.read_sql(query.statement, connection)  # Use query.statement
 
         # Check if the DataFrame is empty
         if df.empty:
-            print("No data returned by the query.")
+            print("No data returned.")
             return []
 
         # Apply the logic for assigning time qualifier to each record
@@ -1048,8 +1163,125 @@ def get_pd_report_from_base_data_wtq(session):
         return sorted_records
 
     except Exception as e:
-        print(f'Error in get_pd_report_from_base_data_wtq: {e}')
+        print(f"Error in get_pd_report_from_base_data_wtq: {e}")
         raise
+
+    finally:
+        connection.close()
+
+
+def get_pd_report_from_base_data_wtq333(engine):
+    try:
+        connection = engine.connect()
+
+        query = db.session.query(
+            BaseData.company_id,
+            Company.name.label('company_name'),
+            BaseData.area_id,
+            BaseData.subarea_id,
+            BaseData.interval_id,
+            BaseData.interval_ord,
+            BaseData.fi0,
+            func.count().label('record_count')
+        ).join(
+            Company, BaseData.company_id == Company.id
+        ).group_by(
+            BaseData.company_id,
+            Company.name,
+            BaseData.area_id,
+            BaseData.subarea_id,
+            BaseData.interval_id,
+            BaseData.interval_ord,
+            BaseData.fi0
+        )
+
+        df = pd.read_sql(query.statement, connection)
+        print('DataFrame structure:', df)
+
+        if df.empty:
+            print("No data returned.")
+            return []
+
+        # Apply the logic for assigning time qualifier to each record
+        df['time_qualifier'] = df.apply(
+            lambda row: get_time_qualifier(row['interval_id'], row['interval_ord'], row['fi0']), axis=1)
+
+        sorted_df = df.sort_values(by=['fi0', 'interval_ord', 'area_id', 'subarea_id'], ascending=[False, True, True, True])
+
+        sorted_df.drop('interval_id', axis=1, inplace=True)
+        sorted_records = sorted_df.to_dict(orient='records')
+
+        return sorted_records
+
+    except Exception as e:
+        print(f"Error in get_pd_report_from_base_data_wtq: {e}")
+        raise
+
+    finally:
+        connection.close()
+
+
+def get_pd_report_from_base_data_wtq222(engine):
+    try:
+        # Assuming BaseData and Company are your SQLAlchemy models
+        connection = engine.connect()
+
+        query = db.session.query(
+            BaseData.company_id,
+            Company.name.label('company_name'),  # Add the company name to the query
+            BaseData.area_id,
+            BaseData.subarea_id,
+            BaseData.interval_id,
+            BaseData.interval_ord,
+            BaseData.fi0,
+            func.count().label('record_count')
+        ).join(
+            Company, BaseData.company_id == Company.id  # Join with Company model to get company name
+        ).group_by(
+            BaseData.company_id,
+            Company.name,
+            BaseData.area_id,
+            BaseData.subarea_id,
+            BaseData.interval_id,
+            BaseData.interval_ord,
+            BaseData.fi0
+        )
+
+        # Fetch query results into DataFrame
+        df = pd.read_sql(query.statement, connection)  # Use query.statement
+
+        print('df', df.head())
+        print(df.tail())  # Print last 5 rows
+
+        # Debugging: Print the DataFrame structure
+
+        # Check if the DataFrame is empty
+        if df.empty:
+            print("No data returned.")
+            return []
+
+        # Apply the logic for assigning time qualifier to each record
+        df['time_qualifier'] = df.apply(
+            lambda row: get_time_qualifier(row['interval_id'], row['interval_ord'], row['fi0']), axis=1)
+
+        # Sort the DataFrame by time_qualifier, area_id, subarea_id, interval_ord, and year
+        sorted_df = df.sort_values(by=['fi0', 'interval_ord', 'area_id', 'subarea_id'],
+                                   ascending=[False, True, True, True])
+
+        # To drop a single column without returning a new df
+        sorted_df.drop('interval_id', axis=1, inplace=True)
+
+        # Convert DataFrame to list of dictionaries
+        sorted_records = sorted_df.to_dict(orient='records')
+
+        return sorted_records
+
+    except Exception as e:
+        print(f"Error in get_pd_report_from_base_data_wtq: {e}")
+        raise
+
+    finally:
+        connection.close()
 
 
 def generate_html_cards(sorted_values, all_companies):
@@ -1122,12 +1354,34 @@ def get_areas_with_subareas(session):
 
     return areas_with_subareas
 
+def get_admin_view_endpoints(admin_instance):
+    # Initialize an empty dictionary to store endpoints and view names
+    endpoints = {}
+
+    # Iterate over all views in the admin instance
+    for view in admin_instance._views:
+        # Extract the endpoint and the class name of the view
+        endpoints[view.endpoint] = view.__class__.__name__
+
+    return endpoints
+
 
 def generate_html_cards_progression_with_progress_bars111(sorted_values, current_time_qualifier, session, company_id=None):
     html_code = ""
 
+    from app_defs import admin_app1, admin_app2, admin_app3, admin_app4, admin_app5, admin_app6, admin_app10
+    # Create a dictionary to map names to admin instances
+    admin_instances = {
+        'admin_app1': admin_app1,
+        'admin_app2': admin_app2,
+        'admin_app3': admin_app3,
+        'admin_app4': admin_app4,
+        'admin_app5': admin_app5,
+        'admin_app6': admin_app6,
+        'admin_app10': admin_app10
+    }
+
     areas_with_subareas = get_areas_with_subareas(session)
-    print('areas, subareas', areas_with_subareas)
 
     # If current_time_qualifier is None, set it to an empty dictionary
     current_time_qualifier = current_time_qualifier or {}
@@ -1176,7 +1430,7 @@ def generate_html_cards_progression_with_progress_bars111(sorted_values, current
             # Start card body using the stored last values
             html_code += f"<div class='col-md-4'>"  # Bootstrap column to contain the card
             html_code += f"<div class='card' style='width: 22rem;'>"
-            html_code += f"<div class='card-header'><h5 class='card-title' style='font-size: 1rem;'><a href='/open_admin_app_{area.id}'>\
+            html_code += f"<div class='card-header'><h5 class='card-title' style='font-size: 1rem;'><a href='/open_admin_{area.id}'>\
             {company_name} - {area.name}</a> - {last_fi0} / {last_interval_ord}</h5></div>"
 
             html_code += "<div class='card-body'>"
@@ -1184,8 +1438,31 @@ def generate_html_cards_progression_with_progress_bars111(sorted_values, current
             html_code += "<thead><tr><th style='font-size: 0.8rem;'>Subarea</th><th style='font-size: 0.8rem;'>Records</th></tr></thead>"
             html_code += "<tbody>"
 
+            try:
+                admin_view_name = f"admin_app{area.id}"
+
+                # Use the dictionary to get the actual Admin instance
+                admin_instance = admin_instances.get(admin_view_name)
+
+                if admin_instance is None:
+                    print(f"No Admin instance found for: {admin_view_name}")
+                    continue
+
+                # Check if the admin_instance is actually an Admin instance
+                if not isinstance(admin_instance, Admin):
+                    continue
+                else:
+                    # Fetch admin view endpoints
+                    admin_view_endpoints = get_admin_view_endpoints(admin_instance)
+
+                    # Convert endpoints to a list to preserve order
+                    endpoint_list = list(admin_view_endpoints.keys())
+            except Exception as e:
+                print(f"An error occurred: {e}")
+                continue
+
             # Display subarea details
-            for subarea in subareas:
+            for index, subarea in enumerate(subareas):
                 subarea_description = get_subarea_description(subarea.id)
                 record_count = subarea_record_counts.get(subarea.id, 0)
                 # Add different background color for rows with zero records
@@ -1193,9 +1470,30 @@ def generate_html_cards_progression_with_progress_bars111(sorted_values, current
                 if record_count == 0:
                     row_style = "background-color: #ffccaa;"  # Light orange
                 elif record_count > 2:
-                    row_style = "background-color: #add8e6;"  # trq?
+                    row_style = "background-color: #add8e6;"  # Light blue
+
+                default_endpoint="/"
+                try:
+                    # Use the index to find the correct endpoint from the endpoint list
+                    endpoint = f"{endpoint_list[index + 1]}/" if index < len(endpoint_list) else default_endpoint
+                except:
+                    # Use the index to find the correct endpoint from the endpoint list
+                    endpoint = default_endpoint
+
+                link_text = f"/open_admin_{area.id}/{endpoint}"
+
+                # Create the link dynamically, with exception(s)
+                # ===========# ===========# ===========# ===========# ===========# ===========
+                if area.id == 1 and index == 4: # eccezione SETTLEMENT FISICO
+                    link_text = "/show_survey/1"
+                # ===========# ===========# ===========# ===========# ===========# ===========
+
+                # record_link = f"<a href='/open_admin_{area.id}/{endpoint}'>{record_count}</a>"
+                record_link = f"<a href='{link_text}'>{record_count}</a>"
+
                 html_code += f"<tr style='{row_style}'><td style='font-size: 0.8rem;'>\
-                {subarea_description}</td><td style='font-size: 0.8rem; text-align: center;'>{record_count}</td></tr>"
+                {subarea_description}</td><td style='font-size: 0.8rem; text-align: center;'>{record_link}</td></tr>"
+
             # End table body and card body
             html_code += "</tbody>"
             html_code += "</table>"
@@ -1208,7 +1506,7 @@ def generate_html_cards_progression_with_progress_bars111(sorted_values, current
             percentage = min(percentage, 100)
 
             # Create a progress bar based on the calculated percentage
-            progress_bar = f"<a href='/open_admin_app_{area.id}'>\
+            progress_bar = f"<a href='/open_admin_{area.id}'>\
                <div class='progress' style='font-size: 10px;'>" \
                f"<div class='progress-bar' role='progressbar' style='width: {percentage}%;\
                ' aria-valuenow='{percentage}' aria-valuemin='0' aria-valuemax='100'>\
@@ -1234,7 +1532,6 @@ def generate_html_cards_progression_with_progress_bars111(sorted_values, current
         html_code += "</div>"
 
     return html_code
-
 
 
 def generate_html_cards_progression_with_progress_bars_in_short(sorted_values, current_time_qualifier, session,
@@ -1467,43 +1764,43 @@ workflows and their steps
 def generate_workflow_step_report_data(session):
     report_data = []
 
-    # Fetch company_questionnaires relationship data
+    # Fetch workflow_steps relationship data
     workflow_steps = session.query(WorkflowSteps).all()
 
-    # Iterate over workflow_workflows
+    # Iterate over workflow_steps
     for cu in workflow_steps:
         workflow = cu.workflow
         step = cu.step
 
         if workflow and step:  # Check if both workflow and step exist
-
-            step_id = step.id  # Get workflow name from step model
-            step_name = step.name  # Get workflow name from step model
-            workflow_id = workflow.id  # Get workflow first name from workflow model
-            workflow_name = workflow.name  # Get user last name from User model
-            # Append user and company names to the report data
+            step_id = step.id  # Get step ID from step model
+            step_name = step.name  # Get step name from step model
+            workflow_id = workflow.id  # Get workflow ID from workflow model
+            workflow_name = workflow.name  # Get workflow name from workflow model
+            # Append workflow and step data to the report
             report_data.append([workflow_id, workflow_name, step_id, step_name])
 
-        elif workflow:  # If user exists but not assigned to a step
-            workflow_id = workflow.id  # Get user first name from User model
-            workflow_name = workflow.name  # Get user last name from User model
-            # Append user name and placeholder for company name to the report data
+        elif workflow:  # If workflow exists but not assigned to a step
+            workflow_id = workflow.id  # Get workflow ID from workflow model
+            workflow_name = workflow.name  # Get workflow name from workflow model
+            # Append workflow data and placeholder for step
             report_data.append([workflow_id, workflow_name, "", "No steps assigned"])
 
-        elif step:  # If company exists but no user assigned
-            step_id = step.id  # Get workflow name from step model
+        elif step:  # If step exists but not assigned to a workflow
+            step_id = step.id  # Get step ID from step model
             step_name = step.name  # Get step name from step model
-            # Append placeholder for user name and company name to the report data
+            # Append step data and placeholder for workflow
             report_data.append(["No workflow assigned", "", step_id, step_name])
 
-        else:  # If neither user nor company exists
-            # Append placeholders for user and company names to the report data
+        else:  # If neither workflow nor step exists
+            # Append placeholders for both workflow and step
             report_data.append(["No workflow assigned", "", "No step created"])
 
-    # Sort the report data by company name (third element in each row)
-    report_data.sort(key=lambda x: x[0])
+    # Sort the report data by the first element, converted to string for consistency
+    report_data.sort(key=lambda x: str(x[0]))
 
     return report_data
+
 
 
 '''
@@ -1563,8 +1860,8 @@ def generate_document_step_report_data(session):
             else:
                 subarea_name = "Unknown"
 
-            # Fetch associated StepBaseData for the current BaseData
-            step_base_data_records = session.query(StepBaseData).filter_by(base_data_id=base_data.id).all()
+            # Fetch associated Docs for the current BaseData
+            step_base_data_records = session.query(DocumentWorkflow).filter_by(base_data_id=base_data.id).all()
 
             for step_base_data in step_base_data_records:
                 base_data_id = base_data.id
@@ -1586,7 +1883,7 @@ def generate_document_step_report_data(session):
                 # Append data to report
                 report_data.append([document_id, document_name, area_name, subarea_name, company_name, workflow_id, step_id, step_name, step_start, step_deadline, step_end, auto_move])
 
-            if not step_base_data_records:  # If no StepBaseData records found for the current BaseData
+            if not step_base_data_records:  # If no Step Base Data records found for the current BaseData
                 # Append data to report with placeholders for step and workflow information
                 report_data.append([document_id, document_name, area_name, subarea_name, company_name, "", "", "No step created", "", "", "", False])
 
@@ -2016,10 +2313,9 @@ def form_has_changes(rendered_form, initial_data):
     # Check if lists are different
 
     if any(not custom_compare(elem1, elem2) for elem1, elem2 in zip(initials, currents)):
-        print(initials, currents, 'are not equal?')
         return True
     else:
-        print(initials, currents, 'are equal?')
+        pass
 
     return False
 
@@ -2101,8 +2397,66 @@ def remove_duplicates(session, model_class, keys):
 
         # Commit the changes
         session.commit()
-        print('duplicates removed')
 
+
+def is_extratime(company_id, area_id, subarea_id, document_year, document_interval):
+    """
+    Check if the action is allowed based on the current year, interval, and any extra time authorization.
+    """
+    # Get the current year
+    current_year = str(datetime.now().year)
+    print('--->>> Checking action: current year:', current_year)
+
+    # Fetch configuration values based on area and subarea (assume config_type='area_interval' gives nr_intervals)
+    config_values = get_config_values(config_type='area_interval', company_id=company_id, area_id=area_id,
+                                      subarea_id=subarea_id)
+    nr_intervals = config_values[0]
+
+    # Get current intervals
+    intervals = get_current_intervals(db.session)
+
+    # Filter the current interval based on nr_intervals (e.g., quarterly, monthly, etc.)
+    current_intervals = [t[2] for t in intervals if t[0] == nr_intervals]
+
+    if not current_intervals:
+        print(f"No current intervals found for the given configuration: nr_intervals={nr_intervals}")
+        return False
+
+    # Extract the first interval from the current intervals list
+    current_interval = current_intervals[0]
+    print('--->>> Checking action: current interval:', current_interval)
+
+    # normalize the values
+    try:
+        document_year = int(document_year)
+        current_year = int(current_year)
+        document_interval = int(document_interval)
+        current_interval = int(current_interval)
+    except ValueError as e:
+        print(f"Error converting parameters to integers: {e}")
+        return False  # Handle the error appropriately
+
+    print('extratime parameters are', document_year, current_year, document_interval, current_interval)
+    # Compare the document's year and interval with the current year and interval
+    if document_year == current_year and document_interval == current_interval:
+        print('--->>> Access granted based on current year and interval match.')
+        return True
+
+    # Check for extra time authorization for the company, area, and subarea
+    extra_time_auth = ExtraTimeAuthorization.query.filter_by(
+        company_id=company_id,
+        area_id=area_id,
+        subarea_id=subarea_id
+    ).first()
+
+    # If extra time authorization exists and is valid, grant access
+    if extra_time_auth and extra_time_auth.has_extra_time():
+        print('--->>> Access granted based on extra time authorization.')
+        return True
+
+    # If no condition is met, deny access
+    print('--->>> Access denied.')
+    return False
 
 
 def create_notification(session, **kwargs):
@@ -2112,8 +2466,6 @@ def create_notification(session, **kwargs):
     )
     session.add(notification)
     session.commit()
-
-    print('notification created')
 
     '''
     use example

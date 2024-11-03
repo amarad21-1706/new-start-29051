@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Your Default Title{% endblock %}</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/css/bootstrap.min.css">
+    <!-- Add additional stylesheets or custom styles here -->
+    <style>
+        body {
+            background-color: #121212; /* Dark background */
+            color: #cccbb6; /* Light font color */
+        }
+        .navbar, .navbar-light .navbar-nav .nav-link {
+            background-color: #333333; /* Darker navbar background */
+            color: #ccddee; /* Light font color for navbar */
+        }
+        .navbar-light .navbar-nav .nav-link:hover, .navbar-light .navbar-nav .nav-link:focus {
+            background-color: #444444; /* Slightly lighter background on hover */
+            color: #bbccdd; /* Ensure the font color remains light on hover */
+        }
+        .container {
+            background-color: #1f1f1f; /* Slightly lighter container background */
+            border-radius: 5px;
+            padding: 20px;
+        }
+        footer {
+            color: #bbbbcc; /* Light grey footer text */
+        }
+        .flashes li {
+            list-style: none;
+            margin-bottom: 10px;
+        }
+        .flashes li.success {
+            color: #4caf50;
+        }
+        .flashes li.error {
+            color: #f44336;
+        }
+        .flashes li.info {
+            color: #2196f3;
+        }
+        .flashes li.warning {
+            color: #ff9800;
+        }
+        .btn-link {
+            color: #dddddd;
+            text-decoration: none;
+        }
+        .btn-link:hover, .btn-link:focus {
+            color: #aaddff;
+            text-decoration: underline;
+        }
+        input[type="text"], input[type="date"], input[type="email"], input[type="number"], input[type="password"], input[type="search"], input[type="tel"], input[type="url"], textarea, select {
+            background-color: #333333; /* Dark background for input fields */
+            color: #cccbb6; /* Light font color for input fields */
+            border: 1px solid #555555; /* Border color for input fields */
+        }
+        input[type="text"]::placeholder, input[type="date"]::placeholder, input[type="email"]::placeholder, input[type="number"]::placeholder, input[type="password"]::placeholder, input[type="search"]::placeholder, input[type="tel"]::placeholder, input[type="url"]::placeholder, textarea::placeholder {
+            color: #888888; /* Placeholder text color */
+        }
+    </style>
+    {% block head %}
+    {% endblock %}
+</head>
+<body>
+    <div class="container">
+        <!-- Navbar -->
+        <nav class="navbar navbar-expand-lg navbar-light">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#">{{ app_name }}</a>
+
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav">
+                        <!-- Add more navigation items as needed -->
+                    </ul>
+                </div>
+
+            </div>
+        </nav>
+
+        <!-- Content -->
+        <div class="mt-4">
+            {% block content %}
+                <!-- Flash messages block -->
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        <ul class="flashes">
+                            {% for category, message in messages %}
+                                <li class="{{ category }}">{{ message }}</li>
+                            {% endfor %}
+                        </ul>
+                    {% endif %}
+                {% endwith %}
+            {% endblock %}
+        </div>
+
+        <!-- Footer -->
+        <footer class="mt-4">
+            <p>&copy; 2024 ILM. All rights reserved.</p>
+        </footer>
+    </div>
+    <!-- Move this line to the end of the body -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta2/dist/js/bootstrap.bundle.min.js"></script>
+    {% block scripts %}
+    {% endblock %}
+</body>
+</html>
+

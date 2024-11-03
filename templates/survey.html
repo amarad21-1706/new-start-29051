@@ -20,7 +20,6 @@
         </table>
     {% endif %}
 
-
     <!-- Optionally, handle the case where there are no headers, e.g., display a message or alternative content -->
 
     <!-- Dynamic Form Contents -->
@@ -30,18 +29,41 @@
 </form>
 
 <style>
-    /* Base table and tooltip styles */
+    /* Ensure all form controls have proper contrast */
+    input[type="text"], input[type="file"], textarea, select, .datepicker {
+        background-color: #333; /* Dark background for input fields */
+        color: #cccbb6; /* Light font color */
+        border: 1px solid #555; /* Border color */
+    }
+    input[type="text"]::placeholder, textarea::placeholder {
+        color: #999; /* Placeholder text color */
+    }
+    button {
+        background-color: #444; /* Dark background for buttons */
+        color: #cccbb6; /* Light font color */
+        border: 1px solid #555; /* Border color */
+        margin: 5px; /* Space between buttons */
+    }
+    button:hover {
+        background-color: #555; /* Slightly lighter background on hover */
+        color: #ffffff; /* Ensure the font color remains light on hover */
+    }
     table {
         width: 100%;
-        background-color: lightblue;
+        background-color: #1f1f1f; /* Dark background for table */
+        color: #cccbb6; /* Light font color */
+        border-collapse: collapse; /* Remove spacing between table cells */
     }
-    th {
+    th, td {
         text-align: center;
         padding: 10px;
+        border: 1px solid #444; /* Border color */
+    }
+    th {
         cursor: help;
     }
     th:hover {
-        background-color: #e0f0ff;
+        background-color: #444; /* Darker background on hover */
     }
     .tooltip {
         display: none;
@@ -49,10 +71,10 @@
         top: 100%;
         left: 50%;
         transform: translateX(-50%);
-        background-color: #ffffff;
-        border: 1px solid #cccccc;
+        background-color: #333; /* Dark background for tooltip */
+        border: 1px solid #555; /* Border color */
         padding: 5px 10px;
-        color: #333333;
+        color: #cccbb6; /* Light font color */
         text-align: center;
         border-radius: 6px;
         white-space: nowrap;
@@ -91,8 +113,10 @@
         width: 100%;
         padding: 8px;
         box-sizing: border-box;
-        border: 1px solid #ccc;
+        border: 1px solid #555;
         border-radius: 4px;
+        background-color: #333;
+        color: #cccbb6;
     }
     .my-custom-textarea, .my-custom-shorttextarea {
         height: auto; /* Adjust height as needed */
@@ -116,10 +140,15 @@
 
     /* Utility styles */
     .question-container {
-        background-color: #cdcdcd;
+        background-color: #2a2a2a;
         padding: 10px;
         margin-bottom: 20px;
         width: 100%;
+    }
+    .alert {
+        background-color: #444; /* Dark background for alerts */
+        color: #cccbb6; /* Light font color */
+        border: 1px solid #555; /* Border color */
     }
 </style>
 
@@ -134,9 +163,6 @@
 <!-- Include jQuery and Bootstrap Datepicker library -->
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/css/bootstrap-datepicker.min.css">
-<!-- <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css" integrity="sha384-rbsA2VBKQhggwzxH7pPCaAqO46MgnOM80zW1RWuH61DGLwZJEdK2Kadq2F9CUG65" crossorigin="anonymous"> -->
-<link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.9.0/js/bootstrap-datepicker.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -217,7 +243,6 @@
             }
         }
     }
-
 
     function initializeDatePickers() {
         $('.datepicker').datepicker({

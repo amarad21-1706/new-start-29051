@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Project Plans & Services Dashboard</title>
+    <!-- Argon CSS and other dependencies -->
+    <link href="{{ url_for('static', filename='argon-dashboard/css/argon-dashboard.css') }}" rel="stylesheet">
+    <!-- You might also want to include FontAwesome or other icons -->
+    <link href="{{ url_for('static', filename='argon-dashboard/css/nucleo-icons.css') }}" rel="stylesheet">
+    <!-- If you're using Google Fonts or any other additional fonts -->
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Argon Sidebar -->
+    <div class="sidebar">
+        <div class="sidebar-wrapper">
+            <ul class="nav">
+                <li class="nav-item">
+                    <a class="nav-link" href="/argon/plans">
+                        <i class="ni ni-single-02 text-yellow"></i> Plans
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="/argon/products">
+                        <i class="ni ni-paper-diploma text-blue"></i> Services
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Main content -->
+    <div class="main-content">
+        <div class="header bg-primary pb-6 pt-5">
+            <div class="container-fluid">
+                <div class="header-body">
+                    <h1 class="text-white">Plans & Services Dashboard</h1>
+                </div>
+            </div>
+        </div>
+        {% with messages = get_flashed_messages(with_categories=True) %}
+          {% if messages %}
+            <div class="container">
+              {% for category, message in messages %}
+                <div class="alert alert-{{ category }}">
+                  {{ message }}
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        {% endwith %}
+
+        <div class="container-fluid mt--6">
+            {% block content %}
+            <!-- Specific views will be loaded here -->
+            {% endblock %}
+        </div>
+        <div class="container">
+            <a href="/" class="btn btn-primary mb-3">Home</a>
+            <a href="{{ request.referrer }}" class="btn btn-secondary mb-3">Back</a>
+            <!-- Home and Back buttons at the top -->
+        </div>
+    </div>
+
+    <!-- Argon CSS -->
+    <link href="{{ url_for('static', filename='argon-dashboard/css/argon-dashboard.css') }}" rel="stylesheet">
+
+    <!-- Argon JS -->
+    <script src="{{ url_for('static', filename='argon-dashboard/js/argon-dashboard.js') }}"></script>
+
+
+</body>
+
+</html>

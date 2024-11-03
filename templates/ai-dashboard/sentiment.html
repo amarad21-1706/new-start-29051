@@ -1,0 +1,16 @@
+{% extends "ai-dashboard/argon_base_ai.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Sentiment Analysis</h2>
+    {% if sentiment %}
+        <ul>
+            {% for feedback in sentiment %}
+                <li>{{ feedback }}</li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p>No sentiment data available.</p>
+    {% endif %}
+</div>
+{% endblock %}

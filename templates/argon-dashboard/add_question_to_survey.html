@@ -1,0 +1,17 @@
+{% extends 'argon-dashboard/questionnaire_base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>Add Question to {{ questionnaire.name }}</h2>
+    <form action="{{ url_for('argon.add_question_to_survey', questionnaire_id=questionnaire.id) }}" method="POST">
+        {{ form.hidden_tag() }} <!-- CSRF Token -->
+
+        <div class="form-group">
+            <label for="question_id">{{ form.question_id.label }}</label>
+            {{ form.question_id(class="form-control") }}
+        </div>
+
+        <button type="submit" class="btn btn-primary">Add Question</button>
+    </form>
+</div>
+{% endblock %}

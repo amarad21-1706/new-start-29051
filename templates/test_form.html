@@ -1,0 +1,5 @@
+<form action="{{ url_for('test_form') }}" method="POST">
+    {{ form.hidden_tag() }}
+    <input type="hidden" name="plan_id" value="1">
+    <button type="submit">Test Form</button>
+</form>

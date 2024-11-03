@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>Project Teams & Contracts Dashboard</title>
+    <!-- Argon CSS and other dependencies -->
+    <link href="{{ url_for('static', filename='argon-dashboard/css/argon-dashboard.css') }}" rel="stylesheet">
+    <!-- You might also want to include FontAwesome or other icons -->
+    <link href="{{ url_for('static', filename='argon-dashboard/css/nucleo-icons.css') }}" rel="stylesheet">
+    <!-- If you're using Google Fonts or any other additional fonts -->
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet">
+</head>
+
+<body>
+
+    <nav class="navbar navbar-vertical fixed-left navbar-expand-md navbar-light bg-white" id="sidenav-main">
+        <div class="container-fluid">
+            <!-- Sidebar content like logo and collapse button -->
+            <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#sidenav-collapse-main">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <a class="navbar-brand pt-0" href="#">
+                <img src="{{ url_for('static', filename='argon-dashboard/img/logo.png') }}" class="navbar-brand-img" alt="...">
+            </a>
+
+            <!-- Collapse -->
+            <div class="collapse navbar-collapse" id="sidenav-collapse-main">
+                <!-- Navigation -->
+                <ul class="navbar-nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="/argon/teams">
+                            <i class="ni ni-single-02 text-yellow"></i> Project Teams
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/argon/contracts">
+                            <i class="ni ni-paper-diploma text-blue"></i> Contracts
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="/argon/members">
+                            <i class="ni ni-circle-08 text-pink"></i> Team Members
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main content -->
+    <div class="main-content">
+        <div class="header bg-primary pb-6 pt-5">
+            <div class="container-fluid">
+                <div class="header-body">
+                    <h1 class="text-white">Teams & Contracts Dashboard</h1>
+                </div>
+            </div>
+        </div>
+        <div class="container-fluid mt--6">
+            {% block content %}
+            <!-- Specific views will be loaded here -->
+            {% endblock %}
+        </div>
+    </div>
+
+    <!-- Argon CSS -->
+    <link href="{{ url_for('static', filename='argon-dashboard/css/argon-dashboard.css') }}" rel="stylesheet">
+
+    <!-- Argon JS -->
+    <script src="{{ url_for('static', filename='argon-dashboard/js/argon-dashboard.js') }}"></script>
+
+
+</body>
+
+</html>

@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Delete Member from Team: {{ team.name }}</h2>
+<p>Are you sure you want to delete {{ member.user.name }} from the team?</p>
+
+<form method="post" action="{{ url_for('team.delete_member', team_id=team.id, user_id=member.user.id) }}">
+    <!-- Include the CSRF token here -->
+    {{ csrf_token() }}
+
+    <button type="submit" class="btn btn-danger">Delete</button>
+    <a href="{{ url_for('team.view_teams') }}" class="btn btn-secondary">Cancel</a>
+</form>
+{% endblock %}

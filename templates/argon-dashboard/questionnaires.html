@@ -1,0 +1,45 @@
+{% extends 'argon-dashboard/questionnaire_base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>Project Questionnaires</h2>
+
+    <!-- Create new questionnaire button -->
+    <a href="/argon/create_questionnaire" class="btn btn-success mb-3">Create New Questionnaire</a>
+
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Questionnaire Name</th>
+                <th>Type</th>
+                <th>Interval</th>
+                <th>Deadline Date</th>
+                <th>Status</th>
+                <th>Actions</th> <!-- New column for actions -->
+            </tr>
+        </thead>
+        <tbody>
+            {% for questionnaire in questionnaires %}
+            <tr>
+                <td>{{ questionnaire.name }}</td>
+                <td>{{ questionnaire.questionnaire_type }}</td>
+                <td>{{ questionnaire.interval }}</td>
+                <td>{{ questionnaire.deadline_date }}</td>
+                <td>{{ questionnaire.status_id }}</td>
+                <td> <!-- New Actions column -->
+                    <!-- View button -->
+                    <a href="/argon/questionnaire/{{ questionnaire.id }}" class="btn btn-info btn-sm">View</a>
+                    <!-- Edit button -->
+                    <a href="/argon/edit_questionnaire/{{ questionnaire.id }}" class="btn btn-warning btn-sm">Edit</a>
+                    <!-- Delete button -->
+                    <form action="{{ url_for('argon.delete_questionnaire', id=questionnaire.id) }}" method="POST" onsubmit="return confirm('Are you sure you want to delete this questionnaire?');" style="display:inline;">
+                        {{ form.hidden_tag() }}
+                        <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

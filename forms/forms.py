@@ -1,32 +1,405 @@
 
 # Create a dynamic form based on questions
+from db import db
 
-from wtforms import (Form, FormField, IntegerField, BooleanField, FloatField, SelectField, DateField,
-                     TimeField, FileField, StringField, TextAreaField)
-from wtforms.fields import (BooleanField, HiddenField, StringField, SelectField, FloatField, DecimalField,
-                            TimeField, DateField, DateTimeField,
-                            FileField, PasswordField, SubmitField, DateField, TextAreaField,
-                            MonthField, IntegerField)
-
-from wtforms.validators import DataRequired, Length, Email, EqualTo, Optional, NumberRange
-import re
-from datetime import datetime
-from wtforms import IntegerField, DateField, validators
-from flask_wtf import FlaskForm
-from wtforms import StringField, IntegerField, DateTimeField, FileField
-from wtforms.validators import DataRequired, Optional
 from wtforms_sqlalchemy.fields import QuerySelectField
 
-from models.user import (Subject, Step, Workflow, StepBaseData, WorkflowSteps, BaseData, Question, Questionnaire, QuestionnaireQuestions)
-from flask_admin.model.form import InlineFormAdmin
-
-from wtforms import IntegerField  # Import necessary field type
+from datetime import datetime
+from wtforms import (DecimalField, StringField, BooleanField, FloatField, FileField, DateField, TimeField,
+                    DateTimeLocalField, ValidationError,
+                     SelectField, SelectMultipleField, FloatField, IntegerField, IntegerField,
+                     DateTimeField, FileField,
+                     Form, FormField, IntegerField, HiddenField, DateTimeField, MonthField,
+                     TimeField, FileField, TextAreaField, PasswordField, SubmitField, EmailField,
+                     RadioField, validators
+                     )
 from flask_wtf import FlaskForm
-from wtforms import StringField, TextAreaField, RadioField, SelectField, HiddenField, FormField, SubmitField
-from wtforms.validators import DataRequired, Optional, Length
-from enum import Enum
+from wtforms import StringField, BooleanField, SelectField, FieldList, FormField
+from wtforms.validators import DataRequired
+from wtforms_components import DateTimeField
+from wtforms.widgets import DateTimeInput
+# Import ColorField
+from wtforms.fields import ColorField  # Correct import
+from wtforms import FieldList
+from wtforms.widgets import ListWidget, CheckboxInput  # <-- Import this
 
+from flask_wtf import FlaskForm
+from wtforms import StringField, DateTimeField, BooleanField, SubmitField, SelectField, TextAreaField, FieldList, IntegerField
+from wtforms.validators import DataRequired
+
+from flask_admin.form import rules
+from flask_admin.form.rules import FieldSet
+from wtforms.validators import (DataRequired, Length, Email, EqualTo, Optional, NumberRange, Regexp, URL,
+                                ValidationError)
+import re
+from datetime import datetime
+
+from wtforms_sqlalchemy.fields import QuerySelectField
+from models.user import (Users, Company, Event, Subject, Step, Workflow, #StepBaseData,
+                         WorkflowSteps, BaseData, BaseDataInline,
+                         Question, Questionnaire, QuestionnaireQuestions, Status, LegalDocument,
+                         Area, Subarea, AreaSubareas, Lexic, Workflow, Interval, Step,
+                         Contract, ContractParty, ContractTerm, ContractDocument,
+                         ContractStatusHistory, ContractArticle, Party,
+                         BaseData, DocumentWorkflow, PhysicalContract
+                         )
+from flask_admin.model.form import InlineFormAdmin
+from enum import Enum
 from flask_admin.contrib.sqla.ajax import QueryAjaxModelLoader
+from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as _
+# from werkzeug.security import generate_password_hash, check_password_hash
+
+
+class PhysicalContractForm(FlaskForm):
+    contract_id = StringField('ID Contratto', validators=[DataRequired()])
+    price = FloatField('Prezzo Contrattuale', validators=[DataRequired()])
+    costs = FloatField('Costi Totali', validators=[DataRequired()])
+    margins = FloatField('Margine di Profitto', validators=[DataRequired()])
+    market_price = FloatField('Prezzo di Mercato', validators=[DataRequired()])
+    futures_prices = FloatField('Prezzi Futures', validators=[DataRequired()])
+    economic_factors = StringField('Fattori Economici')
+    terms = IntegerField('Durata Contratto (mesi)', validators=[DataRequired()])
+    contract_date = DateField('Data Contratto', validators=[DataRequired()])
+    created_at = DateField('Data di Creazione', default=datetime.utcnow, validators=[DataRequired()])
+    expiration_date = DateField('Data di Scadenza', validators=[DataRequired()])
+    submit = SubmitField('Confronta Condizioni')
+
+
+# Document Workflow forms
+
+class PlanForm(FlaskForm):
+    name = StringField('Plan Name', validators=[DataRequired()])
+    description = TextAreaField('Description')
+    price = IntegerField('Price', validators=[DataRequired()])
+
+    # Stripe plan and price IDs
+    stripe_plan_id = StringField('Stripe Plan ID', validators=[DataRequired()])
+    stripe_price_id = StringField('Stripe Price ID', validators=[DataRequired()])
+
+    # Billing cycle dropdown
+    billing_cycle = SelectField('Billing Cycle', choices=[
+        ('none', 'None'),
+        ('one-off', 'One-off'),
+        ('daily', 'Daily'),
+        ('monthly', 'Monthly'),
+        ('quarterly', 'Quarterly'),
+        ('yearly', 'Yearly')
+    ], validators=[DataRequired()])
+
+    submit = SubmitField('Save Plan')
+
+'''
+class ChartMetricForm(FlaskForm):
+    column_name = StringField('Column Name', render_kw={'readonly': True})  # Display column name as readonly
+    metric = BooleanField()  # Checkbox for selecting the metric
+    label = StringField('Label')  # Editable label for the selected metric
+'''
+
+class AreaSubareaForm(FlaskForm):
+    area = SelectField('Select Area', coerce=int)
+    subarea = SelectField('Select Subarea', coerce=int)
+    add = SubmitField('Add Subarea to Area')
+    delete = SubmitField('Remove Subarea from Area')
+    cancel = SubmitField('Cancel')
+
+
+class ChartMetricForm(FlaskForm):
+    column_name = HiddenField('Column Name')  # Hidden field to retain the column name on submission
+    metric = BooleanField()  # Checkbox for selecting the metric
+    label = StringField('Label')  # Editable label for the selected metric
+
+
+class ConfigChartForm(FlaskForm):
+    chart_name = StringField('Chart Name', validators=[DataRequired()])
+    chart_type = SelectField('Chart Type', choices=[
+                                                    ('bar', 'Bar'),
+                                                    ('line', 'Line'),
+                                                    ('pie', 'Pie'),
+                                                    ('doughnut', 'Doughnut'),
+                                                    ('radar', 'Radar'),
+                                                    ('polarArea', 'Polar Area'),
+                                                    ('bubble', 'Bubble'),
+                                                    ('scatter', 'Scatter'),
+                                                    ('stackedBar', 'Stacked Bar'),  # Custom option for stacked
+                                                    ('stackedLine', 'Stacked Line')  # Custom option for stacked line
+    ], validators=[DataRequired()])
+    x_axis_label = StringField('X Axis Label', validators=[DataRequired()])
+    y_axis_label = StringField('Y Axis Label', validators=[DataRequired()])
+    company_id = IntegerField('Company ID')
+    area_id = IntegerField('Area ID', validators=[DataRequired()])
+    subarea_id = IntegerField('Subarea ID', validators=[DataRequired()])
+    fi0 = IntegerField('Year')
+
+    # List of dynamic metric checkboxes and editable labels
+    metrics = FieldList(FormField(ChartMetricForm), min_entries=1)
+
+    submit = SubmitField('Submit')
+
+
+class ProductForm(FlaskForm):
+    name = StringField('Name', validators=[DataRequired()])
+    description = TextAreaField('Description', validators=[DataRequired()])
+    stripe_product_id = StringField('Stripe Product ID', validators=[DataRequired()])
+    stripe_price_id = StringField('Stripe Price ID', validators=[DataRequired()])
+    price = IntegerField('Price (cents)', validators=[DataRequired()])
+    currency = StringField('Currency', default='EUR')
+    path = StringField('Path', validators=[DataRequired()])
+    icon = StringField('Icon')
+
+    # Adding the type field as a dropdown
+    type = SelectField('Type', choices=[
+        ('application', 'Application'),
+        ('product', 'Product'),
+        ('consulting', 'Consulting'),
+        ('other_services', 'Other Services')
+    ], default='application')
+
+    submit = SubmitField('Submit')
+
+
+class QuestionnaireFormArgon(FlaskForm):
+    # Fields based on the `Questionnaire` model
+    questionnaire_id = StringField('Questionnaire ID', validators=[DataRequired()])
+    name = StringField('Name', validators=[DataRequired()])
+    questionnaire_type = SelectField('Type', choices=[
+        ('Questionnaire', 'Questionnaire'),
+        ('Survey', 'Survey'),
+        ('Assessment', 'Assessment')
+    ], validators=[DataRequired()])
+
+    interval = StringField('Interval')  # If it's numeric, you could use IntegerField instead
+    deadline_date = DateTimeField('Deadline Date', format='%Y-%m-%d %H:%M:%S', validators=[Optional()])
+    status_id = IntegerField('Status ID', validators=[DataRequired()])
+
+    # JSON headers field, to be handled as text input for now
+    headers = TextAreaField('Headers (JSON)', validators=[Optional()])
+
+    submit = SubmitField('Save Questionnaire')
+
+
+class QuestionFormArgon(FlaskForm):
+    question_id = StringField('Question ID', validators=[DataRequired()])
+    text = StringField('Question Text', validators=[DataRequired()])
+    answer_type = SelectField('Answer Type', choices=[
+        ('TLT', 'Text Long Type'),
+        ('SHT', 'Short Text Type'),
+        ('NUM', 'Number Type')
+    ], validators=[DataRequired()])
+
+    answer_width = IntegerField('Column Width (in pixels)', validators=[Optional()])
+    # Handling JSON answer fields
+    answer_fields = TextAreaField('Answer Fields (JSON)', validators=[Optional()])
+
+    submit = SubmitField('Create Question')
+
+class AddQuestionFormArgon(FlaskForm):
+    question_id = SelectField('Select Question', coerce=int, validators=[DataRequired()])
+    submit = SubmitField('Add Question')
+
+    def __init__(self, *args, **kwargs):
+        super(AddQuestionFormArgon, self).__init__(*args, **kwargs)
+        self.question_id.choices = [(q.id, q.text) for q in Question.query.all()]
+
+
+class InlineWorkflowForm(FlaskForm):
+   workflow_name = StringField('Workflow Name')
+   start_date = StringField('Start Date')
+   end_date = StringField('End Date')
+
+class MainForm(FlaskForm):
+   number_of_doc = SelectField('Document Number', validators=[DataRequired()])
+   fi0 = StringField('Anno di rif.', validators=[DataRequired()])
+   interval_ord = StringField('Periodo di rif.', validators=[DataRequired()])
+   subject = StringField('Oggetto', validators=[DataRequired()])
+   date_of_doc = StringField('Data documento', validators=[DataRequired()])
+   file_path = StringField('Allegati')
+   no_action = BooleanField('Conferma assenza doc.')
+   fc2 = StringField('Note')
+
+   # Inline workflows
+   inline_workflows = FieldList(FormField(InlineWorkflowForm), min_entries=1)
+
+
+class TeamForm(FlaskForm):
+    team_name = StringField('Team Name', validators=[DataRequired()])
+    description = StringField('Description')
+    submit = SubmitField('Create Team')
+
+class ManagePlanForm(FlaskForm):
+    id = HiddenField()
+    name = StringField('Plan Name', validators=[DataRequired()])
+    description = TextAreaField('Description')
+    billing_cycle = SelectField('Billing Cycle', choices=[('none', 'None'), ('monthly', 'Monthly'), ('quarterly', 'Quarterly'), ('yearly', 'Yearly'), ('one-off', 'One-off')], validators=[DataRequired()])
+    submit = SubmitField('Save Plan')
+
+
+class ManageProductForm(FlaskForm):
+    id = HiddenField()
+    name = StringField('Product Name', validators=[DataRequired()])
+    description = TextAreaField('Description')
+    stripe_product_id = StringField('Stripe Product ID', validators=[DataRequired()])
+    stripe_price_id = StringField('Stripe Price ID', validators=[DataRequired()])
+    price = IntegerField('Price (in cents)', validators=[DataRequired()])
+    currency = StringField('Currency', validators=[DataRequired()])
+    path = StringField('Product Path', validators=[DataRequired()])
+    icon = StringField('Product Icon (URL or internal path)', validators=[URL(require_tld=False)])
+    submit = SubmitField('Save Product')
+
+
+class AddPlanToCartForm(FlaskForm):
+    submit = SubmitField('Add to Cart')
+
+class UpdateCartItemForm(FlaskForm):
+    quantity = IntegerField('Quantity', validators=[DataRequired(), NumberRange(min=1)])
+    submit = SubmitField('Update')
+
+class AddProductToCartForm(FlaskForm):
+    quantity = IntegerField('Quantity', validators=[DataRequired(), NumberRange(min=1)])
+    submit = SubmitField('Add to Cart')
+
+class PlanProductsForm(FlaskForm):
+    id = HiddenField()
+    plan_id = SelectField('Plan', coerce=int, validators=[DataRequired()])
+    product_id = SelectField('Product', coerce=int, validators=[DataRequired()], choices=[], render_kw={'multiple': False})
+    add = SubmitField('Add')
+    delete = SubmitField('Delete')
+    cancel = SubmitField('Cancel')
+
+
+class SubscriptionForm(FlaskForm):
+    plan_id = HiddenField('Plan ID', validators=[DataRequired()])
+    additional_products = HiddenField('Additional Products')
+    submit = SubmitField('Subscribe')
+
+class UpdateAccountForm(FlaskForm):
+    username = StringField('Username', validators=[DataRequired(), Length(min=2, max=80)])
+    email = StringField('Email', validators=[DataRequired(), Email()])
+    title = StringField('Title', validators=[DataRequired(), Length(min=1, max=24)])
+    first_name = StringField('First Name', validators=[DataRequired(), Length(min=1, max=128)])
+    mid_name = StringField('Middle Name', validators=[Optional(), Length(max=128)])
+    last_name = StringField('Last Name', validators=[DataRequired(), Length(min=1, max=128)])
+    title = StringField('Title', validators=[DataRequired(), Length(max=12)])
+    address = StringField('Address', validators=[DataRequired(), Length(max=128)])
+    address1 = StringField('Address 1', validators=[Optional(), Length(max=128)])
+    city = StringField('City', validators=[DataRequired(), Length(max=128)])
+    province = StringField('Province', validators=[DataRequired(), Length(max=64)])
+    region = StringField('Region', validators=[DataRequired(), Length(max=64)])
+    zip_code = StringField('Zip Code', validators=[Optional(), Length(max=24)])
+    country = StringField('Country', validators=[DataRequired(), Length(max=64)])
+    tax_code = StringField('Tax Code', validators=[Optional(), Length(max=128)])
+    mobile_phone = StringField('Mobile Phone', validators=[
+        DataRequired(),
+        Regexp(r'^\+?1?\d{9,15}$', message="Phone number must be entered in the format: '+999999999'. Up to 15 digits allowed.")
+    ])
+    work_phone = StringField('Work Phone', validators=[
+        Optional(),
+        Regexp(r'^\+?1?\d{9,15}$', message="Phone number must be entered in the format: '+999999999'. Up to 15 digits allowed.")
+    ])
+    submit = SubmitField('Update')
+
+
+class ColorField(StringField):
+    pass  # Define or import ColorField appropriately
+
+
+class EventForm(FlaskForm):
+    title = StringField('Title', validators=[DataRequired()])
+    start = DateTimeField('Start', format='%Y-%m-%d %H:%M:%S', validators=[DataRequired()])
+    end = DateTimeField('End', format='%Y-%m-%d %H:%M:%S', validators=[DataRequired()])
+    description = TextAreaField('Description')
+    all_day = BooleanField('All Day')
+    location = StringField('Location')
+    color = ColorField('Color')  # Ensure ColorField is defined or imported
+    recurrence = SelectField('Recurrence', choices=[
+        ('', 'None'),
+        ('daily', 'Daily'),
+        ('weekly', 'Weekly'),
+        ('monthly', 'Monthly'),
+        ('quarterly', 'Quarterly')
+    ])
+    recurrence_end = DateField('Recurrence End', format='%Y-%m-%d')
+    submit = SubmitField('Submit')
+
+    def validate_end(self, end):
+        if self.start.data >= end.data:
+            raise ValidationError('End time must be after start time.')
+
+    def validate_recurrence_end(self, recurrence_end):
+        if self.recurrence.data not in [None, ''] and self.recurrence_end.data:
+            end_date = self.end.data.date() if isinstance(self.end.data, datetime) else self.end.data
+            if end_date >= self.recurrence_end.data:
+                raise ValidationError('Recurrence end date must be after event end date.')
+
+
+class TicketForm(FlaskForm):
+    subject = SelectField('Subject', coerce=int, validators=[DataRequired()])
+    description = TextAreaField('Description', validators=[DataRequired()])
+    submit = SubmitField('Submit')
+
+class ResponseForm(FlaskForm):
+    response = TextAreaField('Response', validators=[DataRequired()])
+    status = SelectField('Status', coerce=int, validators=[DataRequired()])
+    submit = SubmitField('Submit')
+
+
+class LoginForm(FlaskForm):
+    username = StringField('Username', validators=[DataRequired()])
+    password = PasswordField('Password', validators=[DataRequired()])
+    remember_me = BooleanField('Remember Me')
+    submit = SubmitField('Login')
+
+
+class BaseDataInlineModelForm(InlineFormAdmin):
+    form_columns = ['name', 'type', 'value', 'record_type']
+    form_label = 'Vendor Data'
+    form_extra_fields = {
+        'id': HiddenField('ID'),
+        'record_type': HiddenField('Record Type')
+    }
+
+    form_edit_rules = ('id', rules.FieldSet(('name', 'type', 'value', 'record_type'), 'Vendor Data'))
+
+    def postprocess_form(self, form_class):
+        form_class.id = HiddenField()
+        form_class.record_type = HiddenField(default='pre-complaint')  # Set the default value directly here
+
+        # Query the Subject table
+        subjects = db.session.query(Subject).filter_by(tier_1='Oggetto').order_by(Subject.tier_2, Subject.tier_3).all()
+
+        # Create choices for the SelectField
+        subject_choices = [(subject.id, f"{subject.tier_2} {subject.tier_3} - {subject.name}") for subject in subjects]
+
+        # Add the SelectField to the form_class
+        form_class.type = SelectField('Type', choices=subject_choices)
+
+        return form_class
+
+class ContractArticleInlineModelForm(InlineFormAdmin):
+    form_columns = ['article_title', 'article_body', 'article_order']
+    form_label = 'Contract Article'
+
+    def on_model_change(self, form, model, is_created):
+        # Ensure article_order is set to 0 if not provided
+        if form.article_order.data == '':
+            model.article_order = 0
+        else:
+            model.article_order = int(form.article_order.data)
+
+        super(ContractArticleInlineModelForm, self).on_model_change(form, model, is_created)
+
+
+
+class ForgotPasswordForm(FlaskForm):
+    email = EmailField(_('Email Address'), validators=[DataRequired(), Email()])
+    # Other form fields, if needed
+    submit = SubmitField(_('Reset Password'))
+
+class ResetPasswordForm101(FlaskForm):
+    password = PasswordField(_('New Password'), validators=[DataRequired()])
+    confirm_password = PasswordField(_('Confirm New Password'),
+                                     validators=[DataRequired(), EqualTo('password', message=_('Passwords must match'))])
+    submit = SubmitField(_('Reset Password'))
+
 
 class CustomSubjectAjaxLoader(QueryAjaxModelLoader):
     def __init__(self, name, session, model=None, fields=None, filter_criteria=None):
@@ -51,78 +424,83 @@ class CustomSubjectAjaxLoader(QueryAjaxModelLoader):
         # Execute the query and return the results
         return query.all()
 
+class DocumentWorkflowInlineForm(InlineFormAdmin):
+    form_columns = [
+        'id', 'workflow', 'step', 'status', 'start_date',
+        'end_date', 'deadline_date', 'auto_move', 'open_action'
+    ]
 
+    form_extra_fields = {
+        'id': HiddenField(),  # Ensure the 'id' field is included but hidden
+        'workflow': QuerySelectField(
+            'Workflow',
+            query_factory=lambda: Workflow.query.all(),
+            get_label='name',
+            allow_blank=False
+        ),
+        'step': QuerySelectField(
+            'Step',
+            query_factory=lambda: Step.query.all(),
+            get_label='name',
+            allow_blank=False
+        ),
+        'status': QuerySelectField(
+            'Status',
+            query_factory=lambda: Status.query.all(),
+            get_label='name',
+            allow_blank=False
+        ),
+        # This sets up a delete action similar to your working method
+        'delete': HiddenField()
+    }
 
-class StepBaseDataInlineForm(InlineFormAdmin):
+    form_edit_rules = ('id', rules.FieldSet(
+        ('workflow', 'step', 'status', 'start_date', 'end_date', 'deadline_date', 'auto_move', 'open_action', 'delete'),
+        'Workflow Data'
+    ))
 
-    def __init__(self, model, form_data=None, **kwargs):
-        super(StepBaseDataInlineForm, self).__init__(model, **kwargs)
-        self.form_data = form_data  # Store the form data
+    def postprocess_form(self, form_class):
+        form_class.id = HiddenField()
+        form_class.delete = HiddenField(default=False)  # Set default delete field behavior
+        return form_class
 
-    form_columns = ('id', 'workflow', 'step', 'status', 'deadline_date', 'auto_move')
-    column_labels = {'id': 'ID', 'workflow': 'Workflow the document is to be assigned to', 'step': 'Step within the Workflow',
-    'status': 'Initial Status', 'deadline_date': 'Deadline of the Step', 'auto_move': 'Automatic transition to next Step'}
-    # Define the primary key field
-    id = IntegerField('ID')  # Assuming the primary key is an IntegerField
-    # Define form fields as SelectFields
-    workflow_id = SelectField('Workflow', coerce=int)  # Assuming 'workflow_id' is the field for selecting workflows
-    step_id = SelectField('Step', coerce=int)  # Assuming 'step_id' is the field for selecting steps
-    status_id = SelectField('Status', coerce=int)  # Assuming 'status_id' is the field for selecting statuses
+    column_labels = {
+        'id': 'ID',
+        'workflow_id': 'Workflow the document is assigned to',
+        'step_id': 'Step in the Workflow',
+        'status_id': 'Initial Status',
+        'start_date': 'Start Date of the Step',
+        'end_date': 'End Date of the Step',
+        'deadline_date': 'Deadline of the Step',
+        'auto_move': 'Automatic transition to next Step'
+    }
 
-    @property
-    def form(self):
-        form = super().form
-        # Print the values of the form fields
-        for field in form:
-            print(f"Field: {field.name}, Value: {field.data}")
-        return form
+class SignupForm(FlaskForm):
+    username = StringField('Username', validators=[DataRequired()])
+    email = EmailField('Email', validators=[DataRequired(), Email()])
+    password = PasswordField('Password', validators=[DataRequired()])
+    confirm_password = PasswordField('Repeat Password', validators=[
+        DataRequired(), EqualTo('password', message='Passwords must match')])
+    title = SelectField('Title', choices=[('', ''), ('Mr.', 'Mr.'), ('Mrs.', 'Mrs.')], validators=[DataRequired()])
+    first_name = StringField('First Name', validators=[DataRequired()])
+    mid_name = StringField('Middle Name')
+    last_name = StringField('Last Name', validators=[DataRequired()])
+    country = StringField('Country', validators=[DataRequired()])
+    region = StringField('Region', validators=[DataRequired()])
+    province = StringField('Province')
+    zip_code = StringField('Zip Code')
+    city = StringField('City')
+    street = StringField('Street')
+    address = StringField('Address 1', validators=[DataRequired()])
+    address1 = StringField('Address 2')
+    phone_prefix = StringField('Phone Prefix', validators=[DataRequired()])
+    mobile_phone = StringField('Mobile Phone', validators=[DataRequired()])
+    work_phone = StringField('Work Phone')
+    tax_code = StringField('Tax Code')
+    terms_accepted = BooleanField('I accept the Terms of Use', validators=[DataRequired()])
+    privacy_policy_accepted = BooleanField('I accept the Privacy Policy', validators=[DataRequired()])
 
-    # Method to populate form with data from StepBaseData instance
-    def populate_form(self, form):
-        super().populate_form(form)
-
-        # Get all StepBaseData instances related to the current main model
-
-        step_base_data_list = self.get_query(StepBaseData).filter_by(main_model_id=form.object_data.id).all()
-        # Retrieve options for dropdowns
-
-        workflow_options = [(workflow.id, workflow.name) for workflow in Workflow.query.all()]
-        step_options = [(step.id, step.name) for step in Step.query.all()]
-        status_options = [(status.id, status.name) for status in Status.query.all()]
-
-        # Update dropdown choices based on StepBaseData instances
-        if step_base_data_list:
-            step_ids = [data.step_id for data in step_base_data_list]
-            workflow_ids = [data.workflow_id for data in step_base_data_list]
-            status_ids = [data.status_id for data in step_base_data_list]
-
-            # Filter out unique IDs and retrieve corresponding names
-
-            workflow_options = [(workflow.id, workflow.name) for workflow in Workflow.query.filter(Workflow.id.in_(workflow_ids)).all()]
-            step_options = [(step.id, step.name) for step in Step.query.filter(Step.id.in_(step_ids)).all()]
-            status_options = [(status.id, status.name) for status in Status.query.filter(Status.id.in_(status_ids)).all()]
-
-        # Populate dropdowns and other fields
-
-        form.workflow_id.choices = workflow_options
-        form.step_id.choices = step_options
-        form.status_id.choices = status_options
-
-        # Populate other fields with data from the first StepBaseData instance (if any)
-        if step_base_data_list:
-            first_data = step_base_data_list[0]
-            form.deadline_date.data = first_data.deadline_date
-            form.auto_move.data = first_data.auto_move
-            form.open_action.data = 1  # Assuming this is a predefined value
-        else:
-            # Populate with default or null values if no related instances
-            form.deadline_date.data = None
-            form.auto_move.data = None
-            form.open_action.data = None
-
-
-from wtforms import FieldList
-
+    submit = SubmitField('Sign Up')
 
 class InlineSurveyForm(InlineFormAdmin):
     def __init__(self, model=None, form_data=None, **kwargs):
@@ -228,7 +606,6 @@ class CustomBaseDataForm(FlaskForm):
     fn9 = StringField('FN9', validators=[Optional()])
     file_path = StringField('File Path', validators=[Optional()])
     no_action = IntegerField('No Action', validators=[Optional()])
-
 
 
 # Define the UserForm class
@@ -400,55 +777,6 @@ class CustomFileLoaderForm(FlaskForm):
             # Assuming file_path is an attribute of the form
             self.file_path.data = filepath
 
-
-'''
-Loading file_path dynamically:
-
-Yes, you can dynamically load the file path after the file is uploaded. 
-In your form, you can define a method to handle the file upload and store the file path. 
-This method can be called after the form is submitted and the file is uploaded.
-
-Here's an example of how you can modify your form to achieve this:
-
-```python
-import os
-from werkzeug.utils import secure_filename
-
-class CustomFileLoaderForm(FlaskForm):
-    # Your form fields and methods...
-
-    def save_file(self, upload_folder):
-        uploaded_file = self.file_upload.data
-        if uploaded_file:
-            filename = secure_filename(uploaded_file.filename)
-            filepath = os.path.join(upload_folder, filename)
-            uploaded_file.save(filepath)
-            # Assuming file_path is an attribute of the form
-            self.file_path.data = filepath
-```
-
-You would call this `save_file` method after the form is submitted and validated, typically in your route where you handle the form submission. For example:
-
-```python
-@app.route('/upload', methods=['GET', 'POST'])
-def upload_file():
-    form = CustomFileLoaderForm()
-    if form.validate_on_submit():
-        # Save the file
-        form.save_file(upload_folder)
-        # Other processing steps...
-        flash('File uploaded successfully!', 'success')
-        return redirect(url_for('index'))
-    return render_template('upload.html', form=form)
-```
-
-This way, the file path is dynamically loaded and stored in the form after the file is uploaded. 
-You can then access this file path attribute in your view function or wherever you need it. 
-
-Make sure to adjust the `upload_folder` variable to point to the directory where you want to store the uploaded files.
-
-'''
-
 class UserDocumentsForm(FlaskForm):
     document_selector = SelectField('Select Document', validators=[DataRequired()])
     next_step = StringField('Next Step')  # Define next_step attribute here if needed
@@ -486,17 +814,6 @@ class RegistrationForm(FlaskForm):
     work_phone = StringField('Work Phone', validators=[Length(max=128)])
 
     submit = SubmitField('Sign Up')
-
-
-class TableForm(FlaskForm):
-    id = HiddenField('id')
-    name = StringField('Name', validators=[DataRequired()])
-    description = StringField('Description')
-    user_id = StringField('User ID', validators=[DataRequired()])
-    column1 = StringField('Column 1')
-    column2 = StringField('Column 2')
-    creation_date = StringField('Creation Date')
-    action = SelectField('Action', choices=[('add', 'Add'), ('update', 'Update'), ('remove', 'Remove')], default='add', validators=[DataRequired()])
 
 
 class UserRoleForm(FlaskForm):
@@ -616,11 +933,6 @@ from wtforms import StringField, IntegerField, SelectField
 
 class DynamicForm(Form):
     pass
-
-
-from flask_wtf import FlaskForm as Form
-from wtforms import StringField, BooleanField, FloatField, FileField, DateField, SelectField, IntegerField
-from datetime import datetime
 
 
 # TODO unused?
@@ -862,6 +1174,8 @@ def generate_question_html(question, existing_answers, base_path, horizontal=Fal
     html += "</div><hr>"
     return html
 
+
+
 def generate_input_html(input_type, field_name, existing_value, base_path, horizontal=False, order_number=None, width=None):
     css_class = "form-control"
     horizontal_class = "horizontal" if horizontal else "vertical"
@@ -897,8 +1211,123 @@ def generate_input_html(input_type, field_name, existing_value, base_path, horiz
             range(11))
         html += f"<select name='{field_name}' class='{input_css_class}'>{options}</select>"
 
+        '''
+        old version, where the file existence was checked IN THE DIRECTORY
+        elif input_type == 'FILE':
+            print('FILE type??', input_type)
+            if existing_value:
+                print('existing value, base path:', existing_value, base_path)
+                file_path = url_for('static', filename=f"{base_path}/{existing_value}")
+                html += f"Current File: <a href='{file_path}' target='_blank'>{existing_value}</a><br>"
+    
+            html += f"""
+            <input type='file' name='{field_name}' class='{input_css_class}'>
+            <label for='{field_name}'>Replace Existing File</label>
+            <input type='checkbox' id='{field_name}_replace' name='replace_existing'>
+            <br>
+            """
+        '''
+
+    # new version, where the file existence is only checked in the DB field!
     elif input_type == 'FILE':
+        # Check if existing_value is present in the database field
         if existing_value:
+            # Don't check for file existence on disk (remove unnecessary print statements)
+
+            html += f"Current File: {existing_value}<br>"  # Display the filename from the database
+
+            # Replace logic using checkbox and database field
+            html += f"""
+                <input type='file' name='{field_name}' class='{input_css_class}'>
+                <label for='{field_name}'>Replace Existing File</label>
+                <input type='checkbox' id='{field_name}_replace' name='replace_existing' value='{existing_value}'>
+                <br>
+                """
+        else:
+            # No existing value, show standard upload field
+            html += f"""
+                <input type='file' name='{field_name}' class='{input_css_class}'>
+                <label for='{field_name}'>Upload File</label>
+                <br>
+                """
+
+    elif input_type == 'DD':
+        html += f"<input type='date' name='{field_name}' value='{existing_value}' class='{input_css_class}'>"
+
+    elif input_type == 'BYN':
+        yes_selected = "selected" if "Yes" == existing_value else ""
+        no_selected = "selected" if "No" == existing_value else ""
+        html += f"<select name='{field_name}' class='{input_css_class}'>"
+        html += f"<option value='Yes' {yes_selected}>Yes</option>"
+        html += f"<option value='No' {no_selected}>No</option></select>"
+
+    elif input_type == 'HML':
+        high_selected = "selected" if existing_value == 'H' else ""
+        medium_selected = "selected" if existing_value == 'M' else ""
+        low_selected = "selected" if existing_value == 'L' else ""
+        html += f"<select name='{field_name}' class='{input_css_class}'>"
+        html += f"<option value='H' {high_selected}>High</option>"
+        html += f"<option value='M' {medium_selected}>Medium</option>"
+        html += f"<option value='L' {low_selected}>Low</option></select>"
+
+    elif input_type == 'NUM':
+        html += f"<input type='number' name='{field_name}' value='{existing_value}' step='0.01' class='{input_css_class}'>"
+
+    elif input_type == 'INT':
+        # Fetch data from the interval table
+        intervals = db.session.query(Interval).all()  # Assuming Interval is your model for the interval table
+        options = ''.join(
+            f"<option value='{interval.id}' {'selected' if str(interval.id) == existing_value else ''}>{interval.description}</option>"
+            for interval in intervals)
+        html += f"<select name='{field_name}' class='{input_css_class}'>{options}</select>"
+
+    else:
+        html += f"<input type='text' name='{field_name}' value='{existing_value}' class='{input_css_class}' autocomplete='off'>"
+
+    html += "</div><br>"
+    return html
+
+
+
+def generate_input_html222(input_type, field_name, existing_value, base_path, horizontal=False, order_number=None, width=None):
+    css_class = "form-control"
+    horizontal_class = "horizontal" if horizontal else "vertical"
+    html = ""
+
+    # Define a style for width if provided, and additional flexbox alignment
+    width_style = f" style='width: {width}px; display: flex; align-items: center;'" if width else " style='display: flex; align-items: center;'"
+
+    if order_number:
+        html += f"<div class='input-group {horizontal_class}'{width_style}>"
+        html += f"<label class='order-number'>{order_number}.</label> "
+    else:
+        order_number = extract_index_with_regex(field_name)
+        html += f"<div class='{horizontal_class}'{width_style}>"
+
+    # Define specific CSS classes for inputs to ensure alignment
+    input_css_class = f"{css_class} form-input"  # Use form-input to handle specific styling
+
+    # Control specific HTML generation
+    if input_type == 'CB':
+        checked = 'checked' if existing_value.lower() == 'on' else ''
+        html += f"<input type='hidden' name='{field_name}' value='off'>"
+        html += f"<input type='checkbox' class='form-check-input' id='{field_name}' name='{field_name}' value='on' {checked}>"
+        label_text = f"A.{order_number}" if order_number else "A "  # Example label
+        html += f"<label class='form-check-label' for='{field_name}'>{label_text}</label>"
+
+    elif input_type == 'TLT':
+        html += f"<textarea name='{field_name}' class='{input_css_class}'>{existing_value}</textarea>"
+
+    elif input_type == 'NI(0-10)':
+        options = ''.join(
+            f"<option value='{num}' {'selected' if str(num) == existing_value else ''}>{num}</option>" for num in
+            range(11))
+        html += f"<select name='{field_name}' class='{input_css_class}'>{options}</select>"
+
+    elif input_type == 'FILE':
+        print('FILE type?', input_type)
+        if existing_value:
+            print('existing value', existing_value)
             file_path = url_for('static', filename=f"{base_path}/{existing_value}")
             html += f"Current File: <a href='{file_path}' target='_blank'>{existing_value}</a>"
         html += f"<input type='file' name='{field_name}' class='{input_css_class}'>"
@@ -1002,20 +1431,4 @@ class PostForm(FlaskForm):
     def __init__(self, *args, **kwargs):
         super(PostForm, self).__init__(*args, **kwargs)
         # Fill company_id and user_id choices from related models (if used)
-
-
-class Flussi_Complaint_Form(FlaskForm):
-    lexic_id = SelectField('Lexic ID')
-
-    def __init__(self, *args, **kwargs):
-        super(Flussi_Complaint_Form, self).__init__(*args, **kwargs)
-        # Populate choices for lexic_id from BaseData
-        base_data_choices = [(entry.id, str(entry.id)) for entry in BaseData.query.all()]
-        self.lexic_id.choices = base_data_choices
-
-    fi1 = IntegerField('Total')
-    fi2 = IntegerField('Of which IVI')
-    fi3 = IntegerField('Of which non-IVI')
-    fc1 = StringField('Provider')
-    submit = SubmitField('Submit')
 

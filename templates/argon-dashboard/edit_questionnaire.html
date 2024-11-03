@@ -1,0 +1,42 @@
+{% extends 'argon-dashboard/questionnaire_base.html' %}
+
+{% block content %}
+<div class="container">
+    <h2>Edit Questionnaire</h2>
+    <form action="{{ url_for('argon.edit_questionnaire', id=questionnaire.id) }}" method="POST">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+            <label for="questionnaire_id">Questionnaire ID</label>
+            {{ form.questionnaire_id(class="form-control") }}
+        </div>
+
+        <div class="form-group">
+            <label for="name">Questionnaire Name</label>
+            {{ form.name(class="form-control", value=questionnaire.name) }}
+        </div>
+
+        <div class="form-group">
+            <label for="questionnaire_type">Questionnaire Type</label>
+            {{ form.questionnaire_type(class="form-control", value=questionnaire.questionnaire_type) }}
+        </div>
+
+        <div class="form-group">
+            <label for="interval">Interval</label>
+            {{ form.interval(class="form-control", value=questionnaire.interval) }}
+        </div>
+
+        <div class="form-group">
+            <label for="deadline_date">Deadline Date</label>
+            {{ form.deadline_date(class="form-control", value=questionnaire.deadline_date) }}
+        </div>
+
+        <div class="form-group">
+            <label for="status_id">Status</label>
+            {{ form.status_id(class="form-control", value=questionnaire.status_id) }}
+        </div>
+
+        <button type="submit" class="btn btn-primary">Update Questionnaire</button>
+    </form>
+</div>
+{% endblock %}

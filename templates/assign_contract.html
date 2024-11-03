@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Assign Contract to Team: {{ team.name }}</h2>
+
+<!-- Flash Messages Section -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="alert-container">
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+<!-- End of Flash Messages Section -->
+
+<form method="post">
+   <!-- Include CSRF Token -->
+   <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+   <div class="form-group">
+       <label for="contract_id">Contract</label>
+       <select class="form-control" id="contract_id" name="contract_id" required>
+           {% for contract in contracts %}
+           <option value="{{ contract.contract_id }}">{{ contract.contract_name }}</option>
+           {% endfor %}
+       </select>
+   </div>
+   <button type="submit" class="btn btn-primary">Assign Contract</button>
+</form>
+{% endblock %}

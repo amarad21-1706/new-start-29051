@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Add Member to Team: {{ team.name }}</h2>
+
+<!-- Flash Messages Section -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="alert-container">
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+<!-- End of Flash Messages Section -->
+
+<form method="post">
+   <!-- CSRF token for protection -->
+   <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+   <div class="form-group">
+       <label for="user_id">Select User</label>
+       <select class="form-control" id="user_id" name="user_id" required>
+           {% for user in users %}
+           <option value="{{ user.id }}">{{ user.username }}</option>
+           {% endfor %}
+       </select>
+   </div>
+   <div class="form-group">
+       <label for="role">Role</label>
+       <select class="form-control" id="role" name="role" required>
+           <option value="Member">Member</option>
+           <option value="Manager">Manager</option>
+           <option value="Observer">Observer</option>
+       </select>
+   </div>
+   <div class="form-group">
+       <label for="access_level">Access Level</label>
+       <select class="form-control" id="access_level" name="access_level" required>
+           <option value="view">View</option>
+           <option value="edit">Edit</option>
+           <option value="sign">Sign</option>
+       </select>
+   </div>
+   <button type="submit" class="btn btn-primary">Add Member</button>
+</form>
+{% endblock %}

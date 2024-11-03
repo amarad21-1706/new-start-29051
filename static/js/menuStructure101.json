@@ -1,6 +1,6 @@
 {
     "Home": {
-        "label": "L11 Home",
+        "label": "Home",
         "url": "/home",
         "protected": false,
         "allowed_roles": [
@@ -8,9 +8,12 @@
             "Authority",
             "Employee",
             "Manager",
-            "ServiceProvider",
+            "Provider",
             "Guest"
         ],
+        "widget": {
+            "display": false
+        },
         "submenus": {
             "About us": {
                 "label": "About us",
@@ -21,22 +24,38 @@
                     "Authority",
                     "Employee",
                     "Manager",
-                    "ServiceProvider",
+                    "Provider",
                     "Guest"
-                ]
+                ],
+                "widget": {
+                    "display": true,
+                    "type": "button",
+                    "style": "btn-warning",
+                    "color": "#ff8800",
+                    "icon": "icon-contracts",
+                    "size": "large"
+                }
             },
             "Services": {
                 "label": "Services",
-                "url": "/home/services",
+                "url": "/home/products",
                 "protected": false,
                 "allowed_roles": [
                     "Admin",
                     "Authority",
                     "Employee",
                     "Manager",
-                    "ServiceProvider",
+                    "Provider",
                     "Guest"
-                ]
+                ],
+                "widget": {
+                    "display": false,
+                    "type": "button",
+                    "style": "btn-warning",
+                    "color": "#ff8800",
+                    "icon": "icon-contracts",
+                    "size": "large"
+                }
             },
             "History": {
                 "label": "History",
@@ -47,9 +66,12 @@
                     "Authority",
                     "Employee",
                     "Manager",
-                    "ServiceProvider",
+                    "Provider",
                     "Guest"
-                ]
+                ],
+                "widget": {
+                    "display": false
+                }
             },
             "Mission": {
                 "label": "Mission",
@@ -60,9 +82,12 @@
                     "Authority",
                     "Employee",
                     "Manager",
-                    "ServiceProvider",
+                    "Provider",
                     "Guest"
-                ]
+                ],
+                "widget": {
+                    "display": false
+                }
             },
             "Site map": {
                 "label": "Site map",
@@ -73,9 +98,12 @@
                     "Authority",
                     "Employee",
                     "Manager",
-                    "ServiceProvider",
+                    "Provider",
                     "Guest"
-                ]
+                ],
+                "widget": {
+                    "display": false
+                }
             }
         }
     },
@@ -88,27 +116,10 @@
             "Employee",
             "Manager"
         ],
+        "widget": {
+            "display": false
+        },
         "submenus": {
-            "Current": {
-                "label": "Open Actions",
-                "url": "/company_overview_current",
-                "protected": true,
-                "allowed_roles": [
-                    "Admin",
-                    "Employee",
-                    "Manager"
-                ]
-            },
-            "History": {
-                "label": "Historic Data",
-                "url": "/company_overview_historical",
-                "protected": true,
-                "allowed_roles": [
-                    "Admin",
-                    "Employee",
-                    "Manager"
-                ]
-            },
             "Overview": {
                 "label": "Overview",
                 "url": "/overview_statistics_1",
@@ -117,426 +128,761 @@
                     "Admin",
                     "Employee",
                     "Manager"
-                ]
+                ],
+                "widget": {
+                    "display": false
+                }
             },
-            "Audit": {
-                "label": "Audit",
-                "url": "/dashboard/company/dashboard_audit",
+            "History": {
+                "label": "Archive",
+                "url": "/company_overview_historical",
                 "protected": true,
                 "allowed_roles": [
                     "Admin",
                     "Employee",
                     "Manager"
-                ]
+                ],
+                "widget": {
+                    "display": false
+                }
             },
-            "Controls": {
-                "label": "Authority Controls",
-                "url": "/dashboard/company/dashboard_controls",
+            "Charts and Views 1": {
+                "label": "Control areas - Charts",
+                "url": "/chart_form",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin", "Authority"],
+                "widget": {
+                    "display": false
+                }
+            }
+        }
+    },
+    "Reserved": {
+        "label": "Reserved Area",
+        "url": "/reserved",
+        "protected": false,
+        "allowed_roles": ["Admin", "Authority", "Employee", "Manager"],
+        "widget": {
+            "display": false
+        },
+        "submenus": {
+            "Main Dashboard": {
+                "label": "Main Dashboard",
+                "url": "/argon/main_dashboard",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin", "Manager", "Employee", "Authority"
+                ],
+                "widget": {
+                    "display": true
+                }
+            },
+            "Reserved Open Actions": {
+                "label": "Open Actions",
+                "url": "/company_overview_current",
                 "protected": true,
                 "allowed_roles": [
                     "Admin",
                     "Employee",
-                    "Manager"
-                ]
+                    "Manager", "Authority"
+                ],
+                "widget": {
+                    "display": true
+                }
             },
-            "Remediation": {
-                "label": "Remediation",
-                "url": "/dashboard/company/dashboard_remediation",
+            "Reserved Cards One": {
+                "label": "My Actions",
+                "url": "/show_cards",
                 "protected": true,
-                "allowed_roles": [
-                    "Admin",
-                    "Employee",
-                    "Manager"
-                ]
-            },
-            "Compliance": {
-                "label": "Compliance",
-                "url": "/dashboard/company/dashboard_compliance",
-                "protected": true,
-                "allowed_roles": [
-                    "Admin",
-                    "Employee",
-                    "Manager"
-                ]
-            },
-            "Proceedings": {
-                "label": "Proceedings",
-                "url": "/dashboard/company/dashboard_proceedings",
-                "protected": true,
-                "allowed_roles": [
-                    "Admin",
-                    "Employee",
-                    "Manager"
-                ]
+                "allowed_roles": ["Admin", "Authority", "Employee", "Manager"],
+                "widget": {
+                    "display": false
+                }
             },
             "Deadlines": {
                 "label": "Deadlines",
-                "url": "/deadlines_1",
+                "url": "/deadlines",
+                "protected": true,
+                "allowed_roles": ["Admin", "Employee", "Manager", "Authority"],
+                "widget": {
+                    "display": false,
+                    "type": "button",
+                    "submit_url": "/deadlines",
+                    "style": "btn-info",
+                    "size": "medium"
+                }
+            },
+            "Reserved Workflow Data": {
+                "label": "Workflow Chart",
+                "url": "/react-page",
+                "protected": true,
+                "allowed_roles": ["Admin", "Manager", "Employee", "Authority"],
+                "widget": {
+                    "display": false
+                }
+            },
+            "Reserved Area 1c Res": {
+                "label": "Check list",
+                "url": "/questionnaire_psf",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin", "Employee", "Manager", "Authority"],
+                "widget": {
+                    "display": false
+                }
+            },
+            "Reserved Workflows Reserved View": {
+                "label": "Area 3 - Document Workflows",
+                "url": "/open_admin_3",
+                "protected": true,
+                "allowed_roles": ["Admin", "Employee", "Manager", "Authority"],
+                "widget": {
+                    "display": false
+                }
+            },
+            "Reserved Workflow Tree": {
+                "label": "Workflow Tree",
+                "url": "/workflow_tree",
+                "protected": true,
+                "allowed_roles": ["Admin", "Manager", "Employee", "Authority"],
+                "widget": {
+                    "display": false
+                }
+            },
+            "Reserved Contracts": {
+                "label": "Contract Management",
+                "url": "/open_admin_6",
                 "protected": true,
                 "allowed_roles": [
                     "Admin",
                     "Employee",
-                    "Manager"
-                ]
+                    "Manager",
+                    "Authority",
+                    "Provider"
+                ],
+                "widget": {
+                    "display": true
+                }
             },
-            "Control areas - workflow": {
-                "label": "Control areas - workflow",
-                "url": "/dashboard/left_menu_route",
-                "protected": true,
-                "allowed_roles": [
-                    "Admin",
-                    "Employee",
-                    "Manager"
-                ]
-            }
-        }
-    },
-    "Workflows": {
-        "label": "Company",
-        "url": "/company",
-        "protected": false,
-        "allowed_roles": ["Admin", "Employee", "Manager"],
-        "submenus": {
-            "Area di controllo 1": {
-                "label": "Area 1",
-                "url": "/open_admin_app_1",
-                "protected": true,
-                "allowed_roles": ["Admin", "Employee", "Manager"]
-            },
-            "Area di controllo 2": {
-                "label": "Area 2",
-                "url": "/open_admin_app_2",
-                "protected": true,
-                "allowed_roles": ["Admin", "Employee", "Manager"]
-            },
-            "Area di controllo 3": {
-                "label": "Area 3",
-                "url": "/open_admin_app_3",
-                "protected": true,
-                "allowed_roles": ["Admin", "Employee", "Manager"]
-            },
-            "Area di controllo 10": {
-                "label": "Surveys and Questionnaires",
-                "url": "/open_admin_app_10",
-                "protected": true,
-                "allowed_roles": ["Admin", "Employee", "Manager"]
-            }
-        }
-    },
-    "Authority": {
-        "label": "Authority",
-        "url": "/dashboard/authority/dashboard_a1",
-        "protected": true,
-        "allowed_roles": [
-            "Admin",
-            "Authority"
-        ],
-        "submenus": {
-            "Area 1": {
-                "label": "Area 1",
-                "url": "/dashboard/authority/area_aut1",
-                "protected": true,
-                "allowed_roles": [
-                    "Admin",
-                    "Authority"
-                ]
-            },
-            "Area 2": {
-                "label": "Area 2",
-                "url": "/dashboard/authority/dashboard_a2",
-                "protected": true,
-                "allowed_roles": [
-                    "Admin",
-                    "Authority"
-                ]
-            },
-            "Area 3": {
-                "label": "Area 3",
+            "Reserved Statistics": {
+                "label": "Statistics",
                 "url": "/dashboard/authority/dashboard_a3",
                 "protected": true,
                 "allowed_roles": [
-                    "Admin",
-                    "Authority"
-                ]
+                    "Admin", "Manager", "Authority"],
+                "widget": {
+                    "display": false
+                }
             }
         }
     },
-    "ILM": {
-        "label": "ILM",
+    "Admin": {
+        "label": "Admin",
         "url": "/dashboard/ILM/dashboard_m1",
         "protected": true,
         "allowed_roles": [
             "Admin"
         ],
+        "widget": {
+            "display": false
+        },
         "submenus": {
-            "System Setup": {
-                "label": "System Setup",
-                "url": "/dashboard/company/dashboard_system_setup",
+            "Admin Commercial": {
+                "label": "Content Management",
+                "url": "/argon",
                 "protected": true,
                 "allowed_roles": [
                     "Admin"
                 ],
+                "widget": {
+                    "display": false
+                },
                 "submenus": {
-                    "CompanyUsers": {
-                        "label": "Companies and Users Report",
-                        "url": "/dashboard_setup_companies_users",
+                    "Admin Commercial Sub PCQ": {
+                        "label": "Plans, Contracts, Questionnaires",
+                        "url": "/argon",
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
-                    "UserRoles": {
-                        "label": "Users and Roles",
-                        "url": "/dashboard_setup_user_roles",
+                    "Assign Products to Plans": {
+                        "label": "Associate Products to Plans",
+                        "url": "/argon/manage_plan_products",
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
-                    "AreasSubareas": {
-                        "label": "Control Areas and Subareas",
-                        "url": "/dashboard_setup_area_subareas",
+                    "Plans with Products": {
+                        "label": "Show Plans & Products",
+                        "url": "/plans_with_products",
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
-                    "CompanyQuestionnaires": {
-                        "label": "Questionnaires and Companies",
-                        "url": "/generate_setup_company_questionnaire",
+                    "Admin Workflows Admin View": {
+                        "label": "Document Workflows",
+                        "url": "/open_admin_3",
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
-                    "QuestionnaireQuestions": {
-                        "label": "Questionnaires Structure",
-                        "url": "/dashboard_setup_questionnaire_questions",
+                    "Admin Subscriptions Dashboard": {
+                        "label": "Subscriptions",
+                        "url": "/subscription_overview",
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
-                    "WorkflowSteps": {
-                        "label": "Workflows Structure",
-                        "url": "/dashboard_setup_workflow_steps",
+                    "Admin Contract-Management": {
+                        "label": "Contract Management",
+                        "url": "/team",
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
-                        ]
-                    },
-                    "WorkflowDocuments": {
-                        "label": "Documents in Workflows",
-                        "url": "/dashboard_setup_workflow_base_data",
-                        "protected": true,
-                        "allowed_roles": [
-                            "Admin"
-                        ]
-                    },
-                    "DocumentStatus": {
-                        "label": "Status of Document Processing",
-                        "url": "/dashboard_setup_step_base_data",
-                        "protected": true,
-                        "allowed_roles": [
-                            "Admin"
-                        ]
-                    },
-                    "DocumentViewer": {
-                        "label": "Document Viewer",
-                        "url": "/document_workflow_visualization_d3js",
-                        "protected": true,
-                        "allowed_roles": [
-                            "Admin"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        },
+                        "submenus": {
+                            "Create Team": {
+                                "label": "Create Team",
+                                "url": "/team/create_team",
+                                "protected": true,
+                                "allowed_roles": [
+                                    "Admin"
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
+                            },
+                            "View Teams": {
+                                "label": "Teams Setup",
+                                "url": "/team/view_teams",
+                                "protected": true,
+                                "allowed_roles": [
+                                    "Admin"
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
+                            },
+                            "Contracts": {
+                                "label": "Contracts",
+                                "url": "/open_admin_6",
+                                "protected": true,
+                                "allowed_roles": [
+                                    "Admin"
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
+                            }
+                        }
                     }
                 }
             },
-            "Clients": {
-                "label": "Clients",
+            "Admin Clients": {
+                "label": "User Management",
                 "url": "/dashboard_clients",
                 "protected": true,
                 "allowed_roles": [
                     "Admin"
                 ],
+                "widget": {
+                    "display": false
+                },
                 "submenus": {
-                    "Activity": {
+                    "Admin Company Tree CURT": {
+                        "label": "User Map",
+                        "url": "/company_tree",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin"
+                        ],
+                        "widget": {
+                            "display": false
+                        }
+                    },
+                    "Admin Activity": {
                         "label": "Activity Log",
                         "url": "/auditlog",
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
-                    "Audit": {
-                        "label": "Audit",
+                    "Admin Audit": {
+                        "label": "Audit Trail",
                         "url": "/dashboard_company_audit",
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
-                    "Status": {
+                    "Admin Status": {
                         "label": "Current Status",
                         "url": "/dashboard_company_audit_progression",
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
-                    "Service": {
+                    "Reserved Contracts": {
+                        "label": "Message Manager",
+                        "url": "/open_admin_7",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin",
+                            "Employee",
+                            "Manager",
+                            "Authority",
+                            "Provider"
+                        ],
+                        "widget": {
+                            "display": true
+                        }
+                    },
+                    "Admin Service": {
                         "label": "Email",
                         "url": "/send_email",
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
-                    "Controls": {
-                        "label": "Authority Controls",
-                        "url": "/dashboard/company/dashboard_controls",
+                    "Admin Deadlines": {
+                        "label": "Deadlines Dashboard",
+                        "url": "/deadlines",
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
-                    "Remediation": {
-                        "label": "Remediation",
-                        "url": "/dashboard/company/dashboard_remediation",
+                    "Admin Workflow Data": {
+                        "label": "Workflow Chart",
+                        "url": "/react-page",
+                        "protected": true,
+                        "allowed_roles": ["Admin"],
+                        "widget": {
+                            "display": false
+                        }
+                    },
+                    "Admin Multi Format Dashboard": {
+                        "label": "Dashboard by Control Area",
+                        "url": "/argon/multi_format_dashboard",
                         "protected": true,
                         "allowed_roles": [
                             "Admin"
-                        ]
+                        ],
+                        "widget": {
+                            "display": false
+                        }
                     },
-                    "Compliance": {
-                        "label": "Compliance",
-                        "url": "/dashboard/company/dashboard_compliance",
+                    "AI Insights": {
+                        "label": "AI Insights",
+                        "url": "/ai/ai_dashboard",
                         "protected": true,
-                        "allowed_roles": [
-                            "Admin"
-                        ]
+                        "allowed_roles": ["Admin", "Manager", "Employee"],
+                        "widget": {
+                            "display": false
+                        }
                     },
-                    "Proceedings": {
-                        "label": "Proceedings",
-                        "url": "/dashboard/company/dashboard_proceedings",
+                    "Physical Contracts": {
+                        "label": "Contract Benchmarking",
+                        "url": "/phy/phy_dashboard",
                         "protected": true,
-                        "allowed_roles": [
-                            "Admin"
-                        ]
-                    },
-                    "Deadlines": {
-                        "label": "Deadlines",
-                        "url": "/dashboard/company/dashboard_deadlines",
-                        "protected": true,
-                        "allowed_roles": [
-                            "Admin"
-                        ]
-                    },
-                    "Area 2 - test": {
-                        "label": "Area 2",
-                        "url": "/manage_area2_data",
-                        "protected": true,
-                        "allowed_roles": [
-                            "Admin"
-                        ]
-                    },
-                    "Area 3 - test": {
-                        "label": "Area 3 - Workflows",
-                        "url": "/open_admin_3",
-                        "protected": true,
-                        "allowed_roles": [
-                            "Admin"
-                        ]
+                        "allowed_roles": ["Admin", "Manager", "Employee"],
+                        "widget": {
+                            "display": false
+                        }
                     }
                 }
             },
-            "Settings and tools": {
-                "label": "Functional Settings",
+            "Admin Settings and tools": {
+                "label": "System Settings",
                 "url": "/dashboard/ILM/settings",
                 "protected": true,
                 "allowed_roles": ["Admin"],
+                "widget": {
+                    "display": false
+                },
                 "submenus": {
-                    "Basic": {
-                        "label": "Basic Entities, Lists and Collections",
+                    "Admin Basic ELC": {
+                        "label": "Settings",
                         "url": "/dashboard/ILM/settings_basic",
                         "protected": true,
                         "allowed_roles": ["Admin"],
+                        "widget": {
+                            "display": false
+                        },
                         "submenus": {
-                            "Manage Companies": {
-                                "label": "Main Setup",
+                            "Admin Calendar-2": {
+                                "label": "Agenda",
+                                "url": "/calendar",
+                                "protected": true,
+                                "allowed_roles": ["Admin"],
+                                "widget": {
+                                    "display": false
+                                }
+                            },
+                            "Admin Main setup manager": {
+                                "label": "Collections",
                                 "url": "/open_admin_4",
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"
-                                ]
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
                             },
-                            "Manage Documents": {
-                                "label": "Documents",
-                                "url": "/model_document",
+                            "Admin Manage Documents": {
+                                "label": "Documents Manager",
+                                "url": "/open_admin_3",
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"
-                                ]
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
+                            },
+                            "Admin Workflow Tree": {
+                                "label": "Workflow Tree",
+                                "url": "/workflow_tree",
+                                "protected": true,
+                                "allowed_roles": ["Admin"],
+                                "widget": {
+                                    "display": false
+                                }
+                            },
+                            "Admin Manage News": {
+                                "label": "News",
+                                "url": "/admin_news",
+                                "protected": true,
+                                "allowed_roles": [
+                                    "Admin"
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
+                            },
+                            "Admin Password Reset": {
+                                "label": "Reset User Password",
+                                "url": "/admin_reset_password",
+                                "protected": true,
+                                "allowed_roles": [
+                                    "Admin"
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
+                            },
+                            "Admin Tickets": {
+                                "label": "Manage Tickets",
+                                "url": "/admin_tickets",
+                                "protected": true,
+                                "allowed_roles": [
+                                    "Admin"
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
+                            },
+                            "Chart Management": {
+                                "label": "Manage Charts",
+                                "url": "/charts/charts",
+                                "protected": true,
+                                "allowed_roles": ["Admin"],
+                                "widget": {
+                                    "display": false
+                                }
+                            },
+                            "Admin AI Test": {
+                                "label": "AI Test",
+                                "url": "/analyze_text_view",
+                                "protected": true,
+                                "allowed_roles": ["Admin"],
+                                "widget": {
+                                    "display": false
+                                }
                             }
                         }
                     },
-                    "Relational": {
-                        "label": "Relations Between Entities",
+                    "Admin Relational": {
+                        "label": "Complex Settings",
                         "url": "/dashboard/ILM/settings_relational",
                         "protected": true,
                         "allowed_roles": ["Admin"],
+                        "widget": {
+                            "display": false
+                        },
                         "submenus": {
-                            "Manage Association of users to companies": {
-                                "label": "Associate users to companies",
-                                "url": "/manage_company_users",
+                            "Admin Relational Users": {
+                                "label": "Users",
+                                "url": "/association/manage_company_users",
                                 "protected": true,
-                                "allowed_roles": ["Admin"]
+                                "allowed_roles": [
+                                    "Admin"
+                                ],
+                                "widget": {
+                                    "display": false
+                                },
+                                "submenus": {
+                                    "Manage Association of users to companies": {
+                                        "label": "Associate users to companies",
+                                        "url": "/association/manage_company_users",
+                                        "protected": true,
+                                        "allowed_roles": [
+                                            "Admin"
+                                        ],
+                                        "widget": {
+                                            "display": false
+                                        }
+                                    },
+                                    "Manage Association of roles to users": {
+                                        "label": "Associate roles to user",
+                                        "url": "/association/manage_user_roles",
+                                        "protected": true,
+                                        "allowed_roles": [
+                                            "Admin"
+                                        ],
+                                        "widget": {
+                                            "display": false
+                                        }
+                                    }
+                                }
                             },
-                            "Manage Association of roles to users": {
-                                "label": "Associate roles to user",
-                                "url": "/manage_user_roles",
+                            "Admin Relational Areas": {
+                                "label": "Areas",
+                                "url": "/association/manage_area_subareas",
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"
-                                ]
+                                ],
+                                "widget": {
+                                    "display": false
+                                },
+                                "submenus": {
+                                    "Manage Areas Subareas": {
+                                        "label": "Areas and Subareas",
+                                        "url": "/association/manage_area_subareas",
+                                        "protected": true,
+                                        "allowed_roles": [
+                                            "Admin"
+                                        ],
+                                        "widget": {
+                                            "display": false
+                                        }
+                                    }
+                                }
                             },
-                            "Assign Questions to Questionnaires": {
-                                "label": "Attach questions to questionnaire",
-                                "url": "/manage_questionnaire_questions",
+                            "Admin Relational Questionnaires": {
+                                "label": "Surveys & Questionnaires",
+                                "url": "/association/manage_questionnaire_questions",
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"
-                                ]
-                            },                            "Assign Questionnaires to Companies": {
-                                "label": "Assign questionnaire to company",
-                                "url": "/manage_questionnaire_companies",
-                                "protected": true,
-                                "allowed_roles": [
-                                    "Admin"
-                                ]
+                                ],
+                                "widget": {
+                                    "display": false
+                                },
+                                "submenus": {
+                                    "Assign Questions to Questionnaires": {
+                                        "label": "Attach questions to questionnaire",
+                                        "url": "/association/manage_questionnaire_questions",
+                                        "protected": true,
+                                        "allowed_roles": [
+                                            "Admin"
+                                        ],
+                                        "widget": {
+                                            "display": false
+                                        }
+                                    },
+                                    "Assign Questionnaires to Companies": {
+                                        "label": "Assign questionnaire to company",
+                                        "url": "/association/manage_questionnaire_companies",
+                                        "protected": true,
+                                        "allowed_roles": [
+                                            "Admin"
+                                        ],
+                                        "widget": {
+                                            "display": false
+                                        }
+                                    }
+                                }
                             },
-                            "Assign Steps to Workflows": {
-                                "label": "Assign steps (phases) to workflow",
-                                "url": "/manage_workflow_steps",
+                            "Admin Relational Workflows": {
+                                "label": "Workflows",
+                                "url": "/association/manage_questionnaire_questions",
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"
-                                ]
+                                ],
+                                "widget": {
+                                    "display": false
+                                },
+                                "submenus": {
+                                    "Assign Steps to Workflows": {
+                                        "label": "Assign steps (phases) to workflow",
+                                        "url": "/association/manage_workflow_steps",
+                                        "protected": true,
+                                        "allowed_roles": [
+                                            "Admin"
+                                        ],
+                                        "widget": {
+                                            "display": false
+                                        }
+                                    },
+                                    "Assign Documents to Workflows": {
+                                        "label": "Assign documents to workflow",
+                                        "url": "/manage_workflow_base_data",
+                                        "protected": true,
+                                        "allowed_roles": [
+                                            "Admin"
+                                        ],
+                                        "widget": {
+                                            "display": false
+                                        }
+                                    },
+                                    "Assign Documents to Steps": {
+                                        "label": "Documents-workflow-steps management",
+                                        "url": "/manage_base_data_workflow_step",
+                                        "protected": true,
+                                        "allowed_roles": [
+                                            "Admin"
+                                        ],
+                                        "widget": {
+                                            "display": false
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "System Setup": {
+                        "label": "Current Setup",
+                        "url": "/dashboard/company/dashboard_system_setup",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin"
+                        ],
+                        "widget": {
+                            "display": false
+                        },
+                        "submenus": {
+                            "Admin CompanyUsers": {
+                                "label": "Companies and Users Report",
+                                "url": "/dashboard_setup_companies_users",
+                                "protected": true,
+                                "allowed_roles": [
+                                    "Admin"
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
                             },
-                            "Assign Documents to Workflows": {
-                                "label": "Assign documents to workflow",
-                                "url": "/manage_workflow_base_data",
+                            "Admin UserRoles": {
+                                "label": "Users and Roles",
+                                "url": "/dashboard_setup_user_roles",
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"
-                                ]
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
                             },
-                            "Assign Documents to Steps": {
-                                "label": "Documents-workflow-steps management",
-                                "url": "/manage_base_data_workflow_step",
+                            "Admin AreasSubareas": {
+                                "label": "Control Areas and Subareas",
+                                "url": "/dashboard_setup_area_subareas",
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"
-                                ]
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
+                            },
+                            "Admin ExtraTime": {
+                                "label": "Manage Extra Time",
+                                "url": "/manage_extra_time",
+                                "protected": true,
+                                "allowed_roles": [
+                                    "Admin"
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
+                            },
+                            "Admin CompanyQuestionnaires": {
+                                "label": "Questionnaires and Companies",
+                                "url": "/generate_setup_company_questionnaire",
+                                "protected": true,
+                                "allowed_roles": [
+                                    "Admin"
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
+                            },
+                            "Admin QuestionnaireQuestions": {
+                                "label": "Questionnaires Structure",
+                                "url": "/dashboard_setup_questionnaire_questions",
+                                "protected": true,
+                                "allowed_roles": [
+                                    "Admin"
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
+                            },
+                            "Admin WorkflowSteps": {
+                                "label": "Workflows Structure",
+                                "url": "/dashboard_setup_workflow_steps",
+                                "protected": true,
+                                "allowed_roles": [
+                                    "Admin"
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
                             }
                         }
                     }
@@ -544,15 +890,56 @@
             }
         }
     },
-    "Blog": {
-        "label": "Blog",
-        "url": "/blog/blog",
+    "News and Blog": {
+        "label": "News and Blog",
+        "url": "/public_news",
         "protected": true,
         "allowed_roles": [
             "Admin",
             "Employee",
-            "Manager"
-        ]
+            "Manager",
+            "Authority",
+            "Provider"
+        ],
+        "widget": {
+            "display": false,
+            "type": "button",
+            "submit_url": "/public_news",
+            "style": "btn-link",
+            "size": "large"
+        },
+        "submenus": {
+            "Blog": {
+                "label": "Blog",
+                "url": "/blog/blog",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin",
+                    "Employee",
+                    "Manager",
+                    "Authority",
+                    "Provider"
+                ],
+                "widget": {
+                    "display": false
+                }
+            },
+            "News": {
+                "label": "News",
+                "url": "/public_news",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin",
+                    "Employee",
+                    "Manager",
+                    "Authority",
+                    "Provider"
+                ],
+                "widget": {
+                    "display": false
+                }
+            }
+        }
     },
     "Contacts": {
         "label": "Contact",
@@ -563,32 +950,33 @@
             "Employee",
             "Manager",
             "Authority",
+            "Provider",
             "Guest"
         ],
+        "widget": {
+            "display": false
+        },
         "submenus": {
             "Mail": {
-                "label": "eMail",
-                "url": "/home/contact/email",
+                "label": "Contact Us",
+                "url": "/home/contact/contact_us",
                 "protected": false,
                 "allowed_roles": [
                     "Admin",
                     "Employee",
                     "Manager",
                     "Authority",
+                    "Provider",
                     "Guest"
-                ]
-            },
-            "Signup": {
-                "label": "Phone",
-                "url": "/home/contact/phone",
-                "protected": false,
-                "allowed_roles": [
-                    "Admin",
-                    "Employee",
-                    "Manager",
-                    "Authority",
-                    "Guest"
-                ]
+                ],
+                "widget": {
+                    "display": true,
+                    "type": "button",
+                    "style": "btn-warning",
+                    "color": "#ff8800",
+                    "icon": "icon-contracts",
+                    "size": "large"
+                }
             },
             "Privacy": {
                 "label": "Privacy Policy",
@@ -599,8 +987,28 @@
                     "Employee",
                     "Manager",
                     "Authority",
+                    "Provider",
                     "Guest"
-                ]
+                ],
+                "widget": {
+                    "display": false
+                }
+            },
+            "Terms": {
+                "label": "Terms of Use",
+                "url": "/home/terms_of_use",
+                "protected": false,
+                "allowed_roles": [
+                    "Admin",
+                    "Employee",
+                    "Manager",
+                    "Authority",
+                    "Provider",
+                    "Guest"
+                ],
+                "widget": {
+                    "display": false
+                }
             }
         }
     },
@@ -613,8 +1021,12 @@
             "Employee",
             "Manager",
             "Authority",
+            "Provider",
             "Guest"
         ],
+        "widget": {
+            "display": false
+        },
         "submenus": {
             "Login": {
                 "label": "Login",
@@ -625,8 +1037,12 @@
                     "Employee",
                     "Manager",
                     "Authority",
+                    "Provider",
                     "Guest"
-                ]
+                ],
+                "widget": {
+                    "display": false
+                }
             },
             "Signup": {
                 "label": "Signup",
@@ -637,8 +1053,12 @@
                     "Employee",
                     "Manager",
                     "Authority",
+                    "Provider",
                     "Guest"
-                ]
+                ],
+                "widget": {
+                    "display": false
+                }
             },
             "Logout": {
                 "label": "Logout",
@@ -649,8 +1069,183 @@
                     "Employee",
                     "Manager",
                     "Authority",
+                    "Provider",
                     "Guest"
-                ]
+                ],
+                "widget": {
+                    "display": false
+                }
+            },
+            "myAccount": {
+                "label": "My Account",
+                "url": "/access/account",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin",
+                    "Employee",
+                    "Manager",
+                    "Authority",
+                    "Provider",
+                    "Guest"
+                ],
+                "widget": {
+                    "display": false
+                },
+                "submenus": {
+                    "Change Password": {
+                        "label": "Change Password",
+                        "url": "/user_change_password",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin",
+                            "Employee",
+                            "Manager",
+                            "Authority",
+                            "Provider",
+                            "Guest"
+                        ],
+                        "widget": {
+                            "display": false
+                        }
+                    },
+                    "Registration Status": {
+                        "label": "Registration Status",
+                        "url": "/checklist",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin",
+                            "Employee",
+                            "Manager",
+                            "Authority",
+                            "Provider",
+                            "Guest"
+                        ],
+                        "widget": {
+                            "display": false,
+                            "type": "button",
+                            "style": "btn-info",
+                            "color": "#99bb00",
+                            "size": "medium"
+                        }
+                    },
+                    "Personal Data": {
+                        "label": "My Account",
+                        "url": "/update_account",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin",
+                            "Employee",
+                            "Manager",
+                            "Provider",
+                            "Authority",
+                            "Guest"
+                        ],
+                        "widget": {
+                            "display": false
+                        }
+                    },
+                    "Subscriptions": {
+                        "label": "Subscribe Plan",
+                        "url": "/subscriptions",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin",
+                            "Employee",
+                            "Manager",
+                            "Guest"
+                        ],
+                        "widget": {
+                            "display": false
+                        }
+                    },
+                    "Access Subscriptions Report": {
+                        "label": "Subscriptions Report",
+                        "url": "/subscription_report",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin",
+                            "Employee",
+                            "Manager",
+                            "Guest"
+                        ],
+                        "widget": {
+                            "display": false
+                        }
+                    },
+                    "Access Products": {
+                        "label": "Products",
+                        "url": "/products_page",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin",
+                            "Employee",
+                            "Manager"
+                        ],
+                        "widget": {
+                            "display": false
+                        }
+                    },
+                    "Access Plans": {
+                        "label": "Plans",
+                        "url": "/plans_page",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Admin",
+                            "Employee",
+                            "Manager"
+                        ],
+                        "widget": {
+                            "display": false
+                        }
+                    },
+                    "Access User Tickets": {
+                        "label": "Tickets",
+                        "url": "/create_ticket",
+                        "protected": true,
+                        "allowed_roles": [
+                            "Employee",
+                            "Manager",
+                            "Authority",
+                            "Provider",
+                            "Guest"
+                        ],
+                        "widget": {
+                            "display": false
+                        },
+                        "submenus": {
+                            "Access Create ticket": {
+                                "label": "Create",
+                                "url": "/create_ticket",
+                                "protected": true,
+                                "allowed_roles": [
+                                    "Employee",
+                                    "Manager",
+                                    "Authority",
+                                    "Provider",
+                                    "Guest"
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
+                            },
+                            "Access View tickets": {
+                                "label": "View",
+                                "url": "/view_tickets",
+                                "protected": true,
+                                "allowed_roles": [
+                                    "Employee",
+                                    "Manager",
+                                    "Authority",
+                                    "Provider",
+                                    "Guest"
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
+                            }
+                        }
+                    }
+                }
             }
         }
     }

@@ -1,69 +1,120 @@
-
-# DEBUG LOGGING LOGGER TOOLBAR: see app_factory.py
-
+import os
+'''
+print(f"FLASK_APP: {os.getenv('FLASK_APP')}")
+print(f"FLASK_ENV: {os.getenv('FLASK_ENV')}")
+print(f"FLASK_DEBUG: {os.getenv('FLASK_DEBUG')}")
+# DEBUG LOGGING LOGGER TOOLBAR: see app_factory.py 
+'''
 # app.py (or run.py)
+import traceback
 import re
+import requests
+import stripe
+from fredapi import Fred
+import openai
+
 import logging
-
 from logging import FileHandler, Formatter
-
+from flask_wtf.csrf import CSRFProtect, generate_csrf, validate_csrf
 from sqlalchemy import or_, and_, desc, func, not_, null, exists, extract, select
-from sqlalchemy import distinct
-from db import db
-from flask import g
-from flask import flash
-import datetime
 
+from sqlalchemy.orm import sessionmaker
+
+from sqlalchemy.exc import OperationalError
+from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.exceptions import HTTPException
+from db import db
+from flask import (Flask, render_template, redirect, url_for, request, g,
+                   make_response, flash, Markup,
+                   send_from_directory)
+import datetime
+from datetime import date, timedelta, time, timezone
+from dateutil import rrule
 from flask_wtf import FlaskForm
+from wtforms import EmailField
+from wtforms.validators import Email, InputRequired, NumberRange
 
 from flask_session import Session
 from wtforms import SubmitField
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired
+
+from flask_wtf import FlaskForm
+from wtforms import StringField, SubmitField
+from flask_mail import Mail, Message
+from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
 from userManager101 import UserManager
-from workflow_manager import (add_transition_log, create_card, get_model_statistics, create_deadline_card,
+from workflow_manager import (add_transition_log, create_card,
+                              get_model_statistics, create_deadline_card,
                               create_model_card, deadline_approaching)
 
-from app_defs import get_user_roles, create_message, generate_menu_tree
-from models.user import (Users, UserRoles, Role, Table, Questionnaire, Question,
+import app_defs
+from app_defs import (get_user_roles, create_message, generate_menu_tree, admin_app1, admin_app2, admin_app3,
+                      admin_app4, admin_app5, admin_app6, admin_app7, admin_app10)
+from admin_views import create_admin_views, admin_all
+
+from models.user import (Users, UserRoles, Event, Role, Questionnaire, Question,
         QuestionnaireQuestions,
         Answer, Company, Area, Subarea, AreaSubareas,
         QuestionnaireCompanies, CompanyUsers, Status, Lexic,
         Interval, Subject,
-        AuditLog, Post, Ticket, StepQuestionnaire,
-        Workflow, Step, BaseData, WorkflowSteps, WorkflowBaseData, StepBaseData, Config, get_config_values)
+        Container, AuditLog, Post, Ticket, StepQuestionnaire,
+        Workflow, Step, BaseData, DataMapping, Container, WorkflowSteps, WorkflowBaseData,
+        DocumentWorkflow, DocumentWorkflowHistory, Config, Product, Cart, #StepBaseData,
+        Plan, PlanProducts, UserPlans, Subscription, # Adjust based on actual imports
+        Questionnaire_psf, Response_psf,
+        Contract, ContractParty, ContractTerm, ContractDocument, ContractStatusHistory,
+        ContractArticle, Party,
+        Team, TeamMembership, ContractTeam,
+        Dossier, ExtraTimeAuthorization
+        )
 
-from forms.forms import (RegistrationForm, QuestionnaireCompanyForm, CustomBaseDataForm,
-        QuestionnaireQuestionForm, WorkflowStepForm, WorkflowBaseDataForm, BaseDataWorkflowStepForm,
-        UserRoleForm, CompanyUserForm, UserDocumentsForm, StepBaseDataInlineForm,
+# from master_password_reset import admin_reset_password, AdminResetPasswordForm
+from forms.forms import (AddPlanToCartForm, SignupForm, UpdateAccountForm, TicketForm,
+                         ResponseForm, LoginForm, ForgotPasswordForm,
+         ResetPasswordForm101, RegistrationForm, EventForm,
+         CustomBaseDataForm, WorkflowBaseDataForm,
+         BaseDataWorkflowStepForm, UserDocumentsForm,
         create_dynamic_form, CustomFileLoaderForm,
-        CustomSubjectAjaxLoader, BaseSurveyForm)
+        CustomSubjectAjaxLoader, BaseSurveyForm, AuditLogForm,
+        UpdateCartItemForm, AddProductToCartForm, SubscriptionForm,
+        MainForm)
 
 from flask_mail import Mail, Message
-from app_factory import create_app
+# from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as _
 
-from config.config import (extract_year_from_fy, get_current_interval, get_current_intervals,
-        get_subarea_interval_type, generate_company_questionnaire_report_data, generate_area_subarea_report_data,
-        check_status, check_status_limited, check_status_extended, generate_html_cards, get_session_workflows,
+from app_factory import create_app, roles_required, subscription_required
+# from app_factory import babel
+
+from config.config import (get_current_intervals,
+        generate_company_questionnaire_report_data, generate_area_subarea_report_data,
+        generate_html_cards, get_session_workflows,
         generate_html_cards_progression_with_progress_bars111, generate_html_cards_progression_with_progress_bars_in_short,
-        get_subarea_name, get_pd_report_from_base_data_wtq, get_if_active, get_areas, create_notification,
-        get_subareas, generate_company_user_report_data, generate_user_role_report_data, create_audit_log,
-        generate_questionnaire_question_report_data, generate_workflow_step_report_data, get_company_id,
-        generate_workflow_document_report_data, generate_document_step_report_data, get_cet_time, remove_duplicates,
-        normalize_structure, compare_structures, some_keys)
+        get_pd_report_from_base_data_wtq, get_areas,
+        get_subareas, generate_company_user_report_data, generate_user_role_report_data,
+        generate_questionnaire_question_report_data, generate_workflow_step_report_data,
+        generate_workflow_document_report_data, generate_document_step_report_data, get_cet_time)
 
-from admin_views import (CompanyView, QuestionnaireView, QuestionView, StatusView, LexicView, AreaView, StepQuestionnaireView,
-        SubareaView, SubjectView, PostView, TicketView, WorkflowView, StepView, AuditLogView,
-        QuestionnaireQuestionsView, WorkflowStepsView, QuestionnaireCompaniesView,
-                         OpenQuestionnairesView, BaseDataView, UsersView)
+#from contract_routes import user_has_access_to_contract
+from routes.routes import geonames_bp, fetch_phone_prefixes
+from routes.argon_routes import argon_bp
+from routes.plan_routes import plan_bp
+from routes.chart_routes import chart_bp
+from routes.association_routes import association_bp
+from routes.ai_routes import ai_bp
+from routes.phy_routes import phy_bp
 
 from mail_service import send_simple_message, send_simple_message333
 from wtforms import Form
 
 from utils.utils import get_current_directory
-from wtforms import (SelectField, BooleanField, ValidationError)
+from wtforms import (SelectField)
 from flask_login import login_required, LoginManager
 from flask_login import login_user, current_user
 from flask_cors import CORS
+from modules.chart_service import ChartService
+
+from team_routes import team_bp
+from contract_routes import contract_bp
 
 from flask import flash, current_app, get_flashed_messages
 # from flask_admin.exceptions import ValidationError
@@ -72,8 +123,6 @@ from flask_bcrypt import Bcrypt
 from flask import abort
 from functools import wraps
 
-from wtforms import IntegerField
-from wtforms.fields import DateField
 from crud_blueprint import create_crud_blueprint
 
 from menu_builder import MenuBuilder
@@ -84,12 +133,10 @@ import datetime
 from datetime import datetime, timedelta
 from jinja2 import Undefined
 
-from flask_admin.form import FileUploadField
 from flask import session
-from flask_admin import Admin, expose, expose_plugview
+from flask_admin import expose, expose_plugview
 from flask_admin.actions import action  # Import the action decorator
 from flask_admin.contrib.sqla import ModelView
-from wtforms.validators import InputRequired, NumberRange
 
 from flask_admin.model.widgets import XEditableWidget
 from flask_limiter import Limiter
@@ -115,7 +162,16 @@ from flask_admin import BaseView, expose
 from flask import jsonify
 from werkzeug.utils import secure_filename
 
-import os
+# Example of using the function with ImmutableMultiDict
+from werkzeug.datastructures import ImmutableMultiDict
+
+from flask_login import login_user, logout_user, current_user
+
+from flask_caching import Cache
+
+from urllib.parse import urlparse
+import logging
+from logging import FileHandler, Formatter
 
 # for graphical representation of workflows
 # Additional libraries for visualization (choose one)
@@ -127,61 +183,283 @@ import os
 # import plotly.graph_objects as go
 
 import plotly.graph_objects as go
+from custom_encoder import CustomJSONEncoder
+# Use the custom JSON encoder
 
-# app.py
+from admin_views import create_admin_views  # Import the admin views module
+
+from cachetools import TTLCache, cached
+
+# OPENCAGE API KEY
+# aad0f13ea1af46c6b89153e6b7bd7928
+
 app = create_app()
+
+# Setup Mail
+mail = Mail(app)
+print('mail server active')
+
+app.json_encoder = CustomJSONEncoder
+print('JSON decoder on')
+
+GEONAMES_USERNAME = os.getenv('GEONAMES_USERNAME')
+NOMINATIM_URL = os.getenv('NOMINATIM_URL')
+cache = TTLCache(maxsize=100, ttl=86400)  # Adjust cache size and TTL as needed
+
+# Register the geonames blueprint
+app.register_blueprint(geonames_bp, url_prefix='/geonames-api')  # Add a prefix if needed
+print('geo-names blueprint registered')
+# Create a cache with a TTL of 600 seconds and a max size of 100 items
+
+# Register the Argon blueprint
+app.register_blueprint(argon_bp, url_prefix='/argon') # Add a prefix if needed
+print('Argon blueprint registered')
+
+app.register_blueprint(ai_bp, url_prefix='/ai')
+print('A.I. blueprint registered')
+
+app.register_blueprint(phy_bp, url_prefix='/phy')
+print('NatGas contracts benchmarking blueprint registered')
+
+# Register the Argon blueprint
+app.register_blueprint(association_bp, url_prefix='/association') # Add a prefix if needed
+print('Association routes blueprint registered')
+
+# Register the Argon blueprint
+app.register_blueprint(plan_bp, url_prefix='/plan') # Add a prefix if needed
+print('plan blueprint registered')
+
+# Register the chart blueprint
+app.register_blueprint(chart_bp, url_prefix='/charts', name='charts')
+print('chart blueprint registered')
+
+
+
+# Load API key from environment variable
+openai.api_key = os.getenv("OPENAI_API_KEY")
+print('openAI ready')
+
+#fred = Fred(api_key='FRED_API_KEY')
+
+# Setup Limiter
 limiter = Limiter(
     get_remote_address,
     app=app,
-    default_limits=["200 per day", "50 per hour"],
+    default_limits=["360 per day", "90 per hour"],
     storage_uri="memory://",
 )
-db.init_app(app)
+print('limiter active')
 
-CORS(app)  # Allow all origins (for development only)
+# Setup CORS
+CORS(app)
+print('CORS active')
 
-# Create tables on app startup
-with app.app_context():
-    #print("App context is active:", app.app_context().stack)
-    db.create_all()
-
-# Function to generate a random CAPTCHA string
-
+# Setup LoginManager
 login_manager = LoginManager(app)
-# Define your custom template path
 
+stripe.api_key = app.config['STRIPE_API_KEY']
+stripe.publishable_key = app.config['STRIPE_PUBLISHABLE_KEY']
+
+# Register the password reset route
+# app.add_url_rule('/admin_reset_password', 'admin_reset_password', admin_reset_password, methods=['GET', 'POST'])
+# print('url rule set')
+
+# TODO (in)activate LOGGER LOGGING ETC
+# Create a custom logger
+logger = logging.getLogger()
+# Set the default logging level
+logger.setLevel(logging.DEBUG)
+
+'''
+# Create handlers
+console_handler = logging.StreamHandler()
+file_handler = logging.FileHandler('app.log')
+
+# Set level for handlers
+console_handler.setLevel(logging.INFO)
+file_handler.setLevel(logging.DEBUG)
+
+# Create formatters and add it to handlers
+console_format = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+file_format = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+
+console_handler.setFormatter(console_format)
+file_handler.setFormatter(file_format)
+
+# Add handlers to the logger
+logger.addHandler(console_handler)
+logger.addHandler(file_handler)
+
+# Test logging
+logger.info("Logging to both console and file is configured.")
+'''
+
+# Language selection logic
+# Use the correct decorator on the initialized babel object
+'''
+@babel.localeselector
+def get_locale():
+    # Check if a language is set in the session
+    if 'lang' in session:
+        return session['lang']
+    # Default to browser settings if not set
+    return request.accept_languages.best_match(['en', 'it'])
+
+@app.route('/set_language/<language>')
+def set_language(language=None):
+    # Set the user's language preference in the session
+    session['lang'] = language
+    return redirect(request.referrer or '/')
+'''
+
+
+def get_version_from_file():
+    try:
+        with open('version.txt', 'r') as file:
+            print('version')
+            return file.read().strip()
+    except Exception as e:
+        return "Version information not available"
+
+# Serve the React app
+@app.errorhandler(OperationalError)
+def handle_db_connection_error(e):
+    app.logger.error(f"Database connection issue: {e}")
+
+    # Return a custom error page or JSON response for API calls
+    if request.is_json:
+        return jsonify(error="Database connection error. Please try again later."), 500
+    else:
+        flash('Database connection failed. Please try again later.', 'error')
+        return render_template('error_page.html'), 500  # Use a custom error page
+
+
+# Serve the React app on a specific route
+@app.route('/react-page', defaults={'path': ''})
+@app.route('/react-page/<path:path>')
+def serve_react(path):
+    try:
+        if path == "" or path == "index.html":
+            # Serve the React app's index.html file
+            return send_from_directory(app.static_folder + '/react-page', 'index.html')
+        else:
+            # Serve other static files in the React build folder
+            return send_from_directory(app.static_folder + '/react-page', path)
+    except Exception as e:
+        # Print the error to the console and return a JSON response with the error message
+        print(f"Error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/test_relationship')
+def test_relationship():
+    try:
+        contract = Contract.query.first()
+        articles = contract.contract_articles if contract else []
+        return f"Contract: {contract.contract_name}, Articles: {len(articles)}"
+    except Exception as e:
+        return str(e), 500
+
+
+@app.after_request
+def log_request_info(response):
+    logger.info('Headers: %s', request.headers)
+    logger.info('Body: %s', request.get_data())
+    logger.info('Response: %s', response.status)
+    return response
+
+
+@login_manager.user_loader
+def load_user(user_id):
+    user = Users.query.get(int(user_id))
+    if user:
+        session['user_roles'] = [role.name for role in user.roles] if user.roles else []
+    return user
+
+def initialize_app(app):
+    with app.app_context():
+
+        try:
+            if get_areas():
+                app.config['AREAS'] = get_areas()
+
+                for i in range(len(get_areas())):
+                    if get_subareas(i):
+                        app.config['SUBAREAS_' + str(i)] = get_subareas(i)
+
+        except OperationalError:
+            flash('Database connection failed. Please check your internet connection.', 'danger')
+
+        intervals = get_current_intervals(db.session)
+        app.config['CURRENT_INTERVALS'] = intervals
+        return intervals
+
+intervals = initialize_app(app)
+print('intervals', intervals)
+
+# Initialize the admin views
+(app_defs.admin_app1, app_defs.admin_app2, app_defs.admin_app3, app_defs.admin_app4, app_defs.admin_app5,
+ app_defs.admin_app6, app_defs.admin_app7, app_defs.admin_app10) = create_admin_views(app, intervals)
+
+# Call the function to create the admin views
+#shared.admin_app1, shared.admin_app2, shared.admin_app3 = create_admin_views(app, intervals)
 
 @app.route('/set_session')
 def set_session():
     session['key'] = 'value'
     return 'Session set'
 
+
 @app.route('/get_session')
 def get_session():
     value = session.get('key')
     return f'Session value: {value}'
 
-@login_manager.user_loader
-def load_user(user_id):
-    user = user_manager.load_user(user_id)
-    # print('user loaded')
-    # print_routes()
+# TODO use it for the landing page
+def check_internet():
+    url = "https://www.google.com"
+    timeout = 10
+    try:
+        response = requests.get(url, timeout=timeout)
+        print('Internet', response)
+        return True
+    except (requests.ConnectionError, requests.Timeout) as exception:
+        return False
 
-    # clear_flashed_messages()
-    if user:
-        # Store user roles in the session
-        session['user_roles'] = [role.name for role in user.roles] if user.roles else []
-    return user
+'''
+@app.before_request
+def log_request():
+    if "sample_1280x720_surfing_with_audio.mp4" in request.path:
+        print(f"Request path: {request.path} - Method: {request.method}")
+
+'''
 
 @app.before_request
 def before_request():
-    if current_user.is_authenticated:
-        session['session_workflows'] = get_session_workflows(db.session, current_user)
-        # print('session w', session['session_workflows'])
-    g.current_user = current_user
+    try:
+        if current_user.is_authenticated:
+            session['session_workflows'] = get_session_workflows(db.session, current_user)
+
+            session['roles'] = [role.name for role in current_user.roles] if current_user.roles else ['Guest']
+            session['is_authenticated'] = True
+            # Set the user email in the session
+            session['user_email'] = current_user.email
+            g.current_user = current_user
+            session.permanent = True
+        else:
+            # Default to 'Guest' for unauthenticated users
+            session['roles'] = ['Guest']
+            session['is_authenticated'] = False
+            # Set the user email in the session
+            session['user_email'] = None # right?
+        session.modified = True
+        # print('session roles and authentication', session['roles'], session['is_authenticated'])
+
+    except Exception as e:
+        logging.error(f"Error in before_request: {str(e)}")
+        raise e
     pass
 
-app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0  # Disable caching for development
 bcrypt = Bcrypt(app)
 # Set the login view (replace 'login' with your actual login route)
 login_manager.login_view = 'login'
@@ -191,22 +469,9 @@ login_manager.login_message_category = 'info'  # Specify the category for flash 
 user_manager = UserManager(db)
 user_roles = []
 
-# TODO deactivate in prod or after first debug row
-app.config['DEBUG'] = True
-app.config['SQLALCHEMY_ECHO'] = True  # This will log all the SQL queries
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
-
-app.config['TEMPLATES_AUTO_RELOAD'] = True
-app.config['SQLALCHEMY_COMMIT_ON_TEARDOWN'] = True
-app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=15)  # Set session to expire in 5 minutes
-app.config['MAX_RECURSION_DEPTH'] = 12  # Example: 1 hour
-
-# CAPTCHA
-app.config['RECAPTCHA_PUBLIC_KEY'] = some_keys['recaptcha_public_key'] #'6LdcYnkpAAAAADpQdytwQVK7UtxeJJ0C_nHsPc8R'
-app.config['RECAPTCHA_PRIVATE_KEY'] = some_keys['recaptcha_private_key']
-app.config['WTF_CSRF_ENABLED'] = False  # Disable CSRF protection for local development
-
+# TODO check directory for the prod env in Render!
 session_dir = get_current_directory() + '/static/files/'
+
 if not os.path.exists(session_dir):
     os.makedirs(session_dir)
 
@@ -217,40 +482,22 @@ Session(app)
 
 bootstrap = Bootstrap(app)
 
-'''
-# TODO (de)activate LOGGER here
-logging.basicConfig(level=logging.DEBUG)
-# Set up file handler
-file_handler = FileHandler('error.log')
-file_handler.setLevel(logging.DEBUG)
-file_handler.setFormatter(Formatter(
-    '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
-))
-app.logger.addHandler(file_handler)
-'''
-
-
-current_interval = get_current_interval(1) #year
-
-print('Current periods:', get_current_interval(1),
-      get_current_interval(2), get_current_interval(3),
-      get_current_interval(4), get_current_interval(12))
-
-with app.app_context():
-    if get_areas():
-        app.config['AREAS'] = get_areas()
-
-    for i in range(len(get_areas())):
-        if get_subareas(i):
-            app.config['SUBAREAS_' + str(i)] = get_subareas(i)
-
-    intervals = get_current_intervals(db.session)
-    app.config['CURRENT_INTERVALS'] = intervals
+# Serializer for generating tokens
+serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
 
 # TODO - eliminati tutti i blueprint per i quali c'è Admin?
 # pyobjc
 with app.app_context():
     # db.create_all()
+
+    #app.register_blueprint(admin_bp)
+
+    # Register the Blueprint
+    app.register_blueprint(admin_all, url_prefix='/admin')  # Add a prefix like '/admin' if desired
+
+    # Register the blueprint
+    app.register_blueprint(contract_bp)
+    app.register_blueprint(team_bp, url_prefix='/team')  # Adjust the url_prefix as needed
 
     user_roles_blueprint = create_crud_blueprint(UserRoles, 'user_roles')
     app.register_blueprint(user_roles_blueprint, url_prefix='/model_user_roles')
@@ -267,38 +514,58 @@ with app.app_context():
     workflow_base_data_blueprint = create_crud_blueprint(WorkflowBaseData, 'workflow_base_data')
     app.register_blueprint(workflow_base_data_blueprint, url_prefix='/model_workflow_base_data')
 
-    step_base_data_blueprint = create_crud_blueprint(StepBaseData, 'step_base_data')
+    step_base_data_blueprint = create_crud_blueprint(DocumentWorkflow, 'step_base_data')
     app.register_blueprint(step_base_data_blueprint, url_prefix='/model_step_base_data')
 
     model_document = create_crud_blueprint('model_document', __name__)
 
+app.config['SQLALCHEMY_ECHO'] = True
+
+# Get the DATABASE_URL from the environment
+database_url = os.getenv('DATABASE_URL')
+
+# Parse the DATABASE_URL
+result = urlparse(database_url)
+
+# Extract components
+username = result.username
+password = result.password
+hostname = result.hostname
+port = result.port if result.port else 5432
+database = result.path[1:]  # Removes the leading "/"
+
+# Configure error logging to a file
+
+print('app.debug mode is', app.debug)
+
+# Basic logging configuration
+if not app.debug:
+    file_handler = FileHandler('error.log')
+    file_handler.setLevel(logging.ERROR)
+    file_handler.setFormatter(Formatter(
+        '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'
+    ))
+    app.logger.addHandler(file_handler)
+
+# For testing purposes, you can force an error log in debug mode:
+if app.debug:
+    app.logger.setLevel(logging.DEBUG)
+    app.logger.debug("Logging is active.")
+
+app.logger.info("Testing log output")
+app.logger.error("Testing error output")
+
+# Load menu items from JSON file
+json_file_path = os.path.join(os.path.dirname(__file__), 'static', 'js', 'menuStructure101.json')
+# json_file_path = get_current_directory() + "/static/js/menuStructure101.json"
+with open(Path(json_file_path), 'r') as file:
+    main_menu_items = json.load(file)
 
 def is_user_role(session, user_id, role_name):
     # Get user roles for the specified user ID
     user_roles = get_user_roles(session, user_id)
     # Check if the specified role name (in lowercase) is in the user's roles
-    return role_name.lower() in user_roles
-
-
-def role_required(required_role):
-    def decorator(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            # Check if the user has the required role
-            if 'user_roles' in session and any(role.lower() == required_role.lower() for role in session['user_roles']):
-                return func(*args, **kwargs)
-            else:
-                # If the user doesn't have the required role, abort with a 403 Forbidden error
-                abort(403)
-        return wrapper
-    return decorator
-
-
-@app.errorhandler(SMTPAuthenticationError)
-def handle_smtp_authentication_error(error):
-    # Handle SMTP authentication errors gracefully
-    return "SMTP Authentication Error: Failed to authenticate with the SMTP server.", 500
-
+    return role_name in user_roles
 
 def generate_reset_token(email):
     serializer = URLSafeTimedSerializer(app.config['SECRET_KEY'])
@@ -319,123 +586,13 @@ def verify_reset_token(token, expiration=3600):
         return None  # invalid token
     return email
 
-'''
-@app.route('/reset_password', methods=['GET', 'POST'])
-def reset_password_request():
-    if request.method == 'POST':
-        user = Users.query.filter_by(email=request.form['email']).first()
-        if user:
-            token = user.get_reset_token()
-            send_email(user.email, 'Password Reset Request',
-                       f'Please go to the following link to reset your password: {url_for('reset_password', token=token, _external=True)}')
-        return "An email has been sent with instructions to reset your password."
-
-
-@app.route('/reset_password/<token>', methods=['GET', 'POST'])
-def reset_password(token):
-    user = Users.verify_reset_token(token)
-    if not user:
-        return "This is an invalid or expired token"
-
-    # Assume the logic to update the user's password
-    return "Your password has been updated."
-'''
-
-@app.route('/forgot_password', methods=['GET', 'POST'])
-def forgot_password():
-    print('forgot_password...', request.method)
-    if request.method == 'POST':
-        email = request.form['email']  # Get the email entered in the form
-
-        user = Users.query.filter_by(email=email).first()
-        print('user who forgot it', user, email)
-        if user:
-            print('user who lost it is', user.username)
-            token = generate_reset_token(user.email)
-            msg = Message('Password Reset Request', sender='noreply@demo.com', recipients=[user.email])
-            msg.body = f"""To reset your password, visit the following link:
-                {url_for('reset_token', token=token, _external=True)}
-                
-                If you did not make this request, simply ignore this email and no changes will be made.
-                """
-            mail = Mail(app)
-            mail.send(msg)
-            return redirect(url_for('login'))
-    return render_template('access/forgot.html')
-
-@app.route('/reset/<token>', methods=['GET', 'POST'])
-def reset_token(token):
-    email = verify_reset_token(token)
-    if not email:
-        # Handle the invalid or expired token
-        return redirect(url_for('forgot'))
-
-    user = Users.query.filter_by(email=email).first()
-    if request.method == 'POST':
-        # Update user's password
-        hashed_pw = bcrypt.generate_password_hash(request.form['password']).decode('utf-8')
-        user.password = hashed_pw
-        db.session.commit()
-        return redirect(url_for('login'))
-
-    return render_template('reset.html')
-
-
-@app.route("/send_email222")
-def send_email222():
-    mail = Mail(app)
-    msg = Message("Hello from ILM",
-                  sender="amarad21@gmail.com",
-                  recipients=["astridel.radulescu1@gmail.com"])
-    msg.body = "This is a test email sent from my App using Postfix."
-    mail.send(msg)
-    return "Email sent successfully!"
-
-
-@app.route("/send_email")
-def send_email():
-    # Example usage
-    api_key = "20cb76ced830ab536fa7cd718d1c1141-b02bcf9f-5936b742"
-    domain =  "sandbox8fe87aee4b91456c9d17ffcb802d8b20.mailgun.org"
-    sender = "Mailgun Sandbox <postmaster@sandbox8fe87aee4b91456c9d17ffcb802d8b20.mailgun.org>"
-    recipient = "amarad21@gmail.com"
-    subject = "Test MG Email"
-    text = "This is a test email sent via Mailgun."
-
-    # Call the function to send the email
-    # send_simple_message(api_key, domain, sender, recipient, subject, text)
-    send_simple_message333()
-    # Set flash message
-    flash('Mail sent successfully', 'success')
-    return redirect(url_for('index'))  # Redirect to your home page
-
-@app.route('/confirmation')
-def confirmation_page():
-
-    return redirect(url_for('login'))
-
-
-class MoveDocumentForm(FlaskForm):
-    next_step = SelectField('Next Step')
-    submit = SubmitField('Move Document')
-
-    def __init__(self, available_steps, current_step=None, **kwargs):
-        super(MoveDocumentForm, self).__init__(**kwargs)
-        self.next_step.choices = [(step.id, step.name) for step in available_steps]
-        self.current_step = current_step  # Store for potential use in template
-
-    def validate(self):
-        if not self.next_step.data:
-            return False
-        return True
-
 
 # Function to get documents query based on user's role
 def get_documents_query(session, current_user):
+    print('Get documents query')
     query = session.query(BaseData).filter(BaseData.file_path != None).all()
     if current_user.is_authenticated:
         if current_user.has_role('Admin') or current_user.has_role('Authority'):
-            print('user is admin, returns query')
             return query
         elif current_user.has_role('Manager'):
             # Manager can only see records related to their company_users
@@ -450,24 +607,1172 @@ def get_documents_query(session, current_user):
             return query
 
     # For other roles or anonymous users, return an empty query
-    print('returning nothing')
     return query.filter(BaseData.id < 0)
+
+# How to rerun the React manager:
+# in ... frontend: (
+# 1) cd frontend
+# )
+#  2) npm run build
+
+# and then
+# 3) cp -r build/* /Users/aradulescu/PycharmProjects/ILM501/new-repository-28051/static/react-page/
+# 4) cd ..
+
+# http://127.0.0.1:5000/api/workflow-data?area_id=3&subarea_id=1&fi0=2024
+
+# from serializers import serialize_step, serialize_workflow
+
+def serialize_base_data(item):
+    return {
+        "id": item.id,
+        "user_id": item.user_id,
+        "company_id": item.company_id,
+        "interval_id": item.interval_id,
+        "status_id": item.status_id,
+        "record_type": item.record_type,
+        "data_type": item.data_type,
+        "created_on": item.created_on.strftime("%Y-%m-%d") if item.created_on else None,
+        "updated_on": item.updated_on.strftime("%Y-%m-%d") if item.updated_on else None,
+        "deadline": item.deadline.strftime("%Y-%m-%d") if item.deadline else None,
+        "area_id": item.area_id,
+        "subarea_id": item.subarea_id,
+        "fi0": item.fi0,
+        "fn0": float(item.fn0) if item.fn0 else None,  # Convert Decimal fields to float
+        "file_path": item.file_path,
+        "no_action": item.no_action,
+        "workflow": item.workflow(),  # Call the workflow function if it returns serializable data
+        "step": item.step()  # Call the step function if it returns serializable data
+        # Add more fields as needed
+    }
+
+
+@app.route('/api/get_intervals', methods=['GET'])
+@login_required
+def get_intervals():
+    # Get the current intervals from the app config (as you've already done)
+    intervals = app.config.get('CURRENT_INTERVALS', [])
+
+    # Assuming intervals are in the format [(id, year, some_value), ...]
+    # Extract the current year from the first interval
+    current_year = intervals[0][1] if intervals else datetime.utcnow().year
+
+    # Generate the last 5 years including the current year
+    last_five_years = [current_year - i for i in range(5)]
+
+    # Return the last five years as a JSON response
+    return jsonify({'years': last_five_years})
+
+
+@app.route('/api/area-subarea', methods=['GET'])
+@login_required
+def get_area_subarea():
+    try:
+        # Query the AreaSubareas table and join with Area and Subarea to get the names
+        area_subareas = db.session.query(
+            AreaSubareas.area_id, AreaSubareas.subarea_id,
+            Area.name.label('area_name'),
+            Subarea.name.label('subarea_name')
+        ).join(Area, AreaSubareas.area_id == Area.id) \
+         .join(Subarea, AreaSubareas.subarea_id == Subarea.id).all()
+
+        # Serialize the data for the response
+        areas_data = {area.area_id: area.area_name for area in area_subareas}
+        subareas_data = [{"id": subarea.subarea_id, "name": subarea.subarea_name, "area_id": subarea.area_id} for subarea in area_subareas]
+
+        # Return the data as JSON
+        return jsonify({"areas": list(areas_data.items()), "subareas": subareas_data})
+
+    except Exception as e:
+        print(f"Error fetching area and subarea data: {e}")  # Log the error
+        return jsonify({"error": "Server error occurred"}), 500
+
+
+@app.route('/api/documents', methods=['GET'])
+@login_required
+def get_documents():
+    try:
+        workflow_id = request.args.get('workflow_id')
+        step_id = request.args.get('step_id')
+        fi0 = request.args.get('fi0')
+        document_id = request.args.get('id')  # Now using 'id' to retrieve the document ID
+
+        # Log the received parameters for debugging
+        app.logger.info(f"Received workflow_id: {workflow_id}, step_id: {step_id}, fi0: {fi0}, document_id: {document_id}")
+
+        # Start building the query by using select_from first, before any filters
+        query = db.session.query(BaseData).select_from(BaseData).join(DocumentWorkflow, BaseData.id == DocumentWorkflow.base_data_id)
+
+        # Apply area_id filter after select_from and join
+        query = query.filter(BaseData.area_id.in_([1, 3]))
+
+        # Log the query for debugging purposes
+        app.logger.info(f"BaseData query after filtering by area_id: {query}")
+
+        # Join Workflow if workflow_id is provided
+        if workflow_id and workflow_id != 'all':
+            query = query.join(Workflow, Workflow.id == DocumentWorkflow.workflow_id)
+            query = query.filter(DocumentWorkflow.workflow_id == workflow_id)
+
+        # Join WorkflowSteps if step_id is provided
+        if step_id and step_id != 'all':
+            query = query.join(WorkflowSteps, WorkflowSteps.step_id == DocumentWorkflow.step_id)
+            query = query.filter(DocumentWorkflow.step_id == step_id)
+
+        # Filter by fi0 if provided
+        if fi0:
+            query = query.filter(BaseData.fi0 == fi0)
+
+        # Filter by document ID if provided
+        if document_id:
+            query = query.filter(BaseData.id == document_id)
+
+        # Fetch the filtered documents
+        documents = query.all()
+
+        if not documents:
+            return jsonify({"error": "No documents found"}), 404
+
+        # Prepare the response data, including additional fields like number_of_doc, updated_on, area_id, and date_of_doc
+        document_list = [{
+            'id': doc.id,
+            'name': doc.number_of_doc or f"Document {doc.id}",
+            'number_of_doc': doc.number_of_doc,
+            'updated_on': doc.updated_on.isoformat() if doc.updated_on else None,
+            'area_id': doc.area_id,
+            'date_of_doc': doc.date_of_doc.isoformat() if doc.date_of_doc else None,
+            'workflows': [
+                {
+                    'date_start': workflow.start_date.isoformat() if workflow.start_date else None,
+                    'date_end': workflow.end_date.isoformat() if workflow.end_date else None
+                }
+                for workflow in doc.document_workflows  # Iterate over the document_workflows relationship
+            ]
+        } for doc in documents]
+
+        return jsonify(document_list), 200
+
+    except Exception as e:
+        app.logger.error(f"Error fetching documents: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/get_workflow_data', methods=['GET'])
+@login_required
+def get_workflow_data():
+    try:
+        workflows = Workflow.query.all()
+        result = []
+
+        for workflow in workflows:
+            for workflow_step in workflow.workflow_steps:
+                step = workflow_step.step  # Access the step through workflow_steps
+
+                for document_workflow in workflow.document_workflows:
+                    document = document_workflow.base_data  # Assuming this is correct
+
+                    # Check if document is None before accessing its attributes
+                    if document is None:
+                        app.logger.warning(f"Document is None for workflow ID: {workflow.id}")
+                        continue  # Skip this document if it's None
+
+                    # Convert the date_of_doc to string if it's not None
+                    document_date = document.date_of_doc.isoformat() if document.date_of_doc else None
+
+                    # Append the workflow, step, and document details
+                    result.append({
+                        'workflow_id': workflow.id,
+                        'workflow_name': workflow.name,
+                        'step_id': step.id,
+                        'step_name': step.name,
+                        'document_id': document.id,
+                        'document_name': document.ft1 if document.ft1 else 'Unnamed',  # Adjust as per your field
+                        'document_number': document.number_of_doc,  # Adjust as per your field
+                        'document_date': document_date,  # Convert date to string
+                        'company_id': document.company_id,
+                        'user_id': document.user_id
+                    })
+
+        return jsonify(result), 200
+    except Exception as e:
+        app.logger.error(f"Error fetching workflow data: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/get_workflows', methods=['GET'])
+@login_required
+def get_workflows():
+    try:
+        # Fetch all workflows from the Workflow table
+        workflows = Workflow.query.all()
+
+        if not workflows:
+            return jsonify({"error": "No workflows found"}), 404
+
+        # Prepare the list of workflows to be sent as a JSON response
+        workflow_list = [
+            {'id': w.id, 'name': w.name if w.name else 'Unnamed Workflow'}  # Handle missing names
+            for w in workflows
+            if w.id is not None  # Ensure the id is valid
+        ]
+
+        return jsonify(workflows=workflow_list), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/api/get_steps', methods=['GET'])
+@login_required
+def get_steps():
+    workflow_id = request.args.get('workflow_id')
+    app.logger.info(f"Received workflow_id: {workflow_id}")
+
+    try:
+        workflow_steps = WorkflowSteps.query.filter_by(workflow_id=workflow_id).all()
+        step_ids = [ws.step_id for ws in workflow_steps]
+        steps = Step.query.filter(Step.id.in_(step_ids)).all()
+
+        return jsonify(steps=[{'id': step.id, 'name': step.name} for step in steps]), 200
+    except Exception as e:
+        app.logger.error(f"Error fetching steps: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/workflow_tree')
+@login_required
+def workflow_tree():
+    return render_template('workflow_tree.html')
+
+
+@app.route('/company_tree')
+@login_required
+def company_tree():
+    return render_template('company_tree.html')
+
+
+@app.route('/api/get_company_data', methods=['GET'])
+@login_required
+def get_company_data():
+    from flask_login import current_user
+    import logging
+
+    # Base query with joins for Company, Users (through CompanyUsers), and Roles (through UserRoles)
+    query = db.session.query(
+        Company, Users, Role
+    ).join(
+        CompanyUsers, CompanyUsers.company_id == Company.id  # Join CompanyUsers model on company_id
+    ).join(
+        Users, CompanyUsers.user_id == Users.id  # Join Users through CompanyUsers model on user_id
+    ).join(
+        UserRoles, UserRoles.user_id == Users.id  # Join Users to UserRoles
+    ).join(
+        Role, UserRoles.role_id == Role.id  # Join Role through UserRoles
+    )
+
+    # Apply filtering based on user role
+    if current_user.has_role('Admin'):
+        pass  # Admins can see everything
+    elif current_user.has_role('Manager'):
+        company_id = session.get('company_id')  # Assume company_id is stored in the session
+        query = query.filter(Company.id == company_id)
+    elif current_user.has_role('Employee'):
+        user_id = current_user.id  # Filter for current employee user
+        query = query.filter(Users.id == user_id)
+
+    # Order by company, user, and role
+    company_users_roles = query.order_by(
+        Company.id, Users.id, Role.id
+    ).all()
+
+    # Construct the response
+    company_data = []
+    for company, user, role in company_users_roles:
+        logging.info(f"Processing record: Company {company.name}, User {user.username}, Role {role.name}")
+        company_data.append({
+            "company_id": company.id,
+            "company_name": company.name,
+            "user_id": user.id,
+            "user_name": user.username,  # Assuming user has a 'username' field
+            "title": user.title,  # Assuming user has a 'username' field
+            "first_name": user.first_name,  # Assuming user has a 'username' field
+            "last_name": user.last_name,  # Assuming user has a 'username' field
+            "mobile": user.mobile_phone,  # Assuming user has a 'username' field
+            "email": user.email,  # Assuming user has a 'username' field
+            "role_id": role.id,
+            "role_name": role.name
+        })
+
+    # Ensure the data is being sent as JSON
+    response = jsonify(company_data)
+
+    return response
+
+
+@app.route('/document/edit/<int:document_id>')
+@login_required
+def edit_document(document_id):
+    # Logic to edit the document
+    print('Logic to edit the document')
+    pass
+
+
+@app.route('/workflow/manage/<int:workflow_id>', methods=['GET'])
+@login_required
+@roles_required(['Employee', 'Manager', 'Admin'])
+def manage_workflow(workflow_id):
+    # You can replace this with the actual URL of your admin view
+    return redirect(f'/open_admin_3/upload_documenti_view_existing/edit/?id={workflow_id}&url=%2Fopen_admin_3%2Fupload_documenti_view_existing%2F')
+
+
+@app.route('/api/workflow-data_bad', methods=['GET'])
+@login_required
+def get_workflow_data_bad():
+    print('Get workflows data')
+    try:
+        base_data_id = request.args.get('base_data_id')
+        workflow_id = request.args.get('workflow_id')
+        step_id = request.args.get('step_id')
+        fi0 = request.args.get('fi0')
+
+        # Log the received parameters
+        app.logger.info(f"Received base_data_id: {base_data_id}, workflow_id: {workflow_id}, step_id: {step_id}, fi0: {fi0}")
+
+        # Modify the query based on the presence of base_data_id, workflow_id, and step_id
+        query = BaseData.query
+        if base_data_id:
+            query = query.filter(BaseData.id == base_data_id)
+        if workflow_id:
+            query = query.filter(BaseData.workflow_id == workflow_id)
+        if step_id and step_id != 'all':
+            query = query.filter(BaseData.step_id == step_id)
+        if fi0:
+            query = query.filter(BaseData.fi0 == fi0)
+
+        data = query.all()
+
+        if not data:
+            return jsonify({"error": "No workflow data found"}), 404
+
+        serialized_data = [serialize_base_data(item) for item in data]
+        return jsonify(serialized_data), 200
+
+    except Exception as e:
+        app.logger.error(f"Error fetching workflow data: {e}")
+        return jsonify({"error": str(e)}), 500
+
+
+@app.route('/attach_documents_to_workflow', methods=['POST'])
+@login_required
+@roles_required(['Employee', 'Manager', 'Admin'])
+def attach_documents_to_workflow():
+    try:
+        # Get the submitted form data
+        workflow_id = request.form.get('workflow_id')
+        step_id = request.form.get('step_id')
+        auto_move = request.form.get('auto_move') == 'True'  # Convert string to boolean
+        date_start = request.form.get('date_start')
+        date_end = request.form.get('date_end')
+        document_ids = request.form.get('document_ids').split(',')
+
+        app.logger.info(f"Received workflow_id: {workflow_id}, step_id: {step_id}, document_ids: {document_ids}")
+
+        # Fetch the selected workflow and step
+        selected_workflow = Workflow.query.get(workflow_id)
+        selected_step = Step.query.get(step_id)
+
+        # Fetch the selected documents
+        documents = BaseData.query.filter(BaseData.id.in_(document_ids)).all()
+
+        for doc in documents:
+            # Check if the document is already assigned to the workflow
+            existing_assignment = DocumentWorkflow.query.filter_by(
+                base_data_id=doc.id,
+                workflow_id=workflow_id
+            ).first()
+
+            if not existing_assignment:
+                # Create a new DocumentWorkflow entry if it doesn't exist
+                new_assignment = DocumentWorkflow(
+                    base_data_id=doc.id,
+                    workflow_id=workflow_id,
+                    step_id=step_id,
+                    start_date=date_start,
+                    end_date=date_end,
+                    auto_move=auto_move
+                )
+                db.session.add(new_assignment)
+            else:
+                app.logger.info(f"Document {doc.id} is already assigned to workflow {workflow_id}")
+
+        # Commit the changes to the database
+        db.session.commit()
+
+        flash("Documents successfully attached to the workflow.", "success")
+        return redirect(url_for('open_admin_3.index'))
+
+    except Exception as e:
+        app.logger.error(f"Error attaching documents to workflow: {e}")
+        flash(f"Error: {e}", "error")
+        return redirect(url_for('open_admin_3.index'))
+
+
+def create_company_folder(company_id, subfolder):
+    """
+    Creates a folder for the given company_id in the specified directory.
+    Args:
+        company_id (int): The ID of the company.
+    Returns:
+        str: The path of the created folder or None if it already exists.
+    """
+
+    folder_path = None
+    try:
+        folder_name = f"company_id_{company_id}/{subfolder}"
+        folder_path = os.path.join(app.config['COMPANY_FILES_DIR'], folder_name)
+        if not os.path.exists(folder_path):
+            os.makedirs(folder_path)
+            print('Folder created:', folder_path)
+
+        else:
+            print('Folder already exists')
+            #return None  # Folder already exists
+
+    except Exception as e:
+        #logging.error(f'Error creating company folder: {e}')
+        #raise
+        pass
+
+    if folder_path:
+        print('return folder path', folder_path)
+        return folder_path
+    else:
+        return None
+
+
+def generate_password_reset_token(email):
+    salt = app.config['SECURITY_PASSWORD_SALT']
+    return serializer.dumps(email, salt=salt)
+
+
+# Define the custom Jinja2 filter
+def list_intersection(lst1, lst2):
+    return list(set(lst1) & set(lst2))
+
+# Create a custom filter to replace Undefined with None
+def replace_undefined(value):
+    return None if value is Undefined else value
+
+
+def next_is_valid(next_url):
+    # Check if the provided next_url is a valid URL
+    # This is a basic example; you might want to check against a list of allowed URLs
+    pdb.set_trace()
+    allowed_urls = ['index', 'protected']  # Add your allowed URLs here
+    if next_url and next_url in allowed_urls:
+        return True
+    else:
+        return False
+
+
+# Define the menu_item_allowed function
+def menu_item_allowed(menu_item, user_roles):
+    # Your implementation here
+    # Example: Check if the user has the required role to access the menu_item
+    # WHEN the phrase on the right was present, the landing page was empty A.R. 15Feb2024
+    return True #menu_item['allowed_roles'] and any(role in user_roles for role in menu_item['allowed_roles'])
+
+def process_menu_items(menu_items, is_authenticated, user_roles):
+    menus_to_display = []
+    widgets_to_display = []
+    if not user_roles:
+        user_roles = ['Guest']
+
+    def recursive_process(items):
+        # Iterate through each menu item
+        for key, item in items.items():
+            # Check if the item itself has a widget that should be displayed as a widget
+            if 'widget' in item and item['widget'].get('display', False):
+                allowed_roles = item.get('allowed_roles', [])
+                # Find the intersection between user_roles and allowed_roles
+                intersection = set(user_roles).intersection(allowed_roles)
+
+                # print('Widget to display:', key, is_authenticated, user_roles, allowed_roles, 'Intersection:',
+                #      intersection)
+
+                if intersection:
+                    widgets_to_display.append(item)
+                else:
+                    menus_to_display.append(item)
+            else:
+                # If not a widget, consider it a menu item to display
+                menus_to_display.append(item)
+
+            # Process submenus recursively (if any)
+            submenus = item.get('submenus', {})
+            if submenus:
+                recursive_process(submenus)
+
+    # Start processing from the top-level menu items
+    recursive_process(menu_items)
+
+    return menus_to_display, widgets_to_display
+
+
+def generate_route_and_menu(route, allowed_roles, template, include_protected=False, limited_menu=False):
+    def decorator(func):
+        @app.route(route)
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+
+            if callable(getattr(current_user, 'is_authenticated', None)):
+                is_authenticated = current_user.is_authenticated()
+            else:
+                is_authenticated = current_user.is_authenticated
+
+            username = current_user.username if current_user.is_authenticated else "Guest"
+            user_roles = session.get('user_roles', ['Guest'])
+
+            intersection = set(user_roles) & {"Employee", "Manager", "Authority", "Admin", "Provider"}
+
+            allowed_roles = list(intersection) if intersection else ["Guest"]
+
+            menu_builder_instance = MenuBuilder(main_menu_items, allowed_roles=allowed_roles)
+
+            # Check if g.user is set and if the user is authenticated
+            if hasattr(g, 'user') and g.user:
+                # User is authenticated, set roles and status accordingly
+                user_roles = [role.name for role in g.user.roles] if g.user.roles else ['Guest']
+                is_authenticated = g.user.is_authenticated
+            # else:
+            #     # If g.user is not available, default to Guest
+            #     user_roles = user_roles or ['Guest']
+            #     is_authenticated = False
+            if limited_menu:
+                menu_data = menu_builder_instance.parse_menu_data(user_roles=user_roles,
+                                                                  is_authenticated=is_authenticated, include_protected=False)
+            else:
+                menu_data = menu_builder_instance.parse_menu_data(user_roles=user_roles,
+                                                                  is_authenticated=is_authenticated, include_protected=include_protected)
+            buttons = []
+            admin_1_url = url_for('open_admin_1.index')
+            admin_2_url = url_for('open_admin_2.index')
+            admin_3_url = url_for('open_admin_3.index')
+            admin_4_url = url_for('open_admin_4.index')
+
+            try:
+                admin_5_url = url_for('open_admin_5.index')
+            except Exception as e:
+                print('Error generating admin_5_url:', str(e))
+
+            try:
+                admin_6_url = url_for('open_admin_6.index')
+            except Exception as e:
+                print('Error generating admin_6_url:', str(e))
+
+            admin_10_url = url_for('open_admin_10.index')
+
+            company_name = ' '
+            if current_user:
+                user_id = current_user.id if current_user.is_authenticated else 0
+                company_name = db.session.query(Company.name) \
+                    .join(CompanyUsers, CompanyUsers.company_id == Company.id) \
+                    .filter(CompanyUsers.user_id == user_id) \
+                    .first()
+            else:
+                pass
+
+            if is_authenticated:
+                unread_notices_count = Post.query.filter_by(user_id=current_user.id, marked_as_read=False).count()
+            else:
+                unread_notices_count = 0
+
+            if is_authenticated:
+                if 'Admin' in [role.name for role in current_user.roles]:
+                    admin_tickets_count = Ticket.query.filter_by(status_id=2, marked_as_read=False).count()
+                    open_tickets_count = 0
+                else:
+                    admin_tickets_count = 0
+                    open_tickets_count = Ticket.query.filter_by(user_id=current_user.id, status_id=2, marked_as_read=False).count()
+            else:
+                admin_tickets_count = 0
+                open_tickets_count = 0
+
+            role_ids = []
+            for role_name in user_roles:
+                role = Role.query.filter_by(name=role_name).first()
+                if role:
+                    role_ids.append(role.id)
+
+            try:
+                containers = Container.query.filter(
+                    Container.role_id.in_(role_ids)
+                ).order_by(Container.container_order).all()
+            except:
+                containers = None
+
+            company_id = session.get('company_id')
+            card_data = get_cards(company_id)
+
+            # Check cookies_accepted in the database
+            cookies_accepted = 'true' if current_user.is_authenticated and current_user.cookies_accepted else 'false'
+            show_cookie_banner = 'Admin' not in user_roles and cookies_accepted == 'false'
+
+            #current_app.logger.debug(f"User Roles: {user_roles}")
+            #current_app.logger.debug(f"Show Cookie Banner: {show_cookie_banner}")
+            #current_app.logger.debug(f"Cookies Accepted: {cookies_accepted}")
+            menus_to_display, widgets_to_display = process_menu_items(main_menu_items, is_authenticated, user_roles)
+
+            additional_data = {
+                "username": username,
+                "company_name": company_name,
+                "is_authenticated": is_authenticated,
+                "main_menu_items": menu_data,
+                "menus_to_display": menus_to_display,
+                "widgets_to_display": widgets_to_display,
+                "admin_menu_data": None,
+                "authority_menu_data": None,
+                "manager_menu_data": None,
+                "employee_menu_data": None,
+                "guest_menu_data": None,
+                "user_roles": user_roles,
+                "allowed_roles": allowed_roles,
+                "limited_menu": limited_menu,
+                "buttons": buttons,
+                "admin_1_url": admin_1_url,
+                "admin_2_url": admin_2_url,
+                "admin_3_url": admin_3_url,
+                "admin_4_url": admin_4_url, # "admin_5_url": admin_5_url, admin_6_url": admin_6_url,
+                "admin_10_url": admin_10_url,
+                "left_menu_items": menu_data,
+                "unread_notices_count": unread_notices_count,
+                "admin_tickets_count": admin_tickets_count,
+                "open_tickets_count": open_tickets_count,
+                "containers": containers,
+                "cards": card_data,
+                "show_cookie_banner": show_cookie_banner,
+            }
+
+            return render_template(template, **additional_data)
+
+        return wrapper
+
+    return decorator
+
+
+def redirect_based_on_role(user):
+    if user.has_role('Admin'):
+        return redirect(url_for('admin_page'))
+    elif user.has_role('Authority'):
+        return redirect(url_for('authority_page'))
+    elif user.has_role('Manager'):
+        return redirect(url_for('manager_page'))
+    elif user.has_role('Employee'):
+        return redirect(url_for('employee_page'))
+    elif user.has_role('Provider'):
+        return redirect(url_for('provider_page'))
+    elif user.has_role('Guest'):
+        return redirect(url_for('guest_page'))
+    else:
+        return redirect(url_for('guest_page'))
+
+
+
+# TODO unused?
+def generate_new_id(model):
+    # Get the maximum ID from the database
+    max_id = db.session.query(db.func.max(model.id)).scalar()
+    # If there are no records in the table, start with ID 1
+    if max_id is None:
+        return 1
+    else:
+        # Otherwise, increment the maximum ID by one
+        return max_id + 1
+
+
+def get_cards(company_id):
+  cards = []
+  # Use SQLAlchemy to query the 'container' table
+  containers = db.session.query(Container).filter_by(
+      company_id=company_id, content_type='card'
+  ).all()
+
+  for container in containers:
+    content = container.content
+
+    # Check data type before decoding
+    if isinstance(content, str):
+      card_data = json.loads(content)
+    elif isinstance(content, dict):
+      card_data = content  # Already a dictionary
+    else:
+      # Handle unexpected data type (optional)
+      # You can log a warning or raise an exception here
+      print(f"Unexpected data type for container content: {type(content)}")
+      continue  # Skip this container
+
+    cards.append(card_data)
+
+  return cards
+
+
+def get_containers(company_id):
+    containers = db.session.query(Container).filter_by(company_id=company_id).all()
+    container_data = []
+
+    for container in containers:
+        container_info = {
+            'content_type': container.content_type,
+            'content': container.content
+        }
+        container_data.append(container_info)
+
+    return container_data
+
+
+def analyze_text(contract_text, prompt):
+    """
+    Analyze a given contract text using a custom prompt.
+
+    Parameters:
+    contract_text (str): The contract text to be analyzed.
+    prompt (str): The custom prompt to guide the analysis.
+
+    Returns:
+    str: The analysis result from OpenAI's model.
+    """
+    # Use OpenAI's GPT model to perform the analysis
+    try:
+        response = openai.Completion.create(
+            model="gpt-3.5-turbo",  # Use 'gpt-3.5-turbo' or any other model you have access to
+            prompt=prompt,
+            max_tokens=500,
+            temperature=0.3
+        )
+
+        # Return the analysis result
+        return response.choices[0].message['content'].strip()
+
+    except openai.error.OpenAIError as e:
+        print(f"OpenAI API error: {e}")  # Print API-related errors
+        return f"An error occurred during the analysis: {str(e)}"
+    except Exception as e:
+        print(f"General error: {e}")  # Print general errors
+        return f"An unexpected error occurred: {str(e)}"
+
+
+@app.route('/analyze_text_view', methods=['GET', 'POST'])
+@login_required
+@roles_required(['Admin'])
+def analyze_text_view():
+    try:
+        if request.method == 'POST':
+            contract_text = request.form.get('contract_text')
+            prompt_text = request.form.get('prompt_text')
+
+            # Debugging print statements
+            print(f"Contract Text: {contract_text}")
+            print(f"Prompt Text: {prompt_text}")
+
+            # Check if form data exists
+            if not contract_text or not prompt_text:
+                return "Error: Missing contract text or prompt", 400
+
+            analysis_result = analyze_text(contract_text, prompt_text)
+            return render_template('analysis_result.html', analysis_result=analysis_result)
+        return render_template('contract_form.html')
+    except Exception as e:
+        print(f"Error occurred: {e}")  # Print the error for debugging
+        return "An error occurred during analysis", 500
+
+
+@app.errorhandler(SMTPAuthenticationError)
+def handle_smtp_authentication_error(error):
+    # Handle SMTP authentication errors gracefully
+    return "SMTP Authentication Error: Failed to authenticate with the SMTP server.", 500
+
+
+@app.errorhandler(OperationalError)
+def handle_db_error(error):
+   return render_template('db_error.html'), 500
+
+
+@app.route('/forgot_password', methods=['GET', 'POST'])
+@login_required
+def forgot_password():
+    form = ForgotPasswordForm()
+    if form.validate_on_submit():
+        try:
+            user = Users.query.filter_by(email=form.email.data).first()
+            if user:
+                user_email = form.email.data
+                token = generate_password_reset_token(user_email)
+                user.user_2fa_secret = token
+                db.session.commit()
+                # Send password reset email using Flask-Mail (example)
+                msg = Message(sender="Auditors Digital Platform <info@firstauditors.org>",
+                              recipients=[user.email])
+                reset_url = url_for('reset_password', token=token, _external=True)
+                msg.body = f'Click the link to reset your password: {reset_url}'
+
+                mail.send(msg)
+
+                # Convert LazyString to str before passing to flash
+                flash(str(_('An email has been sent with instructions to reset your password.')), 'success')
+            else:
+                flash(str(_('No user found with that email address.')), 'danger')
+            return redirect(url_for('forgot_password'))
+        except Exception as e:
+            flash(str(_('An error occurred while processing your request. Please try again later.')), 'danger')
+            return render_template('access/forgot_password.html', form=form)
+    return render_template('access/forgot_password.html', form=form)
+
+
+@app.route('/reset_password/<token>', methods=['GET', 'POST'])
+@login_required
+def reset_password(token):
+    user = Users.query.filter_by(user_2fa_secret=token).first()
+    if not user:
+        flash('The password reset token is invalid or expired.', 'warning')
+        return redirect(url_for('login'))
+
+    form = ResetPasswordForm101()  # Assuming you have a ResetPasswordForm for new password entry
+    if form.validate_on_submit():
+        user.set_password(form.password.data)  # Use a secure password hashing method
+        user.user_2fa_secret = None  # Invalidate the token after reset
+        db.session.commit()
+        flash('Your password has been reset successfully.', 'success')
+        return redirect(url_for('login'))
+    return render_template('access/reset_password.html', form=form, token=token)
+
+
+
+@app.route("/send_email___")
+@login_required
+def send_email___():
+    mail = Mail(app)
+    msg = Message("Hello from ILM",
+                  sender="amarad21@gmail.com",
+                  recipients=["astridel.radulescu1@gmail.com"])
+    msg.body = "This is a test email sent from my App using Postfix."
+    mail.send(msg)
+    return "Email sent successfully."
+
+
+@app.route("/send_email")
+@login_required
+def send_email():
+    # Example usage
+    api_key = "20cb76ced830ab536fa7cd718d1c1141-b02bcf9f-5936b742"
+    domain =  "sandbox8fe87aee4b91456c9d17ffcb802d8b20.mailgun.org"
+    sender = "Mailgun Sandbox <postmaster@sandbox8fe87aee4b91456c9d17ffcb802d8b20.mailgun.org>"
+    recipient = "amarad21@gmail.com"
+    subject = "Test MG Email"
+    text = "This is a test email sent via Mailgun."
+
+    # Call the function to send the email
+    # send_simple_message(api_key, domain, sender, recipient, subject, text)
+    send_simple_message333()
+    # Set flash message
+    flash('Mail sent successfully.', 'success')
+    return redirect(url_for('index'))  # Redirect to your home page
+
+
+@app.route('/confirmation')
+def confirmation_page():
+    return redirect(url_for('login'))
+
+
+@app.route('/access/login', methods=['GET', 'POST'])
+@limiter.limit("200/day;96/hour;12/minute")
+def login():
+    form = LoginForm()
+    if form.validate_on_submit() and request.method == 'POST':
+        # Verify CAPTCHA
+        user_captcha = request.form['captcha']
+        if 'captcha' in session and session['captcha'] == user_captcha:
+            try:
+                # CAPTCHA entered correctly
+                username = form.username.data
+                password = form.password.data
+                user = user_manager.authenticate_user(username, password)
+                if user:
+                    # Log out any existing user and clear the session
+                    logout_user()
+                    session.clear()
+
+                    if not current_user.is_authenticated:
+                        # login_user(user) # no 'remember' set up
+                        # login_user(user, remember=False) # no long term cookies
+                        remember = 'remember' in request.form # user defined set up
+                        login_user(user, remember=remember)
+                        flash('Login Successful')
+                        cet_time = get_cet_time()
+                        try:
+                            create_message(db.session, user_id=user.id, message_type='email', subject='Security check',
+                                           body='È stato rilevato un nuovo accesso al tuo account il ' +
+                                                cet_time.strftime('%Y-%m-%d') + '. Se eri tu, non devi fare nulla. ' +
+                                                'In caso contrario, ti aiuteremo a proteggere il tuo account; ' +
+                                                "non rispondere a questo messaggio, apri un ticket o contatta " +
+                                                "l'amministratore del sistema.",
+                                           sender='System', company_id=None,
+                                           lifespan='one-off', allow_overwrite=True)
+                        except Exception as e:
+                            print('Error creating logon message:', e)
+
+                        session['user_roles'] = [role.name for role in user.roles] if user.roles else []
+                        session['user_id'] = user.id
+                        session['username'] = username
+                        session['email'] = user.email
+                        session['show_spinner'] = False
+
+                        try:
+                            company_user = CompanyUsers.query.filter_by(user_id=user.id).first()
+                            company_id = company_user.company_id if company_user else None
+                            session['company_id'] = company_id
+                        except Exception as e:
+                            print('Error retrieving company ID:', e)
+                            company_id = None
+
+                        if company_id is not None and isinstance(company_id, int):
+                            try:
+                                subfolder = datetime.now().year
+                            except Exception as e:
+                                print('Error setting subfolder:', e)
+
+                    # Redirect based on user roles
+                    return redirect_based_on_role(user)
+                else:
+                    flash('Invalid username or password. Please try again.', 'error')
+                    captcha_text, captcha_image = generate_captcha(300, 100, 5)
+                    session['captcha'] = captcha_text
+                    return render_template('access/login.html', form=form, captcha_image=captcha_image)
+            except OperationalError as e:
+                return handle_db_error(e)
+        else:
+            # CAPTCHA entered incorrectly
+            flash('Incorrect CAPTCHA! Please try again.', 'error')
+            captcha_text, captcha_image = generate_captcha(300, 100, 5)
+            session['captcha'] = captcha_text
+            return render_template('access/login.html', form=form, captcha_image=captcha_image)
+
+    # Generate and render CAPTCHA image within the template
+    captcha_text, captcha_image = generate_captcha(300, 100, 5)
+    session['captcha'] = captcha_text
+    return render_template('access/login.html', form=form, captcha_image=captcha_image)
+
+
+@app.route('/left_menu', methods=['GET', 'POST'])
+# TODO left_menu.html of home.html?
+#@generate_route_and_menu('/home', allowed_roles=["Employee"], template='home/left_menu.html')
+@generate_route_and_menu('/home', allowed_roles=["Employee"], template='home/home.html')
+def left_menu():
+    username = current_user.username if current_user.is_authenticated else "Guest"
+    if callable(getattr(current_user, 'is_authenticated', None)):
+        is_authenticated = current_user.is_authenticated()
+    else:
+        is_authenticated = current_user.is_authenticated
+
+    user_roles = session.get('user_roles', [])
+    allowed_roles = ["Employee", "Manager", "Authority", "Admin", "Provider"]
+
+    # Fetch role IDs
+    role_ids = []
+    for role_name in user_roles:
+        role = Role.query.filter_by(name=role_name).first()
+        if role:
+            role_ids.append(role.id)
+
+    # Fetch containers based on role IDs
+    containers = []
+    if role_ids:
+        try:
+            containers = Container.query.filter(
+                Container.role_id.in_(role_ids)
+            ).order_by(Container.page.desc()).all()
+
+            # Iterate over the containers and print the 'container' field
+            for container in containers:
+                print('container:', container.page, container.content_type, container.content)
+        except Exception as e:
+            app.logger.error(f"Error fetching containers: {e}")
+            containers = []
+
+    # Check if the lists intersect
+    intersection = set(user_roles) & set(allowed_roles)
+
+    left_menu_items = []
+    if intersection:
+        left_menu_items = get_left_menu_items(list(intersection))
+
+    # Check for unread notices
+    unread_notices_count = 0
+    if is_authenticated:
+        unread_notices_count = Post.query.filter_by(user_id=current_user.id, marked_as_read=False).count()
+
+    additional_data = {
+        "username": username,
+        "is_authenticated": is_authenticated,
+        "user_roles": user_roles,
+        "unread_notices_count": unread_notices_count,
+        "main_menu_items": None,
+        "admin_menu_data": None,
+        "authority_menu_data": None,
+        "manager_menu_data": None,
+        "employee_menu_data": None,
+        "guest_menu_data": None,
+        "allowed_roles": allowed_roles,
+        "limited_menu": None,  # Assuming limited_menu is defined elsewhere
+        "left_menu_items": left_menu_items,
+        "containers": containers,
+    }
+
+    return render_template('home/home.html', **additional_data)
+
+
+@app.route('/')
+@generate_route_and_menu('/', allowed_roles=["Guest"], template='home/home.html', include_protected=False, limited_menu=True)
+def index():
+    user_id = session.get('user_id')
+    user_roles = session.get('user_roles', [])
+    analytics = request.cookies.get('analytics', 'false')
+    marketing = request.cookies.get('marketing', 'false')
+    cookies_accepted = request.cookies.get('cookies_accepted', 'false')
+
+    # Determine if the cookie banner should be shown
+    show_cookie_banner = 'Admin' not in user_roles and cookies_accepted == 'false'
+
+    # Create MenuBuilder with user roles
+    menu_builder = MenuBuilder(main_menu_items, allowed_roles=user_roles)
+    # Generate menu for the current user
+
+    # Check if g.user is set and if the user is authenticated
+    if hasattr(g, 'user') and g.user:
+        # User is authenticated, set roles and status accordingly
+        user_roles = [role.name for role in g.user.roles] if g.user.roles else ['Guest']
+        is_authenticated = g.user.is_authenticated
+    else:
+        # If g.user is not available, default to Guest
+        user_roles = user_roles or ['Guest']
+        is_authenticated = False
+
+    generated_menu = menu_builder.generate_menu(user_roles=user_roles, is_authenticated=is_authenticated, include_protected=False)
+
+    # Check if the user has events
+    try:
+        if user_id:
+            events = Event.query.filter_by(user_id=user_id).count()
+            has_events = events > 0
+        else:
+            has_events = False
+    except Exception as e:
+        app.logger.error(f"Error checking for events: {e}")
+        has_events = False
+
+    git_version = get_version_from_file()  # Get version from file
+
+    return render_template('home/home.html',
+                        analytics=analytics, marketing=marketing,
+                        generated_menu=generated_menu,
+                        show_cookie_banner=show_cookie_banner,
+                        has_events=has_events,
+                        git_version=git_version)
+
+
+@app.route('/access/logout', methods=['GET'])
+@login_required
+def logout():
+
+
+    # Clear the user roles from the session
+    session.pop('user_roles', None)
+    # Clear the user session
+    session.clear()
+
+    # Clear user-specific session data but preserve CAPTCHA and other necessary data
+
+    '''user_specific_keys = ['user_id', 'username', 'user_roles']
+    for key in user_specific_keys:
+        session.pop(key, None)
+        '''
+
+    # Build 'Guest' menu
+    guest_menu_builder = MenuBuilder(main_menu_items, allowed_roles=["Guest"])
+    guest_menu_data = guest_menu_builder.parse_menu_data(user_roles=["Guest"],
+                                                         is_authenticated=False, include_protected=False)
+    # Render the home page with 'Guest' menu
+    additional_data = {
+        "username": "Guest",
+        "is_authenticated": False,
+        "main_menu_items": guest_menu_data,
+        "admin_menu_data": None,
+        "authority_menu_data": None,
+        "manager_menu_data": None,
+        "employee_menu_data": None,
+        "guest_menu_data": None,
+        "user_roles": ["Guest"],
+        "allowed_roles": ["Guest"]
+    }
+
+    return render_template('access/logout.html', **additional_data)
+
+
+@app.route('/show_cards')
+@login_required
+def show_cards():
+  company_id = session['company_id']  # Access company ID from session
+  #card_data = get_cards(company_id)
+  containers_data = get_containers(company_id)
+
+  # optional? Alternative to 'cards' above
+  '''
+  card_data = [
+      {
+          'title': 'Area 1',
+          'stats': get_model_statistics(db.session, BaseData, {"area_id": 1}),  # Filter criteria as a dictionary
+          'body': 'This is the body content for Card 1.',
+          'card_class': 'bg-primary'  # Optional card class
+      },
+      {
+          'title': 'Area 2',
+          'stats': get_model_statistics(db.session, BaseData, {"area_id": 2}),  # Filter criteria as a di
+          'footer': 'Footer for Card 2',
+          # 'visibility': 'd-none'  # Initially hide this card
+      },
+      {
+          'title': 'Area 3',
+          'stats': get_model_statistics(db.session, BaseData, {"area_id": 3}),  # Filter criteria as a di
+          'footer': 'Footer for Card 2',
+          # 'visibility': 'd-none'  # Initially hide this card
+      },
+      {
+          'title': 'Upcoming Deadline',
+          'stats': get_model_statistics(db.session, BaseData, {"area_id": 3}),  # Filter criteria as a di
+          'footer': 'Footer for Card 2',
+          # 'visibility': 'd-none'  # Initially hide this card
+      }
+  ]
+  '''
+
+  return render_template('base_cards_template.html', containers=containers_data, create_card=create_card)
+
 
 # TODO add Home and Back buttons
 @app.route('/document_workflow_visualization_d3js')
+@login_required
 def workflow_visualization():
-    print('visualize documents workflow')
+    print('d3js triggered')
     return render_template('document_workflow_visualization_d3js.html')
 
 
-
 @app.route('/custom_base_atti')
+@login_required
 def custom_base_atti_index():
     form = CustomFileLoaderForm()  # Instantiate your form object here
     return render_template('custom_file_loader.html', form=form)
 
 
+
 @app.route('/user_documents_d3')
+@login_required
 def user_documents_d3():
     # Define colors
     LIGHT_GRAY = '#D3D3D3'
@@ -514,7 +1819,7 @@ def user_documents_d3():
                         [{"id": step.id, "name": step.name, "color": LIGHT_GRAY} for step in steps])
 
                 # Fetch current step information from StepBaseData table
-                current_step_data = StepBaseData.query.filter_by(base_data_id=document_obj.id).first()
+                current_step_data = DocumentWorkflow.query.filter_by(base_data_id=document_obj.id).first()
                 if current_step_data:
                     current_step_id = current_step_data.step_id
                     current_step = Step.query.get(current_step_id)
@@ -522,9 +1827,7 @@ def user_documents_d3():
                         document_data["current_step"] = current_step.name
 
             # Assign colors to steps
-            print(f"Current step ID: {current_step_id}")
             for step_data in document_data["steps"]:
-                print(f"Step ID: {step_data['id']}")
                 if document_data["current_step"] and step_data["name"] == document_data["current_step"]:
                     step_data["color"] = LIGHT_BLUE
 
@@ -538,11 +1841,33 @@ def user_documents_d3():
             document_data["steps"] = unique_steps
 
             documents_data.append(document_data)
-    print('jsonify and returns', documents_data)
     return jsonify(documents_data)
 
 
+
+@app.route('/custom_action/', methods=['GET', 'POST'])
+@login_required
+def custom_action():
+    if request.method == 'POST':
+        # Process the form data and perform complex operations
+        perform_complex_operations(request.form)
+        # Redirect back to the original view or any other desired page
+
+        # Redirect the user to the Flask-Admin list view for YourModel
+        # return redirect(url_for('admin.index_view', view_name='atti_data_view'))
+        # Redirect the user back to the previous page
+        #return redirect(request.referrer)
+
+        # Redirect the user back to the Flask-Admin atti_data_view
+        return redirect('open_admin_1/atti_data_view')
+
+    else:
+        # Render the data input template
+        return render_template('set_dws_rich_data.html')
+
+
 @app.route('/user_documents')
+@login_required
 def user_documents():
     form = UserDocumentsForm()
 
@@ -582,16 +1907,17 @@ def user_documents():
                     return render_template('workflow/document_workflow.html', user_id=current_user.id,  # Assuming user_id is available
                                            document=document_data, plot_config=plot_config, plot_html=plot_html, form=form)
                 else:
-                    print('Skip rendering')
+                    pass
+
             else:
-                print('no workflow data for first document')
                 #app.logger.info("No workflow data found for the first document")
                 #return render_template('workflow/no_workflow_data.html')  # Handle case where no workflow data exists
+                pass
 
         else:
-            print('no docs for current user')
             #app.logger.info("No documents found for the current user")
             #return render_template('workflow/no_documents.html')  # Handle the case where no documents exist
+            pass
 
     except Exception as e:
         #app.logger.error("An error occurred: %s", e)
@@ -601,6 +1927,7 @@ def user_documents():
 
 # Document workflow view route (using Plotly)
 @app.route('/documents/<int:company_id>/<int:base_data_id>/<int:workflow_id>', methods=['GET', 'POST'])
+@login_required
 def document_workflow(company_id, base_data_id, workflow_id):
     document = BaseData.query.filter_by(company_id=company_id, id=base_data_id, workflow_id=workflow_id).first()
 
@@ -626,360 +1953,8 @@ def document_workflow(company_id, base_data_id, workflow_id):
     return render_template('workflow/document_workflow.html', document=document, figure=fig)
 
 
-class CustomStepQuestionnaireForm(Form):
-    inline_form = None
-
-class CheckboxField(BooleanField):
-    def process_formdata(self, valuelist):
-        if valuelist:
-            self.data = True
-        else:
-            self.data = False
-    def populate_obj(self, obj, name):
-        setattr(obj, name, "Yes" if self.data else "No")  # Customize as per your model
-
-
-# admin -  f l u s s i  precomplaint
-class Flussi_dataView(ModelView):
-    create_template = 'admin/area_1/create_base_data_1.html'
-    subarea_id = 1  # Define subarea_id as a class attribute
-    area_id = 1
-
-    # Specify the fields to be edited inline using XEditableWidget
-    column_editable_list = ['fc1']
-    # Customize the widget for inline editing
-    form_widget_args = {
-        # 'fi0': {'widget': XEditableWidget()},
-        # 'interval_ord': {'widget': XEditableWidget()},
-        # 'fi1': {'widget': XEditableWidget()},
-        # 'fi2': {'widget': XEditableWidget()},
-        'fc1': {'widget': XEditableWidget()},
-    }
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        #self.class_name = self.__class__.__name__  # Store the class name
-        self.subarea_id = Flussi_dataView.subarea_id  # Initialize subarea_id in __init__
-        self.area_id = Flussi_dataView.area_id  # Initialize area_id in __init__
-        self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
-
-    column_list = (
-    'interval_ord', 'fi0', 'lexic', 'subject', 'fi1', 'fi2', 'fi3', 'fc1')  # Add 'lexic_id' to column_list
-
-    form_columns = ('interval_ord', 'fi0', 'fi1', 'fi2', 'fi3', 'fc1')  # Remove 'lexic_id' from form_columns
-
-    column_labels = {'interval_ord': 'Periodo', 'fi0': 'Anno',
-                     'fi1': 'Totale',
-                     'fi2': 'IVI',
-                     'fi3': 'Altri',
-                     'fc1': 'Nome venditore'}
-
-    column_descriptions = {'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
-                           'fi0': 'Inserire anno (es. 2024)',
-                           'fi1': 'Inserisci numero totale di casi registrati',
-                           'fi2': 'di cui IVI',
-                           'fi3': 'altri (IVI+Altri=Totale)',
-                           'fc1': "Nome dell'utente venditore"}
-
-    # Customize inlist for the View class
-    column_default_sort = ('subject_id', True)
-    column_searchable_list = (
-    'lexic.name', 'subject.name', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fc1')  # Adjust based on your model structure
-    column_filters = ('lexic.name', 'subject.name', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fc1')
-
-    # Specify fields to be excluded from the form
-    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_by', 'created_on', 'updated_on')
-
-    def _subject_formatter(view, context, model, name):
-        # This function will be used to format the 'subject' column
-        if model.subject:
-            if isinstance(model.subject, Subject):  # Check if the subject is an instance of Subject
-                return model.subject.name
-            else:
-                return Subject.query.get(model.subject).name  # If not, query the subject object
-        return ''
-
-    def _lexic_formatter(view, context, model, name):
-        # This function will be used to format the 'subject' column
-        if model.lexic:
-            if isinstance(model.lexic, Lexic):  # Check if the subject is an instance of Subject
-                return model.lexic.name
-            else:
-                return Lexic.query.get(model.lexic).name  # If not, query the subject object
-        return ''
-
-    column_formatters = {
-        'subject': _subject_formatter,
-        'lexic': _lexic_formatter
-    }
-
-    def scaffold_form(self):
-        form_class = super(Flussi_dataView, self).scaffold_form()
-        # Set default values for specific fields
-
-        # Get the current year
-        current_year = datetime.now().year
-        # Generate choices for the year field from current_year - 5 to current_year + 1
-        year_choices = [(str(year), str(year)) for year in range(current_year - 5, current_year + 2)]
-        # Set the default value to the current year
-        default_year = str(current_year)
-        # Dynamically determine interval_ord options based on subject_id
-        form_class.fi0 = SelectField(
-            'Anno',
-            coerce=int,
-            choices=year_choices,
-            default=default_year
-        )
-
-        # NEW
-        config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
-                                          subarea_id=None)
-        nr_intervals = config_values[0]
-
-        # OLD
-        # nr_intervals = get_subarea_interval_type(self.area_id, self.subarea_id)
-
-        current_interval = [t[2] for t in intervals if t[0] == nr_intervals] #int(get_current_interval(3))  # quadriester
-        first_element = current_interval[0] if current_interval else None
-        interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
-
-        form_class.interval_ord = SelectField(
-            'Periodo',
-            coerce=int,
-            choices=interval_choices,  # Example choices, replace with your logic
-            default=first_element
-        )
-
-        form_class.subject_id = SelectField(
-            'Oggetto',
-            validators=[InputRequired()],
-            coerce=int,
-            choices=[(subject.id, subject.name) for subject in Subject.query.filter_by(tier_1="Utenti").all()]
-        )
-
-        form_class.lexic_id = SelectField(
-            'Tipo pre-complaint',
-            validators=[InputRequired()],
-            coerce=int,
-            choices=[(lexic.id, lexic.name) for lexic in Lexic.query.filter_by(category="Precomplaint").all()]
-        )
-
-        return form_class
-
-    def create_model(self, form):
-        model = super(Flussi_dataView, self).create_model(form)
-        if current_user.is_authenticated:
-            try:
-                model.user_id = current_user.id  # Set the user_id
-                model.company_id = current_user.company_id  # Set the company_id
-                model.data_type = self.subarea_name
-                created_by = current_user.username  # Set the created_by
-                user_id = current_user.id
-                model.user_id = user_id
-                try:
-                    company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-                except:
-                    company_id = None
-                    pass
-                model.company_id = company_id  # Set the company_id
-                model.subject_id = form.subject.data.id  # Set the subject_id
-                model.created_by = created_by  # Set the cr by
-                model.created_on = datetime.now()  # Set the created_on
-            except AttributeError:
-                pass
-            return model
-        else:
-            # Handle the case where the user is not authenticated
-            raise ValidationError('User not authenticated.')
-
-
-    def get_query(self):
-
-        #query = self.session.query(self.model).filter_by(data_type=self.subarea_name)
-        query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
-
-        if current_user.is_authenticated:
-            if current_user.has_role('Admin') or current_user.has_role('Authority'):
-                return query
-            elif current_user.has_role('Manager'):
-                # Manager can only see records related to their company_users
-                # Assuming you have a relationship named 'user_companies' between User and CompanyUsers models
-                subquery = db.session.query(CompanyUsers.company_id).filter(
-                    CompanyUsers.user_id == current_user.id
-                ).subquery()
-
-                query = query.filter(self.model.company_id.in_(subquery))
-            elif current_user.has_role('Employee'):
-                # Employee can only see their own records
-                query = query.filter(self.model.user_id == current_user.id)
-                return query
-
-        # For other roles or anonymous users, return an empty query
-        return query.filter(self.model.id < 0)
-
-
-    def is_accessible(self):
-        if current_user.is_authenticated:
-            if (current_user.has_role('Admin') or current_user.has_role('Authority')
-                    or current_user.has_role('Manager') or current_user.has_role('Employee')):
-                # Allow access for Admin, Manager, and Employee
-                return True
-        return False
-
-
-    def on_model_change(self, form, model, is_created):
-
-        super().on_model_change(form, model, is_created)
-        # Reset form data
-        form.populate_obj(model)  # This resets the form data to its default values
-
-        if is_created:
-            # Handle new model creation:
-            # - Set default values
-            # - Send notification
-            # Apply your custom logic to set data_type
-            model.created_on = datetime.now()  # Set the created_on
-            pass
-        else:
-            # Handle existing model edit:
-            # - Compare previous and updated values
-            # - Trigger specific actions based on changes
-            pass
-
-        user_id = current_user.id  # Get the current user's ID or any other criteria
-        try:
-            company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-        except:
-            company_id = None
-            pass
-
-        area_id = self.area_id
-        subarea_id = self.subarea_id
-        subarea_name = self.subarea_name
-        status_id = 1
-
-        config_values = get_config_values(config_type='area_interval', company_id=company_id, area_id=self.area_id,
-                                          subarea_id=self.subarea_id)
-
-        interval_id = config_values[0]
-        interval_ord = form.interval_ord.data
-        year_id = form.fi0.data
-        # Get the lexic_id value from the form
-        lexic_id = form.lexic_id.data
-        subject_id = form.subject_id.data
-
-        record_type = 'control_area'
-        data_type = self.subarea_name
-
-        legal_document_id = None
-
-        if form.fi2.data is None or form.fi3.data is None:
-            raise ValidationError("Please enter all required data.")
-
-        if (form.fi1.data + form.fi2.data + form.fi3.data == 0) or \
-            (form.fi1.data < 0 or form.fi2.data < 0 or form.fi3.data < 0) or \
-            (form.fi1.data != form.fi2.data + form.fi3.data):
-            raise ValidationError("Please check the values you entered.")
-
-        if form.fi0.data == None or form.interval_ord.data == None:
-            raise ValidationError(f"Time interval reference fields cannot be null")
-
-        # - Validate data and Save the model
-        if form.interval_ord.data > 3 or form.interval_ord.data < 0:
-            raise ValidationError(
-                "Period must be less than or equal to the number of fractions (e.g. 4 for quarters, 12 for months)")
-            pass
-
-        if form.fi0.data < 2000 or form.fi0.data > 2099:
-            raise ValidationError(
-                "Please check the year")
-            pass
-
-        # no "attached file missing check" here
-        # perform actions relevant to both creation and edit:
-        with app.app_context():
-
-            # include fi1-3, fn1-3, fc1-3 AS NEEDED
-            # interval_id = 1
-            result, message = check_status_extended(is_created, company_id,
-                                                    lexic_id, subject_id, legal_document_id, interval_ord,
-                                                    interval_id, year_id, area_id, subarea_id,
-                                                    form.fi1.data, None, None,
-                                                    None, None, None,
-                                                    form.fc1.data, None, None,
-                                                    datetime.today(), db.session)
-
-        if result == False:
-            raise ValidationError(message)
-            pass
-
-        # Assign the value to the model
-        model.lexic_id = lexic_id
-        model.updated_on = datetime.now()  # Set the created_on
-        model.user_id = user_id
-        model.company_id = company_id
-        model.data_type = data_type
-        model.record_type = record_type
-        model.area_id = area_id
-        model.subarea_id = subarea_id
-        model.fi0 = year_id
-        model.interval_id = interval_id
-        model.interval_ord = interval_ord
-        model.status_id = status_id
-        model.subject_id = subject_id
-        model.legal_document_id = legal_document_id
-
-        if is_created:
-            self.session.add(model)
-        else:
-            self.session.merge(model)
-        self.session.commit()
-
-        return model
-
-
-class MyStringField(StringField):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, default='Inserire commento', **kwargs)
-        self.help_text = 'Click to edit'  # Store help text separately
-
-
-class MyIntegerField(IntegerField):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, default=datetime.now().year, **kwargs)
-
-
-class MyIntegerIntervalField(IntegerField):
-    """Custom field for selecting an interval based on area and subarea IDs.
-
-    - Leverages Flask's app context for database access.
-    - Validates user-selected interval against available options.
-    - Provides flexibility for customization and error handling.
-
-    Args:
-        area_id (int): Area ID.
-        subarea_id (int): Subarea ID.
-        get_current_intervals (callable): Function to retrieve current intervals.
-        get_subarea_name (callable): Function to retrieve subarea name.
-        get_subarea_interval_type (callable): Function to determine interval type.
-        default (int, optional): Default interval if no selection is made.
-
-    Raises:
-        ValidationError: If the selected interval is invalid.
-    """
-
-    def __init__(self, *args, area_id, subarea_id,
-                 get_current_intervals, get_subarea_name, get_subarea_interval_type,
-                 default=None, **kwargs):
-        super().__init__(*args, default=default, **kwargs)
-        self.area_id = area_id
-        self.subarea_id = subarea_id
-        self.get_current_intervals = get_current_intervals
-        self.get_subarea_name = get_subarea_name
-        self.get_subarea_interval_type = get_subarea_interval_type
-
-# TODO *** salva file (attachment) in folder company (dove si trova? perché non funziona più?)
-
 @app.route('/file-upload', methods=['POST'])
+@login_required
 def upload_file():
     # Check if file is uploaded
     if 'file_path' not in request.files:
@@ -1010,8 +1985,8 @@ def upload_file():
 
 
 @app.route('/load_workflow_controls', methods=['GET'])
+@login_required
 def load_workflow_controls():
-    print('Load workflow controls - server side')
     # Query your database for workflows
     workflows = Workflow.query.all()
 
@@ -1033,4849 +2008,17 @@ def load_workflow_controls():
     # Combine all controls HTML
     controls_html = f"{dropdown_html}<br>{date_picker_html}<br>{checkbox_html}"
 
-    print('***controls returned', controls_html)
     return jsonify({'controls': controls_html})
 
-
-def generate_new_id(model):
-    # Get the maximum ID from the database
-    max_id = db.session.query(db.func.max(model.id)).scalar()
-    print('max id', max_id)
-    # If there are no records in the table, start with ID 1
-    if max_id is None:
-        return 1
-    else:
-        # Otherwise, increment the maximum ID by one
-        return max_id + 1
-
-
-# qui base
-class Atti_BaseView(BaseView):
-    subarea_id = 2  # Define subarea_id as a class attribute
-    area_id = 1
-
-    def __init__(self, name='Base View Atti', category='Base Views', endpoint='custom_base_atti'):
-        super(Atti_BaseView, self).__init__(name, category, endpoint)
-        print('base view running')
-
-    def is_visible(self):
-        return False
-
-    @expose('/')
-    def index(self):
-        fi0 = request.args.get('fi0')
-        interval_id = request.args.get('interval_id')
-        interval_ord = request.args.get('interval_ord')
-
-        # Access the form object passed from the ModelView
-        form = request.args.get('form')
-
-        # Set a simple key-value pair in the session to test session functionality
-        session['key'] = 'value'
-        print('Session stored! Key:', session.get('key'))
-
-        return render_template('custom_file_loader.html', form=form)
-
-
-# 1001
-# TODO **** sistemare la doppia creazione di record in inline - the action template looks good
-# otherwise Contingencies is better -
-
-class Atti_dataView(ModelView):
-
-    can_export = True  # Default to enabled
-
-    inline_models = (StepBaseDataInlineForm(StepBaseData),)
-    # inline_models = [(StepBaseDataInlineForm, StepBaseData, 'ONE_TO_MANY')]  # Assuming a one-to-one relationship
-    form_base_class = CustomBaseDataForm  # Use our custom form class
-    create_template = 'admin/area_1/create_base_data_2.html'
-    subarea_id = 2
-    area_id = 1
-
-    # Specify the fields to be edited inline using XEditableWidget
-    column_editable_list = ['fc2']
-    # Customize the widget for inline editing
-    form_widget_args = {
-        # 'fi0': {'widget': XEditableWidget()},
-        # 'interval_ord': {'widget': XEditableWidget()},
-        # 'fi1': {'widget': XEditableWidget()},
-        # 'fi2': {'widget': XEditableWidget()},
-        'fc2': {'widget': XEditableWidget()},
-    }
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        #self.class_name = self.__class__.__name__  # Store the class name
-        self.subarea_id = Atti_dataView.subarea_id  # Initialize subarea_id in __init__
-        self.area_id = Atti_dataView.area_id  # Initialize area_id in __init__
-        self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
-
-    '''
-    def is_accessible(self):
-        if current_user.is_authenticated:
-            if (current_user.has_role('Admin') or current_user.has_role('Authority')
-                or current_user.has_role('Manager') or current_user.has_role('Employee')):
-                # Allow access for Admin, Manager, and Employee
-                return True
-        return False
-    '''
-
-    column_list = ('fi0', 'interval_ord', 'subject', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    # Specify the columns to display in the edit view
-    form_columns = ('fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    #'interval_ord', 'fi0', 'subject_id', 'fc2',
-    # Replace the StringField with FileUploadField
-
-    column_labels = {'fi0': 'Anno di rif.', 'interval_ord': 'Periodo di rif.', 'subject': 'Oggetto',
-                     'number_of_doc': 'Nr. documento', 'date_of_doc': 'Data documento', 'file_path': 'Allegati',
-                     'no_action': 'Conferma assenza doc.', 'fc2': 'Note'}
-    column_descriptions = {'interval_ord': '(inserire il numero; es. 1: primo quadrimestre; 2: secondo ecc.)',
-                           'fi0': 'Inserire anno (es. 2024)', 'subject_id': 'Seleziona oggetto',
-                           'fc2': 'Note', 'file_path': 'Allegati', 'no_action': 'Dichiarazione di assenza di documenti (1)'}
-
-    form_extra_fields = {
-        'file_path': FileUploadField('File', base_path=app.config['UPLOAD_FOLDER'])
-    }
-
-    form_overrides = {
-        'no_action': CheckboxField
-    }
-
-    column_filters = ('subject', 'fc2', 'no_action')  # Adjust based on your model structure
-    # Specify fields to be excluded from the form
-    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
-
-    @action('custom_action', 'List Workflows of Documents')
-    def custom_action(self, ids):
-        # Fetch StepBaseData records related to the provided model IDs
-        step_base_data_records = StepBaseData.query.filter(StepBaseData.base_data_id.in_(ids)).all()
-
-        # Fetch model records related to the provided model IDs
-        model_records = BaseData.query.filter(BaseData.id.in_(ids)).all()
-
-        # Render the template to display the records
-        return self.render('basedata_workflow_step_list.html', step_base_data_records=step_base_data_records, model_records=model_records)
-
-
-    # TODO ***** Implement Next Step Action
-    @action('custom_action_next_step', 'Transition to next Step')
-    def custom_action_next_step(self, ids):
-        print('Implement next step action')
-        pass
-
-
-    def _subject_formatter(view, context, model, name):
-        # This function will be used to format the 'subject' column
-        if model.subject:
-            if isinstance(model.subject, Subject):  # Check if the subject is an instance of Subject
-                return model.subject.name
-            else:
-                return Subject.query.get(model.subject).name  # If not, query the subject object
-        return ''
-
-    column_formatters = {
-        'subject': _subject_formatter
-    }
-
-    def scaffold_form(self):
-        form_class = super(Atti_dataView, self).scaffold_form()
-        current_year = datetime.now().year
-        year_choices = [(str(year), str(year)) for year in range(current_year - 5, current_year + 2)]
-        default_year = str(current_year)
-        form_class.fi0 = SelectField(
-            'Anno di rif.',
-            coerce=int,
-            choices=year_choices,
-            default=default_year
-        )
-        # NEW
-        config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
-                                          subarea_id=None)
-        nr_intervals = config_values[0]
-
-        current_interval = [t[2] for t in intervals if t[0] == nr_intervals] #int(get_current_interval(3))  # quadriester
-        first_element = current_interval[0] if current_interval else None
-        interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
-
-        form_class.interval_ord = SelectField(
-            'Periodo di rif.',
-            coerce=int,
-            choices=interval_choices,  # Example choices, replace with your logic
-            default=first_element
-        )
-
-        # Remove 'subject_id' field from the form
-        form_class.subject_id = SelectField(
-            'Tipo di documento',
-            validators=[InputRequired()],
-            coerce=int,
-            choices=[(subject.id, subject.name) for subject in Subject.query.filter_by(tier_1="Legale").all()]
-        )
-        #delattr(form_class, 'subject_id')
-        form_class.no_action = CheckboxField('Confirm no documents to attach',
-                                             default=False)  # Set default value to False
-
-        form_class.form_excluded_columns = ('user_id', 'company_id', 'status_id',
-                                            'created_by', 'created_on', 'updated_on', 'data_type')
-        # Set default values for specific fields
-        form_class.fc2 = MyStringField('Note')
-
-        return form_class #ExtendedForm
-
-
-    def _validate_no_action(self, model, form):
-        no_action_value = form.no_action.data
-        if model.file_path is None and not no_action_value:
-            raise ValidationError(
-                'If no file exists, then this absence must be acknowledged by checking the "no documents" box.')
-
-    def _uncheck_if_document(self, model, form):
-        no_action_value = form.no_action.data
-        if model.file_path is not None and no_action_value:
-            raise ValidationError(
-                'The no-document box is checked but a document was uploaded - please confirm either of the two.')
-
-    def get_query(self):
-        query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
-
-        if current_user.is_authenticated:
-            if current_user.has_role('Admin') or current_user.has_role('Authority'):
-                return query
-            elif current_user.has_role('Manager'):
-                # Manager can only see records related to their company_users
-                subquery = db.session.query(CompanyUsers.company_id).filter(
-                    CompanyUsers.user_id == current_user.id
-                ).subquery()
-
-                query = query.filter(self.model.company_id.in_(subquery))
-            elif current_user.has_role('Employee'):
-                # Employee can only see their own records
-                query = query.filter(self.model.user_id == current_user.id)
-                return query
-
-        # For other roles or anonymous users, return an empty query
-        return query.filter(self.model.id < 0)
-
-
-    def on_model_change(self, form, model, is_created):
-        super().on_model_change(form, model, is_created)
-
-        # Reset form data
-        form.populate_obj(model)
-
-        # Get the inline form data
-        # TODO eliminated on 26Mar to cope with duplicated records in the INLINE
-        # inline_form_data = form.inline_form  # Assuming 'inline_form' is the attribute holding the inline form data
-
-        uploaded_file = form.file_path.data
-        print('1 - uploaded file', uploaded_file)
-
-        if is_created:
-            # Handle new model creation:
-            # - Set default values
-            # - Send notification
-            # Apply your custom logic to set data_type
-            model.created_on = datetime.now()  # Set the created_on
-            pass
-        else:
-            # Handle existing model edit:
-            # - Compare previous and updated values
-            # - Trigger specific actions based on changes
-            pass
-
-        user_id = current_user.id  # Get the current user's ID or any other criteria
-        try:
-            company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-        except:
-            company_id = None
-            pass
-
-        area_id = self.area_id
-        subarea_id = self.subarea_id
-        data_type = self.subarea_name
-        nr_intervals = get_subarea_interval_type(self.area_id, self.subarea_id)
-        interval_id = nr_intervals
-        status_id = 1
-        record_type = 'control_area'
-
-        year_id = form.fi0.data
-        interval_ord = form.interval_ord.data
-        subject_id = form.subject_id.data
-
-        if form.date_of_doc.data > datetime.now():
-            raise ValidationError(f"Date of document cannot be a future date.")
-
-        if form.date_of_doc.data.year != form.fi0.data:
-            raise ValidationError(f"Date of document must be consistent with the reporting year.")
-
-        if form.fi0.data == None or form.interval_ord.data == None:
-            raise ValidationError(f"Time interval reference fields cannot be null.")
-
-        if form.subject_id.data == None:
-            raise ValidationError(f"Document type can not be null.")
-
-        # - Validate data - Save the model
-        if form.interval_ord.data > 3 or form.interval_ord.data < 0:
-            raise ValidationError(
-                "Period must be less than or equal to the number of fractions (e.g. 4 for quarters, 12 for months).")
-            pass
-
-        if form.fi0.data < 2000 or form.fi0.data > 2099:
-            raise ValidationError(
-                "Please check the year")
-            pass
-
-        if self._uncheck_if_document(model, form):
-            pass
-        if self._validate_no_action(model, form):
-            pass
-
-
-        # Perform actions relevant to both creation and edit:
-        with app.app_context():
-            result, message = check_status_limited(is_created, company_id,
-                                subject_id, None, year_id, interval_ord,
-                                    interval_id, area_id, subarea_id, datetime.today(), db.session)
-
-        if result == False:
-            raise ValidationError(message)
-            pass
-
-        model.updated_on = datetime.now()  # Set the created_on
-        model.user_id = user_id
-        model.company_id = company_id
-        model.data_type = data_type
-        model.record_type = record_type
-        model.area_id = area_id
-        model.subarea_id = subarea_id
-        model.fi0 = year_id
-        model.interval_id = interval_id
-        model.interval_ord = interval_ord
-        model.status_id = status_id
-        model.subject_id = subject_id
-        model.legal_document_id = None
-        # for upload actions
-        # model.file_path = form.file_path.data
-
-        # workflow_controls = f"{dropdown_html}<br>{date_picker_html}<br>{checkbox_html}"  # Adjusted variable name
-        # Determine if workflow controls need to be generated
-        # Save the model to the database
-        if is_created:
-            self.session.add(model)
-        else:
-            self.session.merge(model)
-        self.session.commit()
-
-        # Return the model after saving
-          # Replace 'YourModelBase' with the base class of your models if different
-        remove_duplicates(self.session, StepBaseData, ['base_data_id', 'workflow_id', 'step_id'])
-
-        # Accessing inline form data directly from the main form object
-        inline_form_data = form.data.get('steps_relationship', [])
-        inline_data_string = f"At {datetime.now()} a new document dated {form.date_of_doc.data.year} "
-        inline_data_string += f"was created by the user {user_id} ({company_id}. "
-        inline_data_string += f"Area {area_id}, subarea {subarea_id}, reference period {interval_ord}/{interval_id}/{year_id}. "
-
-        # Initialize an empty string to hold the inline form data
-        for data in inline_form_data:
-            for field_name, field_value in data.items():
-                inline_data_string += f"{field_name}: {field_value}\n"  # Append field name and value to the string
-
-        print('create msg', company_id, user_id, inline_data_string)
-        # Now you have the inline form data as a string, you can use it to create a system message
-        # For example, you can use it to create a message using your `create_notification` function
-
-        create_notification(
-            self.session,
-            company_id=company_id,
-            user_id=user_id,
-            sender="System",
-            message_type="noticeboard",
-            subject="Document and Workflow Created",
-            body=inline_data_string,
-            lifespan='one-off'
-        )
-        #except:
-        #    print('Error adding inline data')
-
-        # TODO create ADMIN message too
-
-        action_type = 'update'
-        if is_created:
-            action_type = 'create'
-
-        create_audit_log(
-            self.session,
-            company_id=company_id,
-            user_id=user_id,
-            base_data_id=None,
-            workflow_id=None,
-            step_id=None,
-            action='create',
-            details=inline_data_string
-        )
-
-        return model
-
-
-@app.route('/custom_action/', methods=['GET', 'POST'])
-def custom_action():
-    if request.method == 'POST':
-        # Process the form data and perform complex operations
-        print('POST towards complex action')
-        perform_complex_operations(request.form)
-        # Redirect back to the original view or any other desired page
-
-        # Redirect the user to the Flask-Admin list view for YourModel
-        # return redirect(url_for('admin.index_view', view_name='atti_data_view'))
-        # Redirect the user back to the previous page
-        #return redirect(request.referrer)
-
-        # Redirect the user back to the Flask-Admin atti_data_view
-        return redirect('open_admin/atti_data_view')
-
-    else:
-        # Render the data input template
-        return render_template('set_dws_rich_data.html')
-
-
-# 1001
-def perform_complex_operations(form_data):
-    # This function might modify related models based on the new MainModel instance
-    # For example, create a new RelatedModel instance linked to the MainModel
-
-    print('form data to process', form_data)
-    print('*****')
-    '''
-    Base_data
-    :param form_data: 
-    :return: 
-    if action == 'create':
-        print('create', model)
-
-
-        new_related_record = RelatedModel(main_model_id=main_model_instance.id, detail="Some detail")
-        db.session.add(new_related_record)
-        db.session.commit()
-        # You could also call a BaseView method or redirect to a BaseView's page for further actions
-
-
-    elif action == 'edit':
-        print('create', model)
-
-    else:
-        print('none of the two', model)
-        for item in model:
-            print('item', item)
-    '''
-    pass
-
-
-class Contingencies_dataView(ModelView):
-
-    can_export = True  # Default to enabled
-
-    inline_models = (StepBaseDataInlineForm(StepBaseData),)
-    # inline_models = [(StepBaseDataInlineForm, StepBaseData, 'ONE_TO_MANY')]  # Assuming a one-to-one relationship
-    form_base_class = CustomBaseDataForm  # Use our custom form class
-    create_template = 'admin/area_1/create_base_data_3.html'
-    subarea_id = 3
-    area_id = 1
-
-    # Specify the fields to be edited inline using XEditableWidget
-    column_editable_list = ['fc2']
-    # Customize the widget for inline editing
-    form_widget_args = {
-        # 'fi0': {'widget': XEditableWidget()},
-        # 'interval_ord': {'widget': XEditableWidget()},
-        # 'fi1': {'widget': XEditableWidget()},
-        # 'fi2': {'widget': XEditableWidget()},
-        'fc2': {'widget': XEditableWidget()},
-    }
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        #self.class_name = self.__class__.__name__  # Store the class name
-        self.subarea_id = Contingencies_dataView.subarea_id  # Initialize subarea_id in __init__
-        self.area_id = Contingencies_dataView.area_id  # Initialize area_id in __init__
-        self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
-
-
-    column_list = ('fi0', 'interval_ord', 'subject', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    # Specify the columns to display in the edit view
-    form_columns = ('fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    #'interval_ord', 'fi0', 'subject_id', 'fc2',
-    # Replace the StringField with FileUploadField
-
-    column_labels = {'fi0': 'Anno di rif.', 'interval_ord': 'Periodo di rif.', 'subject': 'Oggetto',
-                     'number_of_doc': 'Nr. documento', 'date_of_doc': 'Data documento', 'file_path': 'Allegati',
-                     'no_action': 'Conferma assenza doc.', 'fc2': 'Note'}
-    column_descriptions = {'interval_ord': '(inserire il numero; es. 1: primo quadrimestre; 2: secondo ecc.)',
-                           'fi0': 'Inserire anno (es. 2024)', 'subject_id': 'Seleziona oggetto',
-                           'fc2': 'Note', 'file_path': 'Allegati', 'no_action': 'Dichiarazione di assenza di documenti (1)'}
-
-    form_extra_fields = {
-        'file_path': FileUploadField('File', base_path=app.config['UPLOAD_FOLDER'])
-    }
-
-    form_overrides = {
-        'no_action': CheckboxField
-    }
-
-    column_filters = ('subject', 'fc2', 'no_action')  # Adjust based on your model structure
-    # Specify fields to be excluded from the form
-    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
-
-    @action('custom_action', 'List Workflows of Documents')
-    def custom_action(self, ids):
-        # Fetch StepBaseData records related to the provided model IDs
-        step_base_data_records = StepBaseData.query.filter(StepBaseData.base_data_id.in_(ids)).all()
-
-        # Fetch model records related to the provided model IDs
-        model_records = BaseData.query.filter(BaseData.id.in_(ids)).all()
-
-        # Render the template to display the records
-        return self.render('basedata_workflow_step_list.html', step_base_data_records=step_base_data_records, model_records=model_records)
-
-
-    # TODO ***** Implement Next Step Action
-    @action('custom_action_next_step', 'Transition to next Step')
-    def custom_action_next_step(self, ids):
-        print('Implement next step action')
-        pass
-
-
-    def _subject_formatter(view, context, model, name):
-        # This function will be used to format the 'subject' column
-        if model.subject:
-            if isinstance(model.subject, Subject):  # Check if the subject is an instance of Subject
-                return model.subject.name
-            else:
-                return Subject.query.get(model.subject).name  # If not, query the subject object
-        return ''
-
-    column_formatters = {
-        'subject': _subject_formatter
-    }
-
-    def scaffold_form(self):
-        form_class = super(Contingencies_dataView, self).scaffold_form()
-        current_year = datetime.now().year
-        year_choices = [(str(year), str(year)) for year in range(current_year - 5, current_year + 2)]
-        default_year = str(current_year)
-        form_class.fi0 = SelectField(
-            'Anno di rif.',
-            coerce=int,
-            choices=year_choices,
-            default=default_year
-        )
-        # NEW
-        config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
-                                          subarea_id=None)
-        nr_intervals = config_values[0]
-
-        current_interval = [t[2] for t in intervals if t[0] == nr_intervals] #int(get_current_interval(3))  # quadriester
-        first_element = current_interval[0] if current_interval else None
-        interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
-
-        form_class.interval_ord = SelectField(
-            'Periodo di rif.',
-            coerce=int,
-            choices=interval_choices,  # Example choices, replace with your logic
-            default=first_element
-        )
-
-        # Remove 'subject_id' field from the form
-        form_class.subject_id = SelectField(
-            'Tipo di documento',
-            validators=[InputRequired()],
-            coerce=int,
-            choices=[(subject.id, subject.name) for subject in Subject.query.filter_by(tier_1="Legale").all()]
-        )
-        #delattr(form_class, 'subject_id')
-        form_class.no_action = CheckboxField('Confirm no documents to attach',
-                                             default=False)  # Set default value to False
-
-        form_class.form_excluded_columns = ('user_id', 'company_id', 'status_id',
-                                            'created_by', 'created_on', 'updated_on', 'data_type')
-        # Set default values for specific fields
-        form_class.fc2 = MyStringField('Note')
-
-        return form_class #ExtendedForm
-
-
-    def _validate_no_action(self, model, form):
-        no_action_value = form.no_action.data
-        if model.file_path is None and not no_action_value:
-            raise ValidationError(
-                'If no file exists, then this absence must be acknowledged by checking the "no documents" box.')
-
-    def _uncheck_if_document(self, model, form):
-        no_action_value = form.no_action.data
-        if model.file_path is not None and no_action_value:
-            raise ValidationError(
-                'The no-document box is checked but a document was uploaded - please confirm either of the two.')
-
-    def get_query(self):
-        query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
-
-        if current_user.is_authenticated:
-            if current_user.has_role('Admin') or current_user.has_role('Authority'):
-                return query
-            elif current_user.has_role('Manager'):
-                # Manager can only see records related to their company_users
-                subquery = db.session.query(CompanyUsers.company_id).filter(
-                    CompanyUsers.user_id == current_user.id
-                ).subquery()
-
-                query = query.filter(self.model.company_id.in_(subquery))
-            elif current_user.has_role('Employee'):
-                # Employee can only see their own records
-                query = query.filter(self.model.user_id == current_user.id)
-                return query
-
-        # For other roles or anonymous users, return an empty query
-        return query.filter(self.model.id < 0)
-
-
-    def on_model_change(self, form, model, is_created):
-        super().on_model_change(form, model, is_created)
-
-        # Reset form data
-        form.populate_obj(model)
-
-        uploaded_file = form.file_path.data
-        print('1 - uploaded file', uploaded_file)
-
-        user_id = current_user.id  # Get the current user's ID or any other criteria
-        try:
-            company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-        except:
-            company_id = None
-            pass
-
-
-        print('2 - user, comp', user_id, model.company_id)
-
-        area_id = self.area_id
-        subarea_id = self.subarea_id
-        data_type = self.subarea_name
-        nr_intervals = get_subarea_interval_type(self.area_id, self.subarea_id)
-        interval_id = nr_intervals
-        status_id = 1
-        record_type = 'control_area'
-
-        year_id = form.fi0.data
-        interval_ord = form.interval_ord.data
-        subject_id = form.subject_id.data
-
-        if form.date_of_doc.data > datetime.now():
-            raise ValidationError(f"Date of document cannot be a future date.")
-
-        if form.date_of_doc.data.year != form.fi0.data:
-            raise ValidationError(f"Date of document must be consistent with the reporting year.")
-
-        if form.fi0.data == None or form.interval_ord.data == None:
-            raise ValidationError(f"Time interval reference fields cannot be null.")
-
-        if form.subject_id.data == None:
-            raise ValidationError(f"Document type can not be null.")
-
-        # - Validate data - Save the model
-        if form.interval_ord.data > 3 or form.interval_ord.data < 0:
-            raise ValidationError(
-                "Period must be less than or equal to the number of fractions (e.g. 4 for quarters, 12 for months).")
-            pass
-
-        if form.fi0.data < 2000 or form.fi0.data > 2099:
-            raise ValidationError(
-                "Please check the year")
-            pass
-
-        if self._uncheck_if_document(model, form):
-            pass
-        if self._validate_no_action(model, form):
-            pass
-
-        # Perform actions relevant to both creation and edit:
-        with app.app_context():
-            result, message = check_status_limited(is_created, company_id,
-                                subject_id, None, year_id, interval_ord,
-                                    interval_id, area_id, subarea_id, datetime.today(), db.session)
-
-
-
-        print('6 - validation 3 ok')
-
-        if result == False:
-            raise ValidationError(message)
-            pass
-
-        model.updated_on = datetime.now()  # Set the created_on
-        model.user_id = user_id
-        model.company_id = company_id
-        model.data_type = data_type
-        model.record_type = record_type
-        model.area_id = area_id
-        model.subarea_id = subarea_id
-        model.fi0 = year_id
-        model.interval_id = interval_id
-        model.interval_ord = interval_ord
-        model.status_id = status_id
-        model.subject_id = subject_id
-        model.legal_document_id = None
-        # for upload actions
-        # model.file_path = form.file_path.data
-
-        # workflow_controls = f"{dropdown_html}<br>{date_picker_html}<br>{checkbox_html}"  # Adjusted variable name
-        # Determine if workflow controls need to be generated
-        # Save the model to the database
-
-        if is_created:
-            self.session.add(model)
-        else:
-            self.session.merge(model)
-        self.session.commit()
-
-        # Return the model after saving
-          # Replace 'YourModelBase' with the base class of your models if different
-        remove_duplicates(self.session, StepBaseData, ['base_data_id', 'workflow_id', 'step_id'])
-
-        # Accessing inline form data directly from the main form object
-        inline_form_data = form.data.get('steps_relationship', [])
-        inline_data_string = f"At {datetime.now()} a new document dated {form.date_of_doc.data.year} "
-        inline_data_string += f"was created by the user {user_id} ({company_id}. "
-        inline_data_string += f"Area {area_id}, subarea {subarea_id}, reference period {interval_ord}/{interval_id}/{year_id}. "
-
-        # Initialize an empty string to hold the inline form data
-        for data in inline_form_data:
-            for field_name, field_value in data.items():
-                inline_data_string += f"{field_name}: {field_value}\n"  # Append field name and value to the string
-
-        # Now you have the inline form data as a string, you can use it to create a system message
-        # For example, you can use it to create a message using your `create_notification` function
-
-        create_notification(
-            self.session,
-            company_id=company_id,
-            user_id=user_id,
-            sender="System",
-            message_type="noticeboard",
-            subject="Document and Workflow Created",
-            body=inline_data_string,
-            lifespan='one-off'
-        )
-        #except:
-        #    print('Error adding inline data')
-
-        # TODO create ADMIN message too
-
-        action_type = 'update'
-        if is_created:
-            action_type = 'create'
-
-        create_audit_log(
-            self.session,
-            company_id=company_id,
-            user_id=user_id,
-            base_data_id=None,
-            workflow_id=None,
-            step_id=None,
-            action=action_type,
-            details=inline_data_string
-        )
-
-        print('11 - last validation ok')
-        return model
-
-
-class Contenziosi_dataView(ModelView):
-
-    create_template = 'admin/area_1/create_base_data_4.html'
-    subarea_id = 4  # Define subarea_id as a class attribute
-    area_id = 1
-    can_export = True  # Default to enabled
-    inline_models = (StepBaseDataInlineForm(StepBaseData),)
-    # inline_models = [(StepBaseDataInlineForm, StepBaseData, 'ONE_TO_MANY')]  # Assuming a one-to-one relationship
-    form_base_class = CustomBaseDataForm  # Use our custom form class
-
-    # Specify the fields to be edited inline using XEditableWidget
-    column_editable_list = ['fc2']
-    # Customize the widget for inline editing
-    form_widget_args = {
-        # 'fi0': {'widget': XEditableWidget()},
-        # 'interval_ord': {'widget': XEditableWidget()},
-        # 'fi1': {'widget': XEditableWidget()},
-        # 'fi2': {'widget': XEditableWidget()},
-        'fc2': {'widget': XEditableWidget()},
-    }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        #self.class_name = self.__class__.__name__  # Store the class name
-        self.subarea_id = Contenziosi_dataView.subarea_id  # Initialize subarea_id in __init__
-        self.area_id = Contenziosi_dataView.area_id  # Initialize area_id in __init__
-        self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
-
-    '''
-    def is_accessible(self):
-        if current_user.is_authenticated:
-            if (current_user.has_role('Admin') or current_user.has_role('Authority')
-                or current_user.has_role('Manager') or current_user.has_role('Employee')):
-                # Allow access for Admin, Manager, and Employee
-                return True
-        return False
-    '''
-
-    column_list = ('fi0', 'interval_ord', 'subject', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    # Specify the columns to display in the edit view
-    form_columns = ('fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    #'interval_ord', 'fi0', 'subject_id', 'fc2',
-    # Replace the StringField with FileUploadField
-
-    column_labels = {'fi0': 'Anno di rif.', 'interval_ord': 'Periodo di rif.', 'subject': 'Oggetto',
-                     'number_of_doc': 'Nr. documento', 'date_of_doc': 'Data documento', 'file_path': 'Allegati',
-                     'no_action': 'Conferma assenza doc.', 'fc2': 'Note'}
-    column_descriptions = {'interval_ord': '(inserire il numero; es. 1: primo quadrimestre; 2: secondo ecc.)',
-                           'fi0': 'Inserire anno (es. 2024)', 'subject_id': 'Seleziona oggetto',
-                           'fc2': 'Note', 'file_path': 'Allegati', 'no_action': 'Dichiarazione di assenza di documenti (1)'}
-
-    form_extra_fields = {
-        'file_path': FileUploadField('File', base_path=app.config['UPLOAD_FOLDER'])
-    }
-
-    form_overrides = {
-        'no_action': CheckboxField
-    }
-
-    column_filters = ('subject', 'fc2', 'no_action')  # Adjust based on your model structure
-    # Specify fields to be excluded from the form
-    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
-
-    @action('custom_action', 'List Workflows of Documents')
-    def custom_action(self, ids):
-        # Fetch StepBaseData records related to the provided model IDs
-        step_base_data_records = StepBaseData.query.filter(StepBaseData.base_data_id.in_(ids)).all()
-
-        # Fetch model records related to the provided model IDs
-        model_records = BaseData.query.filter(BaseData.id.in_(ids)).all()
-
-        # Render the template to display the records
-        return self.render('basedata_workflow_step_list.html', step_base_data_records=step_base_data_records, model_records=model_records)
-
-
-    # TODO ***** Implement Next Step Action
-    @action('custom_action_next_step', 'Transition to next Step')
-    def custom_action_next_step(self, ids):
-        print('Implement next step action')
-        pass
-
-
-    def _subject_formatter(view, context, model, name):
-        # This function will be used to format the 'subject' column
-        if model.subject:
-            if isinstance(model.subject, Subject):  # Check if the subject is an instance of Subject
-                return model.subject.name
-            else:
-                return Subject.query.get(model.subject).name  # If not, query the subject object
-        return ''
-
-    column_formatters = {
-        'subject': _subject_formatter
-    }
-
-    def scaffold_form(self):
-        form_class = super(Contenziosi_dataView, self).scaffold_form()
-        current_year = datetime.now().year
-        year_choices = [(str(year), str(year)) for year in range(current_year - 5, current_year + 2)]
-        default_year = str(current_year)
-        form_class.fi0 = SelectField(
-            'Anno di rif.',
-            coerce=int,
-            choices=year_choices,
-            default=default_year
-        )
-        # NEW
-        config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
-                                          subarea_id=None)
-        nr_intervals = config_values[0]
-
-        current_interval = [t[2] for t in intervals if t[0] == nr_intervals] #int(get_current_interval(3))  # quadriester
-        first_element = current_interval[0] if current_interval else None
-        interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
-
-        form_class.interval_ord = SelectField(
-            'Periodo di rif.',
-            coerce=int,
-            choices=interval_choices,  # Example choices, replace with your logic
-            default=first_element
-        )
-
-        # Remove 'subject_id' field from the form
-        form_class.subject_id = SelectField(
-            'Tipo di documento',
-            validators=[InputRequired()],
-            coerce=int,
-            choices=[(subject.id, subject.name) for subject in Subject.query.filter_by(tier_1="Legale").all()]
-        )
-        #delattr(form_class, 'subject_id')
-        form_class.no_action = CheckboxField('Confirm no documents to attach',
-                                             default=False)  # Set default value to False
-
-        form_class.form_excluded_columns = ('user_id', 'company_id', 'status_id',
-                                            'created_by', 'created_on', 'updated_on', 'data_type')
-        # Set default values for specific fields
-        form_class.fc2 = MyStringField('Note')
-
-        return form_class #ExtendedForm
-
-
-    def _validate_no_action(self, model, form):
-        no_action_value = form.no_action.data
-        if model.file_path is None and not no_action_value:
-            raise ValidationError(
-                'If no file exists, then this absence must be acknowledged by checking the "no documents" box.')
-
-    def _uncheck_if_document(self, model, form):
-        no_action_value = form.no_action.data
-        if model.file_path is not None and no_action_value:
-            raise ValidationError(
-                'The no-document box is checked but a document was uploaded - please confirm either of the two.')
-
-    def get_query(self):
-        query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
-
-        if current_user.is_authenticated:
-            if current_user.has_role('Admin') or current_user.has_role('Authority'):
-                return query
-            elif current_user.has_role('Manager'):
-                # Manager can only see records related to their company_users
-                subquery = db.session.query(CompanyUsers.company_id).filter(
-                    CompanyUsers.user_id == current_user.id
-                ).subquery()
-
-                query = query.filter(self.model.company_id.in_(subquery))
-            elif current_user.has_role('Employee'):
-                # Employee can only see their own records
-                query = query.filter(self.model.user_id == current_user.id)
-                return query
-
-        # For other roles or anonymous users, return an empty query
-        return query.filter(self.model.id < 0)
-
-
-    def on_model_change(self, form, model, is_created):
-        super().on_model_change(form, model, is_created)
-
-        # Reset form data
-        form.populate_obj(model)
-
-        # Get the inline form data
-        # TODO eliminated on 26Mar to cope with duplicated records in the INLINE
-        # inline_form_data = form.inline_form  # Assuming 'inline_form' is the attribute holding the inline form data
-
-        uploaded_file = form.file_path.data
-        print('1 - uploaded file', uploaded_file)
-
-        if is_created:
-            # Handle new model creation:
-            # - Set default values
-            # - Send notification
-            # Apply your custom logic to set data_type
-            model.created_on = datetime.now()  # Set the created_on
-            pass
-        else:
-            # Handle existing model edit:
-            # - Compare previous and updated values
-            # - Trigger specific actions based on changes
-            pass
-
-        user_id = current_user.id  # Get the current user's ID or any other criteria
-        try:
-            company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-        except:
-            company_id = None
-            pass
-
-        area_id = self.area_id
-        subarea_id = self.subarea_id
-        data_type = self.subarea_name
-        nr_intervals = get_subarea_interval_type(self.area_id, self.subarea_id)
-        interval_id = nr_intervals
-        status_id = 1
-        record_type = 'control_area'
-
-        print('date of doc', form.date_of_doc.data.year)
-
-        year_id = form.fi0.data
-        interval_ord = form.interval_ord.data
-        subject_id = form.subject_id.data
-
-        if form.date_of_doc.data > datetime.now():
-            raise ValidationError(f"Date of document cannot be a future date.")
-
-        if form.date_of_doc.data.year != form.fi0.data:
-            raise ValidationError(f"Date of document must be consistent with the reporting year.")
-
-        if form.fi0.data == None or form.interval_ord.data == None:
-            raise ValidationError(f"Time interval reference fields cannot be null.")
-
-        if form.subject_id.data == None:
-            raise ValidationError(f"Document type can not be null.")
-
-        # - Validate data - Save the model
-        if form.interval_ord.data > 3 or form.interval_ord.data < 0:
-            raise ValidationError(
-                "Period must be less than or equal to the number of fractions (e.g. 4 for quarters, 12 for months).")
-            pass
-
-        if form.fi0.data < 2000 or form.fi0.data > 2099:
-            raise ValidationError(
-                "Please check the year")
-            pass
-
-        if self._uncheck_if_document(model, form):
-            pass
-        if self._validate_no_action(model, form):
-            pass
-
-
-        # Perform actions relevant to both creation and edit:
-        with app.app_context():
-            result, message = check_status_limited(is_created, company_id,
-                                subject_id, None, year_id, interval_ord,
-                                    interval_id, area_id, subarea_id, datetime.today(), db.session)
-
-        if result == False:
-            raise ValidationError(message)
-            pass
-
-        model.updated_on = datetime.now()  # Set the created_on
-        model.user_id = user_id
-        model.company_id = company_id
-        model.data_type = data_type
-        model.record_type = record_type
-        model.area_id = area_id
-        model.subarea_id = subarea_id
-        model.fi0 = year_id
-        model.interval_id = interval_id
-        model.interval_ord = interval_ord
-        model.status_id = status_id
-        model.subject_id = subject_id
-        model.legal_document_id = None
-        # for upload actions
-        # model.file_path = form.file_path.data
-        print('2 - file path',  form.file_path.data)
-
-        # workflow_controls = f"{dropdown_html}<br>{date_picker_html}<br>{checkbox_html}"  # Adjusted variable name
-        # Determine if workflow controls need to be generated
-        # Save the model to the database
-        if is_created:
-            self.session.add(model)
-        else:
-            self.session.merge(model)
-        self.session.commit()
-
-        # Return the model after saving
-          # Replace 'YourModelBase' with the base class of your models if different
-        remove_duplicates(self.session, StepBaseData, ['base_data_id', 'workflow_id', 'step_id'])
-
-        # Accessing inline form data directly from the main form object
-        inline_form_data = form.data.get('steps_relationship', [])
-        inline_data_string = f"At {datetime.now()} a new document dated {form.date_of_doc.data.year} "
-        inline_data_string += f"was created by the user {user_id} ({company_id}. "
-        inline_data_string += f"Area {area_id}, subarea {subarea_id}, reference period {interval_ord}/{interval_id}/{year_id}. "
-
-        # Initialize an empty string to hold the inline form data
-        for data in inline_form_data:
-            for field_name, field_value in data.items():
-                inline_data_string += f"{field_name}: {field_value}\n"  # Append field name and value to the string
-
-        print('create msg', company_id, user_id, inline_data_string)
-        # Now you have the inline form data as a string, you can use it to create a system message
-        # For example, you can use it to create a message using your `create_notification` function
-
-        create_notification(
-            self.session,
-            company_id=company_id,
-            user_id=user_id,
-            sender="System",
-            message_type="noticeboard",
-            subject="Document and Workflow Created",
-            body=inline_data_string,
-            lifespan='one-off'
-        )
-        #except:
-        #    print('Error adding inline data')
-
-        # TODO create ADMIN message too
-
-        action_type = 'update'
-        if is_created:
-            action_type = 'create'
-
-        create_audit_log(
-            self.session,
-            company_id=company_id,
-            user_id=user_id,
-            base_data_id=None,
-            workflow_id=None,
-            step_id=None,
-            action='create',
-            details=inline_data_string
-        )
-
-        return model
-
-
-class Iniziative_dso_as_dataView(ModelView):
-
-    create_template = 'admin/area_1/create_base_data_6.html'
-    subarea_id = 6  # Define subarea_id as a class attribute
-    area_id = 1
-
-    inline_models = (StepBaseDataInlineForm(StepBaseData),)
-    # inline_models = [(StepBaseDataInlineForm, StepBaseData, 'ONE_TO_MANY')]  # Assuming a one-to-one relationship
-    form_base_class = CustomBaseDataForm  # Use our custom form class
-
-    # Specify the fields to be edited inline using XEditableWidget
-    column_editable_list = ['fc2']
-    # Customize the widget for inline editing
-    form_widget_args = {
-        # 'fi0': {'widget': XEditableWidget()},
-        # 'interval_ord': {'widget': XEditableWidget()},
-        # 'fi1': {'widget': XEditableWidget()},
-        # 'fi2': {'widget': XEditableWidget()},
-        'fc2': {'widget': XEditableWidget()},
-    }
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # self.class_name = self.__class__.__name__  # Store the class name
-        self.subarea_id = Iniziative_dso_as_dataView.subarea_id  # Initialize subarea_id in __init__
-        self.area_id = Iniziative_dso_as_dataView.area_id  # Initialize area_id in __init__
-        self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
-
-    column_list = ('fi0', 'interval_ord', 'subject', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    # Specify the columns to display in the edit view
-    form_columns = ('fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    # 'interval_ord', 'fi0', 'subject_id', 'fc2',
-    # Replace the StringField with FileUploadField
-
-    column_labels = {'fi0': 'Anno di rif.', 'interval_ord': 'Periodo di rif.', 'subject': 'Oggetto',
-                     'number_of_doc': 'Nr. documento', 'date_of_doc': 'Data documento', 'file_path': 'Allegati',
-                     'no_action': 'Conferma assenza doc.', 'fc2': 'Note'}
-    column_descriptions = {'interval_ord': '(inserire il numero; es. 1: primo quadrimestre; 2: secondo ecc.)',
-                           'fi0': 'Inserire anno (es. 2024)', 'subject_id': 'Seleziona oggetto',
-                           'fc2': 'Note', 'file_path': 'Allegati',
-                           'no_action': 'Dichiarazione di assenza di documenti (1)'}
-
-    form_extra_fields = {
-        'file_path': FileUploadField('File', base_path=app.config['UPLOAD_FOLDER'])
-    }
-
-    form_overrides = {
-        'no_action': CheckboxField
-    }
-
-    column_filters = ('subject', 'fc2', 'no_action')  # Adjust based on your model structure
-    # Specify fields to be excluded from the form
-    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
-
-    @action('custom_action', 'List Workflows of Documents')
-    def custom_action(self, ids):
-        # Fetch StepBaseData records related to the provided model IDs
-        step_base_data_records = StepBaseData.query.filter(StepBaseData.base_data_id.in_(ids)).all()
-
-        # Fetch model records related to the provided model IDs
-        model_records = BaseData.query.filter(BaseData.id.in_(ids)).all()
-
-        # Render the template to display the records
-        return self.render('basedata_workflow_step_list.html', step_base_data_records=step_base_data_records,
-                           model_records=model_records)
-
-    # TODO ***** Implement Next Step Action
-    @action('custom_action_next_step', 'Transition to next Step')
-    def custom_action_next_step(self, ids):
-        print('Implement next step action')
-        pass
-
-    def _subject_formatter(view, context, model, name):
-        # This function will be used to format the 'subject' column
-        if model.subject:
-            if isinstance(model.subject, Subject):  # Check if the subject is an instance of Subject
-                return model.subject.name
-            else:
-                return Subject.query.get(model.subject).name  # If not, query the subject object
-        return ''
-
-    column_formatters = {
-        'subject': _subject_formatter
-    }
-
-    def scaffold_form(self):
-        form_class = super(Iniziative_dso_as_dataView, self).scaffold_form()
-        current_year = datetime.now().year
-        year_choices = [(str(year), str(year)) for year in range(current_year - 5, current_year + 2)]
-        default_year = str(current_year)
-        form_class.fi0 = SelectField(
-            'Anno di rif.',
-            coerce=int,
-            choices=year_choices,
-            default=default_year
-        )
-        # NEW
-        config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
-                                          subarea_id=None)
-        nr_intervals = config_values[0]
-
-        current_interval = [t[2] for t in intervals if
-                            t[0] == nr_intervals]  # int(get_current_interval(3))  # quadriester
-        first_element = current_interval[0] if current_interval else None
-        interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
-
-        form_class.interval_ord = SelectField(
-            'Periodo di rif.',
-            coerce=int,
-            choices=interval_choices,  # Example choices, replace with your logic
-            default=first_element
-        )
-
-        # Remove 'subject_id' field from the form
-        form_class.subject_id = SelectField(
-            'Tipo di documento',
-            validators=[InputRequired()],
-            coerce=int,
-            choices=[(subject.id, subject.name) for subject in Subject.query.filter_by(tier_1="Legale").all()]
-        )
-        # delattr(form_class, 'subject_id')
-        form_class.no_action = CheckboxField('Confirm no documents to attach',
-                                             default=False)  # Set default value to False
-
-        form_class.form_excluded_columns = ('user_id', 'company_id', 'status_id',
-                                            'created_by', 'created_on', 'updated_on', 'data_type')
-        # Set default values for specific fields
-        form_class.fc2 = MyStringField('Note')
-
-        return form_class  # ExtendedForm
-
-    def _validate_no_action(self, model, form):
-        no_action_value = form.no_action.data
-        if model.file_path is None and not no_action_value:
-            raise ValidationError(
-                'If no file exists, then this absence must be acknowledged by checking the "no documents" box.')
-
-    def _uncheck_if_document(self, model, form):
-        no_action_value = form.no_action.data
-        if model.file_path is not None and no_action_value:
-            raise ValidationError(
-                'The no-document box is checked but a document was uploaded - please confirm either of the two.')
-
-    def get_query(self):
-        query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
-
-        if current_user.is_authenticated:
-            if current_user.has_role('Admin') or current_user.has_role('Authority'):
-                return query
-            elif current_user.has_role('Manager'):
-                # Manager can only see records related to their company_users
-                subquery = db.session.query(CompanyUsers.company_id).filter(
-                    CompanyUsers.user_id == current_user.id
-                ).subquery()
-
-                query = query.filter(self.model.company_id.in_(subquery))
-            elif current_user.has_role('Employee'):
-                # Employee can only see their own records
-                query = query.filter(self.model.user_id == current_user.id)
-                return query
-
-        # For other roles or anonymous users, return an empty query
-        return query.filter(self.model.id < 0)
-
-    def on_model_change(self, form, model, is_created):
-        super().on_model_change(form, model, is_created)
-
-        # Reset form data
-        form.populate_obj(model)
-
-        # Get the inline form data
-        # TODO eliminated on 26Mar to cope with duplicated records in the INLINE
-        # inline_form_data = form.inline_form  # Assuming 'inline_form' is the attribute holding the inline form data
-
-        uploaded_file = form.file_path.data
-        print('1 - uploaded file', uploaded_file)
-
-        if is_created:
-            # Handle new model creation:
-            # - Set default values
-            # - Send notification
-            # Apply your custom logic to set data_type
-            model.created_on = datetime.now()  # Set the created_on
-            pass
-        else:
-            # Handle existing model edit:
-            # - Compare previous and updated values
-            # - Trigger specific actions based on changes
-            pass
-
-        user_id = current_user.id  # Get the current user's ID or any other criteria
-        try:
-            company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-        except:
-            company_id = None
-            pass
-
-        area_id = self.area_id
-        subarea_id = self.subarea_id
-        data_type = self.subarea_name
-        nr_intervals = get_subarea_interval_type(self.area_id, self.subarea_id)
-        interval_id = nr_intervals
-        status_id = 1
-        record_type = 'control_area'
-
-        print('date of doc', form.date_of_doc.data.year)
-
-        year_id = form.fi0.data
-        interval_ord = form.interval_ord.data
-        subject_id = form.subject_id.data
-
-        if form.date_of_doc.data > datetime.now():
-            raise ValidationError(f"Date of document cannot be a future date.")
-
-        if form.date_of_doc.data.year != form.fi0.data:
-            raise ValidationError(f"Date of document must be consistent with the reporting year.")
-
-        if form.fi0.data == None or form.interval_ord.data == None:
-            raise ValidationError(f"Time interval reference fields cannot be null.")
-
-        if form.subject_id.data == None:
-            raise ValidationError(f"Document type can not be null.")
-
-        # - Validate data - Save the model
-        if form.interval_ord.data > 3 or form.interval_ord.data < 0:
-            raise ValidationError(
-                "Period must be less than or equal to the number of fractions (e.g. 4 for quarters, 12 for months).")
-            pass
-
-        if form.fi0.data < 2000 or form.fi0.data > 2099:
-            raise ValidationError(
-                "Please check the year")
-            pass
-
-        if self._uncheck_if_document(model, form):
-            pass
-        if self._validate_no_action(model, form):
-            pass
-
-        # Perform actions relevant to both creation and edit:
-        with app.app_context():
-            result, message = check_status_limited(is_created, company_id,
-                                                   subject_id, None, year_id, interval_ord,
-                                                   interval_id, area_id, subarea_id, datetime.today(), db.session)
-
-        if result == False:
-            raise ValidationError(message)
-            pass
-
-        model.updated_on = datetime.now()  # Set the created_on
-        model.user_id = user_id
-        model.company_id = company_id
-        model.data_type = data_type
-        model.record_type = record_type
-        model.area_id = area_id
-        model.subarea_id = subarea_id
-        model.fi0 = year_id
-        model.interval_id = interval_id
-        model.interval_ord = interval_ord
-        model.status_id = status_id
-        model.subject_id = subject_id
-        model.legal_document_id = None
-        # for upload actions
-        # model.file_path = form.file_path.data
-        print('2 - file path', form.file_path.data)
-
-        # workflow_controls = f"{dropdown_html}<br>{date_picker_html}<br>{checkbox_html}"  # Adjusted variable name
-        # Determine if workflow controls need to be generated
-        # Save the model to the database
-        if is_created:
-            self.session.add(model)
-        else:
-            self.session.merge(model)
-        self.session.commit()
-
-        # Return the model after saving
-        # Replace 'YourModelBase' with the base class of your models if different
-        remove_duplicates(self.session, StepBaseData, ['base_data_id', 'workflow_id', 'step_id'])
-
-        # Accessing inline form data directly from the main form object
-        inline_form_data = form.data.get('steps_relationship', [])
-        inline_data_string = f"At {datetime.now()} a new document dated {form.date_of_doc.data.year} "
-        inline_data_string += f"was created by the user {user_id} ({company_id}. "
-        inline_data_string += f"Area {area_id}, subarea {subarea_id}, reference period {interval_ord}/{interval_id}/{year_id}. "
-
-        # Initialize an empty string to hold the inline form data
-        for data in inline_form_data:
-            for field_name, field_value in data.items():
-                inline_data_string += f"{field_name}: {field_value}\n"  # Append field name and value to the string
-
-        print('create msg', company_id, user_id, inline_data_string)
-        # Now you have the inline form data as a string, you can use it to create a system message
-        # For example, you can use it to create a message using your `create_notification` function
-
-        create_notification(
-            self.session,
-            company_id=company_id,
-            user_id=user_id,
-            sender="System",
-            message_type="noticeboard",
-            subject="Document and Workflow Created",
-            body=inline_data_string,
-            lifespan='one-off'
-        )
-        # except:
-        #    print('Error adding inline data')
-
-        # TODO create ADMIN message too
-
-        action_type = 'update'
-        if is_created:
-            action_type = 'create'
-
-        create_audit_log(
-            self.session,
-            company_id=company_id,
-            user_id=user_id,
-            base_data_id=None,
-            workflow_id=None,
-            step_id=None,
-            action='create',
-            details=inline_data_string
-        )
-
-        return model
-
-
-
-class Iniziative_as_dso_dataView(ModelView):
-
-    create_template = 'admin/area_1/create_base_data_7.html'
-    subarea_id = 7  # Define subarea_id as a class attribute
-    area_id = 1
-
-    inline_models = (StepBaseDataInlineForm(StepBaseData),)
-    # inline_models = [(StepBaseDataInlineForm, StepBaseData, 'ONE_TO_MANY')]  # Assuming a one-to-one relationship
-    form_base_class = CustomBaseDataForm  # Use our custom form class
-
-    # Specify the fields to be edited inline using XEditableWidget
-    column_editable_list = ['fc2']
-    # Customize the widget for inline editing
-    form_widget_args = {
-        # 'fi0': {'widget': XEditableWidget()},
-        # 'interval_ord': {'widget': XEditableWidget()},
-        # 'fi1': {'widget': XEditableWidget()},
-        # 'fi2': {'widget': XEditableWidget()},
-        'fc2': {'widget': XEditableWidget()},
-    }
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # self.class_name = self.__class__.__name__  # Store the class name
-        self.subarea_id = Iniziative_as_dso_dataView.subarea_id  # Initialize subarea_id in __init__
-        self.area_id = Iniziative_as_dso_dataView.area_id  # Initialize area_id in __init__
-        self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
-
-    column_list = ('fi0', 'interval_ord', 'subject', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    # Specify the columns to display in the edit view
-    form_columns = ('fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    # 'interval_ord', 'fi0', 'subject_id', 'fc2',
-    # Replace the StringField with FileUploadField
-
-    column_labels = {'fi0': 'Anno di rif.', 'interval_ord': 'Periodo di rif.', 'subject': 'Oggetto',
-                     'number_of_doc': 'Nr. documento', 'date_of_doc': 'Data documento', 'file_path': 'Allegati',
-                     'no_action': 'Conferma assenza doc.', 'fc2': 'Note'}
-    column_descriptions = {'interval_ord': '(inserire il numero; es. 1: primo quadrimestre; 2: secondo ecc.)',
-                           'fi0': 'Inserire anno (es. 2024)', 'subject_id': 'Seleziona oggetto',
-                           'fc2': 'Note', 'file_path': 'Allegati',
-                           'no_action': 'Dichiarazione di assenza di documenti (1)'}
-
-    form_extra_fields = {
-        'file_path': FileUploadField('File', base_path=app.config['UPLOAD_FOLDER'])
-    }
-
-    form_overrides = {
-        'no_action': CheckboxField
-    }
-
-    column_filters = ('subject', 'fc2', 'no_action')  # Adjust based on your model structure
-    # Specify fields to be excluded from the form
-    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
-
-    @action('custom_action', 'List Workflows of Documents')
-    def custom_action(self, ids):
-        # Fetch StepBaseData records related to the provided model IDs
-        step_base_data_records = StepBaseData.query.filter(StepBaseData.base_data_id.in_(ids)).all()
-
-        # Fetch model records related to the provided model IDs
-        model_records = BaseData.query.filter(BaseData.id.in_(ids)).all()
-
-        # Render the template to display the records
-        return self.render('basedata_workflow_step_list.html', step_base_data_records=step_base_data_records,
-                           model_records=model_records)
-
-    # TODO ***** Implement Next Step Action
-    @action('custom_action_next_step', 'Transition to next Step')
-    def custom_action_next_step(self, ids):
-        print('Implement next step action')
-        pass
-
-    def _subject_formatter(view, context, model, name):
-        # This function will be used to format the 'subject' column
-        if model.subject:
-            if isinstance(model.subject, Subject):  # Check if the subject is an instance of Subject
-                return model.subject.name
-            else:
-                return Subject.query.get(model.subject).name  # If not, query the subject object
-        return ''
-
-    column_formatters = {
-        'subject': _subject_formatter
-    }
-
-    def scaffold_form(self):
-        form_class = super(Iniziative_as_dso_dataView, self).scaffold_form()
-        current_year = datetime.now().year
-        year_choices = [(str(year), str(year)) for year in range(current_year - 5, current_year + 2)]
-        default_year = str(current_year)
-        form_class.fi0 = SelectField(
-            'Anno di rif.',
-            coerce=int,
-            choices=year_choices,
-            default=default_year
-        )
-        # NEW
-        config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
-                                          subarea_id=None)
-        nr_intervals = config_values[0]
-
-        current_interval = [t[2] for t in intervals if
-                            t[0] == nr_intervals]  # int(get_current_interval(3))  # quadriester
-        first_element = current_interval[0] if current_interval else None
-        interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
-
-        form_class.interval_ord = SelectField(
-            'Periodo di rif.',
-            coerce=int,
-            choices=interval_choices,  # Example choices, replace with your logic
-            default=first_element
-        )
-
-        # Remove 'subject_id' field from the form
-        form_class.subject_id = SelectField(
-            'Tipo di documento',
-            validators=[InputRequired()],
-            coerce=int,
-            choices=[(subject.id, subject.name) for subject in Subject.query.filter_by(tier_1="Legale").all()]
-        )
-        # delattr(form_class, 'subject_id')
-        form_class.no_action = CheckboxField('Confirm no documents to attach',
-                                             default=False)  # Set default value to False
-
-        form_class.form_excluded_columns = ('user_id', 'company_id', 'status_id',
-                                            'created_by', 'created_on', 'updated_on', 'data_type')
-        # Set default values for specific fields
-        form_class.fc2 = MyStringField('Note')
-
-        return form_class  # ExtendedForm
-
-    def _validate_no_action(self, model, form):
-        no_action_value = form.no_action.data
-        if model.file_path is None and not no_action_value:
-            raise ValidationError(
-                'If no file exists, then this absence must be acknowledged by checking the "no documents" box.')
-
-    def _uncheck_if_document(self, model, form):
-        no_action_value = form.no_action.data
-        if model.file_path is not None and no_action_value:
-            raise ValidationError(
-                'The no-document box is checked but a document was uploaded - please confirm either of the two.')
-
-    def get_query(self):
-        query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
-
-        if current_user.is_authenticated:
-            if current_user.has_role('Admin') or current_user.has_role('Authority'):
-                return query
-            elif current_user.has_role('Manager'):
-                # Manager can only see records related to their company_users
-                subquery = db.session.query(CompanyUsers.company_id).filter(
-                    CompanyUsers.user_id == current_user.id
-                ).subquery()
-
-                query = query.filter(self.model.company_id.in_(subquery))
-            elif current_user.has_role('Employee'):
-                # Employee can only see their own records
-                query = query.filter(self.model.user_id == current_user.id)
-                return query
-
-        # For other roles or anonymous users, return an empty query
-        return query.filter(self.model.id < 0)
-
-    def on_model_change(self, form, model, is_created):
-        super().on_model_change(form, model, is_created)
-
-        # Reset form data
-        form.populate_obj(model)
-
-        # Get the inline form data
-        # TODO eliminated on 26Mar to cope with duplicated records in the INLINE
-        # inline_form_data = form.inline_form  # Assuming 'inline_form' is the attribute holding the inline form data
-
-        uploaded_file = form.file_path.data
-        print('1 - uploaded file', uploaded_file)
-
-        if is_created:
-            # Handle new model creation:
-            # - Set default values
-            # - Send notification
-            # Apply your custom logic to set data_type
-            model.created_on = datetime.now()  # Set the created_on
-            pass
-        else:
-            # Handle existing model edit:
-            # - Compare previous and updated values
-            # - Trigger specific actions based on changes
-            pass
-
-        user_id = current_user.id  # Get the current user's ID or any other criteria
-        try:
-            company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-        except:
-            company_id = None
-            pass
-
-        area_id = self.area_id
-        subarea_id = self.subarea_id
-        data_type = self.subarea_name
-        nr_intervals = get_subarea_interval_type(self.area_id, self.subarea_id)
-        interval_id = nr_intervals
-        status_id = 1
-        record_type = 'control_area'
-
-        print('date of doc', form.date_of_doc.data.year)
-
-        year_id = form.fi0.data
-        interval_ord = form.interval_ord.data
-        subject_id = form.subject_id.data
-
-        if form.date_of_doc.data > datetime.now():
-            raise ValidationError(f"Date of document cannot be a future date.")
-
-        if form.date_of_doc.data.year != form.fi0.data:
-            raise ValidationError(f"Date of document must be consistent with the reporting year.")
-
-        if form.fi0.data == None or form.interval_ord.data == None:
-            raise ValidationError(f"Time interval reference fields cannot be null.")
-
-        if form.subject_id.data == None:
-            raise ValidationError(f"Document type can not be null.")
-
-        # - Validate data - Save the model
-        if form.interval_ord.data > 3 or form.interval_ord.data < 0:
-            raise ValidationError(
-                "Period must be less than or equal to the number of fractions (e.g. 4 for quarters, 12 for months).")
-            pass
-
-        if form.fi0.data < 2000 or form.fi0.data > 2099:
-            raise ValidationError(
-                "Please check the year")
-            pass
-
-        if self._uncheck_if_document(model, form):
-            pass
-        if self._validate_no_action(model, form):
-            pass
-
-        # Perform actions relevant to both creation and edit:
-        with app.app_context():
-            result, message = check_status_limited(is_created, company_id,
-                                                   subject_id, None, year_id, interval_ord,
-                                                   interval_id, area_id, subarea_id, datetime.today(), db.session)
-
-        if result == False:
-            raise ValidationError(message)
-            pass
-
-        model.updated_on = datetime.now()  # Set the created_on
-        model.user_id = user_id
-        model.company_id = company_id
-        model.data_type = data_type
-        model.record_type = record_type
-        model.area_id = area_id
-        model.subarea_id = subarea_id
-        model.fi0 = year_id
-        model.interval_id = interval_id
-        model.interval_ord = interval_ord
-        model.status_id = status_id
-        model.subject_id = subject_id
-        model.legal_document_id = None
-        # for upload actions
-        # model.file_path = form.file_path.data
-        print('2 - file path', form.file_path.data)
-
-        # workflow_controls = f"{dropdown_html}<br>{date_picker_html}<br>{checkbox_html}"  # Adjusted variable name
-        # Determine if workflow controls need to be generated
-        # Save the model to the database
-        if is_created:
-            self.session.add(model)
-        else:
-            self.session.merge(model)
-        self.session.commit()
-
-        # Return the model after saving
-        # Replace 'YourModelBase' with the base class of your models if different
-        remove_duplicates(self.session, StepBaseData, ['base_data_id', 'workflow_id', 'step_id'])
-
-        # Accessing inline form data directly from the main form object
-        inline_form_data = form.data.get('steps_relationship', [])
-        inline_data_string = f"At {datetime.now()} a new document dated {form.date_of_doc.data.year} "
-        inline_data_string += f"was created by the user {user_id} ({company_id}. "
-        inline_data_string += f"Area {area_id}, subarea {subarea_id}, reference period {interval_ord}/{interval_id}/{year_id}. "
-
-        # Initialize an empty string to hold the inline form data
-        for data in inline_form_data:
-            for field_name, field_value in data.items():
-                inline_data_string += f"{field_name}: {field_value}\n"  # Append field name and value to the string
-
-        print('create msg', company_id, user_id, inline_data_string)
-        # Now you have the inline form data as a string, you can use it to create a system message
-        # For example, you can use it to create a message using your `create_notification` function
-
-        create_notification(
-            self.session,
-            company_id=company_id,
-            user_id=user_id,
-            sender="System",
-            message_type="noticeboard",
-            subject="Document and Workflow Created",
-            body=inline_data_string,
-            lifespan='one-off'
-        )
-        # except:
-        #    print('Error adding inline data')
-
-        # TODO create ADMIN message too
-
-        action_type = 'update'
-        if is_created:
-            action_type = 'create'
-
-        create_audit_log(
-            self.session,
-            company_id=company_id,
-            user_id=user_id,
-            base_data_id=None,
-            workflow_id=None,
-            step_id=None,
-            action='create',
-            details=inline_data_string
-        )
-
-        return model
-
-
-
-class Iniziative_dso_dso_dataView(ModelView):
-
-    create_template = 'admin/area_1/create_base_data_8.html'
-    subarea_id = 8  # Define subarea_id as a class attribute
-    area_id = 1
-
-    inline_models = (StepBaseDataInlineForm(StepBaseData),)
-    # inline_models = [(StepBaseDataInlineForm, StepBaseData, 'ONE_TO_MANY')]  # Assuming a one-to-one relationship
-    form_base_class = CustomBaseDataForm  # Use our custom form class
-
-    # Specify the fields to be edited inline using XEditableWidget
-    column_editable_list = ['fc2']
-    # Customize the widget for inline editing
-    form_widget_args = {
-        # 'fi0': {'widget': XEditableWidget()},
-        # 'interval_ord': {'widget': XEditableWidget()},
-        # 'fi1': {'widget': XEditableWidget()},
-        # 'fi2': {'widget': XEditableWidget()},
-        'fc2': {'widget': XEditableWidget()},
-    }
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # self.class_name = self.__class__.__name__  # Store the class name
-        self.subarea_id = Iniziative_dso_dso_dataView.subarea_id  # Initialize subarea_id in __init__
-        self.area_id = Iniziative_dso_dso_dataView.area_id  # Initialize area_id in __init__
-        self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
-
-    column_list = ('fi0', 'interval_ord', 'subject', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    # Specify the columns to display in the edit view
-    form_columns = ('fi0', 'interval_ord', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'fc2')
-    # 'interval_ord', 'fi0', 'subject_id', 'fc2',
-    # Replace the StringField with FileUploadField
-
-    column_labels = {'fi0': 'Anno di rif.', 'interval_ord': 'Periodo di rif.', 'subject': 'Oggetto',
-                     'number_of_doc': 'Nr. documento', 'date_of_doc': 'Data documento', 'file_path': 'Allegati',
-                     'no_action': 'Conferma assenza doc.', 'fc2': 'Note'}
-    column_descriptions = {'interval_ord': '(inserire il numero; es. 1: primo quadrimestre; 2: secondo ecc.)',
-                           'fi0': 'Inserire anno (es. 2024)', 'subject_id': 'Seleziona oggetto',
-                           'fc2': 'Note', 'file_path': 'Allegati',
-                           'no_action': 'Dichiarazione di assenza di documenti (1)'}
-
-    form_extra_fields = {
-        'file_path': FileUploadField('File', base_path=app.config['UPLOAD_FOLDER'])
-    }
-
-    form_overrides = {
-        'no_action': CheckboxField
-    }
-
-    column_filters = ('subject', 'fc2', 'no_action')  # Adjust based on your model structure
-    # Specify fields to be excluded from the form
-    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_on', 'updated_on', 'data_type')
-
-    @action('custom_action', 'List Workflows of Documents')
-    def custom_action(self, ids):
-        # Fetch StepBaseData records related to the provided model IDs
-        step_base_data_records = StepBaseData.query.filter(StepBaseData.base_data_id.in_(ids)).all()
-
-        # Fetch model records related to the provided model IDs
-        model_records = BaseData.query.filter(BaseData.id.in_(ids)).all()
-
-        # Render the template to display the records
-        return self.render('basedata_workflow_step_list.html', step_base_data_records=step_base_data_records,
-                           model_records=model_records)
-
-    # TODO ***** Implement Next Step Action
-    @action('custom_action_next_step', 'Transition to next Step')
-    def custom_action_next_step(self, ids):
-        print('Implement next step action')
-        pass
-
-    def _subject_formatter(view, context, model, name):
-        # This function will be used to format the 'subject' column
-        if model.subject:
-            if isinstance(model.subject, Subject):  # Check if the subject is an instance of Subject
-                return model.subject.name
-            else:
-                return Subject.query.get(model.subject).name  # If not, query the subject object
-        return ''
-
-    column_formatters = {
-        'subject': _subject_formatter
-    }
-
-    def scaffold_form(self):
-        form_class = super(Iniziative_dso_dso_dataView, self).scaffold_form()
-        current_year = datetime.now().year
-        year_choices = [(str(year), str(year)) for year in range(current_year - 5, current_year + 2)]
-        default_year = str(current_year)
-        form_class.fi0 = SelectField(
-            'Anno di rif.',
-            coerce=int,
-            choices=year_choices,
-            default=default_year
-        )
-        # NEW
-        config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
-                                          subarea_id=None)
-        nr_intervals = config_values[0]
-
-        current_interval = [t[2] for t in intervals if
-                            t[0] == nr_intervals]  # int(get_current_interval(3))  # quadriester
-        first_element = current_interval[0] if current_interval else None
-        interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
-
-        form_class.interval_ord = SelectField(
-            'Periodo di rif.',
-            coerce=int,
-            choices=interval_choices,  # Example choices, replace with your logic
-            default=first_element
-        )
-
-        # Remove 'subject_id' field from the form
-        form_class.subject_id = SelectField(
-            'Tipo di documento',
-            validators=[InputRequired()],
-            coerce=int,
-            choices=[(subject.id, subject.name) for subject in Subject.query.filter_by(tier_1="Legale").all()]
-        )
-        # delattr(form_class, 'subject_id')
-        form_class.no_action = CheckboxField('Confirm no documents to attach',
-                                             default=False)  # Set default value to False
-
-        form_class.form_excluded_columns = ('user_id', 'company_id', 'status_id',
-                                            'created_by', 'created_on', 'updated_on', 'data_type')
-        # Set default values for specific fields
-        form_class.fc2 = MyStringField('Note')
-
-        return form_class  # ExtendedForm
-
-    def _validate_no_action(self, model, form):
-        no_action_value = form.no_action.data
-        if model.file_path is None and not no_action_value:
-            raise ValidationError(
-                'If no file exists, then this absence must be acknowledged by checking the "no documents" box.')
-
-    def _uncheck_if_document(self, model, form):
-        no_action_value = form.no_action.data
-        if model.file_path is not None and no_action_value:
-            raise ValidationError(
-                'The no-document box is checked but a document was uploaded - please confirm either of the two.')
-
-    def get_query(self):
-        query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
-
-        if current_user.is_authenticated:
-            if current_user.has_role('Admin') or current_user.has_role('Authority'):
-                return query
-            elif current_user.has_role('Manager'):
-                # Manager can only see records related to their company_users
-                subquery = db.session.query(CompanyUsers.company_id).filter(
-                    CompanyUsers.user_id == current_user.id
-                ).subquery()
-
-                query = query.filter(self.model.company_id.in_(subquery))
-            elif current_user.has_role('Employee'):
-                # Employee can only see their own records
-                query = query.filter(self.model.user_id == current_user.id)
-                return query
-
-        # For other roles or anonymous users, return an empty query
-        return query.filter(self.model.id < 0)
-
-    def on_model_change(self, form, model, is_created):
-        super().on_model_change(form, model, is_created)
-
-        # Reset form data
-        form.populate_obj(model)
-
-        # Get the inline form data
-        # TODO eliminated on 26Mar to cope with duplicated records in the INLINE
-        # inline_form_data = form.inline_form  # Assuming 'inline_form' is the attribute holding the inline form data
-
-        uploaded_file = form.file_path.data
-        print('1 - uploaded file', uploaded_file)
-
-        if is_created:
-            # Handle new model creation:
-            # - Set default values
-            # - Send notification
-            # Apply your custom logic to set data_type
-            model.created_on = datetime.now()  # Set the created_on
-            pass
-        else:
-            # Handle existing model edit:
-            # - Compare previous and updated values
-            # - Trigger specific actions based on changes
-            pass
-
-        user_id = current_user.id  # Get the current user's ID or any other criteria
-        try:
-            company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-        except:
-            company_id = None
-            pass
-
-        area_id = self.area_id
-        subarea_id = self.subarea_id
-        data_type = self.subarea_name
-        nr_intervals = get_subarea_interval_type(self.area_id, self.subarea_id)
-        interval_id = nr_intervals
-        status_id = 1
-        record_type = 'control_area'
-
-        print('date of doc', form.date_of_doc.data.year)
-
-        year_id = form.fi0.data
-        interval_ord = form.interval_ord.data
-        subject_id = form.subject_id.data
-
-        if form.date_of_doc.data > datetime.now():
-            raise ValidationError(f"Date of document cannot be a future date.")
-
-        if form.date_of_doc.data.year != form.fi0.data:
-            raise ValidationError(f"Date of document must be consistent with the reporting year.")
-
-        if form.fi0.data == None or form.interval_ord.data == None:
-            raise ValidationError(f"Time interval reference fields cannot be null.")
-
-        if form.subject_id.data == None:
-            raise ValidationError(f"Document type can not be null.")
-
-        # - Validate data - Save the model
-        if form.interval_ord.data > 3 or form.interval_ord.data < 0:
-            raise ValidationError(
-                "Period must be less than or equal to the number of fractions (e.g. 4 for quarters, 12 for months).")
-            pass
-
-        if form.fi0.data < 2000 or form.fi0.data > 2099:
-            raise ValidationError(
-                "Please check the year")
-            pass
-
-        if self._uncheck_if_document(model, form):
-            pass
-        if self._validate_no_action(model, form):
-            pass
-
-        # Perform actions relevant to both creation and edit:
-        with app.app_context():
-            result, message = check_status_limited(is_created, company_id,
-                                                   subject_id, None, year_id, interval_ord,
-                                                   interval_id, area_id, subarea_id, datetime.today(), db.session)
-
-        if result == False:
-            raise ValidationError(message)
-            pass
-
-        model.updated_on = datetime.now()  # Set the created_on
-        model.user_id = user_id
-        model.company_id = company_id
-        model.data_type = data_type
-        model.record_type = record_type
-        model.area_id = area_id
-        model.subarea_id = subarea_id
-        model.fi0 = year_id
-        model.interval_id = interval_id
-        model.interval_ord = interval_ord
-        model.status_id = status_id
-        model.subject_id = subject_id
-        model.legal_document_id = None
-        # for upload actions
-        # model.file_path = form.file_path.data
-        print('2 - file path', form.file_path.data)
-
-        # workflow_controls = f"{dropdown_html}<br>{date_picker_html}<br>{checkbox_html}"  # Adjusted variable name
-        # Determine if workflow controls need to be generated
-        # Save the model to the database
-        if is_created:
-            self.session.add(model)
-        else:
-            self.session.merge(model)
-        self.session.commit()
-
-        # Return the model after saving
-        # Replace 'YourModelBase' with the base class of your models if different
-        remove_duplicates(self.session, StepBaseData, ['base_data_id', 'workflow_id', 'step_id'])
-
-        # Accessing inline form data directly from the main form object
-        inline_form_data = form.data.get('steps_relationship', [])
-        inline_data_string = f"At {datetime.now()} a new document dated {form.date_of_doc.data.year} "
-        inline_data_string += f"was created by the user {user_id} ({company_id}. "
-        inline_data_string += f"Area {area_id}, subarea {subarea_id}, reference period {interval_ord}/{interval_id}/{year_id}. "
-
-        # Initialize an empty string to hold the inline form data
-        for data in inline_form_data:
-            for field_name, field_value in data.items():
-                inline_data_string += f"{field_name}: {field_value}\n"  # Append field name and value to the string
-
-        print('create msg', company_id, user_id, inline_data_string)
-        # Now you have the inline form data as a string, you can use it to create a system message
-        # For example, you can use it to create a message using your `create_notification` function
-
-        create_notification(
-            self.session,
-            company_id=company_id,
-            user_id=user_id,
-            sender="System",
-            message_type="noticeboard",
-            subject="Document and Workflow Created",
-            body=inline_data_string,
-            lifespan='one-off'
-        )
-        # except:
-        #    print('Error adding inline data')
-
-        # TODO create ADMIN message too
-
-        action_type = 'update'
-        if is_created:
-            action_type = 'create'
-
-        create_audit_log(
-            self.session,
-            company_id=company_id,
-            user_id=user_id,
-            base_data_id=None,
-            workflow_id=None,
-            step_id=None,
-            action='create',
-            details=inline_data_string
-        )
-
-        return model
-
-
-class Tabella21_dataView(ModelView):
-    create_template = 'admin/create_base_data.html'
-    subarea_id = 9  # Define subarea_id as a class attribute
-    area_id = 2
-
-    # Specify the fields to be edited inline using XEditableWidget
-    column_editable_list = ['fi1', 'fi2', 'fc1']
-
-    # Customize the widget for inline editing
-    form_widget_args = {
-        # 'fi0': {'widget': XEditableWidget()},
-        'interval_ord': {'widget': XEditableWidget()},
-        'fi1': {'widget': XEditableWidget()},
-        'fi2': {'widget': XEditableWidget()},
-        'fc1': {'widget': XEditableWidget()},
-    }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # self.class_name = self.__class__.__name__  # Store the class name
-        self.subarea_id = Tabella21_dataView.subarea_id  # Initialize subarea_id in __init__
-        self.area_id = Tabella21_dataView.area_id  # Initialize area_id in __init__
-        self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
-
-    column_list = ('fi0', 'interval_ord', 'fi1', 'fi2', 'fc1')
-    form_columns = ('fi0', 'interval_ord', 'fi1', 'fi2', 'fc1')  # Specify form columns with dropdowns
-
-    column_labels = {'interval_ord': 'Periodo', 'fi0': 'Anno',
-                     'fi1': 'UDD', 'fi2': 'PdR',
-                     'fc1': 'Note'}
-    column_descriptions = {'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
-                           'fi0': 'Inserire anno (es. 2024)',
-                    'fi1': 'Numero UDD', 'fi2': 'Numero PdR',
-                    'fc1': 'Note (opzionale)'}
-
-    # Customize inlist for the View class
-    column_default_sort = ('fi0', True)
-    column_searchable_list = ('fi0', 'interval_ord', 'fi1', 'fi2', 'fc1')  # Adjust based on your model structure
-    column_filters = ('fi0', 'interval_ord', 'fi1', 'fi2', 'fc1')  # Adjust based on your model structure
-
-    # Specify fields to be excluded from the form
-    #form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_by', 'created_on', 'updated_on')
-
-    def scaffold_form(self):
-        form_class = super(Tabella21_dataView, self).scaffold_form()
-
-        # Use the custom form class instead of the default form class
-        # Define a custom form class with the desired date format
-        '''class CustomForm(form_class):
-            date_of_doc = DateField('Document date', format='%d-%m-%Y')
-
-        # Use the custom form class instead of the default form class
-        form_class = CustomForm'''
-
-        # form_class.fi0 = MyIntegerField('Anno', validators=[InputRequired()])
-        # Get the current year
-        current_year = datetime.now().year
-        year_choices = [(str(year), str(year)) for year in range(current_year - 5, current_year + 2)]
-        default_year = str(current_year)
-        form_class.fi0 = SelectField(
-            'Anno di rif.',
-            coerce=int,
-            choices=year_choices,
-            default=default_year
-        )
-
-        # NEW
-        config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
-                                          subarea_id=None)
-        nr_intervals = config_values[0]
-
-        # OLD
-        # nr_intervals = get_subarea_interval_type(self.area_id, self.subarea_id)
-
-        current_interval = [t[2] for t in intervals if
-                            t[0] == nr_intervals]  # int(get_current_interval(3))  # quadriester
-        first_element = current_interval[0] if current_interval else None
-        interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
-
-        form_class.interval_ord = SelectField(
-            'Periodo di rif.',
-            coerce=int,
-            choices=interval_choices,  # Example choices, replace with your logic
-            default=first_element
-        )
-
-        return form_class
-
-    # Use the custom loader with 'Servizi' as a filter criteria
-    filter_criteria = None
-    form_ajax_refs = {
-        'name': CustomSubjectAjaxLoader(
-            name='Interval',
-            session=db.session,
-            model=Interval,
-            fields=['name'],
-            filter_criteria=filter_criteria,
-        ),
-    }
-
-    def create_model(self, form):
-        model = super(Tabella21_dataView, self).create_model(form)
-        if current_user.is_authenticated:
-            try:
-                model.user_id = current_user.id  # Set the user_id
-                model.company_id = current_user.company_id  # Set the company_id
-                model.data_type = self.subarea_name
-                created_by = current_user.username  # Set the created_by
-                user_id = current_user.id
-                model.user_id = user_id
-                try:
-                    company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-                except:
-                    company_id = None
-                    pass
-                model.company_id = company_id  # Set the company_id
-                model.created_by = created_by  # Set the cr by
-                model.created_on = datetime.now()  # Set the created_on
-            except AttributeError:
-                pass
-            return model
-        else:
-            # Handle the case where the user is not authenticated
-            raise ValidationError('User not authenticated.')
-
-    def get_query(self):
-        query = super(Tabella21_dataView, self).get_query().filter_by(data_type=self.subarea_name)
-
-        if current_user.is_authenticated:
-            if current_user.has_role('Admin') or current_user.has_role('Authority'):
-                return query
-            elif current_user.has_role('Manager'):
-                # Manager can only see records related to their company_users
-                # Assuming you have a relationship named 'user_companies' between User and CompanyUsers models
-                subquery = db.session.query(CompanyUsers.company_id).filter(
-                    CompanyUsers.user_id == current_user.id
-                ).subquery()
-
-                query = query.filter(self.model.company_id.in_(subquery))
-            elif current_user.has_role('Employee'):
-                # Employee can only see their own records
-                query = query.filter(self.model.user_id == current_user.id)
-                return query
-
-        # For other roles or anonymous users, return an empty query
-        return query.filter(self.model.id < 0)
-
-    def is_accessible(self):
-        if current_user.is_authenticated:
-            if (current_user.has_role('Admin') or current_user.has_role('Authority')
-                    or current_user.has_role('Manager') or current_user.has_role('Employee')):
-                # Allow access for Admin, Manager, and Employee
-                return True
-
-        return False
-
-    def on_model_change(self, form, model, is_created):
-        super().on_model_change(form, model, is_created)
-        # Reset form data
-
-        print('dict 0', form.__dict__)
-
-        form.populate_obj(model)  # This resets the form data to its default values
-
-        fi0_value = model.fi0
-        interval_ord_value = model.interval_ord
-        fi1_value = model.fi1
-        fi2_value = model.fi2
-        fc1_value = model.fc1
-
-        fi0_value = model.fi0
-
-        now = datetime.now()
-        current_year = now.year
-        if fi0_value > current_year:
-            raise ValidationError(
-                f"Year in fi0 field cannot be in the future. Please enter a year less than or equal to {current_year}.")
-
-        # Perform actions relevant to both creation and edit:
-        user_id = current_user.id  # Get the current user's ID or any other criteria
-        try:
-            company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-        except:
-            company_id = None
-            pass
-        area_id = self.area_id
-        subarea_id = self.subarea_id
-        status_id = 1
-        config_values = get_config_values(config_type='area_interval', company_id=company_id, area_id=self.area_id,
-                                          subarea_id=self.subarea_id)
-        interval_id = config_values[0]
-
-        subject_id = None
-        lexic_id = None
-        legal_document_id = None
-        record_type = 'control_area'
-        data_type = self.subarea_name
-
-        # Get the name of the edited field
-        edited_field_name = next(iter(form._fields))
-
-
-        print('dict 1', form.__dict__)
-
-        # Validate only the edited field
-        edited_field = getattr(form, edited_field_name)
-        if edited_field.data is None:
-            raise ValidationError(f"{edited_field.label.text} field cannot be null")
-
-        if edited_field_name == 'interval_ord':
-            if edited_field.data > 52 or edited_field.data < 0:
-                raise ValidationError(
-                    "Period must be less than or equal to the number of fractions (e.g. 4 for quarters, 12 for months)")
-            else:
-                interval_ord_value = edited_field.data
-            pass
-
-        elif edited_field_name == 'fi0':
-            if edited_field.data < 2000 or edited_field.data > 2099:
-                raise ValidationError("Please check the year")
-            else:
-                fi0_value = edited_field.data
-            pass
-
-        elif edited_field_name == 'fi1':
-            if edited_field.data < 0:
-                raise ValidationError("Please enter valid values.")
-            else:
-                fi1_value = edited_field.data
-            pass
-
-        elif edited_field_name == 'fi2':
-            if edited_field.data < 0:
-                raise ValidationError("Please enter valid values.")
-            else:
-                fi2_value = edited_field.data
-            pass
-
-        else:
-            fc1_value = edited_field.data
-            pass
-
-        if edited_field_name == 'fi1' or edited_field_name == 'fi2':
-            # Check if fi1 and fi2 values are provided even though interval_ord is edited
-            if fi1_value is not None and fi2_value is not None:
-                # Perform validation or logic specific to fi1 and fi2
-                if fi1_value + fi2_value == 0:
-                    raise ValidationError("Please enter non-zero values for the fields.")
-                # ... other logic based on fi1 and fi2 ...
-        else:
-            # User might be editing a different field (e.g., fi0)
-            # You might not need to do anything specific here
-            pass
-
-        model.user_id = user_id
-        model.data_type = data_type
-        model.record_type = record_type
-        model.area_id = area_id
-        model.subarea_id = subarea_id
-        model.interval_id = interval_id
-        model.status_id = status_id
-
-        model.legal_document_id = legal_document_id
-        model.subject_id = subject_id
-        model.interval_ord = interval_ord_value
-        model.fi0 = fi0_value
-        model.fi1 = fi1_value
-        model.fi2 = fi2_value
-        model.updated_on = datetime.now()  # Set the created_on
-        model.company_id = company_id
-        model.fc1 = fc1_value
-
-        if is_created:
-            self.session.add(model)
-        else:
-            self.session.merge(model)
-        self.session.commit()
-
-        return model
-
-
-class Tabella22_dataView(ModelView):
-    create_template = 'admin/create_base_data.html'
-    subarea_id = 10  # Define subarea_id as a class attribute
-    area_id = 2
-
-    # Specify the fields to be edited inline using XEditableWidget
-    column_editable_list = ['fi1', 'fi2', 'fc1']
-    # Customize the widget for inline editing
-    form_widget_args = {
-        # 'fi0': {'widget': XEditableWidget()},
-        # 'interval_ord': {'widget': XEditableWidget()},
-        'fi1': {'widget': XEditableWidget()},
-        'fi2': {'widget': XEditableWidget()},
-        'fc1': {'widget': XEditableWidget()},
-    }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # self.class_name = self.__class__.__name__  # Store the class name
-        self.subarea_id = Tabella22_dataView.subarea_id  # Initialize subarea_id in __init__
-        self.area_id = Tabella22_dataView.area_id  # Initialize area_id in __init__
-        self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
-
-    column_list = ('fi0', 'interval_ord', 'fi1', 'fi2', 'fc1')
-    form_columns = ('fi0', 'interval_ord', 'fi1', 'fi2', 'fc1')  # Specify form columns with dropdowns
-
-    column_labels = {'interval_ord': 'Periodo', 'fi0': 'Anno',
-                     'fi1': 'UDD', 'fi2': 'PdR',
-                     'fc1': 'Note'}
-    column_descriptions = {'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
-                           'fi0': 'Inserire anno (es. 2024)',
-                    'fi1': 'Numero UDD', 'fi2': 'Numero PdR',
-                    'fc1': 'Note (opzionale)'}
-
-    # Customize inlist for the View class
-    column_default_sort = ('fi0', True)
-    column_searchable_list = ('fi0', 'interval_ord', 'fi1', 'fi2', 'fc1')  # Adjust based on your model structure
-    column_filters = ('fi0', 'interval_ord', 'fi1', 'fi2', 'fc1')  # Adjust based on your model structure
-
-    # Specify fields to be excluded from the form
-    #form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_by', 'created_on', 'updated_on')
-
-    def scaffold_form(self):
-        form_class = super(Tabella22_dataView, self).scaffold_form()
-
-        # Use the custom form class instead of the default form class
-        # Define a custom form class with the desired date format
-
-        # form_class.fi0 = MyIntegerField('Anno', validators=[InputRequired()])
-        # Get the current year
-        current_year = datetime.now().year
-        year_choices = [(str(year), str(year)) for year in range(current_year - 5, current_year + 2)]
-        default_year = str(current_year)
-        form_class.fi0 = SelectField(
-            'Anno di rif.',
-            coerce=int,
-            choices=year_choices,
-            default=default_year
-        )
-
-        # NEW
-        config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
-                                          subarea_id=None)
-        nr_intervals = config_values[0]
-
-        # OLD
-        # nr_intervals = get_subarea_interval_type(self.area_id, self.subarea_id)
-
-        current_interval = [t[2] for t in intervals if
-                            t[0] == nr_intervals]  # int(get_current_interval(3))  # quadriester
-        first_element = current_interval[0] if current_interval else None
-        interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
-
-        form_class.interval_ord = SelectField(
-            'Periodo di rif.',
-            coerce=int,
-            choices=interval_choices,  # Example choices, replace with your logic
-            default=first_element
-        )
-
-        return form_class
-
-    # Use the custom loader with 'Servizi' as a filter criteria
-    filter_criteria = None
-    form_ajax_refs = {
-        'name': CustomSubjectAjaxLoader(
-            name='Interval',
-            session=db.session,
-            model=Interval,
-            fields=['name'],
-            filter_criteria=filter_criteria,
-        ),
-    }
-
-    def create_model(self, form):
-        model = super(Tabella22_dataView, self).create_model(form)
-        if current_user.is_authenticated:
-            try:
-                model.user_id = current_user.id  # Set the user_id
-                model.company_id = current_user.company_id  # Set the company_id
-                model.data_type = self.subarea_name
-                created_by = current_user.username  # Set the created_by
-                user_id = current_user.id
-                model.user_id = user_id
-                try:
-                    company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-                except:
-                    company_id = None
-                    pass
-                model.company_id = company_id  # Set the company_id
-                model.created_by = created_by  # Set the cr by
-                model.created_on = datetime.now()  # Set the created_on
-            except AttributeError:
-                pass
-            return model
-        else:
-            # Handle the case where the user is not authenticated
-            raise ValidationError('User not authenticated.')
-
-    def get_query(self):
-        query = super(Tabella22_dataView, self).get_query().filter_by(data_type=self.subarea_name)
-
-        if current_user.is_authenticated:
-            if current_user.has_role('Admin') or current_user.has_role('Authority'):
-                return query
-            elif current_user.has_role('Manager'):
-                # Manager can only see records related to their company_users
-                # Assuming you have a relationship named 'user_companies' between User and CompanyUsers models
-                subquery = db.session.query(CompanyUsers.company_id).filter(
-                    CompanyUsers.user_id == current_user.id
-                ).subquery()
-
-                query = query.filter(self.model.company_id.in_(subquery))
-            elif current_user.has_role('Employee'):
-                # Employee can only see their own records
-                query = query.filter(self.model.user_id == current_user.id)
-                return query
-
-        # For other roles or anonymous users, return an empty query
-        return query.filter(self.model.id < 0)
-
-    def is_accessible(self):
-        if current_user.is_authenticated:
-            if (current_user.has_role('Admin') or current_user.has_role('Authority')
-                    or current_user.has_role('Manager') or current_user.has_role('Employee')):
-                # Allow access for Admin, Manager, and Employee
-                return True
-
-        return False
-
-    def on_model_change(self, form, model, is_created):
-        super(Tabella22_dataView, self).on_model_change(form, model, is_created)
-        # Reset form data
-        form.populate_obj(model)  # This resets the form data to its default values
-
-        #print('method is', form.get('_method'), form.get('_method') in ['PUT', 'PATCH'])
-        fi0_value = model.fi0
-
-        now = datetime.now()
-        current_year = now.year
-        if fi0_value > current_year:
-            raise ValidationError(
-                f"Year in fi0 field cannot be in the future. Please enter a year less than or equal to {current_year}.")
-
-        if is_created:
-            # Handle new model creation:
-            # - Set default values
-            # - Send notification
-            # Apply your custom logic to set data_type
-            model.created_on = datetime.now()  # Set the created_on
-            pass
-        else:
-            # Handle existing model edit:
-            # - Compare previous and updated values
-            # - Trigger specific actions based on changes
-            pass
-
-        # Perform actions relevant to both creation and edit:
-        user_id = current_user.id  # Get the current user's ID or any other criteria
-        try:
-            company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-        except:
-            company_id = None
-            pass
-
-        area_id = self.area_id
-        subarea_id = self.subarea_id
-        status_id = 1
-        config_values = get_config_values(config_type='area_interval', company_id=company_id, area_id=self.area_id,
-                                          subarea_id=self.subarea_id)
-        interval_id = config_values[0]
-        subject_id = None
-        lexic_id = None
-        legal_document_id = None
-        record_type = 'control_area'
-        data_type = self.subarea_name
-
-        result, message = check_status(is_created, company_id,
-                                   None, None, form.fi0.data, form.interval_ord.data,
-                                       interval_id, area_id, subarea_id, datetime.today(), db.session)
-
-        # - Validate data
-        # - Save the model
-        fields_to_check = ['fi0',
-                           'fi1', 'fi2', 'interval_ord']
-
-        for field_name in fields_to_check:
-            if form[field_name].data is None:
-                raise ValidationError(f"Field {field_name} cannot be null")
-
-        if form.interval_ord.data > 52 or form.interval_ord.data < 0:
-            raise ValidationError(
-                "Period must be less than or equal to the number of fractions (e.g. 4 for quarters, 12 for months)")
-
-        if form.fi0.data < 2000 or form.fi0.data > 2199:
-            raise ValidationError(
-                "Please check the year")
-
-        if form.fi1.data * form.fi2.data == 0:
-            raise ValidationError("Please enter non-zero values for the fields.")
-
-        model.user_id = user_id
-        model.data_type = data_type
-        model.record_type = record_type
-        model.area_id = area_id
-        model.subarea_id = subarea_id
-        model.interval_id = interval_id
-        model.status_id = status_id
-
-        model.legal_document_id = legal_document_id
-        model.subject_id = subject_id
-        model.interval_ord = form.interval_ord.data
-        model.fi0 = form.fi0.data
-        model.updated_on = datetime.now()  # Set the created_on
-        model.company_id = company_id
-
-        if result == False:
-            raise ValidationError(message)
-        else:
-            pass
-
-        if is_created:
-            self.session.add(model)
-        else:
-            self.session.merge(model)
-        self.session.commit()
-
-        return model
-
-
-class Tabella23_dataView(ModelView):
-
-    create_template = 'admin/create_base_data.html'
-    subarea_id = 11  # Define subarea_id as a class attribute
-    area_id = 2
-
-    # Specify the fields to be edited inline using XEditableWidget
-    column_editable_list = ['fc1']
-    # Customize the widget for inline editing
-    form_widget_args = {
-        # 'fi0': {'widget': XEditableWidget()},
-        # 'interval_ord': {'widget': XEditableWidget()},
-        # 'fi1': {'widget': XEditableWidget()},
-        # 'fi2': {'widget': XEditableWidget()},
-        'fc1': {'widget': XEditableWidget()},
-    }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # self.class_name = self.__class__.__name__  # Store the class name
-        self.subarea_id = Tabella23_dataView.subarea_id  # Initialize subarea_id in __init__
-        self.area_id = Tabella23_dataView.area_id  # Initialize area_id in __init__
-        self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
-
-    column_list = ('interval_ord', 'fi0', 'fi1', 'fi2', 'fi3', 'fn1', 'fn2', 'fc1')
-    form_columns = ('interval_ord', 'fi0', 'fi1', 'fi2', 'fi3', 'fn1', 'fn2', 'fc1')
-    # Specify form columns with dropdowns
-
-    column_labels = {'interval_ord': 'Periodo', 'fi0': 'Anno',
-                     'fi1': 'Totale', 'fi2': '', 'fi3': '',
-                     'fn1': 'Tasso Switching (%)', 'fn2': '',
-                     'fc1': 'Note'}
-    column_descriptions = {'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
-                        'fi0': 'Inserire anno (es. 2024)',
-                        'fi1': '(numero)', 'fi2': 'di cui: PdR domestico', 'fi3': 'PdR non domestico',
-                        'fn1': ', di cui % domestico', 'fn2': '% non domestico',
-        'fc1': '(opzionale)'}
-
-    # Customize inlist for the class
-    column_default_sort = ('fi0', True)
-    column_searchable_list = ('fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fn1', 'fn2', 'fc1')
-    # Adjust based on your model structure
-    column_filters = ('fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fn1', 'fn2', 'fc1')
-    # Adjust based on your model structure
-
-    # Specify fields to be excluded from the form
-    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_by', 'created_on', 'updated_on')
-
-    column_formatters = {
-        'fn1': lambda view, context, model, name: "%.2f" % model.fn1 if model.fn1 is not None else None,
-        'fn2': lambda view, context, model, name: "%.2f" % model.fn2 if model.fn2 is not None else None,
-    }
-    def scaffold_form(self):
-        form_class = super(Tabella23_dataView, self).scaffold_form()
-
-        # Use the custom form class instead of the default form class
-        # Define a custom form class with the desired date format
-
-        # form_class.fi0 = MyIntegerField('Anno', validators=[InputRequired()])
-        # Get the current year
-        current_year = datetime.now().year
-        year_choices = [(str(year), str(year)) for year in range(current_year - 5, current_year + 2)]
-        default_year = str(current_year)
-        form_class.fi0 = SelectField(
-            'Anno di rif.',
-            coerce=int,
-            choices=year_choices,
-            default=default_year
-        )
-
-        # NEW
-        config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
-                                          subarea_id=None)
-        nr_intervals = config_values[0]
-
-        # OLD
-        # nr_intervals = get_subarea_interval_type(self.area_id, self.subarea_id)
-
-        current_interval = [t[2] for t in intervals if
-                            t[0] == nr_intervals]  # int(get_current_interval(3))  # quadriester
-        first_element = current_interval[0] if current_interval else None
-        interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
-
-        form_class.interval_ord = SelectField(
-            'Periodo di rif.',
-            coerce=int,
-            choices=interval_choices,  # Example choices, replace with your logic
-            default=first_element
-        )
-
-        return form_class
-
-    # Use the custom loader with 'Servizi' as a filter criteria
-    filter_criteria = None
-    form_ajax_refs = {
-        'name': CustomSubjectAjaxLoader(
-            name='Interval',
-            session=db.session,
-            model=Interval,
-            fields=['name'],
-            filter_criteria=filter_criteria,
-        ),
-    }
-
-    def create_model(self, form):
-        model = super(Tabella23_dataView, self).create_model(form)
-        if current_user.is_authenticated:
-            try:
-                model.user_id = current_user.id  # Set the user_id
-                model.company_id = current_user.company_id  # Set the company_id
-                model.data_type = self.subarea_name
-                created_by = current_user.username  # Set the created_by
-                user_id = current_user.id
-                model.user_id = user_id
-                try:
-                    company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-                except:
-                    company_id = None
-                    pass
-                model.company_id = company_id  # Set the company_id
-                model.created_by = created_by  # Set the cr by
-                model.created_on = datetime.now()  # Set the created_on
-            except AttributeError:
-                pass
-            return model
-        else:
-            # Handle the case where the user is not authenticated
-            raise ValidationError('User not authenticated.')
-
-
-    def get_query(self):
-        query = super(Tabella23_dataView, self).get_query().filter_by(data_type=self.subarea_name)
-
-        if current_user.is_authenticated:
-            if current_user.has_role('Admin') or current_user.has_role('Authority'):
-                return query
-            elif current_user.has_role('Manager'):
-                # Manager can only see records related to their company_users
-                # Assuming you have a relationship named 'user_companies' between User and CompanyUsers models
-                subquery = db.session.query(CompanyUsers.company_id).filter(
-                    CompanyUsers.user_id == current_user.id
-                ).subquery()
-
-                query = query.filter(self.model.company_id.in_(subquery))
-            elif current_user.has_role('Employee'):
-                # Employee can only see their own records
-                query = query.filter(self.model.user_id == current_user.id)
-                return query
-
-        # For other roles or anonymous users, return an empty query
-        return query.filter(self.model.id < 0)
-
-    def is_accessible(self):
-        if current_user.is_authenticated:
-            if (current_user.has_role('Admin') or current_user.has_role('Authority')
-                    or current_user.has_role('Manager') or current_user.has_role('Employee')):
-                # Allow access for Admin, Manager, and Employee
-                return True
-
-        return False
-
-    def all_not_none_validator(self, form, field):
-        if any(getattr(form, field_name).data is None for field_name in field.args):
-            raise ValidationError("Some fields are null")
-
-
-    def on_model_change(self, form, model, is_created):
-
-        super().on_model_change(form, model, is_created)
-        # Reset form data
-        form.populate_obj(model)  # This resets the form data to its default values
-
-        #print('method is', form.get('_method'), form.get('_method') in ['PUT', 'PATCH'])
-        fi0_value = model.fi0
-
-        now = datetime.now()
-        current_year = now.year
-        if fi0_value > current_year:
-            raise ValidationError(
-                f"Year in fi0 field cannot be in the future. Please enter a year less than or equal to {current_year}.")
-
-        if is_created:
-            # Handle new model creation:
-            # - Set default values
-            # - Send notification
-            # Apply your custom logic to set data_type
-            model.created_on = datetime.now()  # Set the created_on
-            pass
-        else:
-            # Handle existing model edit:
-            # - Compare previous and updated values
-            # - Trigger specific actions based on changes
-            pass
-
-        # Perform actions relevant to both creation and edit:
-        user_id = current_user.id  # Get the current user's ID or any other criteria
-        try:
-            company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-        except:
-            company_id = None
-            pass
-        area_id = self.area_id
-        subarea_id = self.subarea_id
-        status_id = 1
-        config_values = get_config_values(config_type='area_interval', company_id=company_id, area_id=self.area_id,
-                                          subarea_id=self.subarea_id)
-        interval_id = config_values[0]
-        subject_id = None
-        legal_document_id = None
-        record_type = 'control_area'
-        data_type = self.subarea_name
-
-        if form.fi0.data == None or form.interval_ord.data == None:
-            raise ValidationError(f"Time interval reference fields cannot be null")
-
-        with app.app_context():
-            result, message = check_status(is_created, company_id,
-                                       None, None, form.fi0.data, form.interval_ord.data,
-                                        interval_id, area_id, subarea_id, datetime.today(), db.session)
-
-        # - Validate data
-        # - Save the model
-        fields_to_check = ['fi0',
-                           'fi1', 'fi2', 'fi3', 'fn1', 'fn2', 'fc1', 'interval_ord']
-
-        for field_name in fields_to_check:
-            if form[field_name].data is None:
-                raise ValidationError(f"Field {field_name} cannot be null")
-        if form.interval_ord.data > 52 or form.interval_ord.data < 0:
-            raise ValidationError(
-                "Period must be less than or equal to the number of fractions (e.g. 4 for quarters, 12 for months)")
-            pass
-        if form.fi0.data < 2000 or form.fi0.data > 2199:
-            raise ValidationError(
-                "Please check the year")
-            pass
-
-        if (form.fi1.data is None or form.fi2.data is None or form.fi3.data is None):
-            print('Error fi1 or fi2 or fi3')
-            raise ValidationError("Please enter all required data.")
-
-        if form.fi1.data * form.fi2.data * form.fi3.data == 0:
-            raise ValidationError("Please enter non-zero values for the fields.")
-        else:
-            if form.fi1.data != form.fi2.data + form.fi3.data:
-                raise ValidationError("Please check the total.")
-
-        model.user_id = user_id
-        model.data_type = data_type
-        model.record_type = record_type
-        model.area_id = area_id
-        model.subarea_id = subarea_id
-        model.interval_id = interval_id
-        model.status_id = status_id
-
-        model.legal_document_id = legal_document_id
-        model.subject_id = subject_id
-        model.interval_ord = form.interval_ord.data
-        model.fi0 = form.fi0.data
-        model.updated_on = datetime.now()  # Set the created_on
-        model.company_id = company_id
-
-        if result == False:
-            raise ValidationError(message)
-        else:
-            pass
-
-        if is_created:
-            self.session.add(model)
-        else:
-            self.session.merge(model)
-        self.session.commit()
-
-        return model
-
-
-
-class Tabella24_dataView(ModelView):
-
-    create_template = 'admin/create_base_data.html'
-    subarea_id = 12  # Define subarea_id as a class attribute
-    area_id = 2
-
-    # Specify the fields to be edited inline using XEditableWidget
-    column_editable_list = ['fc1']
-    # Customize the widget for inline editing
-    form_widget_args = {
-        # 'fi0': {'widget': XEditableWidget()},
-        # 'interval_ord': {'widget': XEditableWidget()},
-        # 'fi1': {'widget': XEditableWidget()},
-        # 'fi2': {'widget': XEditableWidget()},
-        'fc1': {'widget': XEditableWidget()},
-    }
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # self.class_name = self.__class__.__name__  # Store the class name
-        self.subarea_id = Tabella24_dataView.subarea_id  # Initialize subarea_id in __init__
-        self.area_id = Tabella24_dataView.area_id  # Initialize area_id in __init__
-        self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
-
-    column_list = ('interval_ord', 'fi0', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fc1')
-    form_columns = ('interval_ord', 'fi0', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fc1')
-    # Specify form columns with dropdowns
-
-    column_labels = {'interval_ord': 'Periodo', 'fi0': 'Anno',
-                     'fi1': 'Totale', 'fi2': 'IVI', 'fi3': 'Altri',
-                     'fi4': 'Lavori semplici', 'fi5': 'Lavori complessi',
-                     'fc1': 'Note'}
-    column_descriptions = {'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
-                        'fi0': 'Inserire anno (es. 2024)',
-                        'fi1': 'Totale', 'fi2': 'di cui: IVI', 'fi3': 'altri',
-                        'fi4': 'Lavori semplici', 'fi5': 'Lavori complessi',
-        'fc1': 'Inserire commento'}
-
-    # Customize inlist for class dataView
-    column_default_sort = ('fi0', True)
-    column_searchable_list = ('fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fc1')
-    # Adjust based on your model structure
-    column_filters = ('fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fc1')
-    # Adjust based on your model structure
-
-    # Specify fields to be excluded from the form
-    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_by', 'created_on', 'updated_on')
-
-    def scaffold_form(self):
-        form_class = super(Tabella24_dataView, self).scaffold_form()
-
-        # form_class.fi0 = MyIntegerField('Anno', validators=[InputRequired()])
-        # Get the current year
-        current_year = datetime.now().year
-        year_choices = [(str(year), str(year)) for year in range(current_year - 5, current_year + 2)]
-        default_year = str(current_year)
-        form_class.fi0 = SelectField(
-            'Anno di rif.',
-            coerce=int,
-            choices=year_choices,
-            default=default_year
-        )
-
-        # NEW
-        config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
-                                          subarea_id=None)
-
-        nr_intervals = config_values[0]
-
-        # OLD
-        # nr_intervals = get_subarea_interval_type(self.area_id, self.subarea_id)
-
-        current_interval = [t[2] for t in intervals if
-                            t[0] == nr_intervals]  # int(get_current_interval(3))  # quadriester
-        first_element = current_interval[0] if current_interval else None
-        interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
-
-        form_class.interval_ord = SelectField(
-            'Periodo di rif.',
-            coerce=int,
-            choices=interval_choices,  # Example choices, replace with your logic
-            default=first_element
-        )
-
-        return form_class
-
-    # Use the custom loader with 'Servizi' as a filter criteria
-    filter_criteria = None
-    form_ajax_refs = {
-        'name': CustomSubjectAjaxLoader(
-            name='Interval',
-            session=db.session,
-            model=Interval,
-            fields=['name'],
-            filter_criteria=filter_criteria,
-        ),
-    }
-
-    def create_model(self, form):
-        model = super(Tabella24_dataView, self).create_model(form)
-        if current_user.is_authenticated:
-            try:
-                model.user_id = current_user.id  # Set the user_id
-                model.company_id = current_user.company_id  # Set the company_id
-                model.data_type = self.subarea_name
-                created_by = current_user.username  # Set the created_by
-                user_id = current_user.id
-                model.user_id = user_id
-                try:
-                    company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-                except:
-                    company_id = None
-                    pass
-                model.company_id = company_id  # Set the company_id
-                model.created_by = created_by  # Set the cr by
-                model.created_on = datetime.now()  # Set the created_on
-            except AttributeError:
-                pass
-            return model
-        else:
-            # Handle the case where the user is not authenticated
-            raise ValidationError('User not authenticated.')
-
-
-    def get_query(self):
-        #query = super(Tabella24_dataView, self).get_query().filter_by(data_type=self.subarea_name)
-        query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
-
-        if current_user.is_authenticated:
-            if current_user.has_role('Admin') or current_user.has_role('Authority'):
-                return query
-            elif current_user.has_role('Manager'):
-                # Manager can only see records related to their company_users
-                # Assuming you have a relationship named 'user_companies' between User and CompanyUsers models
-                subquery = db.session.query(CompanyUsers.company_id).filter(
-                    CompanyUsers.user_id == current_user.id
-                ).subquery()
-
-                query = query.filter(self.model.company_id.in_(subquery))
-            elif current_user.has_role('Employee'):
-                # Employee can only see their own records
-                query = query.filter(self.model.user_id == current_user.id)
-                return query
-
-        # For other roles or anonymous users, return an empty query
-        return query.filter(self.model.id < 0)
-
-    def is_accessible(self):
-        if current_user.is_authenticated:
-            if (current_user.has_role('Admin') or current_user.has_role('Authority')
-                    or current_user.has_role('Manager') or current_user.has_role('Employee')):
-                # Allow access for Admin, Manager, and Employee
-                return True
-
-        return False
-
-    def all_not_none_validator(self, form, field):
-        if any(getattr(form, field_name).data is None for field_name in field.args):
-            raise ValidationError("Some fields are null")
-
-
-    def on_model_change(self, form, model, is_created):
-
-        super().on_model_change(form, model, is_created)
-        # Reset form data
-        form.populate_obj(model)  # This resets the form data to its default values
-
-        #print('method is', form.get('_method'), form.get('_method') in ['PUT', 'PATCH'])
-        fi0_value = model.fi0
-
-        now = datetime.now()
-        current_year = now.year
-        if fi0_value > current_year:
-            raise ValidationError(
-                f"Year in fi0 field cannot be in the future. Please enter a year less than or equal to {current_year}.")
-
-        if is_created:
-            # Handle new model creation:
-            # - Set default values
-            # - Send notification
-            # Apply your custom logic to set data_type
-            model.created_on = datetime.now()  # Set the created_on
-            pass
-        else:
-            # Handle existing model edit:
-            # - Compare previous and updated values
-            # - Trigger specific actions based on changes
-            pass
-
-        # Perform actions relevant to both creation and edit:
-        user_id = current_user.id  # Get the current user's ID or any other criteria
-        try:
-            company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-        except:
-            company_id = None
-            pass
-        area_id = self.area_id
-        subarea_id = self.subarea_id
-        status_id = 1
-        config_values = get_config_values(config_type='area_interval', company_id=company_id, area_id=self.area_id,
-                                          subarea_id=self.subarea_id)
-        interval_id = config_values[0]
-        subject_id = None
-        legal_document_id = None
-        record_type = 'control_area'
-        data_type = self.subarea_name
-
-        if form.fi0.data == None or form.interval_ord.data == None:
-            raise ValidationError(f"Time interval reference fields cannot be null")
-
-        # - Validate data
-        # - Save the model
-        fields_to_check = ['fi0',
-                           'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fc1', 'interval_ord']
-
-        with app.app_context():
-            result, message = check_status(is_created, company_id,
-                                       None, None, form.fi0.data, form.interval_ord.data,
-                                        interval_id, area_id, subarea_id, datetime.today(), db.session)
-
-        for field_name in fields_to_check:
-            if form[field_name].data is None:
-                raise ValidationError(f"Field {field_name} cannot be null")
-        if form.interval_ord.data > 52 or form.interval_ord.data < 0:
-            raise ValidationError(
-                "Period must be less than or equal to the number of fractions (e.g. 4 for quarters, 12 for months)")
-            pass
-        if form.fi0.data < 2000 or form.fi0.data > 2199:
-            raise ValidationError(
-                "Please check the year")
-            pass
-
-        if (form.fi1.data is None or form.fi2.data is None or form.fi3.data is None
-                or form.fi4.data is None or form.fi5.data is None):
-            raise ValidationError("Please enter all required data.")
-
-        if form.fi1.data + form.fi2.data + form.fi3.data + form.fi4.data + form.fi5.data == 0:
-            raise ValidationError("Please enter non-zero values for the fields.")
-        else:
-            if form.fi1.data != form.fi2.data + form.fi3.data:
-                raise ValidationError("Please check the total.")
-
-        model.user_id = user_id
-        model.data_type = data_type
-        model.record_type = record_type
-        model.area_id = area_id
-        model.subarea_id = subarea_id
-        model.interval_id = interval_id
-        model.status_id = status_id
-
-        model.legal_document_id = legal_document_id
-        model.subject_id = subject_id
-        model.interval_ord = form.interval_ord.data
-        model.fi0 = form.fi0.data
-        model.updated_on = datetime.now()  # Set the created_on
-        model.company_id = company_id
-
-        if result == False:
-            raise ValidationError(message)
-        else:
-            pass
-
-        if is_created:
-            self.session.add(model)
-        else:
-            self.session.merge(model)
-        self.session.commit()
-
-        return model
-
-
-class Tabella25_dataView(ModelView):
-
-    create_template = 'admin/create_base_data.html'
-    page_title = 'Secondo livello: Quote di mercato della IVI nel settore vendita del SMR'
-
-    subarea_id = 13  # Define subarea_id as a class attribute
-    area_id = 2
-
-    # Specify the fields to be edited inline using XEditableWidget
-    column_editable_list = ['fc1']
-    # Customize the widget for inline editing
-    form_widget_args = {
-        # 'fi0': {'widget': XEditableWidget()},
-        # 'interval_ord': {'widget': XEditableWidget()},
-        # 'fi1': {'widget': XEditableWidget()},
-        # 'fi2': {'widget': XEditableWidget()},
-        'fc1': {'widget': XEditableWidget()},
-    }
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # self.class_name = self.__class__.__name__  # Store the class name
-        self.subarea_id = Tabella25_dataView.subarea_id  # Initialize subarea_id in __init__
-        self.area_id = Tabella25_dataView.area_id  # Initialize area_id in __init__
-        self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
-
-    column_list = ('interval_ord', 'fi0', 'fi1', 'fn1', 'fi2', 'fn2', 'fi3', 'fc1')
-    form_columns = ('interval_ord', 'fi0', 'fi1', 'fn1', 'fi2', 'fn2', 'fi3', 'fc1')  # Specify form columns with dropdowns
-
-    column_labels = {'interval_ord': 'Periodo', 'fi0': 'Anno',
-                     'fi1': 'Numero', 'fn1': '%',
-                     'fi2': 'Altri', 'fn2': '%',
-                     'fi3': 'Totale',
-                     'fc1': 'Note'}
-    column_descriptions = {'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
-                           'fi0': 'Inserire anno (es. 2024)',
-                           'fi1': 'Numero IVI nel settore di vendita del SMR',
-                           'fn1': 'quota di mercato IVI',
-                           'fi2': 'Numero altri nel settore di vendita del SMR',
-                           'fn2': 'quota di altri',
-                           'fi3': '(numero)',
-                           'fc1': 'Inserire commento'}
-
-    # Customize inlist for the View class
-    column_default_sort = ('fi0', True)
-    column_searchable_list = ('fi0', 'interval_ord', 'subject.name', 'fi3', 'fn1','fi4', 'fn2', 'fi5', 'fc1', 'fc2')
-    # Adjust based on your model structure
-    column_filters = ('fi0', 'interval_ord', 'subject.name', 'fi3', 'fi4', 'fi5', 'fc1')
-    # Adjust based on your model structure
-
-    # Specify fields to be excluded from the form
-    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_by', 'created_on', 'updated_on')
-    def _subject_formatter(view, context, model, name):
-        # This function will be used to format the 'subject' column
-        if model.subject:
-            if isinstance(model.subject, Subject):  # Check if the subject is an instance of Subject
-                return model.subject.name
-            else:
-                return Subject.query.get(model.subject).name  # If not, query the subject object
-        return ''
-
-    column_formatters = {
-        'subject': _subject_formatter,
-        'fn1': lambda view, context, model, name: "%.2f" % model.fn1 if model.fn1 is not None else None,
-        'fn2': lambda view, context, model, name: "%.2f" % model.fn2 if model.fn2 is not None else None,
-
-    }
-
-    def scaffold_form(self):
-        form_class = super(Tabella25_dataView, self).scaffold_form()
-        # Set default values for specific fields
-
-        form_class.subject_id = SelectField(
-            'Oggetto',
-            validators=[InputRequired()],
-            coerce=int,
-            choices=[(subject.id, subject.name) for subject in Subject.query.filter_by(tier_1="Utenti").all()]
-        )
-
-        # Get the current year
-        current_year = datetime.now().year
-        # Generate choices for the year field from current_year - 5 to current_year + 1
-        year_choices = [(str(year), str(year)) for year in range(current_year - 5, current_year + 2)]
-        # Set the default value to the current year
-        default_year = str(current_year)
-        # Dynamically determine interval_ord options based on subject_id
-        form_class.fi0 = SelectField(
-            'Anno',
-            coerce=int,
-            choices=year_choices,
-            default=default_year
-        )
-
-        # NEW
-        config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
-                                          subarea_id=None)
-        nr_intervals = config_values[0]
-
-        # OLD
-        # nr_intervals = get_subarea_interval_type(self.area_id, self.subarea_id)
-
-        current_interval = [t[2] for t in intervals if t[0] == nr_intervals] #int(get_current_interval(3))  # quadriester
-        first_element = current_interval[0] if current_interval else None
-        interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
-
-        form_class.interval_ord = SelectField(
-            'Periodo di rif.',
-            coerce=int,
-            choices=interval_choices,  # Example choices, replace with your logic
-            default=first_element
-        )
-        return form_class
-
-    def create_model(self, form):
-        model = super(Tabella25_dataView, self).create_model(form)
-        if current_user.is_authenticated:
-            try:
-                model.user_id = current_user.id  # Set the user_id
-                model.company_id = current_user.company_id  # Set the company_id
-                model.data_type = self.subarea_name
-                created_by = current_user.username  # Set the created_by
-                user_id = current_user.id
-                model.user_id = user_id
-                try:
-                    company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-                except:
-                    company_id = None
-                    pass
-                model.company_id = company_id  # Set the company_id
-                model.created_by = created_by  # Set the cr by
-                model.created_on = datetime.now()  # Set the created_on
-            except AttributeError:
-                pass
-            return model
-        else:
-            # Handle the case where the user is not authenticated
-            raise ValidationError('User not authenticated.')
-
-    def get_query(self):
-        #query = super(Tabella25_dataView, self).get_query().filter_by(data_type=self.subarea_name)
-        query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
-
-        if current_user.is_authenticated:
-            if current_user.has_role('Admin') or current_user.has_role('Authority'):
-                return query
-            elif current_user.has_role('Manager'):
-                # Manager can only see records related to their company_users
-                # Assuming you have a relationship named 'user_companies' between User and CompanyUsers models
-                subquery = db.session.query(CompanyUsers.company_id).filter(
-                    CompanyUsers.user_id == current_user.id
-                ).subquery()
-
-                query = query.filter(self.model.company_id.in_(subquery))
-            elif current_user.has_role('Employee'):
-                # Employee can only see their own records
-                query = query.filter(self.model.user_id == current_user.id)
-                return query
-
-        # For other roles or anonymous users, return an empty query
-        return query.filter(self.model.id < 0)
-
-    def is_accessible(self):
-        if current_user.is_authenticated:
-            if (current_user.has_role('Admin') or current_user.has_role('Authority')
-                    or current_user.has_role('Manager') or current_user.has_role('Employee')):
-                # Allow access for Admin, Manager, and Employee
-                return True
-
-        return False
-
-    def on_model_change(self, form, model, is_created):
-
-        super().on_model_change(form, model, is_created)
-        # Reset form data
-        form.populate_obj(model)  # This resets the form data to its default values
-
-        #print('method is', form.get('_method'), form.get('_method') in ['PUT', 'PATCH'])
-        fi0_value = model.fi0
-
-        now = datetime.now()
-        current_year = now.year
-        if fi0_value > current_year:
-            raise ValidationError(
-                f"Year in fi0 field cannot be in the future. Please enter a year less than or equal to {current_year}.")
-
-        if is_created:
-            # Handle new model creation:
-            # - Set default values
-            # - Send notification
-            # Apply your custom logic to set data_type
-            model.created_on = datetime.now()  # Set the created_on
-            pass
-        else:
-            # Handle existing model edit:
-            # - Compare previous and updated values
-            # - Trigger specific actions based on changes
-            pass
-
-        # Perform actions relevant to both creation and edit:
-        user_id = current_user.id  # Get the current user's ID or any other criteria
-        try:
-            company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-        except:
-            company_id = None
-            pass
-        area_id = self.area_id
-        subarea_id = self.subarea_id
-        data_type = self.subarea_name
-        status_id = 1
-        config_values = get_config_values(config_type='area_interval', company_id=company_id, area_id=self.area_id,
-                                          subarea_id=self.subarea_id)
-        interval_id = config_values[0]
-        subject_id = form.subject_id.data
-        legal_document_id = None
-        record_type = 'control_area'
-
-        if form.fi0.data == None or form.interval_ord.data == None:
-            raise ValidationError(f"Time interval reference fields cannot be null")
-
-        with app.app_context():
-            result, message = check_status(is_created, company_id, None,
-                                       None, form.fi0.data, form.interval_ord.data,
-                                        interval_id, area_id, subarea_id, datetime.today(), db.session)
-
-        # - Validate data
-        # - Save the model
-        fields_to_check = ['fi0',
-                           'fi1', 'fi2', 'fi3', 'fn1', 'fn2', 'interval_ord']
-
-        for field_name in fields_to_check:
-            if form[field_name].data is None:
-                raise ValidationError(f"Field {field_name} cannot be null")
-        if form.interval_ord.data > 52 or form.interval_ord.data < 0:
-            raise ValidationError(
-                "Period must be less than or equal to the number of fractions (e.g. 4 for quarters, 12 for months)")
-            pass
-        if form.fi0.data < 2000 or form.fi0.data > 2199:
-            raise ValidationError(
-                "Please check the year")
-            pass
-
-        if (form.fi1.data is None or form.fi2.data is None or form.fi3.data is None):
-            raise ValidationError("Please enter all required data.")
-
-        if form.fi1.data + form.fi2.data + form.fi3.data == 0:
-            raise ValidationError("Please enter non-zero values for the fields.")
-        else:
-            if form.fi3.data != form.fi1.data + form.fi2.data:
-                raise ValidationError("Please check the total.")
-
-        model.user_id = user_id
-        model.data_type = data_type
-        model.record_type = record_type
-        model.area_id = area_id
-        model.subarea_id = subarea_id
-        model.data_type = self.subarea_name
-        model.interval_id = interval_id
-        model.status_id = status_id
-
-        model.legal_document_id = legal_document_id
-        model.subject_id = subject_id
-        model.interval_ord = form.interval_ord.data
-        model.fi0 = form.fi0.data
-        model.updated_on = datetime.now()  # Set the created_on
-        model.company_id = company_id
-
-        if result == False:
-            raise ValidationError(message)
-        else:
-            pass
-
-        if is_created:
-            self.session.add(model)
-        else:
-            self.session.merge(model)
-        self.session.commit()
-
-        return model
-
-
-class Tabella26_dataView(ModelView):
-    page_title = "Switching rate (trattamento della vendita dell'IVI rispetto agli altri operatori)"
-
-    create_template = 'admin/create_base_data.html'
-    area_id = 2
-    subarea_id = 14
-
-    # Specify the fields to be edited inline using XEditableWidget
-    column_editable_list = ['fc1']
-    # Customize the widget for inline editing
-    form_widget_args = {
-        # 'fi0': {'widget': XEditableWidget()},
-        # 'interval_ord': {'widget': XEditableWidget()},
-        # 'fi1': {'widget': XEditableWidget()},
-        # 'fi2': {'widget': XEditableWidget()},
-        'fc1': {'widget': XEditableWidget()},
-    }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # self.class_name = self.__class__.__name__  # Store the class name
-        self.subarea_id = Tabella26_dataView.subarea_id  # Initialize subarea_id in __init__
-        self.area_id = Tabella26_dataView.area_id  # Initialize area_id in __init__
-        self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
-
-    column_list = ('interval_ord', 'fi0',
-                   'fi1', 'fi2', 'fn1', 'fi3', 'fn2', 'fi4', 'fn3', 'fi5', 'fn4',
-                   'fi6', 'fn5', 'fi7', 'fn6', 'fi8', 'fi9', 'fn7', 'fi10', 'fi11', 'fn8',
-                   'fc1')
-    form_columns = ('interval_ord', 'fi0',
-                   'fi1', 'fi2', 'fn1', 'fi3', 'fn2', 'fi4', 'fn3', 'fi5', 'fn4',
-                   'fi6', 'fn5', 'fi7', 'fn6', 'fi8', 'fi9', 'fn7', 'fi10', 'fi11', 'fn8',
-                   'fc1')
-    # Specify form columns with dropdowns
-
-    column_labels = {'interval_ord': 'Periodo', 'fi0': 'Anno',
-                    'fi1': 'Totale rich. (a)', 'fi2': 'IVI (b)', 'fn1': '% (c)', 'fi3': 'Esito positivo (d)',
-                     'fn2': '% (e)', 'fi4': 'Esito negativo (f)', 'fn3': '% (g)',
-                     'fi5': 'ALTRI (h)', 'fn4': '% (i)',
-                    'fi6': 'Esito pos. (j)', 'fn5': '% (k)', 'fi7': 'Esito neg. (l)', 'fn6': '% (m)',
-                     'fi8': 'Rich. altri su PdR altri (n)', 'fi9': 'Esito neg. (p)', 'fn7': '% (q)',
-                     'fi10': 'Rich altri su PdR IVI (r)', 'fi11': 'Esito neg. (s)', 'fn8': '% (t)',
-                    'fc1': 'Note'}
-    column_descriptions = {'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
-                   'fi0': 'Inserire anno (es. 2024)',
-                   'fi1': 'Totale richieste presentate', 'fi2': 'di cui IVI', 'fn1': 'Percentuale richieste IVI (=b/a)',
-                           'fi3': 'Richieste con esito positivo',
-                           'fn2': 'Percentuale delle richieste IVI con esito positivo (=d/b)',
-                           'fi4': 'Richieste con esito negativo (=b-d)',
-                           'fn3': 'Percentuale delle richieste IVI con esito negativo (=f/b)',
-                           'fi5': 'Richieste ALTRI operatori (=a-b)',
-                   'fn4': 'Percentuale ALTRI sul totale (=h/a)',
-                   'fi6': 'Richieste ALTRI con esito positivo', 'fn5': 'Percentuale di richieste ALTRI con esito positivo (=j/h)',
-                           'fi7': 'Richieste ALTRI con esito negativo (=h-j)', 'fn6': 'Percentuale richieste ALTRI con esito negativo (=l/h)',
-                           'fi8': 'Richieste ALTRI su PdR altri', 'fi9': 'di cui con esito negativo',
-                           'fn7': 'Percentuale di richieste ALTRI con esito negativo (=p/n)',
-                           'fi10': 'Richieste ALTRI su PdR IVI',
-                   'fi11': 'di cui con esito negativo', 'fn8': 'Percentuale di richieste ALTRI su PdR IVI con esito negativo (=s/r)',
-                   'fc1': '(opzionale)'}
-
-    # Customize inlist for tabella26
-    column_default_sort = ('fi0', True)
-    column_searchable_list = ('fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5',
-                              'fi6', 'fi7', 'fi8', 'fi9' ,'fi10', 'fi11', 'fc1')
-    # Adjust based on your model structure
-    column_filters = ('fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5',
-                              'fi6', 'fi7', 'fi8', 'fi9' ,'fi10', 'fi11', 'fc1')
-
-    # Specify fields to be excluded from the form
-    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_by', 'created_on', 'updated_on')
-
-    column_formatters = {
-        'fn1': lambda view, context, model, name: "%.2f" % model.fn1 if model.fn1 is not None else None,
-        'fn2': lambda view, context, model, name: "%.2f" % model.fn2 if model.fn2 is not None else None,
-        'fn3': lambda view, context, model, name: "%.2f" % model.fn3 if model.fn3 is not None else None,
-        'fn4': lambda view, context, model, name: "%.2f" % model.fn4 if model.fn4 is not None else None,
-        'fn5': lambda view, context, model, name: "%.2f" % model.fn5 if model.fn5 is not None else None,
-        'fn6': lambda view, context, model, name: "%.2f" % model.fn6 if model.fn6 is not None else None,
-        'fn7': lambda view, context, model, name: "%.2f" % model.fn7 if model.fn7 is not None else None,
-        'fn8': lambda view, context, model, name: "%.2f" % model.fn8 if model.fn8 is not None else None,
-    }
-
-    def scaffold_form(self):
-        form_class = super(Tabella26_dataView, self).scaffold_form()
-        # Set default values for specific fields
-
-        '''
-        form_class.subject_id = SelectField(
-            'Oggetto',
-            validators=[InputRequired()],
-            coerce=int,
-            choices=[(subject.id, subject.name) for subject in Subject.query.filter_by(tier_1="Utenti").all()]
-        )
-        '''
-
-        # Get the current year
-        current_year = datetime.now().year
-        # Generate choices for the year field from current_year - 5 to current_year + 1
-        year_choices = [(str(year), str(year)) for year in range(current_year - 5, current_year + 2)]
-        # Set the default value to the current year
-        default_year = str(current_year)
-        # Dynamically determine interval_ord options based on subject_id
-        form_class.fi0 = SelectField(
-            'Anno',
-            coerce=int,
-            choices=year_choices,
-            default=default_year
-        )
-
-        # NEW
-        config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
-                                          subarea_id=None)
-        nr_intervals = config_values[0]
-
-        # OLD
-        # nr_intervals = get_subarea_interval_type(self.area_id, self.subarea_id)
-
-        current_interval = [t[2] for t in intervals if t[0] == nr_intervals] #int(get_current_interval(3))  # quadriester
-        first_element = current_interval[0] if current_interval else None
-        interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
-
-        form_class.interval_ord = SelectField(
-            'Periodo di rif.',
-            coerce=int,
-            choices=interval_choices,  # Example choices, replace with your logic
-            default=first_element
-        )
-
-        return form_class
-
-    def get_query(self):
-        #query = super(Tabella26_dataView, self).get_query().filter_by(data_type=self.subarea_name)
-        query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
-
-        if current_user.is_authenticated:
-            if current_user.has_role('Admin') or current_user.has_role('Authority'):
-                return query
-            elif current_user.has_role('Manager'):
-                # Manager can only see records related to their company_users
-                # Assuming you have a relationship named 'user_companies' between User and CompanyUsers models
-                subquery = db.session.query(CompanyUsers.company_id).filter(
-                    CompanyUsers.user_id == current_user.id
-                ).subquery()
-
-                query = query.filter(self.model.company_id.in_(subquery))
-            elif current_user.has_role('Employee'):
-                # Employee can only see their own records
-                query = query.filter(self.model.user_id == current_user.id)
-                return query
-
-        # For other roles or anonymous users, return an empty query
-        return query.filter(self.model.id < 0)
-
-    def is_accessible(self):
-        if current_user.is_authenticated:
-            if (current_user.has_role('Admin') or current_user.has_role('Authority')
-                    or current_user.has_role('Manager') or current_user.has_role('Employee')):
-                # Allow access for Admin, Manager, and Employee
-                return True
-
-        return False
-
-    def create_model(self, form):
-        model = super(Tabella26_dataView, self).create_model(form)
-        if current_user.is_authenticated:
-            try:
-                model.user_id = current_user.id  # Set the user_id
-                model.company_id = current_user.company_id  # Set the company_id
-                model.data_type = self.subarea_name
-                created_by = current_user.username  # Set the created_by
-                user_id = current_user.id
-                model.user_id = user_id
-                try:
-                    company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-                except:
-                    company_id = None
-                    pass
-                model.company_id = company_id  # Set the company_id
-                model.created_by = created_by  # Set the cr by
-                model.created_on = datetime.now()  # Set the created_on
-            except AttributeError:
-                pass
-            return model
-        else:
-            # Handle the case where the user is not authenticated
-            raise ValidationError('User not authenticated.')
-
-    def on_model_change(self, form, model, is_created):
-
-        super().on_model_change(form, model, is_created)
-        # Reset form data
-        form.populate_obj(model)  # This resets the form data to its default values
-
-        # print('method is', form.get('_method'), form.get('_method') in ['PUT', 'PATCH'])
-        fi0_value = model.fi0
-
-        now = datetime.now()
-        current_year = now.year
-        if fi0_value > current_year:
-            raise ValidationError(
-                f"Year in fi0 field cannot be in the future. Please enter a year less than or equal to {current_year}.")
-
-        if is_created:
-            # Handle new model creation:
-            # - Set default values
-            # - Send notification
-            # Apply your custom logic to set data_type
-            model.created_on = datetime.now()  # Set the created_on
-            pass
-        else:
-            # Handle existing model edit:
-            # - Compare previous and updated values
-            # - Trigger specific actions based on changes
-            pass
-
-        # Perform actions relevant to both creation and edit:
-        user_id = current_user.id  # Get the current user's ID or any other criteria
-        try:
-            company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-        except:
-            company_id = None
-            pass
-        area_id = self.area_id
-        subarea_id = self.subarea_id
-        data_type = self.subarea_name
-        status_id = 1
-        config_values = get_config_values(config_type='area_interval', company_id=company_id, area_id=self.area_id,
-                                          subarea_id=subarea_id)
-        interval_id = config_values[0]
-        subject_id = None
-        legal_document_id = None
-        record_type = 'control_area'
-
-        if form.fi0.data == None or form.interval_ord.data == None:
-            raise ValidationError(f"Time interval reference fields cannot be null")
-
-        # - Validate data
-        # - Save the model
-        fields_to_check_not_null = ['fi0', 'interval_ord',
-                           'fi1', 'fi2', 'fi5', 'fi8', 'fi10']
-
-        fields_to_check = ['fi0', 'interval_ord',
-                           'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fi6', 'fi7', 'fi8', 'fi9', 'fi10', 'fi11',
-                           'fn1', 'fn2', 'fn3', 'fn4', 'fn5', 'fn6', 'fn7', 'fn8',
-                           'fc1']
-
-        with app.app_context():
-            result, message = check_status(is_created, company_id,
-                                       None, None, form.fi0.data, form.interval_ord.data,
-                                        interval_id, area_id, subarea_id, datetime.today(), db.session)
-
-        for field_name in fields_to_check_not_null:
-            if form[field_name].data is None:
-                raise ValidationError(f"Field {field_name} cannot be null")
-
-        if form.interval_ord.data > 52 or form.interval_ord.data < 0:
-            raise ValidationError(
-                "Period must be less than or equal to the number of fractions (e.g. 4 for quarters, 12 for months)")
-            pass
-
-        if form.fi0.data < 2000 or form.fi0.data > 2099:
-            raise ValidationError(
-                "Please check the year")
-            pass
-
-        if (form.fi1.data is None or form.fi2.data is None or form.fi5.data is None
-                or form.fi8.data is None or form.fi10.data is None):
-            raise ValidationError("Please enter all required integers.")
-        else:
-            if form.fi1.data + form.fi2.data + form.fi5.data + form.fi8.data + form.fi10.data == 0:
-                raise ValidationError("Please enter at least one non-zero values for the integer number.")
-            pass
-            if form.fi1.data != form.fi2.data + form.fi5.data:
-                raise ValidationError("Please check total, 'IVI' and 'Altri'.")
-            pass
-            if form.fi2.data != form.fi3.data + form.fi4.data:
-                raise ValidationError("Please check 'totale IVI', 'esito positivo' and 'esito negativo'.")
-            pass
-            if form.fi5.data != form.fi6.data + form.fi7.data:
-                raise ValidationError("Please check 'totale altri', 'esito positivo' and 'esito negativo'.")
-            pass
-
-            if form.fi1.data is not None and form.fi1.data != 0:
-                form.fn1.data = round(100*(form.fi2.data / form.fi1.data), 2) #IVI/tot
-                form.fn4.data = round(100*(form.fi5.data / form.fi1.data), 2) #altri/TOT
-            if form.fi2.data is not None and form.fi2.data != 0:
-                form.fn2.data = round(100*(form.fi3.data / form.fi2.data), 2) #pct IVI pos
-                form.fn3.data = round(100*(form.fi4.data / form.fi2.data), 2) #PCT IVI neg
-            if form.fi5.data is not None and form.fi5.data != 0:
-                form.fn5.data = round(100*(form.fi6.data / form.fi5.data), 2) #PCT POS altri
-                form.fn6.data = round(100*(form.fi7.data / form.fi5.data), 2) #PCT NEG altri
-
-        if form.fn1.data is None or form.fn1.data == 0:
-            if form.fi1.data != 0:
-                form.fn1.data = round(form.fi2.data / form.fi1.data, 2)
-        else:
-            if form.fi1.data != 0:
-                form.fi2.data = int(form.fi1.data * float(form.fn1.data) * 0.01)
-
-        model.user_id = user_id
-        model.data_type = data_type
-        model.record_type = record_type
-        model.area_id = area_id
-        model.subarea_id = subarea_id
-        model.interval_id = interval_id
-        model.status_id = status_id
-
-        model.fn1 = form.fn1.data
-        model.fn2 = form.fn2.data
-        model.fn3 = form.fn3.data
-        model.fn4 = form.fn4.data
-        model.fn5 = form.fn5.data
-        model.fn6 = form.fn6.data
-
-        model.legal_document_id = legal_document_id
-        model.subject_id = subject_id
-        model.interval_ord = form.interval_ord.data
-        model.fi0 = form.fi0.data
-        model.updated_on = datetime.now()  # Set the created_on
-        model.company_id = company_id
-
-        if result == False:
-            raise ValidationError(message)
-        else:
-            pass
-
-        if is_created:
-            self.session.add(model)
-        else:
-            self.session.merge(model)
-        self.session.commit()
-
-        return model
-
-
-class Tabella27_dataView(ModelView):
-
-    create_template = 'admin/create_base_data.html'
-    subarea_id = 15  # Define subarea_id as a class attribute
-    area_id = 2
-
-    # Specify the fields to be edited inline using XEditableWidget
-    column_editable_list = ['fc1']
-    # Customize the widget for inline editing
-    form_widget_args = {
-        # 'fi0': {'widget': XEditableWidget()},
-        # 'interval_ord': {'widget': XEditableWidget()},
-        # 'fi1': {'widget': XEditableWidget()},
-        # 'fi2': {'widget': XEditableWidget()},
-        'fc1': {'widget': XEditableWidget()},
-    }
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # self.class_name = self.__class__.__name__  # Store the class name
-        self.subarea_id = Tabella27_dataView.subarea_id  # Initialize subarea_id in __init__
-        self.area_id = Tabella27_dataView.area_id  # Initialize area_id in __init__
-        self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
-
-    column_list = ('interval_ord', 'fi0', 'fi1', 'fi2', 'fn1', 'fi3', 'fn2', 'fi4', 'fn3', 'fi5', 'fn4', 'fc1')
-    form_columns = ('interval_ord', 'fi0', 'fi1', 'fi2', 'fn1', 'fi3', 'fn2', 'fi4', 'fn3', 'fi5', 'fn4', 'fc1')
-    # Specify form columns with dropdowns
-
-    column_labels = {'interval_ord': 'Periodo', 'fi0': 'Anno',
-                     'fi1': 'Totale', 'fi2': 'domestico', 'fn1': '%',
-                     'fi3': 'IVI', 'fn2': '%',
-                     'fi4': 'altri', 'fn3': '%',
-                     'fi5': 'PdR', 'fn4':'Tasso switching PdR',
-                     'fc1': 'Note'}
-    column_descriptions = {'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
-                           'fi0': 'Inserire anno (es. 2024)',
-                           'fi1': 'Totale', 'fi2': 'di cui: domestico', 'fn1': 'domestico, in percentuale',
-                           'fi3': 'di cui IVI', 'fn2': 'IVI, in percentuale',
-                           'fi4': 'altri', 'fn3': 'altri, in percentuale',
-                           'fi5': 'PdR', 'fn4': 'Tasso switching PdR (percentuale)',
-                           'fc1': 'Inserire commento'}
-
-    # Customize inlist for the View class
-    column_default_sort = ('fi0', True)
-    column_searchable_list = ('fi0', 'interval_ord', 'fi1', 'fi2', 'fn1', 'fi3', 'fn2', 'fi4', 'fn3', 'fi5', 'fn4', 'fc1')
-    # Adjust based on your model structure
-    column_filters = ('fi0', 'interval_ord', 'fi1', 'fi2', 'fn1', 'fi3', 'fn2', 'fi4', 'fn3', 'fi5', 'fn4', 'fc1')
-    # Adjust based on your model structure
-
-    # Specify fields to be excluded from the form
-    form_excluded_columns = ('user_id', 'company_id', 'status_id', 'created_by', 'created_on', 'updated_on')
-
-    column_formatters = {
-        'fn1': lambda view, context, model, name: "%.2f" % model.fn1 if model.fn1 is not None else None,
-        'fn2': lambda view, context, model, name: "%.2f" % model.fn2 if model.fn2 is not None else None,
-        'fn3': lambda view, context, model, name: "%.2f" % model.fn3 if model.fn3 is not None else None,
-        'fn4': lambda view, context, model, name: "%.2f" % model.fn4 if model.fn4 is not None else None,
-    }
-
-    def scaffold_form(self):
-        form_class = super(Tabella27_dataView, self).scaffold_form()
-
-        # form_class.fi0 = MyIntegerField('Anno', validators=[InputRequired()])
-        # Get the current year
-        current_year = datetime.now().year
-        year_choices = [(str(year), str(year)) for year in range(current_year - 5, current_year + 2)]
-        default_year = str(current_year)
-        form_class.fi0 = SelectField(
-            'Anno di rif.',
-            coerce=int,
-            choices=year_choices,
-            default=default_year
-        )
-
-        # NEW
-        config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
-                                          subarea_id=None)
-        nr_intervals = config_values[0]
-
-        # OLD
-        # nr_intervals = get_subarea_interval_type(self.area_id, self.subarea_id)
-
-        current_interval = [t[2] for t in intervals if
-                            t[0] == nr_intervals]  # int(get_current_interval(3))  # quadriester
-        first_element = current_interval[0] if current_interval else None
-        interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
-
-        form_class.interval_ord = SelectField(
-            'Periodo di rif.',
-            coerce=int,
-            choices=interval_choices,  # Example choices, replace with your logic
-            default=first_element
-        )
-        return form_class
-
-    def create_model(self, form):
-        model = super(Tabella27_dataView, self).create_model(form)
-        if current_user.is_authenticated:
-            try:
-                model.user_id = current_user.id  # Set the user_id
-                model.company_id = current_user.company_id  # Set the company_id
-                model.data_type = self.subarea_name
-                created_by = current_user.username  # Set the created_by
-                user_id = current_user.id
-                model.user_id = user_id
-                try:
-                    company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-                except:
-                    company_id = None
-                    pass
-                model.company_id = company_id  # Set the company_id
-                model.created_by = created_by  # Set the cr by
-                model.created_on = datetime.now()  # Set the created_on
-            except AttributeError:
-                pass
-            return model
-        else:
-            # Handle the case where the user is not authenticated
-            raise ValidationError('User not authenticated.')
-
-    def get_query(self):
-        #query = super(Tabella27_dataView, self).get_query().filter_by(data_type=self.subarea_name)
-        query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
-
-        if current_user.is_authenticated:
-            if current_user.has_role('Admin') or current_user.has_role('Authority'):
-                return query
-            elif current_user.has_role('Manager'):
-                # Manager can only see records related to their company_users
-                # Assuming you have a relationship named 'user_companies' between User and CompanyUsers models
-                subquery = db.session.query(CompanyUsers.company_id).filter(
-                    CompanyUsers.user_id == current_user.id
-                ).subquery()
-
-                query = query.filter(self.model.company_id.in_(subquery))
-            elif current_user.has_role('Employee'):
-                # Employee can only see their own records
-                query = query.filter(self.model.user_id == current_user.id)
-                return query
-
-        # For other roles or anonymous users, return an empty query
-        return query.filter(self.model.id < 0)
-
-    def is_accessible(self):
-        if current_user.is_authenticated:
-            if (current_user.has_role('Admin') or current_user.has_role('Authority')
-                    or current_user.has_role('Manager') or current_user.has_role('Employee')):
-                # Allow access for Admin, Manager, and Employee
-                return True
-
-        return False
-
-    def all_not_none_validator(self, form, field):
-        if any(getattr(form, field_name).data is None for field_name in field.args):
-            raise ValidationError("Some fields are null")
-
-    def on_model_change(self, form, model, is_created):
-
-        super().on_model_change(form, model, is_created)
-        # Reset form data
-        form.populate_obj(model)  # This resets the form data to its default values
-        fi0_value = model.fi0
-
-        now = datetime.now()
-        current_year = now.year
-        if fi0_value > current_year:
-            raise ValidationError(
-                f"Year in fi0 field cannot be in the future. Please enter a year less than or equal to {current_year}.")
-
-        if is_created:
-            # Handle new model creation:
-            # - Set default values
-            # - Send notification
-            # Apply your custom logic to set data_type
-            model.created_on = datetime.now()  # Set the created_on
-            pass
-        else:
-            # Handle existing model edit:
-            # - Compare previous and updated values
-            # - Trigger specific actions based on changes
-            pass
-
-        # Perform actions relevant to both creation and edit:
-        user_id = current_user.id  # Get the current user's ID or any other criteria
-        try:
-            company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-        except:
-            company_id = None
-            pass
-        area_id = self.area_id
-        subarea_id = self.subarea_id
-        data_type = self.subarea_name
-        status_id = 1
-        config_values = get_config_values(config_type='area_interval', company_id=company_id, area_id=self.area_id,
-                                          subarea_id=self.subarea_id)
-        interval_id = config_values[0]
-        subject_id = None
-        legal_document_id = None
-        record_type = 'control_area'
-
-        if form.fi0.data == None or form.interval_ord.data == None:
-            raise ValidationError(f"Time interval reference fields cannot be null")
-
-        # - Validate data
-        # - Save the model
-        fields_to_check = ['fi0', 'interval_ord',
-                           'fi1', 'fi2', 'fi3', 'fi4', 'fi5',
-                           'fn1', 'fn2', 'fn3', 'fn4',
-                           'fc1']
-
-        with app.app_context():
-            result, message = check_status(is_created, company_id,
-                                       None, None, form.fi0.data, form.interval_ord.data,
-                                        interval_id, area_id, subarea_id, datetime.today(), db.session)
-
-        for field_name in fields_to_check:
-            if form[field_name].data is None:
-                raise ValidationError(f"Field {field_name} cannot be null")
-
-        if form.interval_ord.data > 52 or form.interval_ord.data < 0:
-            raise ValidationError(
-                "Period must be less than or equal to the number of fractions (e.g. 4 for quarters, 12 for months)")
-            pass
-
-        if form.fi0.data < 2000 or form.fi0.data > 2199:
-            raise ValidationError(
-                "Please check the year")
-            pass
-
-        if (form.fi1.data is None or form.fi2.data is None or form.fi3.data is None
-                or form.fi4.data is None or form.fi5.data is None):
-            raise ValidationError("Please enter all required integers.")
-        else:
-            if form.fi1.data + form.fi2.data + form.fi3.data + form.fi4.data + form.fi5.data == 0:
-                raise ValidationError("Please enter at least one non-zero values for the integer fields.")
-            pass
-            if form.fi1.data != form.fi2.data + form.fi3.data + form.fi4.data:
-                raise ValidationError("Please check the total.")
-            pass
-
-        if (form.fn1.data is None or form.fn2.data is None or form.fn3.data is None
-                or form.fn4.data is None):
-            raise ValidationError("Please enter all required % data.")
-            pass
-        else:
-            if form.fn1.data + form.fn2.data + form.fn3.data + form.fn4.data == 0:
-                raise ValidationError("Please enter at least one non-zero value for the % fields.")
-            pass
-
-        model.user_id = user_id
-        model.data_type = data_type
-        model.record_type = record_type
-        model.area_id = area_id
-        model.subarea_id = subarea_id
-        model.interval_id = interval_id
-        model.status_id = status_id
-
-        model.legal_document_id = legal_document_id
-        model.subject_id = subject_id
-        model.interval_ord = form.interval_ord.data
-        model.fi0 = form.fi0.data
-        model.updated_on = datetime.now()  # Set the created_on
-        model.company_id = company_id
-
-        if result == False:
-            raise ValidationError(message)
-        else:
-            pass
-
-        if is_created:
-            self.session.add(model)
-        else:
-            self.session.merge(model)
-        self.session.commit()
-
-        return model
-
-
-#===================================================
-# Use app context for creating Flask-Admin instances
-with app.app_context():
-    # Define the first custom index view class
-
-    class CustomAdminIndexView1(BaseData):
-        default_view = 'flussi_data_view'  # Or any other valid view name
-        def index(self):
-            # Customize the index view here for the first custom index view
-            return self.render('open_admin.html')
-            #return 'Hello From first admin :{}.'.format(self)
-
-    # Define the second custom index view class
-    class CustomAdminIndexView2(BaseData):
-        default_view = 'view_struttura_offerta'  # Or the intended first view for "Area 2"
-        def index(self):
-            # Customize the index view here for the second custom index view
-            return self.render('open_admin_2.html')  # Adjust template path if needed
-
-
-    # Define custom form for CustomAdminIndexView1
-    class CustomForm1(FlaskForm): #was BaseForm
-        fi0 = IntegerField('fi0', validators=[InputRequired(), NumberRange(min=2000, max=2199)]) #anno
-        interval_ord = IntegerField('interval_ord', validators=[InputRequired(), NumberRange(min=0, max=52)]) #periodo
-
-        fi1 = IntegerField('fi1', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
-
-        fi2 = IntegerField('fi2', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
-        fi3 = IntegerField('fi3', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
-        fi4 = IntegerField('fi4', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
-        fi5 = IntegerField('fi5', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
-        fi6 = IntegerField('fi5', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
-
-        fn1 = IntegerField('fn1', validators=[InputRequired(), NumberRange(min=0.00, max=100.00)])
-        fn2 = IntegerField('fn2', validators=[InputRequired(), NumberRange(min=0.00, max=100.00)])
-        fn3 = IntegerField('fn3', validators=[InputRequired(), NumberRange(min=0.00, max=100.00)])
-
-        fc1 = StringField('fc1')
-        fc2 = StringField('fc2')
-
-        number_of_doc = StringField('number_of_doc')
-        date_of_doc = DateField('date_of_doc')
-
-    class CustomFlussiDataView(Flussi_dataView):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.form = CustomForm1
-
-    class CustomAttiBaseView(Atti_BaseView):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.form = CustomFileLoaderForm
-
-    class CustomAttiDataView(Atti_dataView):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.form = CustomForm1
-
-
-    class CustomContenziosiDataView(Contenziosi_dataView):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.form = CustomForm1
-
-
-    class CustomIniziative_dso_asDataView(Iniziative_dso_as_dataView):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.form = CustomForm1
-
-    class CustomIniziative_as_dsoDataView(Iniziative_as_dso_dataView):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.form = CustomForm1
-
-    class CustomIniziative_dso_dsoDataView(Iniziative_dso_dso_dataView):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.form = CustomForm1
-
-
-
-    # =================================================================================================================
-    # Define custom form for CustomAdminIndexView2
-    # =================================================================================================================
-    #class CustomForm2(BaseData):
-    class CustomForm2(FlaskForm):
-        fi0 = IntegerField('fi0', validators=[InputRequired(), NumberRange(min=2000, max=2199)])
-        interval_ord = IntegerField('interval_ord', validators=[InputRequired(), NumberRange(min=0, max=52)])
-        fi3 = IntegerField('fi3', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
-        fi4 = IntegerField('fi4', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
-        fi5 = IntegerField('fi5', validators=[InputRequired(), NumberRange(min=0, max=1000000000)])
-
-        fn1 = IntegerField('fn1', validators=[InputRequired(), NumberRange(min=0.00, max=100.00)])
-        fn2 = IntegerField('fn2', validators=[InputRequired(), NumberRange(min=0.00, max=100.00)])
-        fn3 = IntegerField('fn3', validators=[InputRequired(), NumberRange(min=0.00, max=100.00)])
-
-        fc1 = StringField('fc1')
-        fc2 = StringField('fc2', validators=[InputRequired()])
-
-
-    class CustomTabella21DataView(Tabella21_dataView):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.form = CustomForm2
-
-    class CustomTabella22DataView(Tabella22_dataView):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.form = CustomForm2
-
-        '''
-        def on_model_change(self, form, model, is_created):
-            try:
-                super().on_model_change(form, model, is_created)
-            except ValidationError as e:
-                flash(str(e) + '2', 'error')
-                raise e  # Reraise the exception if you want Flask-Admin to handle it further or stop the execution
-        '''
-
-    class CustomTabella23DataView(Tabella23_dataView):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.form = CustomForm2
-
-    class CustomTabella24DataView(Tabella24_dataView):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.form = CustomForm2
-
-    class CustomTabella25DataView(Tabella25_dataView):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.form = CustomForm2
-
-    class CustomTabella26DataView(Tabella26_dataView):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.form = CustomForm2
-
-    class CustomTabella27DataView(Tabella27_dataView):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.form = CustomForm2
-
-    admins_off_set = 0
-
-    # First Flask-Admin instance with the first custom index view
-    admin_app1 = Admin(app,
-       name='Area di controllo 1 - Documenti e atti',
-       url='/open_admin',
-       template_mode='bootstrap3',
-       endpoint='open_admin',
-   )
-
-    # Add views to admin_app1
-    admins_off_set += 1
-    sub_off_set = 0
-
-    sub_off_set += 1
-    if get_if_active(admins_off_set, sub_off_set):
-        admin_app1.add_view(CustomFlussiDataView(BaseData, db.session,
-                                             name="Flussi pre-complaint", endpoint='flussi_data_view'))
-
-    sub_off_set += 1
-    if get_if_active(admins_off_set, sub_off_set):
-    # Register the view with Flask Admin
-        #admin_app1.add_view(CustomAttiBaseView(name='Workflow Manager (Atti complaint)',
-        #                    endpoint='custom_base_atti'))
-        admin_app1.add_view(CustomAttiDataView(BaseData, db.session,
-                                           name='Atti di complaint', endpoint='atti_data_view'))
-
-    sub_off_set += 1
-    if get_if_active(admins_off_set,sub_off_set):
-        admin_app1.add_view(Contingencies_dataView(BaseData, db.session,
-                                                   name='Contingencies', endpoint='contingencies_data_view'))
-
-    sub_off_set += 1
-    if get_if_active(admins_off_set,sub_off_set):
-        admin_app1.add_view(CustomContenziosiDataView(BaseData, db.session,
-                                                  name='Contenziosi', endpoint='contenziosi_data_view'))
-
-    sub_off_set += 1
-    sub_off_set += 1 # questionnaire here
-
-    if get_if_active(admins_off_set,sub_off_set):
-        admin_app1.add_view(CustomIniziative_dso_asDataView(BaseData, db.session,
-                                                        name='Iniziative DSO vs amministrazioni',
-                                                   endpoint='iniziative_dso_as_data_view'))
-
-    sub_off_set += 1
-    if get_if_active(admins_off_set,sub_off_set):
-        admin_app1.add_view(CustomIniziative_as_dsoDataView(BaseData, db.session,
-                                                        name='Amministrazioni vs DSO',
-                                                   endpoint='iniziative_as_dso_data_view'))
-
-    sub_off_set += 1
-    if get_if_active(admins_off_set,sub_off_set):
-        admin_app1.add_view(CustomIniziative_dso_dsoDataView(BaseData, db.session,
-                                                         name='DSO vs DSO/TSO',
-                                                    endpoint='iniziative_dso_dso_data_view'))
-
-    # Second Flask-Admin instance with the second custom index view
-
-    admin_app2 = Admin(app,
-                       name='Area di controllo 2 - Elementi quantitativi',
-                       url='/open_admin_2',
-                       template_mode='bootstrap4',
-                       endpoint='open_admin_2',
-                       )
-
-    # Add views to admin_app2
-    admins_off_set += 1
-    sub_off_set = len(app.config['SUBAREAS_1'])
-
-    sub_off_set += 1
-    if get_if_active(admins_off_set,sub_off_set):
-        admin_app2.add_view(CustomTabella21DataView(BaseData, db.session, name="Struttura offerta",
-                                               endpoint='view_struttura_offerta'))
-    sub_off_set += 1
-    if get_if_active(admins_off_set, sub_off_set):
-        admin_app2.add_view(CustomTabella22DataView(BaseData, db.session, name="Area di contendibilita'",
-                                      endpoint="view_area_contendibilita'"))
-    sub_off_set += 1
-    if get_if_active(admins_off_set,sub_off_set):
-        admin_app2.add_view(CustomTabella23DataView(BaseData, db.session, name="Grado di contendibilita'",
-                                                endpoint="view_grado_contendibilita'"))
-    sub_off_set += 1
-    if get_if_active(admins_off_set,sub_off_set):
-        admin_app2.add_view(CustomTabella24DataView(BaseData, db.session, name='Accesso venditori a DSO',
-                                      endpoint='view_accesso_venditori'))
-    sub_off_set += 1
-    if get_if_active(admins_off_set,sub_off_set):
-        admin_app2.add_view(CustomTabella25DataView(BaseData, db.session, name='Quote mercato IVI',
-                                      endpoint='view_quote_mercato_ivi'))
-    sub_off_set += 1
-    if get_if_active(admins_off_set,sub_off_set):
-        admin_app2.add_view(CustomTabella26DataView(BaseData, db.session, name='Trattamento switching',
-                                      endpoint='view_trattamento_switching'))
-    sub_off_set += 1
-    if get_if_active(admins_off_set,sub_off_set):
-        admin_app2.add_view(CustomTabella27DataView(BaseData, db.session, name="Livello di contendibilta'",
-                                      endpoint="view_livello_contendibilita'"))
-
-
-# Initialize Flask-Admin
-#admin_app4 = Admin(app, name='Setup', url = '/open_setup_basic', template_mode='bootstrap4', endpoint = 'setup_basic')
-
-admin_app4 = Admin(app, name='System Setup', url='/open_admin_4', template_mode='bootstrap4', endpoint='open_admin_4')
-# Add your ModelViews to Flask-Admin
-admin_app4.add_view(CompanyView(Company, db.session, name='Companies', endpoint='companies_data_view'))
-admin_app4.add_view(UsersView(Users, db.session, name='Users', endpoint='users_data_view'))
-admin_app4.add_view(QuestionnaireView(Questionnaire, db.session, name='Questionnaires', endpoint='questionnaires_data_view'))
-admin_app4.add_view(QuestionView(Question, db.session, name='Questions', endpoint='questions_data_view'))
-admin_app4.add_view(StatusView(Status, db.session, name='Status', endpoint='status_data_view'))
-admin_app4.add_view(LexicView(Lexic, db.session, name='Dictionary', endpoint='dictionary_data_view'))
-admin_app4.add_view(AreaView(Area, db.session, name='Areas', endpoint='areas_data_view'))
-admin_app4.add_view(SubareaView(Subarea, db.session, name='Subareas', endpoint='subareas_data_view'))
-admin_app4.add_view(SubjectView(Subject, db.session, name='Subjects', endpoint='subjects_data_view'))
-admin_app4.add_view(WorkflowView(Workflow, db.session, name='Workflows', endpoint='workflows_data_view'))
-admin_app4.add_view(StepView(Step, db.session, name='Steps', endpoint='steps_data_view'))
-admin_app4.add_view(AuditLogView(AuditLog, db.session, name='Audit Log', endpoint='audit_data_view'))
-admin_app4.add_view(PostView(Post, db.session, name='Posts', endpoint='posts_data_view'))
-admin_app4.add_view(TicketView(Ticket, db.session, name='Tickets', endpoint='tickets_data_view'))
-admin_app4.add_view(BaseDataView(BaseData, db.session, name='Data', endpoint='base_data_view'))
-
-# Add other ModelViews as needed...
-
-# TODO ***** copy Contingencies "structure" of main and inline forms
-#  - in modo che ogni soc gestisca il suo, con le fasi etc.
-# EXISTA O DIFERENTA: in BaseData exista comp_id si user_id, in QUEST, nu!
-# asa ca probabil ca e mai bine sa fac cum e scris mai jos
-# quindi il form per l'inserimento del quest deve essere più scarno, con inline del (o dei) workflow in cui si vuole inserire
-'''
-probabil ca e mai potrivit sa folosesc asta:
-                                                                    DocumentsAssignedBaseDataView
-        pentru ca get_query e bazata pe mai multe Model decat ModelView!
-
-selectionarea elementelor listei va trebui facuta pt acele
-    Questionnaire cu 
-        scadenta si Status compatibile,
-        si 
-    unde, prin intermediul StepQuestionnaire,
-        questionnaire_id (se gaseste in relatia questionnaire-companies)
-        
-SAU user is_admin!
-'''
-
 # TOD how to eliminate relationship fields in the Question and workflow CREATE templates?
-
-# TODO Associazione di 1->m da non consentire qui (can_create = False) , in quanto già fatta (con controllo IF EXISTS) altrove
-
-# TODO ***** le risposte ai questionnari *** - answer - sono da STORE non in Answer, ma in BaseData (cu data_type='answer')!
-
-admin_app10 = Admin(app, name='Surveys & Questionnaires Workflow',
-                    url='/open_admin_10', template_mode='bootstrap4',
-                    endpoint='open_admin_10')
-# Add your ModelViews to Flask-Admin
-admin_app10.add_view(OpenQuestionnairesView(name='Open Questionnaires', endpoint='open_questionnaires'))
-
-admin_app10.add_view(StepQuestionnaireView(StepQuestionnaire, db.session,
-                                           name='A. Questionnaires & Surveys (Q&S) Workflow',
-                                           endpoint='stepquestionnaire_questionnaire_view'))
-admin_app10.add_view(QuestionnaireView(Questionnaire, db.session, name='B.1 Q&S Repository',
-                                       endpoint='questionnaire_questionnaire_view'))
-admin_app10.add_view(QuestionView(Question, db.session, name='B.2 Questions Repository',
-                                  endpoint='question_questionnaire_view'))
-admin_app10.add_view(QuestionnaireQuestionsView(QuestionnaireQuestions, db.session,
-                                                name='B.3 Association of Questions to Q&S',
-                                                endpoint='questionnaire_questions_questionnaire_view'))
-admin_app10.add_view(CompanyView(Company, db.session, name='C.1 Company List',
-                                 endpoint='company_questionnaire_view'))
-# TODO decodifica/dropdown lists here
-admin_app10.add_view(QuestionnaireCompaniesView(QuestionnaireCompanies, db.session,
-                                name='C.2 Association of Questionnaires to Companies',
-                                endpoint='questionnaire_companies_questionnaire_view'))
-admin_app10.add_view(WorkflowView(Workflow, db.session, name='D.1 List of Workflows',
-                                  endpoint='workflow_questionnaire_view'))
-admin_app10.add_view(StepView(Step, db.session, name='D.2 List of Steps',
-                              endpoint='step_questionnaire_view'))
-admin_app10.add_view(WorkflowStepsView(WorkflowSteps, db.session,
-                                       name='C.3 Association of Steps to Workflows',
-                                       endpoint='workflow_steps_questionnaire_view'))
-#admin_app10.add_view(StatusView(Status, db.session, name='E. Dictionary of Status',
-#                                endpoint='status_questionnaire_view'))
-
-@login_required
-@role_required('admin')
-# Define the index route
-@app.route('/open_admin_app_4')
-def open_admin_app_4():
-    user_id = current_user.id
-    return redirect(url_for('open_admin_4.index'))
-
-
-# Route to open F l a s k -Admin
-@app.route('/open_admin_app_1')
-def open_admin_app_1():
-    user_id = current_user.id
-    company_row = db.session.query(Company.name) \
-        .join(CompanyUsers, CompanyUsers.company_id == Company.id) \
-        .filter(CompanyUsers.user_id == user_id) \
-        .first()
-
-    company_name = company_row[0] if company_row else None  # Extracting the name attribute
-    template = "Area di controllo 1 - Atti, iniziative, documenti"
-    placeholder_value = company_name
-    formatted_string = template.format(placeholder_value) if placeholder_value else template
-    admin_app1.name = formatted_string
-
-    return redirect(url_for('open_admin.index'))
-
-
-@app.route('/open_admin_app_2')
-def open_admin_app_2():
-    user_id = current_user.id
-    company_row = db.session.query(Company.name) \
-        .join(CompanyUsers, CompanyUsers.company_id == Company.id) \
-        .filter(CompanyUsers.user_id == user_id) \
-        .first()
-
-    company_name = company_row[0] if company_row else None  # Extracting the name attribute
-    template = "Area di controllo 2 - Elementi quantitativi"
-    placeholder_value = company_name
-    formatted_string = template.format(placeholder_value) if placeholder_value else template
-    admin_app2.name = formatted_string
-
-    return redirect(url_for('open_admin_2.index'))
-
-# Define the index route
-@app.route('/open_admin_app_3')
-def open_admin_app_3():
-    user_id = current_user.id
-    company_row = db.session.query(Company.name) \
-        .join(CompanyUsers, CompanyUsers.company_id == Company.id) \
-        .filter(CompanyUsers.user_id == user_id) \
-        .first()
-
-    company_name = company_row[0] if company_row else None  # Extracting the name attribute
-    template = "Area di controllo 3 - Contratti e documenti"
-    placeholder_value = company_name
-    formatted_string = template.format(placeholder_value) if placeholder_value else template
-    admin_app2.name = formatted_string
-
-    return redirect(url_for('open_admin_3.index'))
-
-
-@login_required
-@role_required('admin')
-# Define the index route
-@app.route('/open_admin_app_10')
-def open_admin_app_10():
-    user_id = current_user.id
-    return redirect(url_for('open_admin_10.index'))
-
-
-# ADMIN
-# unassigned documents (all), to be distributed to workflows and steps
-# ====================================================================
-
-class DocumentsNewBaseDataView(ModelView):
-    can_create = False  # Optionally disable creation
-    can_edit = True  # Optionally disable editing
-    can_delete = True  # Optionally disable deletion
-    name = 'Documents'
-    menu_icon_type = 'glyph'  # You can also use 'fa' for Font Awesome icons
-    menu_icon_value = 'glyphicon-list-alt'  # Icon class for the menu item
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.class_name = self.__class__.__name__  # Store the class name
-
-    column_list = [
-        'id', 'company_name', 'user_name',
-        'interval_name', 'interval_ord', 'fi0',
-        'record_type', 'area_name', 'subarea_name',
-        'data_type', 'subject_name', 'legal_name',
-        'file_path', 'created_on', 'number_of_doc',
-        'fc1', 'no_action'
-    ]
-
-    column_labels = {'id': 'Document ID', 'company_name': 'Company', 'user_name': 'User',
-                     'interval_name': 'Interval', 'interval_ord': 'Interv.#', 'fi0': 'Year',
-                     'record_type': 'Type', 'area_name': 'Area', 'subarea_name': 'Subarea',
-                     'data_type': 'Data Type', 'subject_name': 'Subject', 'legal_name': 'Doc Type',
-                     'file_path': 'File', 'created_on':'Date created', 'number_of_doc': 'Doc. #',
-                     'fc1': 'Note', 'no_action': 'No doc.'}
-    # column_descriptions
-
-    # Customize inlist for the View class
-    column_default_sort = ('created_on', True)
-    column_searchable_list = ('company_id', 'user_id', 'fi0', 'subject_id', 'legal_document_id', 'file_path')
-    # Adjust based on your model structure
-    column_filters = ('company_id', 'user_id', 'fi0', 'subject_id', 'legal_document_id', 'file_path')
-    # Adjust based on your model structure
-
-    # Specify fields to be excluded from the form
-    form_excluded_columns = ('company_id', 'status_id', 'created_by', 'updated_on')
-
-    def get_query(self):
-        # Assuming `db` is your SQLAlchemy instance
-        query = db.session.query(BaseData)
-
-        # Apply any necessary filters or conditions here
-        query = query.filter(BaseData.file_path != None)
-        query = query.filter(BaseData.fi0 > (int(get_current_interval(1)[3:]) - 2))  # Filter by year
-
-        # Filter out BaseData records without related StepBaseData records
-        subquery = db.session.query(distinct(StepBaseData.base_data_id)).subquery()
-
-        # Assign the subquery result to a variable (alias)
-        unrelated_data_ids = subquery
-
-        # Use the alias in the filter clause
-        query = query.filter(BaseData.id.notin_(unrelated_data_ids))
-
-        if current_user.is_authenticated:
-            if current_user.has_role('Admin') or current_user.has_role('Authority'):
-                return query
-            elif current_user.has_role('Manager'):
-                # Manager can only see records related to their company_users
-                # Assuming you have a relationship named 'user_companies' between User and CompanyUsers models
-                subquery = session.query(CompanyUsers.company_id).filter(
-                    CompanyUsers.user_id == current_user.id
-                ).subquery()
-                query = query.filter(BaseData.company_id.in_(subquery))
-            elif current_user.has_role('Employee'):
-                # Employee can only see their own records
-                query = query.filter(BaseData.user_id == current_user.id)
-                return query
-
-        # For other roles or anonymous users, return an empty query
-        print('returning nothing')
-        return query.filter(BaseData.id < 0)
-
-
-    def get_count_query(self):
-        # Return count query for pagination
-        return None  # Disable pagination count query
-
-    def get_list(self, page, sort_column, sort_desc, search, filters, page_size=None):
-
-        count, data = super().get_list(page, sort_column, sort_desc, search, filters, page_size)
-
-        # Fetch company and user names for each record
-        for item in data:
-            if item.company:
-                company_name = item.company.name
-            else:
-                company_name = 'n.a.'
-
-            if item.user:
-                user_name = item.user.last_name  # Use the correct attribute for the user's name
-            else:
-                user_name = 'n.a.'
-
-            if item.interval:
-                interval_name = item.interval.description  # Access the name of the Step object
-            else:
-                interval_name = 'n.a.'
-
-            if item.area:
-                area_name = item.area.name  # Access the name of the Step object
-            else:
-                area_name = 'n.a.'
-
-            if item.subarea:
-                subarea_name = item.subarea.name
-            else:
-                subarea_name = 'n.a.'
-
-            if item.subject:
-                subject_name = item.subject.name
-            else:
-                subject_name = 'n.a.'
-
-            if item.subject:
-                legal_name = item.subject.name
-            else:
-                legal_name = 'n.a.'
-
-            item.company_name = company_name
-            item.user_name = user_name
-            item.interval_name = interval_name
-            item.area_name = area_name
-            item.subarea_name = subarea_name
-            item.subject_name = subject_name
-            item.legal_name = legal_name
-
-        return count, data
-
-    def is_accessible(self):
-        if current_user.is_authenticated:
-            if (current_user.has_role('Admin') or current_user.has_role('Authority')
-                    or current_user.has_role('Manager') or current_user.has_role('Employee')):
-                # Allow access for Admin, Manager, and Employee
-                return True
-
-        return False
-
-    def on_model_change(self, form, model, is_created):
-        super().on_model_change(form, model, is_created)
-        # Reset form data
-        form.populate_obj(model)  # This resets the form data to its default values
-
-        if is_created:
-            # Handle new model creation:
-            # - Set default values
-            # - Send notification
-            # Apply your custom logic to set data_type
-            model.created_on = datetime.now()  # Set the created_on
-            pass
-        else:
-            # Handle existing model edit:
-            # - Compare previous and updated values
-            # - Trigger specific actions based on changes
-            pass
-
-        # Perform actions relevant to both creation and edit:
-        user_id = current_user.id  # Get the current user's ID or any other criteria
-        try:
-            company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-        except:
-            company_id = None
-            pass
-
-        return model
-
-
-    # Common action to Flask Admin 'Documents' (attach/detach documents to/from W-S)
-    @action('action_manage_workflow_step', 'Workflow Management',
-            'Are you sure you want to change documents workflow?')
-    def action_manage_workflow_step(self, ids):
-        # Parse the list of IDs
-        id_list = [int(id) for id in ids]
-
-        # Define the selected columns you want to retrieve
-        selected_columns = [BaseData.id, BaseData.user_id, BaseData.company_id,
-                            BaseData.interval_id, BaseData.interval_ord, BaseData.fi0,
-                            BaseData.record_type, BaseData.area_id, BaseData.subarea_id,
-                            BaseData.data_type, BaseData.subject_id, BaseData.legal_document_id,
-                            BaseData.file_path, BaseData.created_on, BaseData.number_of_doc,
-                            BaseData.fc1, BaseData.no_action]  # Add or remove columns as needed
-
-        # Select specific columns
-        selected_documents = BaseData.query.with_entities(*selected_columns).filter(BaseData.id.in_(id_list)).all()
-
-        # Retrieve lists of workflows and steps from your database or any other source
-        workflows = Workflow.query.all()
-        steps = Step.query.all()
-
-        # Pass the lists of workflows, steps, and selected documents to the template
-        return render_template('admin/attach_to_workflow_step.html',
-                               workflows=workflows, steps=steps,
-                               selected_documents=selected_documents)
-
-
-
-class DocumentsAssignedBaseDataView(ModelView):
-    can_create = False  # Optionally disable creation
-    can_edit = True  # Optionally disable editing
-    can_delete = True  # Optionally disable deletion
-    name = 'Documents'
-    menu_icon_type = 'glyph'  # You can also use 'fa' for Font Awesome icons
-    menu_icon_value = 'glyphicon-list-alt'  # Icon class for the menu item
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.class_name = self.__class__.__name__  # Store the class name
-
-    column_list = [
-        'id', 'company_name', 'user_name',
-        'interval_name', 'interval_ord', 'fi0',
-        'record_type', 'area_name', 'subarea_name',
-        'data_type', 'subject_name', 'legal_name',
-        'file_path', 'created_on', 'number_of_doc',
-        'fc1', 'no_action'
-    ]
-
-    column_labels = {'id': 'Document ID', 'company_name': 'Company', 'user_name': 'User',
-                     'interval_name': 'Interval', 'interval_ord': 'Interv.#', 'fi0': 'Year',
-                     'record_type': 'Type', 'area_name': 'Area', 'subarea_name': 'Subarea',
-                     'data_type': 'Data Type', 'subject_name': 'Subject', 'legal_name': 'Doc Type',
-                     'file_path': 'File', 'created_on':'Date created', 'number_of_doc': 'Doc. #',
-                     'fc1': 'Note', 'no_action': 'No doc.'}
-    # column_descriptions
-
-    # Customize inlist for the View class
-    column_default_sort = ('created_on', True)
-    column_searchable_list = ('company_id', 'user_id', 'fi0', 'subject_id', 'legal_document_id', 'file_path')
-    # Adjust based on your model structure
-    column_filters = ('company_id', 'user_id', 'fi0', 'subject_id', 'legal_document_id', 'file_path')
-    # Adjust based on your model structure
-
-    # Specify fields to be excluded from the form
-    form_excluded_columns = ('company_id', 'status_id', 'created_by', 'updated_on')
-
-    def get_query(self):
-        # Assuming `db` is your SQLAlchemy instance
-        query = db.session.query(BaseData)
-
-        # Apply any necessary filters or conditions here
-        query = query.filter(BaseData.file_path != None)
-        query = query.filter(BaseData.fi0 > (int(get_current_interval(1)[3:]) - 2))  # Filter by year
-
-        # Filter out BaseData records without related StepBaseData records
-        subquery = db.session.query(distinct(StepBaseData.base_data_id)).subquery()
-
-        # Assign the subquery result to a variable (alias)
-        unrelated_data_ids = subquery
-
-        # Use the alias in the filter clause
-        query = query.filter(BaseData.id.in_(unrelated_data_ids))
-
-        if current_user.is_authenticated:
-            if current_user.has_role('Admin') or current_user.has_role('Authority'):
-                return query
-            elif current_user.has_role('Manager'):
-                # Manager can only see records related to their company_users
-                # Assuming you have a relationship named 'user_companies' between User and CompanyUsers models
-                subquery = session.query(CompanyUsers.company_id).filter(
-                    CompanyUsers.user_id == current_user.id
-                ).subquery()
-                query = query.filter(BaseData.company_id.in_(subquery))
-            elif current_user.has_role('Employee'):
-                # Employee can only see their own records
-                query = query.filter(BaseData.user_id == current_user.id)
-                return query
-
-        # For other roles or anonymous users, return an empty query
-        print('returning nothing')
-        return query.filter(BaseData.id < 0)
-
-
-    def get_count_query(self):
-        # Return count query for pagination
-        return None  # Disable pagination count query
-
-    def get_list(self, page, sort_column, sort_desc, search, filters, page_size=None):
-
-        count, data = super().get_list(page, sort_column, sort_desc, search, filters, page_size)
-
-        # Fetch company and user names for each record
-        for item in data:
-            if item.company:
-                company_name = item.company.name
-            else:
-                company_name = 'n.a.'
-
-            if item.user:
-                user_name = item.user.last_name  # Use the correct attribute for the user's name
-            else:
-                user_name = 'n.a.'
-
-            if item.interval:
-                interval_name = item.interval.description  # Access the name of the Step object
-            else:
-                interval_name = 'n.a.'
-
-            if item.area:
-                area_name = item.area.name  # Access the name of the Step object
-            else:
-                area_name = 'n.a.'
-
-            if item.subarea:
-                subarea_name = item.subarea.name
-            else:
-                subarea_name = 'n.a.'
-
-            if item.subject:
-                subject_name = item.subject.name
-            else:
-                subject_name = 'n.a.'
-
-            if item.subject:
-                legal_name = item.subject.name
-            else:
-                legal_name = 'n.a.'
-
-            item.company_name = company_name
-            item.user_name = user_name
-            item.interval_name = interval_name
-            item.area_name = area_name
-            item.subarea_name = subarea_name
-            item.subject_name = subject_name
-            item.legal_name = legal_name
-
-        return count, data
-
-    def is_accessible(self):
-        if current_user.is_authenticated:
-            if (current_user.has_role('Admin') or current_user.has_role('Authority')
-                    or current_user.has_role('Manager') or current_user.has_role('Employee')):
-                # Allow access for Admin, Manager, and Employee
-                return True
-
-        return False
-
-    def on_model_change(self, form, model, is_created):
-        super().on_model_change(form, model, is_created)
-        # Reset form data
-        form.populate_obj(model)  # This resets the form data to its default values
-
-        if is_created:
-            # Handle new model creation:
-            # - Set default values
-            # - Send notification
-            # Apply your custom logic to set data_type
-            model.created_on = datetime.now()  # Set the created_on
-            pass
-        else:
-            # Handle existing model edit:
-            # - Compare previous and updated values
-            # - Trigger specific actions based on changes
-            pass
-
-        # Perform actions relevant to both creation and edit:
-        user_id = current_user.id  # Get the current user's ID or any other criteria
-        try:
-            company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-        except:
-            company_id = None
-            pass
-
-        return model
-
-
-    # Common action to Flask Admin 'Documents' (attach/detach documents to/from W-S)
-    # TODO sostituire/complement action_manage_workflow_step con action_one_step_forward (to be built) - incuding MESSAGE etc etc
-    @action('action_manage_workflow_step', 'Workflow Management',
-            'Are you sure you want to change documents workflow?')
-    def action_manage_workflow_step(self, ids):
-        # Parse the list of IDs
-        id_list = [int(id) for id in ids]
-
-        # Define the selected columns you want to retrieve
-        selected_columns = [BaseData.id, BaseData.user_id, BaseData.company_id,
-                            BaseData.interval_id, BaseData.interval_ord, BaseData.fi0,
-                            BaseData.record_type, BaseData.area_id, BaseData.subarea_id,
-                            BaseData.data_type, BaseData.subject_id, BaseData.legal_document_id,
-                            BaseData.file_path, BaseData.created_on, BaseData.number_of_doc,
-                            BaseData.fc1, BaseData.no_action]  # Add or remove columns as needed
-
-        # Select specific columns
-        selected_documents = BaseData.query.with_entities(*selected_columns).filter(BaseData.id.in_(id_list)).all()
-
-        # Retrieve lists of workflows and steps from your database or any other source
-        workflows = Workflow.query.all()
-        steps = Step.query.all()
-
-        print('sending to template, d-w-s', selected_documents, workflows, steps)
-        # Pass the lists of workflows, steps, and selected documents to the template
-        return render_template('admin/attach_to_workflow_step.html',
-                               workflows=workflows, steps=steps,
-                               selected_documents=selected_documents)
 
 
 
 # TODO: ***** inserire come action: move one step forward!
 
+
 @app.route('/detach_documents_from_workflow_step', methods=['POST'])
+@login_required
 def detach_documents_from_workflow_step():
     try:
         # Get the selected document IDs from the request body
@@ -5897,9 +2040,9 @@ def detach_documents_from_workflow_step():
         step_id = data.get('step_id')
 
         # Delete the StepBaseData records corresponding to the selected document IDs
-        query = StepBaseData.query.filter(StepBaseData.base_data_id.in_(ids_list),
-                                           StepBaseData.workflow_id == workflow_id,
-                                           StepBaseData.step_id == step_id)
+        query = DocumentWorkflow.query.filter(DocumentWorkflow.base_data_id.in_(ids_list),
+                                           DocumentWorkflow.workflow_id == workflow_id,
+                                           DocumentWorkflow.step_id == step_id)
         deleted_count = query.delete()
 
         # Commit the changes
@@ -5917,7 +2060,36 @@ def detach_documents_from_workflow_step():
         return jsonify({'success_message': None, 'error_message': error_message})
 
 
+@app.route('/plans_with_products')
+@login_required
+def plans_with_products():
+    plans = Plan.query.all()
+    plans_with_products = []
+
+    for plan in plans:
+        associated_products = PlanProducts.query.filter_by(plan_id=plan.id).all()
+        products_info = []
+
+        for ap in associated_products:
+            product = Product.query.get(ap.product_id)
+            products_info.append({
+                'product_id': product.id,
+                'name': product.name,
+                'description': product.description
+            })
+
+        plans_with_products.append({
+            'plan_id': plan.id,
+            'name': plan.name,
+            'description': plan.description,
+            'products': products_info
+        })
+
+    return render_template('plans_with_products.html', plans_with_products=plans_with_products)
+
+
 @app.route('/attach_documents_to_workflow_step', methods=['POST'])
+@login_required
 def attach_documents_to_workflow_step():
     #try:
     # Get the selected Workflow and Step IDs from the form data
@@ -5930,12 +2102,12 @@ def attach_documents_to_workflow_step():
     records_added = 0
     # Check if the StepBaseData record already exists for the selected Workflow and Step
     for id in ids_list:
-        existing_record = StepBaseData.query.filter_by(base_data_id=id, workflow_id=workflow_id, step_id=step_id).first()
+        existing_record = DocumentWorkflow.query.filter_by(base_data_id=id, workflow_id=workflow_id, step_id=step_id).first()
         if not existing_record:
             # If the StepBaseData record doesn't exist, create a new one
 
             # new_record = StepBaseData(base_data_id=id, workflow_id=workflow_id, step_id=step_id, hidden_data='default_value')
-            new_record = StepBaseData(
+            new_record = DocumentWorkflow(
                 base_data_id=id,
                 workflow_id=workflow_id,
                 step_id=step_id,
@@ -5943,9 +2115,9 @@ def attach_documents_to_workflow_step():
                 start_recall=0,
                 deadline_recall=0,
                 end_recall=0,
-                recall_unit='...',
-                open_action='new',
-                auto_move=0 # Include start_recall in the initialization
+                recall_unit='day',
+                open_action=True,
+                auto_move=False # Include start_recall in the initialization
             )
 
             db.session.add(new_record)
@@ -5963,174 +2135,8 @@ def attach_documents_to_workflow_step():
     return jsonify({'success_message': success_message, 'error_message': None})
 
 
-# for document workflow management (forward, backward, deadlines etc) - for already distributed documents
-class DocumentsBaseDataDetails(ModelView):
-    can_create = True  # Optionally disable creation
-    can_edit = True  # Optionally disable editing
-    can_delete = True  # Optionally disable deletion
-
-    can_view_details = True
-
-    name = 'Manage Document Flow'
-    menu_icon_type = 'glyph'  # You can also use 'fa' for Font Awesome icons
-    menu_icon_value = 'glyphicon-list-alt'  # Icon class for the menu item
-
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.class_name = self.__class__.__name__  # Store the class name
-
-    column_list = [
-        'id', 'base_data.file_path', 'base_data.created_on', 'company_name', 'user_name',
-        'workflow.name', 'step.name', 'status_id', 'auto_move',
-        'start_date', 'deadline_date', 'end_date', 'start_recall', 'deadline_recall',
-        'end_recall', 'recall_unit', 'hidden_data'
-    ]
-
-    column_labels = {
-        'id': 'ID',
-        'base_data.file_path': 'Document Name', 'base_data.created_on': 'Created',
-        'company_name': 'Company', 'user_name': 'User',
-        'workflow_id': 'Workflow', 'step_id': 'Phase',
-        'status_id': 'Status', 'auto_move': 'Auto transition',
-        'start_date': 'Start', 'deadline_date': 'Deadline', 'end_date': 'End',
-        'start_recall': 'Start Recall', 'deadline_recall': 'Deadline Recall',
-        'end_recall': 'End Recall', 'recall_unit': 'Recall Unit', 'hidden_data': 'Miscellanea'
-    }
-    # column_descriptions
-
-    # Customize inlist for the View class
-    column_default_sort = ('base_data.created_on', True)
-    column_searchable_list = ('base_data.file_path', 'workflow_id', 'step_id', 'start_date', 'deadline_date')
-    # Adjust based on your model structure
-    column_filters = ('base_data.file_path', 'workflow_id', 'step_id', 'start_date', 'deadline_date')
-    # Adjust based on your model structure
-
-    # Specify fields to be excluded from the form
-    form_excluded_columns = ('base_data.id')
-
-    def get_query(self):
-        query = super().get_query()
-        if current_user.is_authenticated:
-            if current_user.has_role('Admin') or current_user.has_role('Authority'):
-                return query
-            elif current_user.has_role('Manager'):
-                company_ids = [base_data.company_id for base_data in query.join('base_data').all()]
-                query = query.filter(StepBaseData.company_id.in_(company_ids))
-            elif current_user.has_role('Employee'):
-                base_data_query = query.join('base_data').filter(BaseData.user_id == current_user.id)
-                company_ids = [base_data.company_id for base_data in base_data_query]
-                query = query.filter(StepBaseData.company_id.in_(company_ids))
-
-        # Modify the query to join Company and User tables to access their names
-        query = query.join(StepBaseData.base_data).join(BaseData.company).join(BaseData.user)
-
-        return query
-
-    def get_list(self, page, sort_column, sort_desc, search, filters, page_size=None):
-        # Define a custom get_list method to fetch company and user names
-        count, data = super().get_list(page, sort_column, sort_desc, search, filters, page_size)
-
-        # Fetch company and user names for each record
-        for item in data:
-            print('item', item)
-            if item.base_data and item.base_data.company:
-                company_name = item.base_data.company.name
-            else:
-                company_name = "N/A"  # Or any default value
-            if item.base_data and item.base_data.user:
-                user_name = item.base_data.user.last_name  # Use the correct attribute for the user's name
-            else:
-                user_name = "N/A"
-            if item.base_data and item.base_data:
-                created_on = item.base_data.created_on  # Use the correct attribute for the user's name
-            else:
-                created_on = "N/A"
-
-            if item.base_data and item.workflow:  # Access the ID of the Workflow object
-                workflow_id =  item.workflow.id
-            else:
-                workflow_id = "N/A"
-            if item.base_data and item.step:
-                step_name = item.step.name  # Access the name of the Step object
-            else:
-                step_name = "N/A"
-
-            item.company_name = company_name
-            item.user_name = user_name
-            item.workflow_id = workflow_id
-            item.step_name = step_name
-            item.created_on = created_on
-
-        return count, data
-
-
-    def is_accessible(self):
-        if current_user.is_authenticated:
-            if (current_user.has_role('Admin') or current_user.has_role('Authority')
-                    or current_user.has_role('Manager') or current_user.has_role('Employee')):
-                # Allow access for Admin, Manager, and Employee
-                return True
-
-        return False
-
-    def on_model_change(self, form, model, is_created):
-        super().on_model_change(form, model, is_created)
-        # Reset form data
-        form.populate_obj(model)  # This resets the form data to its default values
-
-        # print('method is', form.get('_method'), form.get('_method') in ['PUT', 'PATCH'])
-
-        if is_created:
-            # Handle new model creation:
-            # - Set default values
-            # - Send notification
-            # Apply your custom logic to set data_type
-            model.created_on = datetime.now()  # Set the created_on
-            pass
-        else:
-            # Handle existing model edit:
-            # - Compare previous and updated values
-            # - Trigger specific actions based on changes
-            pass
-
-        return model
-
-
-    # Common action to Flask Admin 'Documents' (attach/detach documents to/from W-S)
-    @action('action_manage_dws_deadline', 'Deadline Setting',
-            'Are you sure you want to change documents deadline?')
-    def action_manage_dws_deadline(self, ids):
-        # Parse the list of IDs
-        id_list = [int(id) for id in ids]
-
-        # Define the selected columns you want to retrieve
-        '''
-        # 23Mar
-        column_list = [StepBaseData.id, StepBaseData.base_data_id, StepBaseData.workflow_id,
-                       StepBaseData.step_id, StepBaseData.status_id, StepBaseData.auto_move,
-                       StepBaseData.start_date, StepBaseData.deadline_date, StepBaseData.end_date,
-                       StepBaseData.hidden_data, StepBaseData.start_recall, StepBaseData.deadline_recall,
-                       StepBaseData.end_recall, StepBaseData.recall_unit]  # Add or remove columns as needed
-        '''
-        column_list = [StepBaseData.base_data_id, StepBaseData.workflow_id,
-                       StepBaseData.step_id, StepBaseData.status_id, StepBaseData.auto_move,
-                       StepBaseData.start_date, StepBaseData.deadline_date, StepBaseData.end_date,
-                       StepBaseData.hidden_data, StepBaseData.start_recall, StepBaseData.deadline_recall,
-                       StepBaseData.end_recall, StepBaseData.recall_unit]  # Add or remove columns as needed
-        print('selected_columns 1', column_list)
-        # Select specific columns
-        #23Mar
-        # selected_documents = StepBaseData.query.with_entities(*column_list).filter(StepBaseData.id.in_(id_list)).all()
-        selected_documents = StepBaseData.query.with_entities(*column_list).filter(StepBaseData.base_data_id.in_(id_list)).all()
-
-        print('sending to template, d-w-s', selected_documents)
-        # Pass the lists of workflows, steps, and selected documents to the template
-        return render_template('admin/set_documents_deadline.html',
-                               selected_documents=selected_documents)
-
-
 @app.route('/action_manage_dws_deadline', methods=['POST'])
+@login_required
 def manage_deadline():
     # Parse the list of IDs
     ids_str = request.form.get('ids')
@@ -6154,7 +2160,7 @@ def manage_deadline():
     records_updated = 0
     if new_date_obj:
         for id in ids_list:
-            existing_record = StepBaseData.query.get(id)
+            existing_record = DocumentWorkflow.query.get(id)
 
             if existing_record:
                 existing_record.deadline_date = new_date_obj
@@ -6170,29 +2176,7 @@ def manage_deadline():
         return jsonify({'error_message': 'Failed to set deadline.'}), 400
 
 
-
-from custom_encoder import CustomJSONEncoder
-# Use the custom JSON encoder
-app.json_encoder = CustomJSONEncoder
-
-admin_app3 = Admin(app,
-                   name='Documents Workflow',
-                   url='/open_admin_3',
-                   template_mode='bootstrap4',
-                   endpoint='open_admin_3',
-                   )
-
-
-admin_app3.add_view(ModelView(name='Workflows Dictionary', model=Workflow, session=db.session))
-admin_app3.add_view(ModelView(name='Steps Dictionary', model=Step, session=db.session))
-admin_app3.add_view(DocumentsAssignedBaseDataView(name='Documents Assigned to Workflows', model=BaseData, session=db.session,
-                                          endpoint='assigned_documents'))
-admin_app3.add_view(DocumentsNewBaseDataView(name='New Unassigned Documents', model=BaseData, session=db.session,
-                                                    endpoint='new_documents'))
-admin_app3.add_view(DocumentsBaseDataDetails(name='Documents Workflow Management', model=StepBaseData, session=db.session))
-
-
-
+# TODO unused?
 def execute_workflow(workflow_id):
     workflow = session.query(Workflow).get(workflow_id)
     if workflow.status == 'active':
@@ -6218,6 +2202,7 @@ def execute_workflow(workflow_id):
 
 # Route to get subject names based on subject IDs
 @app.route('/get_subject_names/<int:subject_id>')
+@login_required
 def get_subject_name(subject_id):
     subject = Subject.query.filter_by(id=subject_id).first()
 
@@ -6227,47 +2212,11 @@ def get_subject_name(subject_id):
         return jsonify({'name': 'Not Found'})
 
 @app.route('/handle_dynamic_url/<endpoint>')
+@login_required
 def handle_dynamic_url(endpoint):
     # You can handle the dynamic URL here, for example, redirect to a default view
     return redirect(url_for('index'))
 
-
-# Define the custom Jinja2 filter
-def list_intersection(lst1, lst2):
-    return list(set(lst1) & set(lst2))
-
-# Create a custom filter to replace Undefined with None
-def replace_undefined(value):
-    return None if value is Undefined else value
-
-
-# Load menu items from JSON file
-json_file_path = get_current_directory() + "/static/js/menuStructure101.json"
-with open(Path(json_file_path), 'r') as file:
-    main_menu_items = json.load(file)
-
-
-# Create an instance of MenuBuilder
-menu_builder = MenuBuilder(main_menu_items, ["Guest"])
-parsed_menu_data = menu_builder.parse_menu_data(user_roles=["Guest"], is_authenticated=False, include_protected=False)
-
-def next_is_valid(next_url):
-    # Check if the provided next_url is a valid URL
-    # This is a basic example; you might want to check against a list of allowed URLs
-    pdb.set_trace()
-    allowed_urls = ['index', 'protected']  # Add your allowed URLs here
-    if next_url and next_url in allowed_urls:
-        return True
-    else:
-        return False
-
-
-# Define the menu_item_allowed function
-def menu_item_allowed(menu_item, user_roles):
-    # Your implementation here
-    # Example: Check if the user has the required role to access the menu_item
-    # WHEN the phrase on the right was present, the landing page was empty A.R. 15Feb2024
-    return True #menu_item['allowed_roles'] and any(role in user_roles for role in menu_item['allowed_roles'])
 
 # Register the context processor
 @app.context_processor
@@ -6285,182 +2234,6 @@ def custom_roles_required(*roles):
                 abort(403)  # Forbidden
         return wrapper
     return decorator
-
-
-def generate_route_and_menu(route, allowed_roles, template, include_protected=False, limited_menu=False):
-    def decorator(func):
-        @app.route(route)
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            if callable(getattr(current_user, 'is_authenticated', None)):
-                is_authenticated = current_user.is_authenticated()
-            else:
-                is_authenticated = current_user.is_authenticated
-
-            username = current_user.username if current_user.is_authenticated else "Guest"
-
-            user_roles = session.get('user_roles', [])
-
-            # Check if the lists intersect
-            intersection = set(user_roles) & set(["Employee", "Manager", "Authority", "Admin"])
-            allowed_roles = []
-            left_menu_items = {}
-            if intersection:
-                left_menu_items = get_left_menu_items(list(intersection))
-                allowed_roles = list(intersection)
-                # prova left menu
-                #left_menu_items = ["Area 1", "Area 2", "Area 3", "Item 4", "Item 5", "Item 6"]
-            else:
-                allowed_roles= ["Guest"]
-
-            menu_builder_instance = MenuBuilder(main_menu_items, allowed_roles=allowed_roles)
-
-            if limited_menu:
-                menu_data = menu_builder_instance.parse_menu_data(user_roles=user_roles,
-                                        is_authenticated=False, include_protected=False)
-            else:
-                menu_data = menu_builder_instance.parse_menu_data(user_roles=user_roles,
-                                        is_authenticated=is_authenticated, include_protected=include_protected)
-
-            buttons = []
-            '''for company, records in companyRecords.items():
-                buttons.append(CompanyButton(companyName=company, companyRecords=records))'''
-
-            # Example: Generate dynamic URL for 'admin_2.admin_blueprint.index'
-            admin_url = url_for('open_admin.index')
-            admin_2_url = url_for('open_admin_2.index')
-            admin_3_url = url_for('open_admin_3.index')
-            admin_4_url = url_for('open_admin_4.index')
-            admin_10_url = url_for('open_admin_10.index')
-
-            company_name = ' '
-            if current_user:
-                user_id = current_user.id if current_user.is_authenticated else 0
-                company_name = db.session.query(Company.name) \
-                    .join(CompanyUsers, CompanyUsers.company_id == Company.id) \
-                    .filter(CompanyUsers.user_id == user_id) \
-                    .first()
-            else:
-                pass
-
-            additional_data = {
-                "username": username,
-                "company_name": company_name,
-                "is_authenticated": is_authenticated,
-                "main_menu_items": menu_data,
-                "admin_menu_data": None,
-                "authority_menu_data": None,
-                "manager_menu_data": None,
-                "employee_menu_data": None,
-                "guest_menu_data": None,
-                "user_roles": user_roles,
-                "allowed_roles": allowed_roles,
-                "limited_menu": limited_menu,  # Added this line
-                "left_menu_items": left_menu_items,
-                "buttons": buttons,
-                "admin_url": admin_url,
-                "admin_2_url": admin_2_url,
-                "admin_3_url": admin_3_url
-            }
-
-            return render_template(template, **additional_data)
-
-        return wrapper
-
-    return decorator
-
-
-@app.route('/left_menu', methods=['GET', 'POST'])
-@generate_route_and_menu('/home', allowed_roles=["Employee"], template='home/left_menu.html')
-def left_menu():
-
-
-    app.logger.debug("Home route accessed")
-    print('left menu route')
-
-    username = current_user.username if current_user.is_authenticated else "Guest"
-    if callable(getattr(current_user, 'is_authenticated', None)):
-        is_authenticated = current_user.is_authenticated()
-    else:
-        is_authenticated = current_user.is_authenticated
-    user_roles = session.get('user_roles', [])
-    allowed_roles = ["Employee", "Manager", "Authority", "Admin"]
-    menu_builder_instance = MenuBuilder(main_menu_items, allowed_roles=allowed_roles)
-
-    # Check if the lists intersect
-    intersection = set(user_roles) & set(allowed_roles)
-
-    left_menu_items = []
-    if intersection:
-        left_menu_items = get_left_menu_items(list(intersection))
-    else:
-        pass
-
-    additional_data = {
-        "username": username,
-        "is_authenticated": is_authenticated,
-        "main_menu_items": None,
-        "admin_menu_data": None,
-        "authority_menu_data": None,
-        "manager_menu_data": None,
-        "employee_menu_data": None,
-        "guest_menu_data": None,
-        "user_roles": user_roles,
-        "allowed_roles": allowed_roles,
-        #"limited_menu": limited_menu,  # Added this line
-        "left_menu_items": left_menu_items
-    }
-    print('left menu')
-    return render_template('home/home.html', **additional_data)
-
-
-@app.route('/')
-@generate_route_and_menu('/', allowed_roles=["Guest"], template='home/home.html', include_protected=False,
-                         limited_menu=True)
-def index():
-
-    app.logger.debug("Home route accessed")
-    print('index route')
-    user_id = session.get('user_id')
-    user_roles = session.get('user_roles', [])
-    #user_roles = ['Guest']
-
-    # Create MenuBuilder with user roles
-    menu_builder = MenuBuilder(main_menu_items, allowed_roles=user_roles)
-    # Generate menu for the current user
-    generated_menu = menu_builder.generate_menu(user_roles=user_roles, is_authenticated=True,
-                                                include_protected=False)
-    pass
-    # return render_template('home/home.html', **additional_data)
-
-
-@app.route('/access/logout', methods=['GET'])
-def logout():
-
-    # Clear the user session
-    # session.clear()
-    # Clear the user roles from the session
-    # session.pop('user_roles', None)
-
-    # Build 'guest' menu
-    guest_menu_builder = MenuBuilder(main_menu_items, allowed_roles=["Guest"])
-    guest_menu_data = guest_menu_builder.parse_menu_data(user_roles=["Guest"],
-                                                         is_authenticated=False, include_protected=False)
-    # Render the home page with 'guest' menu
-    additional_data = {
-        "username": "Guest",
-        "is_authenticated": False,
-        "main_menu_items": guest_menu_data,
-        "admin_menu_data": None,
-        "authority_menu_data": None,
-        "manager_menu_data": None,
-        "employee_menu_data": None,
-        "guest_menu_data": None,
-        "user_roles": ["Guest"],
-        "allowed_roles": ["Guest"]
-    }
-
-    return render_template('access/logout.html', **additional_data)
 
 
 @app.route('/admin')
@@ -6487,7 +2260,6 @@ def manager_page():
 def employee_page():
 
     #session['user_roles'] = [role.name for role in users.roles] if users.roles else []
-    print("employee route")
     left_menu = get_left_menu_items(["Employee"])
     try:
         additional_data = {
@@ -6495,8 +2267,6 @@ def employee_page():
             'user_roles': session.get('user_roles', []),
             'allowed_roles': ["Manager", "Employee", "Admin"],
         }
-
-        print('emp page')
         return render_template('home/home.html', **additional_data)
 
     except Exception as e:
@@ -6506,7 +2276,6 @@ def employee_page():
 
 def get_left_menu_items(role):
     # Load the left menu structure from the JSON file
-
     json_file_path = get_current_directory() + '/static/js/left_menu_structure.json'
     with open(Path(json_file_path), 'r') as file:
         left_menu_items = json.load(file)
@@ -6540,10 +2309,9 @@ def get_left_menu_items_limited(role, area):
 @generate_route_and_menu('/index', allowed_roles=["Guest"], template='home/home.html', include_protected=False)
 def guest_page():
 
-    app.logger.debug("Home route accessed")
-    print('guest page')
+    # app.logger.debug("Home route accessed")
     is_authenticated = current_user.is_autenticated
-    # Render the home page with 'guest' menu
+    # Render the home page with 'Guest' menu
     additional_data = {
         "username": "Guest",
         "is_authenticated": is_authenticated,
@@ -6562,89 +2330,115 @@ def guest_page():
 # TODO Verifica esistenza stesso username o stessa mail (già presente?)
 # TODO Usare user = db.session.execute(db.select(User).filter_by(username=username)).scalar_one()
 # TODO oppure users = db.session.execute(db.select(User).order_by(Users.username)).scalars()
+
+
+import pycountry
+
+# Get all countries
+# countries = [{'name': country.name, 'code': country.alpha_2} for country in pycountry.countries]
+
+# Get subdivisions for a specific country
+# country_code = 'US'  # Example for the United States
+# subdivisions = [{'name': subdivision.name} for subdivision in pycountry.subdivisions.get(country_code)]
+
+import phonenumbers
+from phonenumbers.phonenumberutil import region_code_for_country_code
+
+'''
+@app.route('/invalidate_cache')
+def invalidate_cache():
+    cache.delete('/countries')
+    cache.delete('/regions')
+    cache.delete('/provinces')
+    cache.delete('/cities')
+    cache.delete('/zip_codes')
+    cache.delete('/streets')
+    cache.delete('/phone_prefixes')
+    return jsonify({'message': 'Cache invalidated'})
+'''
+
+# Get phone prefixes
+# prefixes = [{'country': region_code_for_country_code(country_code), 'prefix': f'+{country_code}'}
+#             for country_code in phonenumbers.SUPPORTED_REGIONS]
+
+
+
 @app.route('/access/signup', methods=['GET', 'POST'])
 def signup():
-    # Setup logging
-    #logging.debug('Signup route accessed')
+    form = SignupForm()
 
-    clear_flashed_messages()
-    form = RegistrationForm()
-
-    print('validation next')
-    if form.validate_on_submit():
-        new_user = Users(
-            username=form.username.data,
-            email=form.email.data,
-            user_2fa_secret=pyotp.random_base32(),
-            first_name=form.first_name.data,
-            mid_name=form.mid_name.data,
-            last_name=form.last_name.data,
-            address=form.address.data,
-            address1=form.address1.data,
-            city=form.city.data,
-            province=form.province.data,
-            region=form.region.data,
-            zip_code=form.zip_code.data,
-            country=form.country.data,
-            tax_code=form.tax_code.data,
-            mobile_phone=form.mobile_phone.data,
-            work_phone=form.work_phone.data
-            # Add other fields from the form as needed
-        )
-
-        try:
-            print('set password')
-            # Set the hashed password
-            new_user.set_password(form.password.data)
-
-            print('add user')
-            db.session.add(new_user)
-
-            print('1st commit')
-            try:
-                db.session.commit()
-                print('commit successful')
-            except Exception as commit_error:
-                logging.error(f'Error committing to the database: {commit_error}')
-                db.session.rollback()
-                flash('An error occurred during signup', 'error')
+    if request.method == 'POST':
+        if form.validate_on_submit():
+            # Check if the user has accepted the terms of use
+            if not form.terms_accepted.data:
+                flash('You must agree with the Terms and conditions to sign up.', 'error')
                 return render_template('access/signup.html', title='Sign Up', form=form)
 
+            # Check if the user has accepted the privacy policy
+            if not form.privacy_policy_accepted.data:
+                flash('You must agree with the Privacy Policy to sign up.', 'error')
+                return render_template('access/signup.html', title='Sign Up', form=form)
 
-            # Retrieve the newly assigned user ID
+            try:
+                new_user = Users(
+                    username=form.username.data,
+                    email=form.email.data,
+                    title=form.title.data,
+                    first_name=form.first_name.data,
+                    mid_name=form.mid_name.data,
+                    last_name=form.last_name.data,
+                    country=form.country.data,
+                    region=form.region.data,
+                    province=form.province.data,
+                    zip_code=form.zip_code.data,
+                    city=form.city.data,
+                    street=form.street.data,
+                    address=form.address.data,
+                    address1=form.address1.data,
+                    phone_prefix=form.phone_prefix.data,
+                    mobile_phone=form.mobile_phone.data,
+                    work_phone=form.work_phone.data,
+                    tax_code=form.tax_code.data,
+                    terms_accepted=form.terms_accepted.data,
+                    privacy_policy_accepted=form.privacy_policy_accepted.data,
+                    accepted_terms_date=datetime.utcnow(),
+                    created_on=datetime.utcnow(),
+                    updated_on=datetime.utcnow(),
+                    user_2fa_secret=pyotp.random_base32()  # Generate the 2FA secret
+                )
 
-            print('new user', new_user.id)
-            new_user_id = new_user.id
+                new_user.set_password(form.password.data)
 
-            # Create a new record in UserRoles table
-            # user_role_employee = UserRoles(user_id=new_user_id, role_id=4)
-            # db.session.add(user_role_employee)
+                db.session.add(new_user)
+                db.session.commit()
 
-            # Create a new record in UserRoles table for role ID 5 (Guest)
+                flash('Your account has been created! You can now log in.', 'success')
+                return redirect(url_for('login'))
 
-            print('user role for', new_user_id)
-            user_role_guest = UserRoles(user_id=new_user_id, role_id=5)
+            except Exception as e:
+                db.session.rollback()
+                logging.error(f"Error committing to the database: {e}")
+                logging.error(traceback.format_exc())
+                flash('An error occurred during signup', 'error')
+        else:
+            flash('Form validation failed. Please check your input.', 'error')
 
-            print('add session var for', user_role_guest)
-            db.session.add(user_role_guest)
-
-            print('2nd commit')
-            db.session.commit()
-
-            flash('Your account has been created! You can now log in.', 'success')
-            return redirect(url_for('login'))
-
-        except IntegrityError as e:
-            db.session.rollback()
-            flash('Username already exists. Please choose a different username.', 'error')
-            return render_template('access/signup.html', form=form)
-
-    print('return')
     return render_template('access/signup.html', title='Sign Up', form=form)
 
-# TODO this is a test route. TB cancelled
+
+@app.route('/home/terms_of_use')
+def terms_of_use():
+    return render_template('home/terms_of_use.html')
+
+@app.route('/home/privacy_policy', methods=['GET', 'POST'])
+def privacy_policy():
+    return render_template('home/privacy_policy.html')
+
 
 @app.route('/create_step', methods=['GET', 'POST'])
+@login_required
+# TODO this is a test route. TB cancelled
+@roles_required('Admin')
 def create_step():
     if request.method == 'POST':
         new_step = Step(
@@ -6656,10 +2450,10 @@ def create_step():
         try:
             db.session.add(new_step)
             db.session.commit()
-            return "Step created successfully!"
+            return "Step created successfully."
         except Exception as e:
             db.session.rollback()
-            logging.error(f'Error creating step: {e}')
+            # logging.error(f'Error creating step: {e}')
             return f"Error: {e}"
     return '''
         <form method="post">
@@ -6667,27 +2461,23 @@ def create_step():
         </form>
     '''
 
-
-@app.route('/home/contact/email',  methods=['GET', 'POST'])
-def contact_email():
-    return render_template('home/contact.html')
-
-@app.route('/home/contact/phone',  methods=['GET', 'POST'])
-def contact_phone():
+@app.route('/home/contact/contact_us',  methods=['GET', 'POST'])
+def contact_us():
     return render_template('home/contact.html')
 
 
-@app.route('/home/privacy_policy',  methods=['GET', 'POST'])
-def privacy_policy():
-    return render_template('home/privacy_policy.html')
+
+@app.route('/test_carousel',  methods=['GET', 'POST'])
+def test_carousel():
+    return render_template('carousel/wrapper_test.html')
 
 
 @app.route('/home/mission',  methods=['GET', 'POST'])
 def mission():
     return render_template('home/mission.html')
 
-@app.route('/home/services',  methods=['GET', 'POST'])
-def services():
+@app.route('/home/products',  methods=['GET', 'POST'])
+def products():
     return render_template('home/services.html')
 
 @app.route('/home/history',  methods=['GET', 'POST'])
@@ -6696,6 +2486,7 @@ def history():
 
 
 @app.route('/workflow/control_areas/area_1', methods=['GET', 'POST'])
+@login_required
 def area_1():
     if request.method == 'GET' and current_user.is_authenticated:
         # Assuming user_id is available, adjust the query accordingly
@@ -6760,9 +2551,9 @@ def area_1():
 
 
 # ... (Other imports and setup)
-
 # F l a s k  route to handle saving card content
 @app.route('/save_card', methods=['POST'])
+@login_required
 def save_card():
 
     # Get data from the request
@@ -6776,11 +2567,10 @@ def save_card():
         db.session.commit()
         return jsonify({"message": "Card content saved successfully"})
     except Exception as e:
-        print(e)
         return jsonify({"message": "Error saving card content"})
 
-
 @app.route('/workflow/control_areas/area_3',  methods=['GET', 'POST'])
+@login_required
 def area_3():
     # Assuming user_id is available, adjust the query accordingly
     user_id = current_user.id  # Implement your user authentication logic
@@ -6793,6 +2583,7 @@ def area_3():
 
 
 @app.route('/update_cell', methods=['POST'])
+@login_required
 def update_cell():
     if request.method == 'POST':
         column = request.form.get('column')
@@ -6817,19 +2608,21 @@ def aboutus_1():
     return render_template('home/aboutus_1.html')
 
 
+
 @app.route('/dashboard/company')
+@login_required
 def dashboard_company():
     # Your view logic goes here
     return render_template('dashboard/company.html')
 
 
 @app.route('/overview_statistics_1')
+@login_required
+@roles_required('Admin')
 def overview_statistics_1():
     user_id = current_user.id  # Implement your user authentication logic
-    print('user id from current user', user_id)
     if not user_id:
         user_id = request.args.get('user_id')  # Assuming you retrieve user_id from the request
-        print('with request', user_id)
 
     # get deadline approaching events
 
@@ -6859,15 +2652,15 @@ def overview_statistics_1():
             # 'visibility': 'd-none'  # Initially hide this card
         }
     ]
-    return render_template('base_cards_template.html', cards=card_data, create_card=create_card)
 
-@app.route('/deadlines_1')
-def deadlines_1():
+    return render_template('base_cards_template.html', containers=card_data, create_card=create_card)
+
+@app.route('/deadlines')
+@login_required
+def deadlines():
     user_id = current_user.id  # Implement your user authentication logic
-    print('user id from current user', user_id)
     if not user_id:
         user_id = request.args.get('user_id')  # Assuming you retrieve user_id from the request
-        print('with request', user_id)
 
     # get deadline approaching events
     cards_data = deadline_approaching(db.session)
@@ -6883,12 +2676,16 @@ def deadlines_1():
 
         # Append card data to the list
         cards.append({'html': card_html, 'id': card_data['id'], 'deadline_before': card_data['deadline_before']})
-    print(cards)
+
     return render_template('base_cards_deadlines_template.html', cards=cards)
 
 
 @app.route('/dashboard_company_audit')
+@login_required
 def dashboard_company_audit():
+
+    session = db.session  # Create a new database session object
+    engine = db.engine  # Get the engine object from SQLAlchemy
     # Your view logic goes here
     # Perform the SQL query to get information for each company
     """
@@ -6905,46 +2702,38 @@ def dashboard_company_audit():
             new_metric: The number of records grouped by fi0, interval_id, area_id, subarea_id.
     """
 
-    with app.app_context():
-        bind_key = 'db1'  # Use the bind key corresponding to the desired database
+    sorted_values = get_pd_report_from_base_data_wtq(engine)
+    # Example usage
+    # Get all companies from the database
+    all_companies = Company.query.all()
+    html_cards = generate_html_cards(sorted_values, all_companies)
 
-        options = {'url': str(db.engine.url)}  # Your options dictionary
+    # Write HTML code to a file
+    with open('report_cards1.html', 'w') as f:
+        f.write(html_cards)
 
-        # Create the SQLAlchemy engine using db object
-        engine = db._make_engine(bind_key, options, app)
-        # Usage example:
-        from sqlalchemy.orm import sessionmaker
+    return render_template('admin_cards.html', html_cards=html_cards, user_roles=user_roles)
 
-        Session = sessionmaker(bind=engine)
-        session = Session()  # Create a session object
-
-        sorted_values = get_pd_report_from_base_data_wtq(session)
-        # Example usage
-        # Get all companies from the database
-        all_companies = Company.query.all()
-        html_cards = generate_html_cards(sorted_values, all_companies)
-
-        # Write HTML code to a file
-        with open('report_cards1.html', 'w') as f:
-            f.write(html_cards)
-
-        return render_template('admin_cards.html', html_cards=html_cards, user_roles=user_roles)
 
 # Define the route for handling card clicks
 @app.route('/handle_card_click')
+@login_required
 def handle_card_click():
     card_id = request.args.get('id')
     # Handle the card click action here, if needed
-    print('id', card_id)
-    return redirect(url_for('open_admin', card_id=card_id))
+    return redirect(url_for('open_admin_1', card_id=card_id))
 
 
 ''' 
 System setup, admin: Company->User(s)
 '''
+
 @app.route('/dashboard_setup_companies_users')
+@login_required
+@roles_required('Admin')
 def dashboard_setup_companies_users():
     # Assuming you have access to the session object
+    '''
     with app.app_context():
         bind_key = 'db1'  # Use the bind key corresponding to the desired database
         options = {'url': str(db.engine.url)}  # Your options dictionary
@@ -6953,34 +2742,28 @@ def dashboard_setup_companies_users():
         # Usage example here:
         Session = sessionmaker(bind=engine)
         session = Session()  # Create a session object
+    '''
 
     # Generate HTML report
-    report_data = generate_company_user_report_data(session)
+    report_data = generate_company_user_report_data(db.session)
 
-    print('rep data', report_data)
     # Render the template with the report data
-    return render_template('generic_report.html', title="User-Company Relationship Report", columns=["Company", "User", "Last Name"], rows=report_data)
+    return render_template('generic_report.html', title="User-Company Relationship Report",
+                           columns=["Company", "User", "Last Name"], rows=report_data)
 
 
 ''' 
 System setup, admin: User->Role(s)
 '''
+
 @app.route('/dashboard_setup_user_roles')
+@login_required
+@roles_required('Admin')
 def dashboard_setup_user_roles():
-    # Assuming you have access to the session object
-    with app.app_context():
-        bind_key = 'db1'  # Use the bind key corresponding to the desired database
-        options = {'url': str(db.engine.url)}  # Your options dictionary
-        # Create the SQLAlchemy engine using db object
-        engine = db._make_engine(bind_key, options, app)
-        # Usage example here:
-        Session = sessionmaker(bind=engine)
-        session = Session()  # Create a session object
 
     # Generate HTML report
-    report_data = generate_user_role_report_data(session)
+    report_data = generate_user_role_report_data(db.session)
 
-    print('rep data', report_data)
     # Render the template with the report data
     return render_template('generic_report.html', title="User-Role Relationship Report", columns=["User", "Last Name", "Role"], rows=report_data)
 
@@ -6990,19 +2773,12 @@ System setup, admin: Questionnaire->Question(s)
 '''
 
 @app.route('/dashboard_setup_questionnaire_questions')
+@login_required
+@roles_required('Admin')
 def dashboard_setup_questionnaire_questions():
     # Assuming you have access to the session object
-    with app.app_context():
-        bind_key = 'db1'  # Use the bind key corresponding to the desired database
-        options = {'url': str(db.engine.url)}  # Your options dictionary
-        # Create the SQLAlchemy engine using db object
-        engine = db._make_engine(bind_key, options, app)
-        # Usage example here:
-        Session = sessionmaker(bind=engine)
-        session = Session()  # Create a session object
-
     # Generate HTML report
-    report_data = generate_questionnaire_question_report_data(session)
+    report_data = generate_questionnaire_question_report_data(db.session)
 
     # Render the template with the report data
     return render_template('generic_report.html', title="Questionnaire Structure", columns=["Questionnaire id", "Name", "Question"], rows=report_data)
@@ -7012,38 +2788,21 @@ def dashboard_setup_questionnaire_questions():
 System setup, admin: Company - > Questionnaire(s)
 '''
 @app.route('/generate_setup_company_questionnaire')
+@login_required
 def generate_setup_company_questionnaire():
-    # Assuming you have access to the session object
-    with app.app_context():
-        bind_key = 'db1'  # Use the bind key corresponding to the desired database
-        options = {'url': str(db.engine.url)}  # Your options dictionary
-        # Create the SQLAlchemy engine using db object
-        engine = db._make_engine(bind_key, options, app)
-        # Usage example here:
-        Session = sessionmaker(bind=engine)
-        session = Session()  # Create a session object
-
     # Generate HTML report
-    report_data = generate_company_questionnaire_report_data(session)
+    report_data = generate_company_questionnaire_report_data(db.session)
 
     # Render the template with the report data
     return render_template('generic_report.html', title="Questionnaires and Companies", columns=["Company", "Questionnaire name", "Questionnaire id"], rows=report_data)
 
 
 @app.route('/dashboard_setup_workflow_steps')
+@login_required
+@roles_required('Admin')
 def dashboard_setup_workflow_steps():
-    # Assuming you have access to the session object
-    with app.app_context():
-        bind_key = 'db1'  # Use the bind key corresponding to the desired database
-        options = {'url': str(db.engine.url)}  # Your options dictionary
-        # Create the SQLAlchemy engine using db object
-        engine = db._make_engine(bind_key, options, app)
-        # Usage example here:
-        Session = sessionmaker(bind=engine)
-        session = Session()  # Create a session object
-
     # Generate HTML report
-    report_data = generate_workflow_step_report_data(session)
+    report_data = generate_workflow_step_report_data(db.session)
 
     # Render the template with the report data
     return render_template('generic_report.html', title="Workflows and Steps", columns=["Workflow id", "Workflow name", "Step id", "Step name"], rows=report_data)
@@ -7051,26 +2810,17 @@ def dashboard_setup_workflow_steps():
 '''
 report of workflow of documents
 '''
+#@login_required
 @app.route('/dashboard_setup_workflow_base_data')
+@login_required
+@roles_required('Admin')
 def dashboard_setup_workflow_base_data():
-    # Assuming you have access to the session object
-    '''
-    with app.app_context():
-        bind_key = 'db1'  # Use the bind key corresponding to the desired database
-        options = {'url': str(db.engine.url)}  # Your options dictionary
-        # Create the SQLAlchemy engine using db object
-        engine = db._make_engine(bind_key, options, app)
-        # Usage example here:
-        Session = sessionmaker(bind=engine)
-        session = Session()  # Create a session object
-    '''
 
     # Generate HTML report
     report_data_raw = generate_workflow_document_report_data(db.session)
     report_data = []
     for data in report_data_raw:
         file_name, file_extension = extract_filename_and_extension(data[0])
-        #print(f"{file_name}{file_extension}")
         report_data.append([f"{file_name}{file_extension}", data[1]])
 
     # Render the template with the report data
@@ -7079,22 +2829,15 @@ def dashboard_setup_workflow_base_data():
 '''
 Route to manage trilateral link document/workflow/step
 '''
-@app.route('/dashboard_setup_step_base_data')
-def dashboard_setup_step_base_data():
-    # Assuming you have access to the session object
-    with app.app_context():
-        bind_key = 'db1'  # Use the bind key corresponding to the desired database
-        options = {'url': str(db.engine.url)}  # Your options dictionary
-        # Create the SQLAlchemy engine using db object
-        engine = db._make_engine(bind_key, options, app)
-        # Usage example here:
-        Session = sessionmaker(bind=engine)
-        session = Session()  # Create a session object
 
+@app.route('/dashboard_setup_step_base_data')
+@login_required
+@roles_required('Admin')
+def dashboard_setup_step_base_data():
     # Generate HTML report
 
     report_data = []
-    report_data_raw = generate_document_step_report_data(session)
+    report_data_raw = generate_document_step_report_data(db.session)
     columns = ["Document id", "Document name", "Area", "Subarea", "Company",
                "Workflow id",
                "Step", "Step name", "Start", "Deadline", "Completion", "Auto"]
@@ -7103,13 +2846,10 @@ def dashboard_setup_step_base_data():
         file_path_index = columns.index(
             "Document name")  # Replace "your_column_names_list" with the actual list of column names
         file_name, file_extension = extract_filename_and_extension(data[file_path_index])
-        #print(f"{file_name}{file_extension}")
         # Replace the value at the file_path_index with 'some_value'
         data[file_path_index] = f"{file_name}{file_extension}"
 
         report_data.append(data)
-        # Print the modified data
-        #print(data)
 
     # Render the template with the report data
     return render_template('generic_report.html',
@@ -7120,164 +2860,145 @@ def dashboard_setup_step_base_data():
 ''' 
 System setup, admin: Area->Subareas
 '''
-@app.route('/dashboard_setup_area_subareas')
-def dashboard_setup_area_subareas():
-    # Assuming you have access to the session object
-    with app.app_context():
-        bind_key = 'db1'  # Use the bind key corresponding to the desired database
-        options = {'url': str(db.engine.url)}  # Your options dictionary
-        # Create the SQLAlchemy engine using db object
-        engine = db._make_engine(bind_key, options, app)
-        # Usage example here:
-        Session = sessionmaker(bind=engine)
-        session = Session()  # Create a session object
 
+@app.route('/dashboard_setup_area_subareas')
+@login_required
+@roles_required('Admin')
+def dashboard_setup_area_subareas():
     # Generate HTML report
-    report_data = generate_area_subarea_report_data(session)
+    report_data = generate_area_subarea_report_data(db.session)
 
     # Render the template with the report data
     return render_template('generic_report.html', title="Control Areas and Subareas", columns=["Area", "Subarea", "Data Type"], rows=report_data)
 
 
 @app.route('/dashboard_company_audit_progression')
+@login_required
 def dashboard_company_audit_progression():
+
+    session = db.session  # Create a new database session object
+    engine = db.engine  # Get the engine object from SQLAlchemy
+    # TODO time_scope vs time_qualifier here below?
     time_scope = 'current'
-    with app.app_context():
-        bind_key = 'db1'  # Use the bind key corresponding to the desired database
-        options = {'url': str(db.engine.url)}  # Your options dictionary
-        # Create the SQLAlchemy engine using db object
-        engine = db._make_engine(bind_key, options, app)
-        # Usage example here:
-        Session = sessionmaker(bind=engine)
-        session = Session()  # Create a session object
 
-        def filter_records_by_time_qualifier(records, time_qualifier):
-            filtered_records = []
-            for record in records:
-                if record['time_qualifier'] == time_qualifier:
-                    filtered_records.append(record)
-            return filtered_records
+    def filter_records_by_time_qualifier(records, time_qualifier):
+        filtered_records = []
+        for record in records:
+            if record['time_qualifier'] == time_qualifier:
+                filtered_records.append(record)
+        return filtered_records
 
-        sorted_values_raw = get_pd_report_from_base_data_wtq(session)
+    sorted_values_raw = get_pd_report_from_base_data_wtq(engine)
+    # Example usage to filter 'current' records
+    sorted_values = filter_records_by_time_qualifier(sorted_values_raw, time_scope)
+
+    if is_user_role(session, current_user.id, 'Admin'):
+        company_id = None  # will list all companies' cards
+    else:
+        company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
+
+    html_cards = generate_html_cards_progression_with_progress_bars_in_short(sorted_values, time_scope or {}, session,
+                                                                       company_id)
+
+    # Write HTML code to a file
+    with open('report_cards1.html', 'w') as f:
+        f.write(html_cards)
+
+    return render_template('admin_cards_progression.html', html_cards=html_cards, user_roles=user_roles)
+
+
+@app.route('/company_overview_current')
+@login_required
+def company_overview_current():
+    session = db.session  # Create a new database session object
+    engine = db.engine  # Get the engine object from SQLAlchemy
+    time_scope = 'current'
+
+    def filter_records_by_time_qualifier(records, time_qualifier):
+        filtered_records = []
+        for record in records:
+            if record['time_qualifier'] == time_qualifier:
+                filtered_records.append(record)
+        return filtered_records
+
+    try:
+        sorted_values_raw = get_pd_report_from_base_data_wtq(engine)
+
+        # Check if no data was found
+        if not sorted_values_raw:
+            return render_template('no_records.html')
+
         # Example usage to filter 'current' records
         sorted_values = filter_records_by_time_qualifier(sorted_values_raw, time_scope)
 
-        if is_user_role(session, current_user.id, 'admin'):
+        if is_user_role(session, current_user.id, 'Admin'):
             company_id = None  # will list all companies' cards
         else:
             company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
 
-        html_cards = generate_html_cards_progression_with_progress_bars_in_short(sorted_values, time_scope or {}, session,
-                                                                           company_id)
+        html_cards = generate_html_cards_progression_with_progress_bars111(
+            sorted_values, time_scope or {}, db.session, company_id
+        )
 
         # Write HTML code to a file
         with open('report_cards1.html', 'w') as f:
             f.write(html_cards)
 
+        print(html_cards)
         return render_template('admin_cards_progression.html', html_cards=html_cards, user_roles=user_roles)
 
-
-import logging
-from sqlalchemy.orm import sessionmaker
-
-@app.route('/company_overview_current')
-def company_overview_current():
-    print('db1')
-    logging.basicConfig(level=logging.DEBUG)
-    time_scope = 'current'
-    bind_key = 'db1'  # Use the bind key corresponding to the desired database
-    print('db2')
-    try:
-        with app.app_context():
-            options = {'url': str(db.engine.url)}  # Your options dictionary
-            print('db3')
-            # Create the SQLAlchemy engine using db object
-            engine = db._make_engine(bind_key, options, app)
-            # Usage example here:
-            Session = sessionmaker(bind=engine)
-            session = Session()  # Create a session object
-            print('db4')
-            def filter_records_by_time_qualifier(records, time_qualifier):
-                filtered_records = []
-                for record in records:
-                    if record['time_qualifier'] == time_qualifier:
-                        filtered_records.append(record)
-                return filtered_records
-
-            print('db5')
-            sorted_values_raw = get_pd_report_from_base_data_wtq(session)
-            print('cards values', sorted_values_raw)
-            # Example usage to filter 'current' records
-            print('db6')
-            sorted_values = filter_records_by_time_qualifier(sorted_values_raw, time_scope)
-
-            if is_user_role(session, current_user.id, 'admin'):
-                company_id = None  # will list all companies' cards
-            else:
-                company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-
-            html_cards = generate_html_cards_progression_with_progress_bars111(
-                sorted_values, time_scope or {}, session, company_id
-            )
-
-            # Write HTML code to a file
-            with open('report_cards1.html', 'w') as f:
-                f.write(html_cards)
-
-            return render_template('admin_cards_progression.html', html_cards=html_cards, user_roles=user_roles)
-
     except Exception as e:
-        logging.error(f'Error in company_overview_current: {e}')
+        # logging.error(f'Error in company_overview_current: {e}')
         return render_template('error.html', error_message=str(e)), 500
 
 
-
 @app.route('/company_overview_historical')
+@login_required
 def company_overview_historical():
+    session = db.session  # Create a new database session object
+    engine = db.engine  # Get the engine object from SQLAlchemy
     time_scope = 'past'
-    with app.app_context():
-        bind_key = 'db1'  # Use the bind key corresponding to the desired database
 
-        options = {'url': str(db.engine.url)}  # Your options dictionary
+    def filter_records_by_time_qualifier(records, time_qualifier):
+        filtered_records = []
+        for record in records:
+            if record['time_qualifier'] == time_qualifier:
+                filtered_records.append(record)
+        return filtered_records
 
-        # Create the SQLAlchemy engine using db object
-        engine = db._make_engine(bind_key, options, app)
-        # Usage example here:
-        from sqlalchemy.orm import sessionmaker
+    sorted_values_raw = get_pd_report_from_base_data_wtq(engine)
 
-        Session = sessionmaker(bind=engine)
-        session = Session()  # Create a session object
+    # Check if no data was found
+    if not sorted_values_raw:
+        return render_template('no_records.html')
 
-        def filter_records_by_time_qualifier(records, time_qualifier):
-            filtered_records = []
-            for record in records:
-                if record['time_qualifier'] == time_qualifier:
-                    filtered_records.append(record)
-            return filtered_records
+    # Example usage to filter 'current' records
+    sorted_values = filter_records_by_time_qualifier(sorted_values_raw, time_scope)
 
-        sorted_values_raw = get_pd_report_from_base_data_wtq(session)
-        # Example usage to filter 'current' records
-        sorted_values = filter_records_by_time_qualifier(sorted_values_raw, time_scope)
+    if is_user_role(db.session, current_user.id, 'Admin'):
+        company_id = None  # will list all companies' cards
+    else:
+        company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
 
-        if is_user_role(session, current_user.id, 'admin'):
-            company_id = None # will list all companies' cards
-        else:
-            company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
+    html_cards = generate_html_cards_progression_with_progress_bars111(sorted_values, time_scope, db.session, company_id)
 
-        html_cards = generate_html_cards_progression_with_progress_bars111(sorted_values, time_scope, session, company_id)
+    # Write HTML code to a file
+    with open('report_cards1.html', 'w') as f:
+        f.write(html_cards)
 
-        # Write HTML code to a file
-        with open('report_cards1.html', 'w') as f:
-            f.write(html_cards)
-
-        return render_template('admin_cards_progression.html', html_cards=html_cards, user_roles=user_roles)
+    return render_template('admin_cards_progression.html', html_cards=html_cards, user_roles=user_roles)
 
 
 @app.route('/control_area_1')
+@login_required
+@roles_required('Admin', 'Manager', 'Employee')
 def control_area_1():
     # Get the current route from the request object
     current_route = request.url_rule
     user_roles = session.get('user_roles', [])
+
+    if 'current_app' not in globals():
+        return render_template('404.html'), 404  # Ensure you have a 404.html template
 
     # Your view logic goes here
     current_route_url = current_app.url_for('control_area_1')
@@ -7286,17 +3007,22 @@ def control_area_1():
         left_menu_items = get_left_menu_items_limited(user_roles, 'area_1')
         # Render the template using the current route information and left menu items
         return render_template('control_area_1.html',
-                               current_route=current_route, left_menu_items=left_menu_items)
+                               current_route=current_route, left_menu_items=left_menu_items, current_app=current_app)
 
     # If the condition is not met, you should still return a response
     return render_template('control_area_1.html',
                            current_route=current_route, left_menu_items=None)
 
 @app.route('/control_area_2')
+@login_required
+@roles_required('Admin', 'Manager', 'Employee')
 def control_area_2():
     # Get the current route from the request object
     current_route = request.url_rule
     user_roles = session.get('user_roles', [])
+
+    if 'current_app' not in globals():
+        return render_template('404.html'), 404  # Ensure you have a 404.html template
 
     # Your view logic goes here
     current_route_url = current_app.url_for('control_area_2')
@@ -7310,14 +3036,18 @@ def control_area_2():
 
     # If the condition is not met, you should still return a response
     return render_template('control_area_2.html',
-                           current_route=current_route)
-
+                           current_route=current_route, current_app=current_app)
 
 @app.route('/control_area_3')
+@login_required
+@roles_required('Admin', 'Manager', 'Employee')
 def control_area_3():
     # Get the current route from the request object
     current_route = request.url_rule
     user_roles = session.get('user_roles', [])
+
+    if 'current_app' not in globals():
+        return render_template('404.html'), 404  # Ensure you have a 404.html template
 
     # Your view logic goes here
     current_route_url = current_app.url_for('control_area_3')
@@ -7331,11 +3061,12 @@ def control_area_3():
 
     # If the condition is not met, you should still return a response
     return render_template('control_area_3.html',
-                           current_route=current_route_url)
+                           current_route=current_route_url, current_app=current_app)
 
 
-
-@app.route('/home/site_map',  methods=['GET', 'POST'])
+@app.route('/home/site_map', methods=['GET', 'POST'])
+@login_required
+@roles_required('Admin')
 def site_map():
     # ... (your existing code)
 
@@ -7344,110 +3075,23 @@ def site_map():
         menu_structure = json.load(file)
 
     # Generate the menu tree
+
     menu_tree = generate_menu_tree(menu_structure)
 
     # Pass the menu_tree to the template
     return render_template('home/site_map.html', menu_tree=menu_tree)
-
-
-# Login route with CAPTCHA generation
-@app.route('/access/login', methods=['GET', 'POST'])
-@limiter.limit("100/day;48/hour;8/minute")
-def login():
-    if request.method == 'POST':
-        # Verify CAPTCHA
-        user_captcha = request.form['captcha']
-        if 'captcha' in session and session['captcha'] == user_captcha:
-            # CAPTCHA entered correctly
-            username = request.form.get('username')
-            password = request.form.get('password')
-
-            user = user_manager.authenticate_user(username, password)
-            if user:
-                login_user(user)
-                flash('Login Successful')
-
-                cet_time = get_cet_time()
-                # Create message record
-                try:
-                    create_message(db.session, user_id=user.id, message_type='email', subject='Security check',
-                               body='È stato rilevato un nuovo accesso al tuo account il ' +
-                                    cet_time.strftime('%Y-%m-%d') + '. Se eri tu, non devi fare nulla. ' +
-                                    'In caso contrario, ti aiuteremo a proteggere il tuo account; ' +
-                                    "non rispondere a questa mail e contatta l'amministratore del sistema. ",
-                               sender='System', company_id=None,
-                               lifespan='one-off', allow_overwrite=True)
-                # Redirect based on user roles (code omitted for brevity)
-
-                # Redirect based on user roles (code omitted for brevity)
-                except:
-                    print('Error creating logon message')
-
-            # Authenticate user and retrieve roles (not necessary after login_user
-            # user = user_manager.authenticate_user(username, password)
-            session['user_roles'] = [role.name for role in user.roles] if user.roles else []
-            session['user_id'] = getattr(user, 'id')
-            # Store data in the session
-            session['username'] = username
-
-            # Other session data
-            try:
-                company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-            except:
-                company_id = None
-                pass
-
-                if company_id is not None and isinstance(company_id, int):
-                    try:
-                        create_company_folder(company_id)
-                    except:
-                        print('Error creating company files folder')
-
-                # Store user roles in session or persistent storage
-                user_roles = session['user_roles']
-
-                # Redirect based on user roles
-                if user.has_role('Admin'):
-                    return redirect(url_for('admin_page'))
-                elif user.has_role('Authority'):
-                    return redirect(url_for('authority_page'))
-                elif user.has_role('Manager'):
-                    return redirect(url_for('manager_page'))
-                elif user.has_role('Employee'):
-                    return redirect(url_for('employee_page'))
-                elif user.has_role('Guest'):
-                    return redirect(url_for('guest_page'))
-                else:
-                    return redirect(url_for('guest_page'))
-
-                # TODO dove mettere questo?
-                #messages = Post.query.filter_by(user_id=getattr(user, 'id')).all()
-                #print('post', messages)
-
-            else:
-                flash('Invalid username or password. Please try again.', 'error')
-        else:
-            # CAPTCHA entered incorrectly
-            flash('Incorrect CAPTCHA! Please try again.', 'error')
-
-    # Generate and render CAPTCHA image within the template
-    captcha_text, captcha_image = generate_captcha(300, 100, 5)
-
-    session['captcha'] = captcha_text
-
-    return render_template('access/login.html', captcha=captcha_text, captcha_image=captcha_image)
-
 
 def generate_captcha(width, height, length):
     characters = "&%?ABCDEFGHJKLMNPRSTUVWXYZ2345679"
     captcha_text = ''.join(random.choice(characters) for _ in range(length))
 
     image = Image.new('RGB', (width, height), color=(255, 255, 255))
-    # font = ImageFont.truetype('/System/Library/Fonts/Supplemental/arial.ttf', size=40)
 
-    font = ImageFont.truetype('/usr/local/share/fonts/Geneva.ttf', size=40)
+    # Define the path to the font file within the static/fonts directory
+    font_path = os.path.join(os.path.dirname(__file__), 'static', 'fonts', 'Geneve.ttf')
 
-    draw = ImageDraw.Draw(image)
+    # Load the font using the relative path
+    font = ImageFont.truetype(font_path, size=40)
 
     # Apply random rotation and distortion to each character
     for i, char in enumerate(captcha_text):
@@ -7476,120 +3120,16 @@ def generate_captcha(width, height, length):
 
     return captcha_text, image_data
 
+
 @app.route('/clear_flashed_messages', methods=['POST'])
 def clear_flashed_messages():
     messages = get_flashed_messages(True)  # Clear flashed messages without retrieving them
     return jsonify({"message": "Flashed messages cleared successfully"})
 
 
-@app.route('/manage_user_roles', methods=['GET', 'POST'])
-@role_required('admin')
-def manage_user_roles():
-    form = UserRoleForm()
-    message = None
-
-    # Populate choices for users and roles
-    form.user.choices = [(user.id, user.username) for user in Users.query.all()]
-    form.role.choices = [(role.id, role.name) for role in Role.query.all()]
-
-    if form.validate_on_submit():
-        if form.cancel.data:
-            # Handle cancel button
-            return redirect(url_for('index'))
-        elif form.add.data:
-            # Handle add button
-            user_id = form.user.data
-            role_id = form.role.data
-
-            # Check if the user-role association already exists
-            existing_user_role = UserRoles.query.filter_by(user_id=user_id, role_id=role_id).first()
-
-            if existing_user_role:
-                message = "User role already exists."
-                #flash('User-role association already exists', 'warning')
-
-            else:
-                # Add logic to associate the user with the selected role
-                new_user_role = UserRoles(user_id=user_id, role_id=role_id)
-                db.session.add(new_user_role)
-                db.session.commit()
-                # Set a success message
-                message = "User role added successfully."
-                #flash('User-role association added successfully', 'success')
-
-        elif form.delete.data:
-            # Handle delete button
-            user_id = form.user.data
-            role_id = form.role.data
-
-            # Find and delete the user-role association
-            user_role_to_delete = UserRoles.query.filter_by(user_id=user_id, role_id=role_id).first()
-
-            if user_role_to_delete:
-                db.session.delete(user_role_to_delete)
-                db.session.commit()
-                message = "User role deleted successfully."
-                #flash('User-role association deleted successfully', 'success')        # Set a success message
-
-            else:
-                message = "User role not found."
-                #flash('User-role association not found', 'warning')
-
-    return render_template('manage_user_roles.html', form=form, message=message)
-
-
-@app.route('/manage_workflow_steps', methods=['GET', 'POST'])
-@role_required('admin')
-def manage_workflow_steps():
-    form = WorkflowStepForm()
-    message = None
-
-    # Populate choices for workflows and steps
-    form.workflow.choices = [(workflow.id, workflow.name) for workflow in Workflow.query.all()]
-    form.step.choices = [(step.id, step.name) for step in Step.query.all()]
-
-    if form.validate_on_submit():
-        if form.cancel.data:
-            # Handle cancel button
-            return redirect(url_for('index'))
-        elif form.add.data:
-            # Handle add button
-            workflow_id = form.workflow.data
-            step_id = form.step.data
-
-            # Check if the workflow-step association already exists
-            existing_workflow_step = WorkflowSteps.query.filter_by(workflow_id=workflow_id, step_id=step_id).first()
-
-            if existing_workflow_step:
-                message = "Workflow step already exists."
-            else:
-                # Add logic to associate the workflow to the selected step
-                new_workflow_step = WorkflowSteps(workflow_id=workflow_id, step_id=step_id)
-                db.session.add(new_workflow_step)
-                db.session.commit()
-                # Set a success message
-                message = "Workflow step added successfully."
-
-        elif form.delete.data:
-            # Handle delete button
-            workflow_id = form.workflow.data
-            step_id = form.step.data
-
-            # Find and delete the wkf-step association
-            workflow_step_to_delete = WorkflowSteps.query.filter_by(workflow_id=workflow_id, step_id=step_id).first()
-
-            if workflow_step_to_delete:
-                db.session.delete(workflow_step_to_delete)
-                db.session.commit()
-                message = "Workflow step deleted successfully."
-            else:
-                message = "Workflow step not found."
-
-    return render_template('manage_workflow_steps.html', form=form, message=message)
-
-
 @app.route('/manage_workflow_base_data', methods=['GET', 'POST'])
-@role_required('admin')
+@login_required
+@roles_required('Admin')  # Example roles
 def manage_workflow_base_data():
     form = WorkflowBaseDataForm()
     message = None
@@ -7599,50 +3139,55 @@ def manage_workflow_base_data():
     form.base_data.choices = [(base_data.id, base_data.file_path) for base_data in
                               BaseData.query.filter(BaseData.file_path.isnot(None)).all()]
 
-    if form.validate_on_submit():
-        if form.cancel.data:
-            # Handle cancel button
-            return redirect(url_for('index'))
-        elif form.add.data:
-            # Handle add button
-            workflow_id = form.workflow.data
-            base_data_id = form.base_data.data
-            # Get the selected workflow name
-            selected_workflow = Workflow.query.get(workflow_id)
-            workflow_name = selected_workflow.name
+    if request.method == 'POST':
+        if form.validate_on_submit():
+            if form.cancel.data:
+                # Handle cancel button
+                return redirect(url_for('index'))
+            elif form.add.data:
+                # Handle add button
+                workflow_id = form.workflow.data
+                base_data_id = form.base_data.data
 
-            # Check if the workflow-base_data association already exists
-            existing_workflow_base_data = WorkflowBaseData.query.filter_by(workflow_id=workflow_id, base_data_id=base_data_id).first()
+                # Get the selected workflow name
+                selected_workflow = Workflow.query.get(workflow_id)
+                workflow_name = selected_workflow.name
 
-            if existing_workflow_base_data:
-                message = f"Document link to <{workflow_name.lower()}> already exists."
-            else:
-                # Add logic to associate the workflow to the selected base_data
-                new_workflow_base_data = WorkflowBaseData(workflow_id=workflow_id, base_data_id=base_data_id)
-                db.session.add(new_workflow_base_data)
-                db.session.commit()
-                # Set a success message
-                message = f"Document linked to the <{workflow_name.lower()}> workflow."
+                # Check if the workflow-base_data association already exists
+                existing_workflow_base_data = WorkflowBaseData.query.filter_by(workflow_id=workflow_id, base_data_id=base_data_id).first()
 
-        elif form.delete.data:
-            # Handle delete button
-            workflow_id = form.workflow.data
-            base_data_id = form.base_data.data
+                if existing_workflow_base_data:
+                    message = f"Document link to <{workflow_name}> already exists."
+                else:
+                    # Add logic to associate the workflow to the selected base_data
+                    new_workflow_base_data = WorkflowBaseData(workflow_id=workflow_id, base_data_id=base_data_id)
+                    db.session.add(new_workflow_base_data)
+                    db.session.commit()
+                    # Set a success message
+                    message = f"Document linked to the <{workflow_name}> workflow."
 
-            # Get the selected workflow name
-            selected_workflow = Workflow.query.get(workflow_id)
-            workflow_name = selected_workflow.name
+            elif form.delete.data:
+                # Handle delete button
+                workflow_id = form.workflow.data
+                base_data_id = form.base_data.data
 
-            # Find and delete the wkf-base_data association
-            workflow_base_data_to_delete = WorkflowBaseData.query.filter_by(workflow_id=workflow_id, base_data_id=base_data_id).first()
+                # Get the selected workflow name
+                selected_workflow = Workflow.query.get(workflow_id)
+                workflow_name = selected_workflow.name
 
-            if workflow_base_data_to_delete:
-                db.session.delete(workflow_base_data_to_delete)
-                db.session.commit()
-                message = f"Document link to <{workflow_name.lower()}> deleted successfully."
-            else:
-                message = "Workflow-document link not found."
+                # Find and delete the workflow-base_data association
+                workflow_base_data_to_delete = WorkflowBaseData.query.filter_by(workflow_id=workflow_id, base_data_id=base_data_id).first()
 
+                if workflow_base_data_to_delete:
+                    db.session.delete(workflow_base_data_to_delete)
+                    db.session.commit()
+                    message = f"Document link to <{workflow_name}> deleted successfully."
+                else:
+                    message = "Workflow-document link not found."
+        else:
+            message = "Form validation failed. Please check your input."
+
+    # Handle GET request or any case where form validation failed
     return render_template('manage_workflow_base_data.html', form=form, message=message)
 
 
@@ -7689,27 +3234,22 @@ def add_records_bws():
         else:
             auto_move = True if auto_move_value == 'y' else False
 
-        print('auto_move is', auto_move)
-
         # Check if any key ends with '-id'
         if any(key.endswith('-id') for key in parsed_data):
             continue  # Skip this iteration if any key ends with '-id'
 
         # Check if the record already exists
-        existing_record = StepBaseData.query.filter_by(
+        existing_record = DocumentWorkflow.query.filter_by(
             base_data_id=base_data_id,
             workflow_id=workflow_id,
             step_id=step_id
         ).first()
 
-        if existing_record:
-            print('Record already exists for base_data_id:', base_data_id,
-                  ', workflow_id:', workflow_id,
-                  ', step_id:', step_id)
-        else:
+        # Only proceed if the record does not exist
+        if not existing_record:
             # Create a new record if essential values are present
             if base_data_id and workflow_id and step_id:
-                new_record = StepBaseData(
+                new_record = DocumentWorkflow(
                     base_data_id=base_data_id,
                     workflow_id=workflow_id,
                     step_id=step_id,
@@ -7717,13 +3257,11 @@ def add_records_bws():
                     hidden_data=hidden_data,
                     auto_move=auto_move,
                     start_date=datetime.now(),
-                    deadline_date = None
-
+                    deadline_date=None
                 )
 
                 if auto_move:
                     new_record.deadline_date = datetime.now() + timedelta(days=90)
-                    print('deadline added')
 
                 try:
                     i += 1
@@ -7731,11 +3269,8 @@ def add_records_bws():
                     db.session.commit()
                 except IntegrityError:
                     db.session.rollback()
-                    print('IntegrityError: Duplicate record detected for base_data_id:',
-                          base_data_id, ', workflow_id:', workflow_id, ', step_id:', step_id)
             else:
                 null_keys = [key for key, value in parsed_data.items() if value == 'n.a.']
-                print('NULL values found in keys:', null_keys)
 
     if i > 0:
         return jsonify({'message': f'{i} records added successfully.'}), 200
@@ -7755,11 +3290,12 @@ def parse_form_data_bws(form_data):
             else:
                 parsed_data[key] = value
 
-    print('parsed data before returning:', parsed_data)
     return parsed_data
 
 
 @app.route('/delete_records_bws', methods=['GET', 'POST'])
+@login_required
+@roles_required('Admin')
 def delete_records_bws():
     # Retrieve JSON data sent from the client-side
     forms_data = request.json.get('forms_data', [])
@@ -7776,7 +3312,7 @@ def delete_records_bws():
         step_id = parsed_data.get('step')
 
         # Check if the record exists
-        existing_record = StepBaseData.query.filter_by(
+        existing_record = DocumentWorkflow.query.filter_by(
             base_data_id=base_data_id,
             workflow_id=workflow_id,
             step_id=step_id
@@ -7786,9 +3322,6 @@ def delete_records_bws():
             # Delete the record if it exists
             db.session.delete(existing_record)
             db.session.commit()
-            print('Record deleted for base_data_id:', base_data_id,
-                  ', workflow_id:', workflow_id,
-                  ', step_id:', step_id)
             records_deleted += 1
         else:
             print('Record not found for base_data_id:', base_data_id,
@@ -7800,48 +3333,54 @@ def delete_records_bws():
     else:
         return jsonify({'message': 'No records deleted.'}), 200
 
-
 ''' 
 Trilateral entry form route - SERVER SIDE I, Jsonify combos
 Complex (involves trilateral relationship table)
 '''
-@app.route('/get_steps', methods=['GET'])
-def get_steps():
-    workflow_id = request.args.get('workflow_id')
 
-    # Query the WorkflowBaseData model to get workflow IDs associated with the selected base_data_id
-    workflow_step = WorkflowSteps.query.filter_by(workflow_id=workflow_id).all()
+# Gantt - oriented
+@app.route('/api/workflows/<int:workflow_id>', methods=['GET'])
+@login_required
+def get_workflow(workflow_id):
+    workflow = Workflow.query.get(workflow_id)
+    if not workflow:
+        return jsonify({'message': 'Workflow not found'}), 404
 
-    # Extract the workflow IDs from the query result
-    step_ids = [wb.step_id for wb in workflow_step]
+    tasks = []
+    for step in workflow.steps:
+        task = {
+            'id': step.id,
+            'name': step.name,
+            'start_date': step.start_date.isoformat(),
+            'end_date': step.end_date.isoformat(),
+            'status': step.status,
+            'assignee': step.assignee.name if step.assignee else None
+        }
+        tasks.append(task)
 
-    # Query the Workflow model to get details of workflows based on the extracted workflow IDs
-    steps = Step.query.filter(Step.id.in_(step_ids)).all()
+    workflow_data = {
+        'id': workflow.id,
+        'name': workflow.name,
+        'tasks': tasks
+    }
 
-    # Prepare the list of workflows to be sent as a JSON response
-    step_list = [{'id': w.id, 'name': w.name} for w in steps]
+    return jsonify(workflow_data)
 
-    return jsonify(steps=step_list)
+# Gantt oriented (optional, exampple)
 
+@app.route('/api/tasks/<int:task_id>', methods=['PUT'])
+@login_required
+def update_task(task_id):
+    task = Task.query.get(task_id)
+    if not task:
+        return jsonify({'message': 'Task not found'}), 404
 
-@app.route('/get_workflows', methods=['GET'])
-def get_workflows():
-    base_data_id = request.args.get('base_data_id')
+    data = request.get_json()
+    task.status = data['status']
+    task.assignee_id = data.get('assignee_id', task.assignee_id)
 
-    print('get workflows for', base_data_id)
-    # Query the WorkflowBaseData model to get workflow IDs associated with the selected base_data_id
-    workflow_base_data = WorkflowBaseData.query.filter_by(base_data_id=base_data_id).all()
-
-    # Extract the workflow IDs from the query result
-    workflow_ids = [wb.workflow_id for wb in workflow_base_data]
-
-    # Query the Workflow model to get details of workflows based on the extracted workflow IDs
-    workflows = Workflow.query.filter(Workflow.id.in_(workflow_ids)).all()
-
-    # Prepare the list of workflows to be sent as a JSON response
-    workflow_list = [{'id': w.id, 'name': w.name} for w in workflows]
-
-    return jsonify(workflows=workflow_list)
+    db.session.commit()
+    return jsonify({'message': 'Task updated successfully'})
 
 
 ''' 
@@ -7849,7 +3388,8 @@ Trilateral entry form route - 3-key entry_trilateral_tiangle_triangolo_SERVER SI
 '''
 
 @app.route('/manage_base_data_workflow_step', methods=['GET', 'POST'])
-@role_required('admin')
+@login_required
+@roles_required('Admin')
 def manage_base_data_workflow_step():
 
     form = BaseDataWorkflowStepForm()
@@ -7884,12 +3424,12 @@ def manage_base_data_workflow_step():
             auto_move = form.auto_move.data  # Get the value of auto_move field
 
             # Check if the document-step association already exists for the selected workflow
-            existing_step_base_data_query = StepBaseData.query \
-                .join(WorkflowSteps, WorkflowSteps.step_id == StepBaseData.step_id) \
+            existing_step_base_data_query = DocumentWorkflow.query \
+                .join(WorkflowSteps, WorkflowSteps.step_id == DocumentWorkflow.step_id) \
                 .join(Workflow, Workflow.id == WorkflowSteps.workflow_id) \
                 .filter(Workflow.id == workflow_id,
-                        StepBaseData.step_id == step_id,
-                        StepBaseData.base_data_id == base_data_id)
+                        DocumentWorkflow.step_id == step_id,
+                        DocumentWorkflow.base_data_id == base_data_id)
 
             existing_step_base_data = existing_step_base_data_query.first()
 
@@ -7899,7 +3439,7 @@ def manage_base_data_workflow_step():
                 # Get the current date in format YYYY-MM-DD
                 current_date = datetime.now()
                 # Add logic to associate the document with the step in the selected workflow
-                new_step_base_data = StepBaseData(step_id=step_id, workflow_id=workflow_id,
+                new_step_base_data = DocumentWorkflow(step_id=step_id, workflow_id=workflow_id,
                                                   base_data_id=base_data_id, start_date=current_date,
                                                   auto_move=auto_move)
                 db.session.add(new_step_base_data)
@@ -7918,12 +3458,12 @@ def manage_base_data_workflow_step():
                 step_id = form.step.data
 
                 # Find and delete the document-step association for the selected workflow
-                step_base_data_to_delete = StepBaseData.query \
-                    .join(WorkflowSteps, WorkflowSteps.step_id == StepBaseData.step_id) \
+                step_base_data_to_delete = DocumentWorkflow.query \
+                    .join(WorkflowSteps, WorkflowSteps.step_id == DocumentWorkflow.step_id) \
                     .join(Workflow, Workflow.id == WorkflowSteps.workflow_id) \
                     .filter(Workflow.id == workflow_id,
-                            StepBaseData.step_id == step_id,
-                            StepBaseData.base_data_id == base_data_id) \
+                            DocumentWorkflow.step_id == step_id,
+                            DocumentWorkflow.base_data_id == base_data_id) \
                     .first()
 
                 if step_base_data_to_delete:
@@ -7939,114 +3479,7 @@ def manage_base_data_workflow_step():
     return render_template('manage_base_data_workflow_step.html', form=form, message=message)
 
 
-@app.route('/manage_company_users', methods=['GET', 'POST'])
-def manage_company_users():
-    form = CompanyUserForm()
-    message = None
-
-    # Populate choices for users and roles
-    form.company.choices = [(company.id, company.name) for company in Company.query.all()]
-    form.user.choices = [(user.id, user.username) for user in Users.query.all()]
-
-    if form.validate_on_submit():
-        if form.cancel.data:
-            # Handle cancel button
-            return redirect(url_for('index'))
-        elif form.add.data:
-            # Handle add button
-            company_id = form.company.data
-            user_id = form.user.data
-
-            # Check if the user-role association already exists
-            existing_company_user = CompanyUsers.query.filter_by(company_id=company_id, user_id=user_id).first()
-
-            if existing_company_user:
-                message = "Link company-user already exists."
-
-            else:
-                # Add logic to associate the user with the selected role
-                new_company_user = CompanyUsers(company_id=company_id, user_id=user_id)
-                db.session.add(new_company_user)
-                db.session.commit()
-                # Set a success message
-                message = "Company user added successfully."
-
-        elif form.delete.data:
-            # Handle delete button
-            company_id = form.company.data
-            user_id = form.user.data
-
-            # Find and delete the user-role association
-            company_user_to_delete = CompanyUsers.query.filter_by(company_id=company_id, user_id=user_id).first()
-
-            if company_user_to_delete:
-                db.session.delete(company_user_to_delete)
-                db.session.commit()
-                message = "Company User deleted successfully."
-
-            else:
-                message = "Company User not found."
-
-    return render_template('manage_company_users.html', form=form, message=message)
-
-
-@app.route('/manage_questionnaire_companies', methods=['GET', 'POST'])
-def manage_questionnaire_companies():
-    form = QuestionnaireCompanyForm()
-    message = None
-
-    # Populate choices for users and roles
-    form.questionnaire.choices = [(questionnaire.id, questionnaire.name) for questionnaire in Questionnaire.query.all()]
-    form.company.choices = [(company.id, company.name) for company in Company.query.all()]
-
-    if form.validate_on_submit():
-
-        if form.cancel.data:
-            # Handle cancel button
-            return redirect(url_for('index'))
-        elif form.add.data:
-            # Handle add button
-            questionnaire_id = form.questionnaire.data
-            company_id = form.company.data
-
-            # Check if the user-role association already exists
-            existing_questionnaire_company = QuestionnaireCompanies.query.filter_by(
-                company_id=company_id, questionnaire_id=questionnaire_id).first()
-
-            if existing_questionnaire_company:
-                message = "Link questionnaire-to-company already exists."
-
-            else:
-                # Add logic to associate the user with the selected role
-                new_questionnaire_company = QuestionnaireCompanies(
-                    company_id=company_id, questionnaire_id=questionnaire_id)
-                db.session.add(new_questionnaire_company)
-                db.session.commit()
-                # Set a success message
-                message = "Questionnaire assigned successfully to company."
-
-        elif form.delete.data:
-            # Handle delete button
-            company_id = form.company.data
-            questionnaire_id = form.questionnaire.data
-
-            # Find and delete the user-role association
-            questionnaire_company_to_delete = QuestionnaireCompanies.query.filter_by(
-                company_id=company_id, questionnaire_id=questionnaire_id).first()
-
-            if questionnaire_company_to_delete:
-                db.session.delete(questionnaire_company_to_delete)
-                db.session.commit()
-                message = "Questionnaire assignment to company deleted successfully."
-
-            else:
-                message = "Association of this questionnaire to company not found."
-
-    return render_template('manage_questionnaire_companies.html', form=form, message=message)
-
-
-
-
+@login_required
 @app.route('/submit_confirmed', methods=['POST'])
 def submit_confirmed():
     pending_data = session.pop('pending_answer_data', None)
@@ -8074,65 +3507,6 @@ def submit_confirmed():
     else:
         flash('No data to save or session expired.', 'error')
         return redirect(url_for('show_survey', questionnaire_id=request.form.get('questionnaire_id')))
-
-
-@app.route('/manage_questionnaire_questions', methods=['GET', 'POST'])
-def manage_questionnaire_questions():
-    form = QuestionnaireQuestionForm()
-    message = None
-
-    # Populate choices for users and roles
-    form.questionnaire.choices = [(questionnaire.id, questionnaire.name) for questionnaire in Questionnaire.query.all()]
-    #form.question.choices = [(question.id, question.text) for question in Question.query.all()]
-    form.question.choices = [(question.id, question.text) for question in Question.query.order_by('question_id').all()]
-
-    if form.validate_on_submit():
-        if form.cancel.data:
-            # Handle cancel button
-            return redirect(url_for('index'))
-        elif form.add.data:
-            # Handle add button
-            questionnaire_id = form.questionnaire.data
-            question_id = form.question.data
-
-            # Check if the user-role association already exists
-            existing_questionnaire_question = QuestionnaireQuestions.query.filter_by(
-                question_id=question_id, questionnaire_id=questionnaire_id).first()
-
-            if existing_questionnaire_question:
-                message = "Link questionnaire-to-question already exists."
-
-            else:
-                # Add logic to associate the user with the selected role
-                try:
-                    new_questionnaire_question = QuestionnaireQuestions(
-                        question_id=question_id, questionnaire_id=questionnaire_id)
-                    db.session.add(new_questionnaire_question)
-                    db.session.commit()
-                    # Set a success message
-                    message = f"Question {question_id} assigned successfully to questionnaire {questionnaire_id}."
-                except Exception as e:
-                    db.session.rollback()
-                    message = f"Question {question_id} not assigned to questionnaire {questionnaire_id}. Error: {e}."
-
-        elif form.delete.data:
-            # Handle delete button
-            question_id = form.question.data
-            questionnaire_id = form.questionnaire.data
-
-            # Find and delete the user-role association
-            questionnaire_question_to_delete = QuestionnaireQuestions.query.filter_by(
-                question_id=question_id, questionnaire_id=questionnaire_id).first()
-
-            if questionnaire_question_to_delete:
-                db.session.delete(questionnaire_question_to_delete)
-                db.session.commit()
-                message = "Question assignment to questionnaire deleted successfully."
-
-            else:
-                message = "Association of this question to questionnaire not found."
-
-    return render_template('manage_questionnaire_questions.html', form=form, message=message)
 
 
 def fetch_questions(questionnaire_id):
@@ -8194,6 +3568,7 @@ def fetch_answer_data(questionnaire_id):
         return None
 
 
+@login_required
 @app.route('/overwrite_answer', methods=['POST'])
 def overwrite_answer():
 
@@ -8315,10 +3690,13 @@ def merge_answer_fields(base_fields_json, answer_data_json):
     return json.dumps(merged_fields)  # Return as JSON string if needed for consistency
 
 
+@app.route('/redirect_to_survey/<int:questionnaire_id>')
+def redirect_to_survey(questionnaire_id):
+    return redirect(url_for('show_survey', questionnaire_id=questionnaire_id))
 
 
+# @login_required
 @app.route('/show_survey/<int:questionnaire_id>', methods=['GET', 'POST'])
-@login_required  # This decorator ensures that the route is only accessible to authenticated users
 def show_survey(questionnaire_id):
     form = BaseSurveyForm()
     headers = None
@@ -8329,6 +3707,7 @@ def show_survey(questionnaire_id):
     if request.method == 'POST':
         if form.validate_on_submit():
             answers_to_save = serialize_answers(request.form)
+
             return handle_post_submission(form, company_id, user_id, questionnaire_id, answers_to_save)
         else:
             flash('Error with form data. Please check your entries.', 'error')
@@ -8340,8 +3719,6 @@ def show_survey(questionnaire_id):
     raw_headers = selected_questionnaire.headers
 
     headers = []  # Default to an empty list if there's a problem
-    print(f"Raw headers: {raw_headers}")
-    print(f"Type of raw headers: {type(raw_headers)}")
 
     if raw_headers:
         if isinstance(raw_headers, str):
@@ -8391,81 +3768,6 @@ def show_survey(questionnaire_id):
             'answer_width': question.answer_width,
             'answer_fields': form_data[str(question.id)]
         })
-
-    dynamic_html = create_dynamic_form(form, {'questions': questions, 'form_data': form_data}, company_id, horizontal)  # Adjust this function to accept horizontal flag
-    return render_template('survey.html', form=form, headers=headers, dynamic_html=dynamic_html, questionnaire_name=selected_questionnaire.name, today=datetime.now().date())
-
-
-# Example use within the Flask view function
-@app.route('/show_survey_sqlite/<int:questionnaire_id>', methods=['GET', 'POST'])
-@login_required  # This decorator ensures that the route is only accessible to authenticated users
-def show_survey_sqlite(questionnaire_id):
-
-    form = BaseSurveyForm()
-    headers = None
-    user_id = current_user.id
-    company = CompanyUsers.query.filter_by(user_id=user_id).first()
-    company_id = company.company_id if company else None
-
-    if request.method == 'POST':
-        if form.validate_on_submit():
-            answers_to_save = serialize_answers(request.form)
-            return handle_post_submission(form, company_id, user_id, questionnaire_id, answers_to_save)
-        else:
-            flash('Error with form data. Please check your entries.', 'error')
-
-    # Fetch the questionnaire details and questions via QuestionnaireQuestions
-    # reset answer_fields in Question
-    update_question_answer_fields()
-    print('step 1')
-    selected_questionnaire = Questionnaire.query.get_or_404(questionnaire_id)
-    raw_json = selected_questionnaire.headers
-
-    headers = []  # Default to an empty list if there's a problem
-    print(raw_json)
-    if raw_json:
-        try:
-            headers = json.loads(raw_json)
-        except json.JSONDecodeError as e:
-            print(f"JSON decode error: {e}")
-
-    print('step 4')
-    horizontal = selected_questionnaire.questionnaire_type.endswith('H')
-
-    if request.method == 'POST':
-        if form.validate_on_submit():
-            answers_to_save = serialize_answers(request.form)
-            return handle_post_submission(form, company_id, user_id, questionnaire_id, answers_to_save)
-        else:
-            flash('Error with form data. Please check your entries.', 'error')
-
-    questionnaire_questions = QuestionnaireQuestions.query.filter_by(
-        questionnaire_id=questionnaire_id
-    ).join(Question).order_by(Question.question_id).all()
-
-    questions = []
-    form_data = {}
-    for qq in questionnaire_questions:
-        question = qq.question
-        existing_answer = Answer.query.filter_by(
-            company_id=company_id, user_id=user_id, questionnaire_id=questionnaire_id, question_id=question.id
-        ).first()
-
-        if existing_answer and existing_answer.answer_data:
-            merged_fields = merge_answer_fields(question.answer_fields, existing_answer.answer_data)  # Make sure this function is set to merge JSON fields correctly
-            form_data[str(question.id)] = merged_fields
-        else:
-            form_data[str(question.id)] = question.answer_fields
-
-        questions.append({
-            'id': question.id,
-            'question_id': question.question_id,
-            'text': question.text,
-            'answer_type': question.answer_type,
-            'answer_width': question.answer_width,
-            'answer_fields': form_data[str(question.id)]
-        })
-
     dynamic_html = create_dynamic_form(form, {'questions': questions, 'form_data': form_data}, company_id, horizontal)  # Adjust this function to accept horizontal flag
     return render_template('survey.html', form=form, headers=headers, dynamic_html=dynamic_html, questionnaire_name=selected_questionnaire.name, today=datetime.now().date())
 
@@ -8526,10 +3828,6 @@ def serialize_answers(form_data):
     return answers
 
 
-# Example of using the function with ImmutableMultiDict
-from werkzeug.datastructures import ImmutableMultiDict
-
-
 def check_existing_data(company_id, user_id, questionnaire_id):
     """
     Check if there is existing data for a given combination of company ID, user ID, and questionnaire ID.
@@ -8551,7 +3849,6 @@ def is_substantive(data):
     if data and data.strip():
         return True
     return False
-
 
 def save_answers(data):
     try:
@@ -8624,7 +3921,7 @@ def save_answers(data):
         return redirect(url_for('show_survey', questionnaire_id=questionnaire_id))
 
 
-
+@login_required
 @app.route('/load_survey', methods=['GET', 'POST'])
 def load_survey():
     company_id = request.args.get('company_id')
@@ -8652,19 +3949,8 @@ def load_survey():
     return render_template('survey.html', form_data=json_data)
 
 
-
-def validate_form_structure(form_data, json_data):
-    expected_keys = form_data.keys()  # Get field names from your form class or definition
-    json_keys = json_data.keys()
-
-    if set(expected_keys) == set(json_keys):
-        return True
-    else:
-        return False
-
-
+@login_required
 @app.route('/company_files/<company_id>', methods=['GET'])
-@login_required  # Ensure user is logged in
 def list_company_files(company_id):
     user = current_user  # Retrieve current user
     if user.company_id != company_id:  # Verify company access
@@ -8685,8 +3971,8 @@ def list_company_files(company_id):
     return render_template('files_list.html', files=file_info, company_id=company_id)
 
 
-@app.route('/download_file/<company_id>/<filename>', methods=['GET'])
 @login_required
+@app.route('/download_file/<company_id>/<filename>', methods=['GET'])
 def download_file(company_id, filename):
     user = current_user
     if user.company_id != company_id:
@@ -8699,7 +3985,9 @@ def download_file(company_id, filename):
 
     return send_from_directory(os.path.dirname(file_path), filename)  # Use Flask-Send
 
+
 # Other functions for retrieving file paths, verifying permissions, etc.
+@login_required
 @app.route('/company_files/<int:company_id>/<path:filename>', methods=['GET'])
 def serve_company_file(company_id, filename):
     # Construct the path to the file within the company folder
@@ -8723,30 +4011,6 @@ def save_file_with_incremented_name(file, folder_path):
     file_path = os.path.join(folder_path, filename)
     file.save(file_path)
     return file_path
-
-
-def create_company_folder(company_id, subfolder):
-    """
-    Creates a folder for the given company_id in the specified directory.
-    Args:
-        company_id (int): The ID of the company.
-    Returns:
-        str: The path of the created folder or None if it already exists.
-    """
-    folder_path = None
-    folder_name = f"company_id_{company_id}/{subfolder}"
-    folder_path = os.path.join(app.config['COMPANY_FILES_DIR'], folder_name)
-    if not os.path.exists(folder_path):
-        os.makedirs(folder_path)
-        print('Folder created:', folder_path)
-
-    else:
-        print('Folder already exists')
-        #return None  # Folder already exists
-    if folder_path:
-        return folder_path
-    else:
-        return None
 
 
 def apply_filters(text_filter, answer_type_filter):
@@ -8827,6 +4091,17 @@ def page_forbidden(error):
     return render_template('error_pages/403.html'), 404
 
 
+# TODO To be reactivated 29aug2024
+
+@app.errorhandler(500)
+def internal_error(error):
+
+    logger.error('Server Error: %s', (exception))
+    logger.error('Request data: %s', request.data)
+
+    return render_template('error_pages/500.html', message=str(error)), 500
+
+
 @app.route('/back')
 def back():
     # Add any logic you need before redirecting, if necessary
@@ -8836,24 +4111,34 @@ def back():
 @app.route('/')
 def home():
 
-    app.logger.debug("Home route accessed")
+    # app.logger.debug("Home route accessed")
     return render_template('index.html')  # Render your home page template
 
 
-@app.route('/noticeboard')
-@login_required  # Ensure user is logged in
+@app.route('/noticeboard', methods=['GET', 'POST'])
+@login_required
 def noticeboard():
-    # Retrieve unmarked messages from the database
     user_id = current_user.id
-    unmarked_messages = Post.query.filter_by(user_id=user_id, marked_as_read=False).all()
 
-    # Pass the messages to the template for rendering
+    if request.method == 'POST':
+        message_ids = request.form.getlist('message_ids')
+        if message_ids:
+            messages_to_mark = Post.query.filter(Post.id.in_(message_ids)).all()
+            for message in messages_to_mark:
+                message.marked_as_read = True
+            db.session.commit()
+            flash('Selected messages marked as read.', 'success')
+        else:
+            flash('No messages selected.', 'warning')
+        return redirect(url_for('noticeboard'))
+
+    unmarked_messages = Post.query.filter_by(user_id=user_id, marked_as_read=False).all()
     return render_template('home/noticeboard.html', unmarked_messages=unmarked_messages)
 
 
 @app.route('/auditlog')
-@login_required  # Ensure user is logged in
-@role_required('admin') # only for the admin
+@login_required
+@roles_required('Admin')
 def auditlog():
     # Retrieve unmarked messages from the database
     audit_log = AuditLog.query.order_by(AuditLog.timestamp.desc()).all()
@@ -8862,21 +4147,1957 @@ def auditlog():
     return render_template('home/auditlog.html', audit_log=audit_log)
 
 
-def print_routes():
-    with current_app.test_request_context():
-        print(current_app.url_map)
+@app.errorhandler(Exception)
+def handle_exception(e):
 
+    # TODO restore the snippet below after debug
+    '''
+    :param e:
+    :return:
+    # Pass through HTTP errors
+    if isinstance(e, HTTPException):
+        return e
+    # Now you're handling non-HTTP exceptions only
+    return render_template("error.html", error=str(e)), 500
+    '''
+    # Temporarily disable login redirection during debugging
+    if not app.debug:
+        #app.logger.error(f"An error occurred: {e}", exc_info=True)
+        return render_template('error.html', error=e), 500
+    else:
+        raise e  # Raise the exception in debug mode for detailed traceback
+
+
+
+@app.route('/chart_form', methods=['GET', 'POST'])
+def chart_form():
+    areas = Area.query.all()
+    subareas = Subarea.query.all()
+    companies = Company.query.all()
+
+    selected_chart_type = None
+    selected_area_id = None
+    selected_subarea_id = None
+    selected_company_id = None
+    chart_html = None
+
+    if request.method == 'POST':
+        selected_chart_type = request.form.get('chart_type')
+        selected_company_id = request.form.get('company_id') if selected_chart_type == '2d' else None
+        selected_area_id = request.form.get('area_id')
+        selected_subarea_id = request.form.get('subarea_id')
+
+        try:
+            data = ChartService.query_data(company_id=selected_company_id, area_id=selected_area_id, subarea_id=selected_subarea_id)
+            if selected_chart_type == '2d':
+                chart_html = ChartService.generate_bar_chart(data)
+            elif selected_chart_type == '3d':
+                chart_html = ChartService.generate_3d_chart(data)
+        except Exception as e:
+            chart_html = f"An error occurred: {str(e)}"
+
+        return render_template('charts/chart_form.html', areas=areas, subareas=subareas, companies=companies,
+                               chart_html=chart_html, chart_type=selected_chart_type,
+                               selected_area_id=int(selected_area_id), selected_subarea_id=int(selected_subarea_id),
+                               selected_company_id=int(selected_company_id) if selected_company_id else None)
+
+    return render_template('charts/chart_form.html', areas=areas, subareas=subareas, companies=companies)
+
+
+@app.route('/questionnaire/<int:id>', methods=['GET'])
+@login_required
+@roles_required('Admin', 'Manager', 'Employee')
+def get_questionnaire(id):
+    questionnaire = Questionnaire_psf.query.get(id)
+    if questionnaire:
+        return jsonify(questionnaire.structure)
+    return jsonify({"error": "Questionnaire not found"}), 404
+
+
+
+# STRIPE
+# ======
+@app.route('/create-checkout-session', methods=['POST'])
+@login_required
+@roles_required('Admin', 'Manager', 'Employee')
+def create_checkout_session():
+    session = stripe.checkout.Session.create(
+        payment_method_types=['card'],
+        line_items=[{
+            'price_data': {
+                'currency': 'usd',
+                'product_data': {
+                    'name': 'Subscription Plan',
+                },
+                'unit_amount': 1000,  # price in cents
+            },
+            'quantity': 1,
+        }],
+        mode='subscription',
+        success_url=url_for('success', _external=True),
+        cancel_url=url_for('cancel', _external=True),
+    )
+    return jsonify(id=session.id)
+
+
+
+@app.route('/success')
+def success():
+    return 'Payment succeeded'
+
+@app.route('/cancel')
+@login_required
+@roles_required('Manager', 'Employee')
+def cancel():
+    return 'Payment canceled'
+
+
+# **Handle Webhooks**:
+# Set up a webhook endpoint to handle events from Stripe, such as payment success.
+
+@app.route('/webhook', methods=['POST'])
+@login_required
+@roles_required('Manager', 'Employee')
+def stripe_webhook():
+    payload = request.get_data(as_text=True)
+    sig_header = request.headers.get('Stripe-Signature')
+
+    try:
+        event = stripe.Webhook.construct_event(
+            payload, sig_header, app.config['STRIPE_ENDPOINT_SECRET']
+        )
+    except ValueError as e:
+        return 'Invalid payload', 400
+    except stripe.error.SignatureVerificationError as e:
+        return 'Invalid signature', 400
+
+    if event['type'] == 'checkout.session.completed':
+        session = event['data']['object']
+        handle_checkout_session(session)
+
+    return '', 200
+
+
+def handle_checkout_session(session):
+    try:
+        # Check if 'email' exists in session
+        if 'email' not in session:
+            flash('Email not found in session', 'error')
+            return
+
+        # Find the user by email
+        user = Users.query.filter_by(email=session['email']).first()
+
+        # If user not found, handle it appropriately
+        if not user:
+            flash('User not found', 'error')
+            return
+
+        # Update subscription details
+        user.subscription_status = 'active'
+        user.subscription_plan = 'basic'  # or other plan based on session details
+        user.subscription_start_date = datetime.utcnow()
+        user.subscription_end_date = datetime.utcnow() + timedelta(days=30)
+
+        # Commit changes to the database
+        db.session.commit()
+        flash('Subscription updated successfully', 'success')
+
+    except Exception as e:
+        # Rollback the session in case of error
+        db.session.rollback()
+        flash(f'An error occurred: {str(e)}', 'error')
+
+
+@app.route('/subscriptions')
+@login_required
+@roles_required('Manager', 'Employee')
+def subscriptions():
+    try:
+        email = session.get('email')
+        logging.debug(f'Session email: {email}')
+        user = Users.query.filter_by(email=email).first()
+        logging.debug(f'User fetched: {user}')
+
+        if user:
+            subscription = Subscription.query.filter_by(user_id=user.id,
+                                                        status='active').first()  # Fetch the active subscription
+            if subscription:
+                current_plan = Plan.query.filter_by(id=subscription.plan_id).first()
+                # If subscription.end_date is None, it's considered active
+                subscription_info = {
+                    'id': subscription.id,  # Add the subscription ID for reference in the template
+                    'plan': current_plan.name if current_plan else 'N/A',
+                    'status': 'active' if subscription.end_date is None or subscription.end_date > datetime.utcnow() else 'inactive',
+                    'start_date': subscription.start_date,
+                    'end_date': subscription.end_date,
+                }
+            else:
+                subscription_info = {
+                    'id': None,
+                    'plan': 'N/A',
+                    'status': 'N/A',
+                    'start_date': 'N/A',
+                    'end_date': 'N/A',
+                }
+        else:
+            subscription_info = {
+                'id': None,
+                'plan': 'N/A',
+                'status': 'N/A',
+                'start_date': 'N/A',
+                'end_date': 'N/A',
+            }
+
+        logging.debug(f'Subscription info: {subscription_info}')
+
+        plans = Plan.query.all()
+        additional_products = Product.query.all()
+
+        # Add products to plans
+        for plan in plans:
+            plan.products = [pp.product for pp in plan.plan_products]
+            plan.product_ids = [pp.product_id for pp in plan.plan_products]
+
+        logging.debug(f'Plans fetched: {plans}')
+
+        form = SubscriptionForm()
+        return render_template('subscriptions.html', subscription_info=subscription_info, plans=plans,
+                               additional_products=additional_products, form=form)
+    except Exception as e:
+        logging.error(f"Error in subscriptions route: {e}")
+        return "An error occurred", 500
+
+
+@app.route('/subscribe', methods=['POST'])
+@login_required
+@roles_required('Manager', 'Employee')
+def subscribe():
+    print('entering subscribe route')
+    form = SubscriptionForm()
+    # logging.debug(f"Form data before validation: {form.plan_id.data}, additional_products: {request.form.getlist('additional_products')}")
+
+    try:
+        if form.validate_on_submit():
+            plan_id = form.plan_id.data
+            logging.debug(f"Plan ID after validation: {plan_id}")
+
+            if not plan_id:
+                logging.error("Plan ID is missing.")
+                flash("Please select a plan.", "danger")
+                return redirect(url_for('subscriptions'))
+
+            plan_id = int(plan_id)
+            additional_product_ids = [product_id for product_id in request.form.getlist('additional_products') if product_id]
+            logging.debug(f'Form validated. Plan: {plan_id}, Additional Products: {additional_product_ids}')
+
+            user_id = session.get('user_id')
+            logging.debug(f'User ID: {user_id}')
+            user = Users.query.filter_by(id=user_id).first()
+
+            if not user:
+                logging.error("User not found.")
+                flash("User not found.", "danger")
+                return redirect(url_for('subscriptions'))
+
+            # Mark previous subscriptions as inactive
+            active_subscription = Subscription.query.filter_by(user_id=user_id, status='active').first()
+            if active_subscription:
+                logging.debug(f"Terminating active subscription: {active_subscription.id}")
+                active_subscription.end_date = datetime.utcnow()
+                active_subscription.status = 'inactive'
+                db.session.add(active_subscription)
+
+            # Create new subscription
+            new_subscription = Subscription(
+                user_id=user_id,
+                plan_id=plan_id,
+                start_date=datetime.utcnow(),
+                additional_products=','.join(additional_product_ids),
+                status='active'
+            )
+            db.session.add(new_subscription)
+
+            try:
+                db.session.commit()
+                logging.debug(f"Subscription created successfully: {new_subscription.id}")
+                flash("Subscription updated successfully.", "success")
+            except Exception as e:
+                db.session.rollback()
+                logging.error(f"Error committing subscription to the database: {e}")
+                flash("An error occurred while updating the subscription.", "danger")
+
+            return redirect(url_for('subscriptions'))  # Ensure updated subscription info is fetched
+        else:
+            logging.debug(f'Form validation failed: {form.errors}')
+            flash("Invalid form submission.", "danger")
+            return redirect(url_for('subscriptions'))
+    except Exception as e:
+        logging.error(f"Unexpected error: {e}")
+        flash("An unexpected error occurred.", "danger")
+        return redirect(url_for('subscriptions'))
+
+
+@app.route('/cancel_subscription', methods=['POST'])
+@login_required
+@roles_required('Manager', 'Employee')
+def cancel_subscription():
+    try:
+        subscription_id = request.form.get('subscription_id')
+        if not subscription_id:
+            flash("Subscription ID not provided.", "danger")
+            return redirect(url_for('subscriptions'))
+
+        subscription = Subscription.query.filter_by(id=subscription_id, status='active').first()
+
+        if not subscription:
+            flash("No active subscription found to cancel.", "warning")
+            return redirect(url_for('subscriptions'))
+
+        # Fetch the plan associated with the subscription
+        plan = Plan.query.get(subscription.plan_id)
+        if not plan:
+            flash("Subscription plan not found.", "danger")
+            return redirect(url_for('subscriptions'))
+
+        # Calculate end_date based on billing_cycle
+        if plan.billing_cycle == 'monthly':
+            subscription.end_date = datetime.utcnow() + timedelta(days=30)
+        elif plan.billing_cycle == 'quarterly':
+            subscription.end_date = datetime.utcnow() + timedelta(days=90)
+        elif plan.billing_cycle == 'yearly':
+            subscription.end_date = datetime.utcnow() + timedelta(days=365)
+        else:
+            subscription.end_date = datetime.utcnow() + timedelta(days=30)
+
+        subscription.status = 'canceled'
+
+        try:
+            db.session.commit()
+            flash("Subscription canceled successfully.", "success")
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Error committing subscription cancellation to the database: {e}")
+            flash("An error occurred while canceling the subscription.", "danger")
+
+        return redirect(url_for('subscriptions'))
+    except Exception as e:
+        logging.error(f"Unexpected error: {e}")
+        flash("An unexpected error occurred.", "danger")
+        return redirect(url_for('subscriptions'))
+
+
+@app.route('/subscription_report')
+@login_required
+@roles_required('Admin', 'Manager', 'Employee')
+def subscription_report():
+    try:
+        user_id = current_user.id
+        user_roles = session.get('user_roles', [])
+        subscriptions_query = Subscription.query
+
+        # Admin can see all subscriptions
+        if 'Admin' in user_roles:
+            subscriptions = subscriptions_query.order_by(Subscription.start_date.desc()).all()
+
+        # Manager can see subscriptions related to their company
+        elif 'Manager' in user_roles:
+            company_id = session.get('company_id')
+            user_ids = [cu.user_id for cu in CompanyUsers.query.filter_by(company_id=company_id).all()]
+            subscriptions = subscriptions_query.filter(Subscription.user_id.in_(user_ids)).order_by(Subscription.start_date.desc()).all()
+
+        # Employee can only see their own subscriptions
+        elif 'Employee' in user_roles:
+            subscriptions = subscriptions_query.filter_by(user_id=user_id).order_by(Subscription.start_date.desc()).all()
+
+        else:
+            flash("You do not have permission to view this report.", "danger")
+            return redirect(url_for('index'))
+
+        # Fetch product names for additional products
+        for subscription in subscriptions:
+            if subscription.additional_products:
+                product_ids = map(int, subscription.additional_products.split(','))
+                products = Product.query.filter(Product.id.in_(product_ids)).all()
+                subscription.additional_product_names = ', '.join([product.name for product in products])
+            else:
+                subscription.additional_product_names = 'None'
+
+        return render_template('subscription_report.html', subscriptions=subscriptions)
+    except Exception as e:
+        logging.error(f"Error generating subscription report: {e}")
+        flash("An error occurred while generating the report.", "danger")
+        return redirect(url_for('index'))
+
+
+# TODO more data_mapping us cases to be inserted here
+
+@app.route('/generate_dashboard')
+@login_required
+def generate_dashboard():
+    area_id = 2
+    subarea_id = 11
+
+    # Fetch the mapping configuration
+    mapping = DataMapping.query.filter_by(area_id=area_id, subarea_id=subarea_id).first()
+
+    if not mapping:
+        return "No mapping found for this area and subarea.", 404
+
+    # Extract and parse the JSON fields from the mapping
+    data_key = json.loads(mapping.data_key)
+    aggregation_rule = json.loads(mapping.aggregation_rule)
+
+    # Fetch the relevant data based on year and interval conditions
+    data = BaseData.query.filter_by(
+        area_id=area_id,
+        subarea_id=subarea_id
+    ).all()
+
+    # Organize the data by year and interval
+    organized_data = {}
+    for entry in data:
+        year = entry.fi0  # Assuming fi0 is the year field
+        interval = entry.interval_ord
+        total_value = getattr(entry, data_key['total'])
+
+        if year not in organized_data:
+            organized_data[year] = {}
+        if interval not in organized_data[year]:
+            organized_data[year][interval] = 0
+
+        # Sum the components based on the aggregation rule
+        for field in data_key['components']:
+            organized_data[year][interval] += getattr(entry, field)
+
+    # Convert the organized data to a format suitable for the chart
+    chart_data = {
+        'labels': list(organized_data.keys()),  # Years
+        'datasets': []
+    }
+
+    # Prepare datasets
+    for interval in sorted({interval for year_data in organized_data.values() for interval in year_data}):
+        dataset = {
+            'label': f"Interval {interval}",
+            'data': [organized_data[year].get(interval, 0) for year in chart_data['labels']],
+            'backgroundColor': '#007bff'
+        }
+        chart_data['datasets'].append(dataset)
+
+    return render_template('dashboard.html', chart_data=chart_data)
+
+
+@app.route('/subscription_overview')
+@login_required
+@roles_required('Admin', 'Manager', 'Employee')
+def subscription_overview():
+    try:
+        role = session.get('user_roles')
+        user_id = session.get('user_id')
+        company_id = session.get('company_id')
+
+        if 'Admin' in role:
+            subscriptions = Subscription.query.all()
+
+        total_subscriptions = len(subscriptions)
+        active_users = len(set([sub.user_id for sub in subscriptions if sub.status == 'active']))
+        total_companies = len(set([sub.user.company_id for sub in subscriptions]))
+        active_plans = len(set([sub.plan_id for sub in subscriptions if sub.status == 'active']))
+
+        subscription_types = [plan.name for plan in Plan.query.all()]
+        subscription_counts = [Subscription.query.filter_by(plan_id=plan.id).count() for plan in Plan.query.all()]
+        company_names = [company.name for company in Company.query.all()]
+        company_subscription_counts = [
+            Subscription.query.join(Users).filter(Users.company_id == company.id).count() for company in Company.query.all()
+        ]
+
+        # Prepare additional product names for each subscription
+        for sub in subscriptions:
+            sub.additional_product_names = ', '.join(
+                [Product.query.get(int(product_id)).name for product_id in sub.additional_products.split(',')]
+            ) if sub.additional_products else 'None'
+
+        return render_template('subscription_overview.html',
+                               total_subscriptions=total_subscriptions,
+                               active_users=active_users,
+                               total_companies=total_companies,
+                               active_plans=active_plans,
+                               subscription_types=subscription_types,
+                               subscription_counts=subscription_counts,
+                               company_names=company_names,
+                               company_subscription_counts=company_subscription_counts,
+                               subscriptions=subscriptions)
+    except Exception as e:
+        logging.error(f"Error in subscription_overview route: {e}")
+        flash("An error occurred while generating the subscription overview.", "danger")
+        return redirect(url_for('index'))
+
+
+def perform_data_aggregation(data_key, aggregation_rule, area_id, subarea_id, additional_info, company_id=None):
+    query = BaseData.query.filter_by(area_id=area_id, subarea_id=subarea_id)
+
+    # If company_id is provided, filter by it; otherwise, aggregate across all companies
+    if company_id is not None:
+        query = query.filter_by(company_id=company_id)
+
+    data = query.all()
+
+    organized_data = {}
+    for entry in data:
+        company = getattr(entry, data_key.get('company_id', 'company_id'))
+        year = str(getattr(entry, data_key['year']))  # Ensure year is a string for the labels
+        interval = getattr(entry, data_key['interval_id'])
+        interval_ord = getattr(entry, data_key['interval_ord'])
+
+        if company not in organized_data:
+            organized_data[company] = {}
+
+        if year not in organized_data[company]:
+            organized_data[company][year] = {}
+
+        if interval not in organized_data[company][year]:
+            organized_data[company][year][interval] = {}
+
+        # Handle components or metrics based on the operation type
+        if aggregation_rule['operation'] == 'sum':
+            for component in data_key['components']:
+                component_value = getattr(entry, component)
+                if component not in organized_data[company][year][interval]:
+                    organized_data[company][year][interval][component] = 0
+                organized_data[company][year][interval][component] += component_value
+        elif aggregation_rule['operation'] == 'none':
+            for metric in data_key['metrics']:
+                metric_value = getattr(entry, metric)
+                if metric not in organized_data[company][year][interval]:
+                    organized_data[company][year][interval][metric] = 0
+                organized_data[company][year][interval][metric] = metric_value  # Overwrite with the last value found
+
+    # Convert the organized data into a format suitable for the chart or table
+    chart_data_by_company = {}
+
+    component_labels = additional_info.get('data_labels', ['Component 1', 'Component 2'])
+
+    for company, company_data in organized_data.items():
+        if additional_info.get('representation_type') == 'table':
+            # Prepare table format data
+            headers = ['Year', 'Interval'] + component_labels
+            rows = []
+            for year, year_data in company_data.items():
+                for interval, interval_data in year_data.items():
+                    row = [year, interval]
+                    for idx, label in enumerate(component_labels):
+                        # Ensure you're matching the correct component/metric to the label
+                        row.append(interval_data.get(data_key['components'][idx] if 'components' in data_key else data_key['metrics'][idx], 0))
+                    rows.append(row)
+
+            chart_data_by_company[company] = {
+                'headers': headers,
+                'rows': rows
+            }
+        else:
+            # Prepare chart format data
+            chart_data = {
+                'labels': [],
+                'datasets': []
+            }
+            for interval in sorted({interval for year_data in company_data.values() for interval in year_data}):
+                if aggregation_rule['operation'] == 'sum':
+                    for idx, component in enumerate(data_key['components']):
+                        dataset = {
+                            'label': f"{component_labels[idx]} - Interval {interval}",
+                            'data': [],
+                            'backgroundColor': additional_info['colors'][idx] if 'colors' in additional_info else additional_info['color']
+                        }
+                        for year in sorted(company_data.keys()):
+                            if year not in chart_data['labels']:
+                                chart_data['labels'].append(year)
+                            dataset['data'].append(company_data[year][interval].get(component, 0))
+                        chart_data['datasets'].append(dataset)
+                elif aggregation_rule['operation'] == 'none':
+                    for idx, metric in enumerate(data_key['metrics']):
+                        dataset = {
+                            'label': f"{component_labels[idx]} - Interval {interval}",
+                            'data': [],
+                            'backgroundColor': additional_info['colors'][idx] if 'colors' in additional_info else additional_info['color']
+                        }
+                        for year in sorted(company_data.keys()):
+                            if year not in chart_data['labels']:
+                                chart_data['labels'].append(year)
+                            dataset['data'].append(company_data[year][interval].get(metric, 0))
+                        chart_data['datasets'].append(dataset)
+
+            chart_data_by_company[company] = chart_data
+
+    return chart_data_by_company
+
+
+# TODO this is a general purpose area-subarea dashboard generator, linked to admin_dashboard or dashboard_template template
+
+@app.route('/admin_dashboard/<int:area_id>/<int:subarea_id>')
+@login_required
+@roles_required('Admin', 'Manager', 'Employee')
+def admin_dashboard(area_id, subarea_id):
+    try:
+        logging.debug(f"Fetching data mapping for area_id={area_id} and subarea_id={subarea_id}")
+        mapping = DataMapping.query.filter_by(area_id=area_id, subarea_id=subarea_id).first()
+
+        if not mapping:
+            flash("No data mapping found for this area and subarea.", "danger")
+            return redirect(url_for('index'))
+
+        data_key = mapping.data_key
+        aggregation_rule = mapping.aggregation_rule or {}  # Ensure it's a dictionary, even if None
+        additional_info = mapping.additional_info or {}  # Similarly ensure additional_info is a dictionary
+
+        logging.debug(f"Mapping found: {mapping}")
+
+        # Perform data aggregation based on the aggregation_rule
+        logging.debug(f"Performing data aggregation")
+        dashboard_data = perform_data_aggregation(data_key, aggregation_rule, area_id, subarea_id, additional_info)
+        logging.debug(f"Data returned: {dashboard_data}")
+
+        dashboard_data_json = json.dumps(dashboard_data)
+        aggregation_rule_json = json.dumps(aggregation_rule)
+        additional_info_json = json.dumps(additional_info)
+
+        return render_template('admin_dashboard.html',
+                               area_id=area_id,
+                               subarea_id=subarea_id,
+                               dashboard_data=dashboard_data,
+                               representation_type=mapping.representation_type,
+                               additional_info=additional_info,
+                               aggregation_rule=aggregation_rule,  # Pass the entire aggregation_rule to the template
+                               include_company=aggregation_rule.get('include_company', False))
+    except ValueError as ve:
+        logging.error(f"ValueError in admin_dashboard route: {ve}")
+        flash(f"Value error occurred: {ve}", "danger")
+        return redirect(url_for('index'))
+    except Exception as e:
+        logging.error(f"Error in admin_dashboard route: {e}")
+        flash("An error occurred while generating the dashboard.", "danger")
+        return redirect(url_for('index'))
+
+
+@app.route('/questionnaire_psf')
+@login_required
+@roles_required('Admin', 'Manager', 'Employee')
+def questionnaire_psf():
+    return render_template('dynamic_questionnaire_psf.html')
+
+
+@app.route('/submit_response_psf', methods=['POST'])
+@login_required
+@roles_required('Admin', 'Manager', 'Employee')
+def submit_response_psf():
+    data = request.form
+    questionnaire_id = data.get('questionnaire_id')
+    user_id = data.get('user_id')
+    company_id = 1  # Replace with actual company_id
+    status_id = data.get('status_id')
+    answers = {key: data.get(key) for key in data if key.startswith('answer_')}
+    files = {key: request.files.get(key) for key in request.files if key.startswith('file_')}
+
+    # Store answers and files appropriately
+    response = Response_psf(
+        questionnaire_id=questionnaire_id,
+        user_id=user_id,
+        company_id=company_id,
+        answers=answers,
+        status_id=status_id
+    )
+
+    db.session.add(response)
+    db.session.commit()
+
+    return jsonify({"message": "Response submitted successfully"})
+
+
+# Route to list images
+@app.route('/list_images')
+def list_images():
+    images_dir = os.path.join(app.static_folder, 'images')
+    images = os.listdir(images_dir)
+    images = [f'/static/images/{img}' for img in images if img.endswith(('png', 'jpg', 'jpeg', 'gif'))]
+    return jsonify(images)
+
+@app.route('/admin_news', methods=['GET', 'POST'])
+@login_required
+@roles_required('Admin')
+def admin_news():
+    if request.method == 'POST':
+        headline = request.form['headline']
+        short_text = request.form['short_text']
+        image_url = request.form['image_url']
+        link_type = request.form['link_type']
+        more_link = request.form['more_link']
+        body = request.form['body'] if link_type == 'internal' else None
+        page = 'home'
+        company_id = 0
+        user_id = current_user.id
+        role_id = 1  # Admin
+        area_id = None
+        content_type = 'news'
+        content = {
+            'headline': headline,
+            'short_text': short_text,
+            'image_url': image_url,
+            'link_type': link_type,
+            'more_link': more_link,
+            'body': body
+        }
+        new_entry = Container(
+            content=content,
+            content_type=content_type,
+            page=page,
+            company_id=company_id,
+            role_id=role_id,
+            area_id=area_id
+        )
+        db.session.add(new_entry)
+        db.session.commit()
+        flash('News item created successfully!')
+        return redirect(url_for('admin_news'))
+
+    news_items = Container.query.filter_by(content_type='news').all()
+    return render_template('admin_news.html', news_items=news_items)
+
+
+@app.route('/edit_news/<int:id>', methods=['GET', 'POST'])
+@login_required
+@roles_required('Admin')
+def edit_news(id):
+    news_item = Container.query.get_or_404(id)
+    if request.method == 'POST':
+        headline = request.form['headline']
+        short_text = request.form['short_text']
+        image_url = request.form['image_url']
+        link_type = request.form['link_type']
+        more_link = request.form['more_link']
+        body = request.form['body']
+
+        # Update the JSONB content field explicitly
+        news_item.content = {
+            'headline': headline,
+            'short_text': short_text,
+            'image_url': image_url,
+            'link_type': link_type,
+            'more_link': more_link,
+            'body': body
+        }
+
+        try:
+            db.session.flush()  # Add this line
+            db.session.commit()
+            flash('News item updated successfully!')
+        except Exception as e:
+            db.session.rollback()
+            flash('An error occurred while updating the news item. Please try again.', 'danger')
+
+        return redirect(url_for('admin_news'))
+
+    return render_template('edit_news.html', news_item=news_item)
+
+
+@app.route('/delete_news/<int:id>')
+@login_required
+@roles_required('Admin')
+def delete_news(id):
+    news_item = Container.query.get_or_404(id)
+    db.session.delete(news_item)
+    db.session.commit()
+    flash('News item deleted successfully!')
+    return redirect(url_for('admin_news'))
+
+
+@app.route('/public_news')
+@login_required
+@roles_required('Admin', 'Authority', 'Manager', 'Employee', 'Provider')
+def public_news():
+    news_items = Container.query.filter_by(content_type='news').all()
+    return render_template('public_news.html', news_items=news_items)
+
+
+@app.route('/news/<int:id>')
+@login_required
+@roles_required('Admin', 'Authority', 'Manager', 'Employee', 'Provider')
+def detailed_news(id):
+    news_item = Container.query.get_or_404(id)
+    return render_template('detailed_news.html', news_item=news_item)
+
+
+@app.route('/create_ticket', methods=['GET', 'POST'])
+@login_required
+@roles_required('Admin', 'Authority', 'Manager', 'Employee', 'Provider')
+def create_ticket():
+    form = TicketForm()
+    form.subject.choices = [(s.id, s.name) for s in Subject.query.filter_by(tier_1='Tickets').all()]
+    if form.validate_on_submit():
+        new_ticket = Ticket(
+            user_id=current_user.id,
+            subject_id=form.subject.data,
+            description=form.description.data,
+            status_id=2  # Default status "Open"
+        )
+        db.session.add(new_ticket)
+        db.session.commit()
+        flash('Ticket created successfully!')
+        return redirect(url_for('view_tickets'))
+    return render_template('create_ticket.html', form=form)
+
+
+@app.route('/edit_ticket/<int:ticket_id>', methods=['GET', 'POST'])
+@login_required
+def edit_ticket(ticket_id):
+    ticket = Ticket.query.get_or_404(ticket_id)
+    if ticket.user_id != current_user.id:
+        flash('You do not have permission to edit this ticket.')
+        return redirect(url_for('view_tickets'))
+    form = TicketForm(obj=ticket)
+    form.subject.choices = [(s.id, s.name) for s in Subject.query.all()]
+    if form.validate_on_submit():
+        ticket.subject_id = form.subject.data
+        ticket.description = form.description.data
+        db.session.commit()
+        flash('Ticket updated successfully!')
+        return redirect(url_for('view_tickets'))
+    return render_template('edit_ticket.html', form=form, ticket=ticket)
+
+@app.route('/view_tickets')
+@login_required
+def view_tickets():
+    tickets = Ticket.query.filter_by(user_id=current_user.id).all()
+    return render_template('view_tickets.html', tickets=tickets)
+
+
+@app.route('/admin_tickets')
+@login_required
+@roles_required('Admin')
+def admin_tickets():
+    if 'Admin' not in [role.name for role in current_user.roles]:
+        flash('You do not have permission to view this page.')
+        return redirect(url_for('index'))
+    tickets = Ticket.query.all()
+    return render_template('admin_tickets.html', tickets=tickets)
+
+@app.route('/respond_ticket/<int:ticket_id>', methods=['GET', 'POST'])
+@login_required
+@roles_required('Admin')
+def respond_ticket(ticket_id):
+    if 'Admin' not in [role.name for role in current_user.roles]:
+        flash('You do not have permission to respond to tickets.')
+        return redirect(url_for('index'))
+    ticket = Ticket.query.get_or_404(ticket_id)
+    form = ResponseForm()
+    form.status.choices = [(s.id, s.name) for s in Status.query.all()]
+    if form.validate_on_submit():
+        ticket.response = form.response.data
+        ticket.status_id = form.status.data
+        db.session.commit()
+        flash('Response sent successfully!')
+        return redirect(url_for('admin_tickets'))
+    return render_template('respond_ticket.html', form=form, ticket=ticket)
+
+
+@app.route('/update_account', methods=['GET', 'POST'])
+@login_required
+def update_account():
+    form = UpdateAccountForm()
+    if form.validate_on_submit():
+        current_user.username = form.username.data
+        current_user.email = form.email.data
+        current_user.first_name = form.first_name.data
+        current_user.mid_name = form.mid_name.data
+        current_user.last_name = form.last_name.data
+        current_user.title = form.title.data
+        current_user.address = form.address.data
+        current_user.address1 = form.address1.data
+        current_user.city = form.city.data
+        current_user.province = form.province.data
+        current_user.region = form.region.data
+        current_user.zip_code = form.zip_code.data
+        current_user.country = form.country.data
+        current_user.tax_code = form.tax_code.data
+        current_user.mobile_phone = form.mobile_phone.data
+        current_user.work_phone = form.work_phone.data
+        db.session.commit()
+        flash('Your account has been updated!', 'success')
+        return redirect(url_for('home'))  # Redirect to home page or another page
+    elif request.method == 'GET':
+        form.username.data = current_user.username
+        form.email.data = current_user.email
+        form.first_name.data = current_user.first_name
+        form.mid_name.data = current_user.mid_name
+        form.last_name.data = current_user.last_name
+        form.title.data = current_user.title
+        form.address.data = current_user.address
+        form.address1.data = current_user.address1
+        form.city.data = current_user.city
+        form.province.data = current_user.province
+        form.region.data = current_user.region
+        form.zip_code.data = current_user.zip_code
+        form.country.data = current_user.country
+        form.tax_code.data = current_user.tax_code
+        form.mobile_phone.data = current_user.mobile_phone
+        form.work_phone.data = current_user.work_phone
+    return render_template('account.html', title='Account', form=form)
+
+
+@app.route('/set_cookies', methods=['POST'])
+def set_cookies():
+    response = make_response(redirect(url_for('index')))
+    consent = request.form.get('consent')
+
+    if consent == 'allow_all':
+        response.set_cookie('analytics', 'true', max_age=60 * 60 * 24 * 30)  # 30 days
+        response.set_cookie('marketing', 'true', max_age=60 * 60 * 24 * 30)
+    elif consent == 'reject_all':
+        response.set_cookie('analytics', 'false', max_age=60 * 60 * 24 * 30)
+        response.set_cookie('marketing', 'false', max_age=60 * 60 * 24 * 30)
+    elif consent == 'customize':
+        analytics = request.form.get('analytics', 'false')
+        marketing = request.form.get('marketing', 'false')
+        response.set_cookie('analytics', analytics, max_age=60 * 60 * 24 * 30)
+        response.set_cookie('marketing', marketing, max_age=60 * 60 * 24 * 30)
+
+    # Set a cookie to indicate that the user has made a choice regarding cookies
+    response.set_cookie('cookies_accepted', 'true', max_age=60 * 60 * 24 * 30)
+
+    # Update the user's cookies_accepted field in the database
+    if current_user.is_authenticated:
+        user = Users.query.get(current_user.id)
+        user.cookies_accepted = True
+        db.session.commit()
+
+    current_app.logger.debug("Set cookies accepted to true in both cookie and database")
+
+    return response
+
+def generate_event_instances(event):
+    instances = []
+    if event.recurrence and event.recurrence_end:
+        start_date = event.start
+        end_date = datetime.combine(event.recurrence_end, datetime.min.time())  # Convert date to datetime
+        duration = event.end - event.start
+
+        if event.recurrence == 'daily':
+            freq = rrule.DAILY
+        elif event.recurrence == 'weekly':
+            freq = rrule.WEEKLY
+        elif event.recurrence == 'monthly':
+            freq = rrule.MONTHLY
+        elif event.recurrence == 'quarterly':
+            freq = rrule.MONTHLY
+            interval = 3
+        else:
+            return instances
+
+        rr = rrule.rrule(freq, dtstart=start_date, until=end_date, interval=interval)
+
+        for dt in rr.between(start_date, end_date, inc=True):
+            instance_start = datetime(dt.year, dt.month, dt.day, event.start.hour, event.start.minute)
+            instance_end = instance_start + duration  # Adjust end time as needed
+            instances.append({
+                'title': event.title,
+                'start': instance_start.isoformat(),
+                'end': instance_end.isoformat(),
+                'description': event.description,
+                'all_day': event.all_day,
+                'location': event.location,
+                'color': event.color,
+                'recurrence': event.recurrence,
+                'recurrence_end': event.recurrence_end.isoformat() if event.recurrence_end else None
+            })
+
+    return instances
+
+@app.route('/api/events')
+@login_required
+def get_events():
+    try:
+        start_date = request.args.get('start', default=None)
+        end_date = request.args.get('end', default=None)
+
+        if start_date:
+            start_date = datetime.fromisoformat(start_date)
+        if end_date:
+            end_date = datetime.fromisoformat(end_date)
+
+        if current_user and current_user.is_authenticated:
+            user_id = current_user.id
+            company_id = current_user.company_id
+            is_manager = Role.query.join(UserRoles).filter(UserRoles.user_id == user_id, Role.name == 'Manager').count() > 0
+        else:
+            return jsonify({'error': 'User not authenticated'}), 401
+
+        if start_date and end_date:
+            if is_manager:
+                events = Event.query.filter(Event.company_id == company_id, Event.start >= start_date, Event.end <= end_date).all()
+            else:
+                events = Event.query.filter(Event.user_id == user_id, Event.start >= start_date, Event.end <= end_date).all()
+        else:
+            if is_manager:
+                events = Event.query.filter_by(company_id=company_id).all()
+            else:
+                events = Event.query.filter_by(user_id=user_id).all()
+
+        return jsonify([event.to_dict() for event in events])
+    except Exception as e:
+        app.logger.error(f"Error fetching events: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/add-event', methods=['GET', 'POST'])
+@login_required
+def add_event():
+    date = request.args.get('date')
+    time = request.args.get('time', '00:00:00')
+
+    app.logger.info(f"Received date: {date}")
+    app.logger.info(f"Received time: {time}")
+
+    try:
+        # Combine date and time strings and convert to datetime object
+        if date and time:
+            datetime_str = f"{date} {time}"
+            app.logger.info(f"Combined datetime string: {datetime_str}")
+            default_start = datetime.strptime(datetime_str, '%Y-%m-%d %H:%M:%S')
+            default_end = default_start + timedelta(hours=1)
+            app.logger.info(f"Parsed default start: {default_start}, Parsed default end: {default_end}")
+        else:
+            now = datetime.now()
+            default_start = now.replace(minute=0, second=0, microsecond=0) + timedelta(hours=1)
+            default_end = default_start + timedelta(hours=1)
+            app.logger.info(f"Generated default start: {default_start}, Generated default end: {default_end}")
+
+        form = EventForm()
+
+        # Use datetime objects for the form fields
+        if request.method == 'GET':
+            form.start.data = default_start
+            form.end.data = default_end
+            form.recurrence_end.data = default_end.date()
+
+        if request.method == 'POST':
+            app.logger.info(f"Form data received: {request.form}")
+
+            if not form.validate():
+                app.logger.warning('Form validation failed (POST)')
+                for fieldName, errorMessages in form.errors.items():
+                    for err in errorMessages:
+                        app.logger.warning(f"Error in {fieldName}: {err}")
+                app.logger.warning(f"Form errors: {form.errors}")
+            else:
+                app.logger.info(f"Form validation succeeded: {form.data}")
+
+        if form.validate_on_submit():
+            app.logger.info(f"Form validated: {form.data}")
+            app.logger.info(f"Start: {form.start.data}, End: {form.end.data}, Recurrence End: {form.recurrence_end.data}")
+
+            if current_user and current_user.is_authenticated:
+                user_id = current_user.id
+                company_id = session.get('company_id')
+                app.logger.info(f"Current user: {current_user}, User ID: {user_id}, Company ID: {company_id}")
+
+                event = Event(
+                    title=form.title.data,
+                    start=form.start.data,
+                    end=form.end.data,
+                    description=form.description.data,
+                    all_day=form.all_day.data,
+                    location=form.location.data,
+                    user_id=user_id,
+                    company_id=company_id,
+                    color=form.color.data,
+                    recurrence=form.recurrence.data,
+                    recurrence_end=form.recurrence_end.data if form.recurrence_end.data else None
+                )
+
+                if event.recurrence:
+                    instances = generate_event_instances(event)  # Call your function to generate instances
+                    for instance_data in instances:
+                        new_event = Event(
+                            title=instance_data['title'],
+                            start=datetime.fromisoformat(instance_data['start']),
+                            end=datetime.fromisoformat(instance_data['end']),
+                            description=instance_data['description'],
+                            all_day=instance_data['all_day'],
+                            location=instance_data['location'],
+                            color=instance_data['color'],
+                            recurrence=instance_data['recurrence'],
+                            recurrence_end=instance_data['recurrence_end'],
+                            user_id=user_id,
+                            company_id=company_id,
+                        )
+
+
+                        db.session.add(new_event)
+                else:
+                    db.session.add(event)
+
+                db.session.commit()
+                flash('Event added successfully!', 'success')
+                app.logger.info('Event added successfully!')
+                return redirect(url_for('calendar'))
+            else:
+                flash('User not logged in', 'warning')
+                app.logger.warning('User not logged in')
+                return redirect(url_for('login'))
+        else:
+            app.logger.warning('Form validation failed on submit')
+            app.logger.warning(f"Form errors on submit: {form.errors}")
+
+        return render_template('add_event.html', form=form)
+
+    except ValueError as e:
+        app.logger.error(f"ValueError: {e}")
+        flash('Error processing date and time. Please try again.', 'danger')
+        return redirect(url_for('calendar'))
+    except Exception as e:
+        app.logger.error(f"Exception: {e}")
+        flash('An unexpected error occurred. Please try again.', 'danger')
+        return redirect(url_for('calendar'))
+
+
+@app.route('/edit-event/<int:event_id>', methods=['GET', 'POST'])
+@login_required
+def edit_event(event_id):
+    event = Event.query.get_or_404(event_id)
+
+    if not current_user or not current_user.is_authenticated:
+        flash('User not authenticated', 'warning')
+        return redirect(url_for('login'))
+
+    is_manager = Role.query.join(UserRoles).filter(UserRoles.user_id == current_user.id, Role.name == 'Manager').count() > 0
+
+    if not is_manager and event.user_id != current_user.id:
+        flash('Permission denied', 'danger')
+        return redirect(url_for('calendar'))
+
+    form = EventForm(obj=event)
+
+    if request.method == 'POST':
+        app.logger.info(f"Form data received: {request.form}")
+        if form.validate_on_submit():
+            try:
+                event.title = form.title.data
+                event.start = form.start.data
+                event.end = form.end.data
+                event.description = form.description.data
+                event.all_day = form.all_day.data
+                event.location = form.location.data
+                event.color = form.color.data
+                event.recurrence = form.recurrence.data
+
+                if form.recurrence.data:
+                    event.recurrence_end = form.recurrence_end.data
+                else:
+                    event.recurrence_end = None
+
+                db.session.commit()
+                flash('Event updated successfully!', 'success')
+                return redirect(url_for('calendar'))
+            except Exception as e:
+                db.session.rollback()
+                app.logger.error(f"Error updating event: {e}")
+                flash('An error occurred while updating the event. Please try again.', 'danger')
+        else:
+            app.logger.warning('Form validation failed')
+            app.logger.warning(f"Form errors 1: {form.errors}")
+
+    return render_template('edit_event.html', form=form, event=event)
+
+
+@app.route('/delete-event/<int:event_id>', methods=['POST'])
+def delete_event(event_id):
+    event = Event.query.get_or_404(event_id)
+
+    if not current_user or not current_user.is_authenticated:
+        flash('User not authenticated', 'warning')
+        return redirect(url_for('login'))
+
+    is_manager = Role.query.join(UserRoles).filter(UserRoles.user_id == current_user.id, Role.name == 'Manager').count() > 0
+
+    if not is_manager and event.user_id != current_user.id:
+        flash('Permission denied', 'danger')
+        return redirect(url_for('calendar'))
+
+    db.session.delete(event)
+    db.session.commit()
+    flash('Event deleted successfully!', 'success')
+    return redirect(url_for('calendar'))
+
+
+@app.route('/update-event/<int:event_id>', methods=['POST'])
+@login_required
+def update_event(event_id):
+    event = Event.query.get_or_404(event_id)
+
+    if not current_user or not current_user.is_authenticated:
+        return jsonify({'error': 'User not authenticated'}), 401
+
+    is_manager = Role.query.join(UserRoles).filter(UserRoles.user_id == current_user.id, Role.name == 'Manager').count() > 0
+
+    if not is_manager and event.user_id != current_user.id:
+        return jsonify({'error': 'Permission denied'}), 403
+
+    try:
+        new_start = datetime.fromisoformat(request.form.get('start'))
+        new_end = datetime.fromisoformat(request.form.get('end'))
+        event.start = new_start
+        event.end = new_end
+        db.session.commit()
+        return jsonify({'success': 'Event updated successfully'}), 200
+    except Exception as e:
+        app.logger.error(f"Error updating event: {e}")
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/calendar')
+@login_required
+def calendar():
+    return render_template('calendar.html')
+
+
+@app.route('/cookie-settings')
+def cookie_settings():
+    return render_template('cookie_settings.html')
+
+
+@app.route('/update_cookies', methods=['POST'])
+def update_cookies():
+    response = make_response(redirect(url_for('cookie_settings')))
+    analytics = 'true' if request.form.get('analytics') == 'true' else 'false'
+    marketing = 'true' if request.form.get('marketing') == 'true' else 'false'
+
+    response.set_cookie('analytics', analytics, max_age=60 * 60 * 24 * 30)  # 30 days
+    response.set_cookie('marketing', marketing, max_age=60 * 60 * 24 * 30)
+
+    # Update the user's cookie preferences in the database if necessary
+    user = Users.query.get(current_user.id)
+    user.analytics = analytics == 'true'
+    user.marketing = marketing == 'true'
+    db.session.commit()
+
+    current_app.logger.debug("Updated cookie preferences: Analytics - {}, Marketing - {}".format(analytics, marketing))
+
+    return response
+
+
+@app.route('/products_page')
+@login_required
+def products_page():
+    products = Product.query.all()
+    form = AddProductToCartForm()
+    return render_template('products.html', products=products, form=form)
+
+@app.route('/plans_page')
+@login_required
+def plans_page():
+    form = AddPlanToCartForm()
+    try:
+        plans = Plan.query.all()
+        return render_template('plans.html', plans=plans, form=form)
+    except Exception as e:
+        print(f"Error occurred: {e}")
+        return "An error occurred while fetching plans", 500
+
+
+@app.route('/add_plan_to_cart/<int:plan_id>', methods=['POST'])
+@login_required
+def add_plan_to_cart(plan_id):
+    # Logic to add the plan to the cart
+    flash('Plan added to cart successfully!', 'success')
+    return redirect(url_for('plans_page'))
+
+
+@app.route('/add_to_cart/<int:product_id>', methods=['POST'])
+@login_required
+def add_to_cart(product_id):
+    try:
+        quantity = int(request.form.get('quantity', 1))
+        product_to_add = Product.query.get(product_id)
+        user_id = current_user.id
+        company_id = session.get('company_id')
+
+        if product_to_add:
+            cart_item = Cart.query.filter_by(product_id=product_id, user_id=user_id, company_id=company_id).first()
+            if cart_item:
+                cart_item.quantity += quantity
+            else:
+                new_cart_item = Cart(
+                    product_id=product_to_add.id,
+                    user_id=user_id,
+                    company_id=company_id,
+                    quantity=quantity,
+                    price=product_to_add.price
+                )
+                db.session.add(new_cart_item)
+            db.session.commit()
+            flash('Product added to cart successfully!', 'success')
+        else:
+            flash('Product not found.', 'error')
+        return redirect(url_for('products_page'))
+    except Exception as e:
+        db.session.rollback()
+        flash('An error occurred while adding to cart.', 'error')
+        return redirect(url_for('products_page'))
+
+
+def get_cart_items(user_id, company_id, role):
+    if 'Manager' in role:
+        cart_items = Cart.query.filter_by(company_id=company_id).all()
+    else:
+        cart_items = Cart.query.filter_by(user_id=user_id).all()
+
+    product_ids = [item.product_id for item in cart_items]
+    products = Product.query.filter(product.id.in_(product_ids)).all()
+
+    items = []
+    for item in cart_items:
+        product = next((p for p in products if p.id == item.product_id), None)
+        if product:
+            items.append({
+                'product_id': product.id,
+                'name': product.name,
+                'price': product.price,
+                'quantity': item.quantity
+            })
+    return items
+
+
+@app.route('/cart')
+@login_required
+def cart():
+    try:
+        # Fetch user and company details from session
+        company_id = session.get('company_id', -1)
+        user_id = current_user.id
+        logging.debug(f'Cart route accessed by user: {user_id}, company: {company_id}')
+
+        # Determine the correct cart items based on user role
+        if 'Manager' in [role.name for role in current_user.roles]:
+            cart_items = Cart.query.filter_by(company_id=company_id).all()
+        else:
+            cart_items = Cart.query.filter_by(user_id=user_id).all()
+
+        logging.debug(f"Cart items from DB: {cart_items}")
+
+        # Fetch product details for items in the cart
+        product_ids = [item.product_id for item in cart_items]
+        products = Product.query.filter(Product.id.in_(product_ids)).all()
+        product_dict = {product.id: product for product in products}
+
+        # Prepare items for rendering
+        filtered_cart_items = []
+        for item in cart_items:
+            product = product_dict.get(item.product_id)
+            if product:
+                filtered_cart_items.append({
+                    'product_id': product.id,
+                    'name': product.name,
+                    'price': product.price,
+                    'quantity': item.quantity
+                })
+
+        # Calculate the total price of the cart items
+        total_price = sum(item['price'] * item['quantity'] for item in filtered_cart_items)
+
+        form = UpdateCartItemForm()
+
+        return render_template('cart.html', cart=filtered_cart_items, total_price=total_price, form=form)
+    except Exception as e:
+        logging.error(f"Error fetching cart items: {e}")
+        return "An error occurred", 500
+
+
+@app.route('/update_cart_item/<int:product_id>', methods=['POST'])
+@login_required
+def update_cart_item(product_id):
+    try:
+        quantity = int(request.form.get('quantity', 1))
+        user_id = current_user.id
+        company_id = session.get('company_id')
+
+        cart_item = Cart.query.filter_by(product_id=product_id, user_id=user_id, company_id=company_id).first()
+        if cart_item:
+            cart_item.quantity = quantity
+            db.session.commit()
+            flash('Cart updated successfully!', 'success')
+        else:
+            flash('Cart item not found.', 'error')
+        return redirect(url_for('cart'))
+    except Exception as e:
+        db.session.rollback()
+        flash('An error occurred while updating the cart.', 'error')
+        return redirect(url_for('cart'))
+
+
+@app.route('/remove_from_cart/<int:product_id>', methods=['GET'])
+@login_required
+def remove_from_cart(product_id):
+    try:
+        user_id = current_user.id
+        company_id = session.get('company_id')
+
+        cart_item = Cart.query.filter_by(product_id=product_id, user_id=user_id, company_id=company_id).first()
+        if cart_item:
+            db.session.delete(cart_item)
+            db.session.commit()
+            flash('Item removed from cart successfully!', 'success')
+        else:
+            flash('Cart item not found.', 'error')
+        return redirect(url_for('cart'))
+    except Exception as e:
+        db.session.rollback()
+        flash('An error occurred while removing the item from cart.', 'error')
+        return redirect(url_for('cart'))
+
+
+@app.route('/checkout', methods=['GET', 'POST'])
+@login_required
+def checkout():
+    try:
+        user_id = current_user.id
+        company_id = session.get('company_id')
+
+        if request.method == 'POST':
+            # Handle payment and order creation logic here
+
+            # For simplicity, let's just clear the cart after "checkout"
+            Cart.query.filter_by(user_id=user_id, company_id=company_id).delete()
+            db.session.commit()
+            flash('Checkout successful! Your order has been placed.', 'success')
+            return redirect(url_for('products_page'))
+
+        # For GET request, render the checkout page
+        cart_items = Cart.query.filter_by(user_id=user_id, company_id=company_id).all()
+        total_price = sum(item.price * item.quantity for item in cart_items)
+        return render_template('checkout.html', cart=cart_items, total_price=total_price)
+
+    except Exception as e:
+        db.session.rollback()
+        flash('An error occurred during checkout.', 'error')
+        return redirect(url_for('cart'))
+
+
+@app.route('/create_article', methods=['POST'])
+@login_required
+# TODO team membership required
+def create_article():
+    try:
+        # Get data from the form
+        contract_id = request.form.get('contract_id')
+        article_title = request.form.get('article_title')
+        article_body = request.form.get('article_body')
+        csrf_token = request.form.get('csrf_token')  # CSRF token for security
+
+        # Check if all required fields are present
+        if not contract_id or not article_title or not article_body:
+            flash("All fields are required.", "danger")
+            return redirect(request.referrer)
+
+        # Validate CSRF token
+        try:
+            validate_csrf(csrf_token)
+        except Exception as e:
+            flash("CSRF token is invalid or missing.", "danger")
+            print(f"Error validating CSRF token: {str(e)}")
+            return redirect(request.referrer)
+
+        # Create a new ContractArticle instance
+        new_article = ContractArticle(
+            contract_id=contract_id,
+            article_title=article_title,
+            article_body=article_body,
+            created_at=func.now(),
+            updated_at=func.now()
+        )
+
+        # Add to the session and commit to the database
+        db.session.add(new_article)
+        db.session.commit()
+
+        flash("Article created successfully.", "success")
+        return redirect(url_for('drafting_contracts.index_view'))  # Corrected endpoint name
+
+    except Exception as e:
+        # Handle any errors
+        flash(f"An error occurred (01): {str(e)}", "danger")
+        return redirect(request.referrer)
+
+
+@app.route('/checklist', methods=['GET', 'POST'])
+@login_required
+def checklist():
+    user_email = session.get('user_email')
+    if not user_email:
+        return redirect(url_for('index'))  # Redirect to login or signup
+
+    checklist = get_checklist_status(user_email)
+
+    if checklist is None:
+        return "User not found", 404  # Handle user not found
+
+    print('checklist', checklist)
+    return render_template('registration_checklist.html', checklist=checklist)
+
+
+# Routes to handle actions such as signing agreement, requesting role, etc.
+@app.route('/sign_agreement', methods=['GET', 'POST'])
+@login_required
+def sign_agreement():
+    print('Entering agreement signoff')
+
+    user_email = session.get('user_email')
+    if not user_email:
+        print('User email not found in session')
+        flash("User not logged in.", "danger")
+        return redirect(url_for('index'))
+
+    user = Users.query.filter_by(email=user_email).first()
+    if not user:
+        print('User not found in database')
+        flash("User not found in the system.", "danger")
+        return redirect(url_for('index'))
+
+    # Fetch the contract using contract_name
+    contract = Contract.query.filter_by(contract_name="D.E.R.E. Membership Agreement").first()
+
+    if not contract:
+        print('Contract not found')
+        flash("The membership agreement could not be found. Please contact support.", "danger")
+        return redirect(url_for('checklist'))
+
+    # Ensure the contract has a contract_id attribute
+    if not hasattr(contract, 'contract_id'):
+        print('Contract object does not have a contract_id attribute')
+        flash("Contract object is invalid. Please contact support.", "danger")
+        return redirect(url_for('checklist'))
+
+    if request.method == 'POST':
+        print('Handling POST request')
+        try:
+            if 'agree' in request.form:
+                print('Agreement checkbox is checked')
+                user.agreement_signed = True
+                user.agreement_signed_date = datetime.utcnow()  # Record the date of agreement
+                db.session.commit()
+                flash("You have successfully signed the agreement.", "success")
+                return redirect(url_for('checklist'))
+            else:
+                print('Agreement checkbox not checked')
+                flash("You must accept the agreement to proceed.", "danger")
+                return redirect(url_for('sign_agreement'))
+        except Exception as e:
+            print(f'Error occurred while signing the agreement: {e}')
+            flash("An error occurred while signing the agreement. Please try again.", "danger")
+            return redirect(url_for('sign_agreement'))
+
+    print('Handling GET request')
+    # Handle GET request to display the agreement
+    try:
+        articles = ContractArticle.query.filter_by(contract_id=contract.contract_id).order_by(
+            ContractArticle.article_order).all()
+        print(f'Articles found: {articles}')  # Debugging output
+        if not articles:
+            print('No articles found for the contract')
+            flash("No articles found for the agreement. Please contact support.", "danger")
+            return redirect(url_for('checklist'))
+
+        return render_template('sign_agreement.html', contract=contract, articles=articles)
+    except Exception as e:
+        print(f'Error occurred while fetching articles: {e}')
+        flash("An error occurred while fetching the agreement articles.", "danger")
+        return redirect(url_for('checklist'))
+
+
+@app.route('/request_role', methods=['POST'])
+@login_required
+def request_role():
+    try:
+        # Fetch the subject ID for "Support"
+        support_subject = Subject.query.filter_by(name='Support').first()
+
+        if not support_subject:
+            flash('Support subject not found. Please contact the admin.', 'danger')
+            return redirect(url_for('checklist'))
+
+        subject_id = support_subject.id  # Assign the correct subject ID for "Support"
+
+        # Automatically create a ticket for role assignment
+        new_ticket = Ticket(
+            user_id=current_user.id,
+            subject_id=subject_id,
+            description="Request role assignment",
+            status_id=2,  # Default status "Open"
+            created_at=datetime.utcnow(),
+            marked_as_read=False,
+            lifespan='one-off'
+        )
+        db.session.add(new_ticket)
+        db.session.commit()
+        flash('Role request submitted successfully under Support!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        flash(f"Error submitting role request: {e}", "danger")
+
+    return redirect(url_for('checklist'))
+
+
+@app.route('/request_company', methods=['POST'])
+@login_required
+def request_company():
+    # Get the user's role and company information
+    user_role = current_user.roles[0].name if current_user.roles else 'Employee'  # Default to 'Employee' if no roles
+    company_name = current_user.company if current_user.company else 'Unknown Company'
+
+    # Construct the automatic ticket content
+    ticket_description = f"Please assign me as {user_role} of {company_name}"
+
+    # Automatically create a ticket
+    new_ticket = Ticket(
+        user_id=current_user.id,
+        subject_id=1,  # Assuming '1' is the ID for a generic 'Request' subject or create one specifically for this
+        description=ticket_description,
+        status_id=2  # Default status "Open"
+    )
+
+    db.session.add(new_ticket)
+    db.session.commit()
+
+    flash('Your request for company assignment has been submitted successfully!')
+
+    return redirect(url_for('checklist'))
+
+
+@app.route('/subscribe_service', methods=['POST'])
+@login_required
+# @roles_required('Manager', 'Employee', 'Authority', 'Provider', 'Guest', '')
+def subscribe_service():
+    print('role', session['user_roles'])
+
+    # Check if the user has signed the agreement
+    if not session['user_roles']:
+        flash("You must apply for and be granted membership to access our services.", "danger")
+        return redirect(url_for('checklist'))
+
+    # Check if the user has signed the agreement
+    if not current_user.agreement_signed:
+        flash("You must sign the agreement before subscribing to services.", "danger")
+        return redirect(url_for('checklist'))
+
+    try:
+        # If the agreement is signed, proceed to the subscribe function
+        return redirect(url_for('subscribe'))
+    except Exception as e:
+        flash(f"An error occurred while subscribing to the service: {e}", "danger")
+        return redirect(url_for('checklist'))
+
+
+@app.route('/opt_plan', methods=['POST'])
+@login_required
+def opt_plan():
+
+    print('role', session['user_roles'])
+
+    # Check if the user has signed the agreement
+    if not session['user_roles']:
+        flash("You must apply for and be granted membership to access our plans.", "danger")
+        return redirect(url_for('checklist'))
+
+    # Check if the user has signed the agreement
+    if not current_user.agreement_signed:
+        flash("You must sign the agreement before subscribing to plans.", "danger")
+        return redirect(url_for('checklist'))
+
+    try:
+        # If the agreement is signed, proceed to the subscribe function
+        return redirect(url_for('subscriptions'))
+    except Exception as e:
+        flash(f"An error occurred while subscribing to the plan: {e}", "danger")
+        return redirect(url_for('checklist'))
+
+
+def get_checklist_status(user_email):
+    user = Users.query.filter_by(email=user_email).first()
+    if not user:
+        return None  # User doesn't exist in the system
+
+    # Determine if the user has an active subscription
+    active_subscriptions = Subscription.query.filter_by(user_id=user.id, status='active').all()
+
+    # Get the names of the plans from the active subscriptions
+    if active_subscriptions:
+        plan_names = ', '.join([subscription.plan.name for subscription in active_subscriptions])
+        plan_opted = True
+    else:
+        plan_names = None
+        plan_opted = False
+
+    # Determine if the user has any roles assigned
+    role_assigned = UserRoles.query.filter_by(user_id=user.id).first() is not None
+
+    # Determine if the user is associated with any company
+    company_assigned = CompanyUsers.query.filter_by(user_id=user.id).first() is not None
+
+    service_subscribed = any(active_subscriptions)  # Service subscribed is true if any subscription exists
+
+    # Check for assignment requested ticket
+    assignment_requested = Ticket.query.filter(
+        Ticket.user_id == user.id,
+        Ticket.description.ilike('%Please assign me as%')
+    ).first() is not None
+
+    role_requested = Ticket.query.filter(
+        Ticket.user_id == user.id,
+        Ticket.description.ilike('%Request role assignment%')
+    ).first() is not None
+
+    return {
+        'user_exists': True,
+        'agreement_signed': user.agreement_signed,
+        'agreement_signed_date': user.agreement_signed_date,
+        'role_assigned': role_assigned,
+        'company_assigned': company_assigned,
+        'service_subscribed': service_subscribed,
+        'plan_opted': plan_opted,
+        'plan_names': plan_names,  # Plan names if any subscription exists
+        'assignment_requested': assignment_requested,
+        'role_requested': role_requested
+    }
+
+
+@app.route('/api/get_document_details_and_workflows/<doc_id>', methods=['GET'])
+@login_required
+def get_document_details_and_workflows(doc_id):
+   document = BaseData.query.get(doc_id)
+   workflows = DocumentWorkflow.query.filter_by(document_id=doc_id).all()
+
+   if not document:
+       return jsonify({'error': 'Document not found'}), 404
+
+   # Return document details and related workflows
+   return jsonify({
+       'document': {
+           'fi0': document.fi0,
+           'interval_ord': document.interval_ord,
+           'subject': document.subject,
+           'date_of_doc': document.date_of_doc.strftime('%Y-%m-%d') if document.date_of_doc else '',
+           'file_path': document.file_path,
+           'no_action': document.no_action,
+           'fc2': document.fc2
+       },
+       'workflows': [
+           {
+               'workflow_name': wf.workflow_name,
+               'start_date': wf.start_date.strftime('%Y-%m-%d') if wf.start_date else '',
+               'end_date': wf.end_date.strftime('%Y-%m-%d') if wf.end_date else ''
+           } for wf in workflows
+       ]
+   })
+
+
+@app.route('/show_message_modal/<ids>', methods=['GET', 'POST'])
+def show_message_modal(ids):
+    # Convert the comma-separated string of IDs back into a list
+    ids_list = ids.split(',')
+
+    if request.method == 'POST':
+        # Process the form submission
+        message_type = request.form.get('message_type')
+        subject = request.form.get('subject')
+        body = request.form.get('body')
+        lifespan = request.form.get('lifespan')
+
+        # Create a Post for each selected user
+        for company_user in CompanyUsers.query.filter(CompanyUsers.id.in_(ids_list)).all():
+            post = Post(
+                user_id=company_user.user.id,
+                company_id=company_user.company.id,
+                sender=current_user.username,  # Assuming current_user is the sender
+                message_type=message_type,
+                subject=subject,
+                body=body,
+                lifespan=lifespan
+            )
+            db.session.add(post)
+
+        db.session.commit()
+        flash(f'Message sent to {len(ids_list)} users successfully!', 'success')
+        return redirect(url_for('open_admin_7.index'))  # Redirect to admin page after sending the message
+
+    # If it's a GET request, render the modal form
+    return render_template('admin/send_message_modal.html', users=Users.query.filter(Users.id.in_(ids_list)).all())
+
+@app.route('/finalize_attach_to_dossier', methods=['POST'])
+@login_required
+def finalize_attach_to_dossier():
+    dossier_id = request.form['dossier_id']
+    document_ids = request.form['document_ids'].split(',')
+    referrer_url = request.form.get('referrer_url', url_for('open_admin_3.index'))  # Default to admin index
+
+    dossier = Dossier.query.get(dossier_id)
+
+    for doc_id in document_ids:
+        document = BaseData.query.get(doc_id)
+        document.dossiers.append(dossier)
+        db.session.add(document)
+
+    db.session.commit()
+
+    flash(f'Documents successfully attached to {dossier.type} Dossier!', 'success')
+    return redirect(referrer_url)
+
+@app.route('/finalize_attach_to_dossier_two', methods=['POST'])
+@login_required
+def finalize_attach_to_dossier_two():
+    try:
+        dossier_id = request.form['dossier_id']
+        document_ids = request.form['document_ids'].split(',')
+
+        dossier = Dossier.query.get(dossier_id)
+        if not dossier:
+            flash("Dossier not found.", "error")
+            return redirect(url_for('open_admin_3.index'))
+
+        # Attach each document to the selected Dossier
+        for doc_id in document_ids:
+            document = BaseData.query.get(doc_id)
+            if document:
+                document.dossier_id = dossier_id
+                db.session.add(document)
+            else:
+                flash(f"Document ID {doc_id} not found.", "warning")
+
+        db.session.commit()
+        flash(f'Documents successfully attached to {dossier.type} {dossier_id} Dossier!', 'success')
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error in finalize_attach_to_dossier: {e}")
+        flash("An error occurred while attaching documents to the dossier.", "error")
+
+    return redirect(url_for('open_admin_3.index'))
+
+
+@app.route('/manage_extra_time', methods=['GET', 'POST'])
+@login_required
+def manage_extra_time():
+    if not current_user.has_role('Admin'):
+        flash("You are not authorized to access this page.", "danger")
+        return redirect(url_for('index'))
+
+    companies = Company.query.all()
+    areas = Area.query.all()
+    subareas = Subarea.query.all()
+
+    if request.method == 'POST':
+        company_id = request.form.get('company_id')
+        area_id = request.form.get('area_id')
+        subarea_id = request.form.get('subarea_id')
+        extra_time_end = request.form.get('extra_time_end')
+
+        # Check if a record already exists for this combination
+        existing_record = ExtraTimeAuthorization.query.filter_by(
+            company_id=company_id,
+            area_id=area_id,
+            subarea_id=subarea_id
+        ).first()
+
+        if existing_record:
+            # If the record exists, update the existing record with the new extra time end date
+            existing_record.extra_time_end = extra_time_end
+            db.session.commit()
+            flash("Extra time authorization updated.", "success")
+        else:
+            # If no record exists, create a new one
+            new_extra_time = ExtraTimeAuthorization(
+                company_id=company_id,
+                area_id=area_id,
+                subarea_id=subarea_id,
+                extra_time_end=extra_time_end
+            )
+            db.session.add(new_extra_time)
+            db.session.commit()
+            flash("Extra time authorization saved.", "success")
+
+        return redirect(url_for('manage_extra_time'))
+
+    # Fetch all existing extra time records
+    extra_time_records = ExtraTimeAuthorization.query.all()
+
+    return render_template(
+        'manage_extra_time.html',
+        companies=companies,
+        areas=areas,
+        subareas=subareas,
+        extra_time_records=extra_time_records
+    )
+
+
+@app.route('/edit_extra_time/<int:record_id>', methods=['GET', 'POST'])
+@login_required
+def edit_extra_time(record_id):
+    if not current_user.has_role('Admin'):
+        flash("You are not authorized to access this page.", "danger")
+        return redirect(url_for('index'))
+
+    extra_time_record = ExtraTimeAuthorization.query.get_or_404(record_id)
+
+    if request.method == 'POST':
+        extra_time_record.company_id = request.form.get('company_id')
+        extra_time_record.area_id = request.form.get('area_id')
+        extra_time_record.subarea_id = request.form.get('subarea_id')
+        extra_time_record.extra_time_end = request.form.get('extra_time_end')
+
+        db.session.commit()
+        flash("Extra time authorization updated successfully.", "success")
+        return redirect(url_for('manage_extra_time'))
+
+    companies = Company.query.all()
+    areas = Area.query.all()
+    subareas = Subarea.query.all()
+
+    return render_template(
+        'edit_extra_time.html',
+        record=extra_time_record,
+        companies=companies,
+        areas=areas,
+        subareas=subareas
+    )
+
+@app.route('/delete_extra_time/<int:record_id>', methods=['POST'])
+@login_required
+def delete_extra_time(record_id):
+    if not current_user.has_role('Admin'):
+        flash("You are not authorized to access this page.", "danger")
+        return redirect(url_for('index'))
+
+    extra_time_record = ExtraTimeAuthorization.query.get_or_404(record_id)
+
+    db.session.delete(extra_time_record)
+    db.session.commit()
+    flash("Extra time authorization deleted successfully.", "success")
+    return redirect(url_for('manage_extra_time'))
+
+
+@app.route('/checkout_success')
+def checkout_success():
+    Cart.query.delete()
+    db.session.commit()
+    return render_template('checkout_success.html')
 
 
 if __name__ == '__main__':
     # Load menu items from JSON file
-    json_file_path = get_current_directory() + '/static/js/menuStructure101.json'
+    current_dir = get_current_directory()
+    json_file_path = os.path.join(current_dir, 'static', 'js', 'menuStructure101.json')
     with open(Path(json_file_path), 'r') as file:
         main_menu_items = json.load(file)
 
     # Create a MenuBuilder instance for the "Guest" role
-    guest_menu_builder = MenuBuilder(main_menu_items, ["Guest"])
-    guest_menu_data = guest_menu_builder.parse_menu_data(user_roles=["Guest"],
+    guest_menu_builder = MenuBuilder(main_menu_items, ["guest"])
+    guest_menu_data = guest_menu_builder.parse_menu_data(user_roles=["guest"],
                                                          is_authenticated=False, include_protected=False)
     # Pass the "Guest" menu data to the template
     additional_data = {
@@ -8885,15 +6106,12 @@ if __name__ == '__main__':
         "public_menu": guest_menu_data
     }
 
-    # Start the application
-    # app.run(debug=False, port=5000, host='localhost', extra_files=['./static/js/menuStructure101.json'])
-    # Change the port number
-
-    ''' 25May2024
-    port = int(os.environ.get('PORT', 5000)) # 5000
-    app.run(debug=True, host='0.0.0.0', port=port, extra_files=['./static/js/menuStructure101.json'])
-    '''
     port = int(os.environ.get('PORT', 5000))
-    logging.basicConfig(level=logging.DEBUG)
-    logging.debug(f"Starting app on port {port}")
-    app.run(debug=True, host='0.0.0.0', port=port, extra_files=['./static/js/menuStructure101.json'])
+
+    # TODO DEBUG
+    logging.basicConfig(filename='app.log', level=logging.DEBUG)
+
+    # Set `debug` in app.run based on config
+    app.run(debug=app.config['DEBUG'], host='0.0.0.0', port=port, extra_files=['./static/js/menuStructure101.json'])
+
+    # app.run(debug=True, host='0.0.0.0', port=port, extra_files=['./static/js/menuStructure101.json'])

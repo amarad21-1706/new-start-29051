@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Edit Team: {{ team.name }}</h2>
+
+<!-- Flash Messages Section -->
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    <div class="alert-container">
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category }}">{{ message }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+{% endwith %}
+<!-- End of Flash Messages Section -->
+
+<form method="post">
+   <!-- Include CSRF Token -->
+   <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+   <div class="form-group">
+       <label for="team_name">Team Name</label>
+       <input type="text" class="form-control" id="team_name" name="team_name" value="{{ team.name }}" required>
+   </div>
+   <div class="form-group">
+       <label for="description">Description</label>
+       <input type="text" class="form-control" id="description" name="description" value="{{ team.description }}">
+   </div>
+   <button type="submit" class="btn btn-primary">Save Changes</button>
+</form>
+{% endblock %}

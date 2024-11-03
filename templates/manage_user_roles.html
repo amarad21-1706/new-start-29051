@@ -1,18 +1,28 @@
 {% extends 'base.html' %}
 
 {% block content %}
-    {% block title %}Users associated to roles{% endblock %}
+
+    <h1 style="font-size: 2em;">Users associated with roles</h1>  <!-- Title with larger font size -->
+
     <form method="POST" class="my-8 mx-auto" style="max-width: 80%;">
         {{ form.hidden_tag() }}
 
         <div class="row mb-4">
             <div class="col-md-6">
                 <label for="user" class="form-label">Select User:</label>
-                {{ form.user(class="form-control") }}
+                {{ form.user(class="form-control", id="user-select") }}
             </div>
             <div class="col-md-6">
                 <label for="role" class="form-label">Select Role:</label>
                 {{ form.role(class="form-control") }}
+            </div>
+        </div>
+
+        <div class="row mb-4">
+            <div class="col-md-12">
+                <div id="associated-roles" class="form-group">
+                    <!-- This section will be populated with associated roles -->
+                </div>
             </div>
         </div>
 
@@ -29,7 +39,7 @@
         {% if message %}
         <div class="row mb-4">
             <div class="col-md-12">
-                <div class="alert alert-info" role="alert">
+                <div class="alert alert-info" role="alert" id="message-box">
                     {{ message }}
                 </div>
             </div>
@@ -37,8 +47,39 @@
         {% endif %}
 
     </form>
-    <!-- Include Bootstrap JS and Popper.js from CDN (optional) -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Include jQuery for making AJAX requests -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>// Listen for changes to the user select dropdown
+        $('#user-select').on('change', function () {
+            var userId = $(this).val();  // Get the selected user ID
+            var associatedRolesDiv = $('#associated-roles');  // The div where roles will be displayed
+
+            // Clear any existing roles
+            associatedRolesDiv.empty();
+
+            if (userId) {
+                // Make an AJAX request to fetch associated roles
+                $.get('/association/get_user_roles/' + userId, function (data) {
+                    if (data.roles && data.roles.length > 0) {
+                        // If roles are found, display them
+                        associatedRolesDiv.append('<h5>Associated Roles:</h5>');
+                        var list = $('<ul></ul>');  // Create an unordered list
+                        data.roles.forEach(function (role) {
+                            list.append('<li>' + role.name + ' (' + role.description + ')</li>');
+                        });
+                        associatedRolesDiv.append(list);
+                    } else {
+                        associatedRolesDiv.append('<p>No roles are associated with this user.</p>');
+                    }
+                }).fail(function () {
+                    associatedRolesDiv.append('<p class="text-danger">Error loading roles</p>');
+                });
+            } else {
+                associatedRolesDiv.append('<p>Select a user to view their roles.</p>');
+            }
+        });
+
+    </script>
 
 {% endblock %}

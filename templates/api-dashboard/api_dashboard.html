@@ -1,0 +1,23 @@
+{% extends "argon-dashboard/base.html" %}
+
+{% block content %}
+<div class="header bg-primary pb-6">
+  <div class="container-fluid">
+    <div class="header-body">
+      <h1>Financial Dashboard</h1>
+      <button id="fetch-data" class="btn btn-success">Fetch Financial Data</button>
+    </div>
+  </div>
+</div>
+<div class="container mt-4">
+  <div id="data-output"></div>
+</div>
+
+<script>
+  document.getElementById('fetch-data').addEventListener('click', async () => {
+    const response = await fetch('/fetch_financial_data/AAPL');
+    const data = await response.json();
+    document.getElementById('data-output').innerHTML = JSON.stringify(data, null, 2);
+  });
+</script>
+{% endblock %}
