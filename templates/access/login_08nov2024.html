@@ -52,60 +52,45 @@
         button:hover {
             background-color: #45a049;
         }
-
-        .btn-apple {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            background-color: white;
-            color: black;
-            border: 1px solid #ccc;
-            padding: 10px 15px;
-            font-size: 16px;
-            border-radius: 5px;
-            text-decoration: none;
-            transition: box-shadow 0.2s ease-in-out;
-            width: 88%; /* Make it full width for consistency */
-        }
-
-        .btn-apple img {
-            margin-right: 10px;
-        }
-
-        .btn-apple:hover {
-            box-shadow: 0 0 5px rgba(0, 0, 0, 0.2);
-        }
-
-        .btn-apple:focus {
-            outline: none; /* Remove focus outline */
-            box-shadow: 0 0 5px rgba(0, 123, 255, 0.5); /* Add a soft focus glow */
-        }
-
-        .spaced-element {
-            margin-bottom: 20px; /* Adds spacing between elements */
-        }
-
-        hr {
-            border: none;
-            border-top: 1px solid #ccc;
-            margin: 15px 0;
-        }
-
-        .signup-link, .forgot-password-link {
+        .signup-link {
+            margin-bottom: 10px;
             text-align: center;
-            margin-bottom: 15px;
         }
-
-        .signup-link a, .forgot-password-link a {
-            text-decoration: underline;
-            color: #007bff;
+        .signup-button {
+            background-color: #007bff;
+            color: #fff;
+            padding: 10px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
         }
-
-        /* Remove unwanted margins/padding from links */
-        a {
-            text-decoration: none;
+        .signup-button:hover {
+            background-color: #0056b3;
         }
-
+        .forgot-password-link {
+            text-align: center;
+        }
+        .flashes {
+            list-style: none;
+            padding: 0;
+            margin: 0 0 20px;
+        }
+        .flashes li {
+            margin-bottom: 10px;
+        }
+        .alert {
+            padding: 10px;
+            border-radius: 5px;
+        }
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+        }
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
     </style>
 </head>
 <body>
@@ -122,7 +107,6 @@
                 </ul>
             {% endif %}
         {% endwith %}
-
         <form id="loginForm" method="POST" action="{{ url_for('login') }}">
             {{ form.hidden_tag() }}
             <h2>Login</h2>
@@ -141,17 +125,13 @@
             <input type="text" name="captcha" required>
             <button type="submit">Login</button>
         </form>
+    </div>
 
-        <hr> <!-- Horizontal line -->
-
-        <!-- Signup Link -->
+    <div class="form-container" id="signupFormContainer">
         <div class="signup-link">
             Don't have an account? <a href="{{ url_for('signup') }}">Signup here</a>
         </div>
-
-        <hr> <!-- Horizontal line -->
-
-        <!-- Forgot Password Link -->
+        <!-- Forgot your password link -->
         <div class="forgot-password-link">
             <a href="/forgot_password">Forgot your password?</a>
         </div>

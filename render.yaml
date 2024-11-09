@@ -1,8 +1,17 @@
 services:
- - type: web
-   name: app
-   env: python
-   buildCommand: |
-     pip install --upgrade pip
-     pip install -r requirements.txt
-   startCommand: gunicorn app:app
+  - type: web
+    name: app
+    env: python
+    buildCommand: |
+      pip install --upgrade pip
+      pip install -r requirements.txt
+      npm install
+      npm run build
+      echo "Clearing Render Cache"
+    startCommand: gunicorn app:app --log-level debug
+    staticPublishPath: static
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: APP_CONFIG
+        value: config.ProductionConfig

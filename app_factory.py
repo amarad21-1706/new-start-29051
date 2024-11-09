@@ -16,6 +16,8 @@ from models.user import Users #, Plan, Product
 from functools import wraps
 from password_reset import password_reset_bp  # Import the blueprint
 # from flask_babel import Babel
+import datetime
+from datetime import date, timedelta, time, timezone
 
 csrf = CSRFProtect()  # Define csrf globally
 # babel = Babel()  # Initialize Babel without an app instance
@@ -77,6 +79,7 @@ def create_app(conf=None):
 
     # Explicitly set debug mode based on an environment variable or configuration
     app.config['DEBUG'] = os.environ.get('FLASK_DEBUG', 'False').lower() in ['true', '1']
+    app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=60)  # Set 60-minute session lifetime
 
     app.config.from_object(conf)
 

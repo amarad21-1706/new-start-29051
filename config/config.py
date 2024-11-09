@@ -121,7 +121,6 @@ class Config:
         self.MAX_RECURSION_DEPTH = 1000
         self.TEMPLATES_AUTO_RELOAD = True
         self.SQLALCHEMY_COMMIT_ON_TEARDOWN = True
-        self.PERMANENT_SESSION_LIFETIME = timedelta(minutes=60)  # Set session to expire in n minutes
         self.SEND_FILE_MAX_AGE_DEFAULT = 0  # Disable caching for development
 
         self.SESSION_TYPE = 'filesystem'

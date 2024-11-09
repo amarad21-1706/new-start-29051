@@ -1958,3 +1958,17 @@ class BenchmarkData(db.Model):
     contract_type = db.Column(db.String(50))
     benchmark_price = db.Column(db.Numeric(10, 2))
     benchmark_conditions = db.Column(db.Text)
+
+
+class TextContent(db.Model):
+    __tablename__ = 'text_content'
+
+    id = db.Column(db.Integer, primary_key=True)
+    language_code = db.Column(db.String(12), default = 'en')
+    content_type = db.Column(db.String(50), nullable=False)  # E.g., "disclaimer", "terms_of_use", "about_us"
+    content_version = db.Column(db.Integer, nullable=False, default=1)  # Useful for version control
+    title = db.Column(db.String(100))  # Optional, for sections that have titles
+    content_body = db.Column(db.Text, nullable=False)  # Main content
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, onupdate=datetime.utcnow)
+

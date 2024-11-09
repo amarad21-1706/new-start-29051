@@ -1,0 +1,19 @@
+{% extends "base.html" %}
+
+<style>
+    a {
+        color: blue !important;
+        text-decoration: underline !important;
+        pointer-events: auto !important;
+    }
+</style>
+
+{% block title %}
+    Site Map
+{% endblock %}
+
+{% block content %}
+    <div class="site-map-content">
+        {{ content | safe }}
+    </div>
+{% endblock %}

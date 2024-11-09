@@ -65,15 +65,15 @@ from models.user import (Users, UserRoles, Event, Role, Questionnaire, Question,
         Contract, ContractParty, ContractTerm, ContractDocument, ContractStatusHistory,
         ContractArticle, Party,
         Team, TeamMembership, ContractTeam,
-        Dossier, ExtraTimeAuthorization
+        Dossier, ExtraTimeAuthorization, TextContent
         )
 
 # from master_password_reset import admin_reset_password, AdminResetPasswordForm
 from forms.forms import (AddPlanToCartForm, SignupForm, UpdateAccountForm, TicketForm,
-                         ResponseForm, LoginForm, ForgotPasswordForm,
-         ResetPasswordForm101, RegistrationForm, EventForm,
-         CustomBaseDataForm, WorkflowBaseDataForm,
-         BaseDataWorkflowStepForm, UserDocumentsForm,
+        ResponseForm, LoginForm, ForgotPasswordForm,
+        ResetPasswordForm101, RegistrationForm, EventForm,
+        CustomBaseDataForm, WorkflowBaseDataForm,
+        BaseDataWorkflowStepForm, UserDocumentsForm,
         create_dynamic_form, CustomFileLoaderForm,
         CustomSubjectAjaxLoader, BaseSurveyForm, AuditLogForm,
         UpdateCartItemForm, AddProductToCartForm, SubscriptionForm,
@@ -116,7 +116,7 @@ from modules.chart_service import ChartService
 from team_routes import team_bp
 from contract_routes import contract_bp
 
-from flask import flash, current_app, get_flashed_messages
+from flask import flash, current_app, get_flashed_messages, render_template_string
 # from flask_admin.exceptions import ValidationError
 
 from flask_bcrypt import Bcrypt
@@ -190,6 +190,9 @@ from admin_views import create_admin_views  # Import the admin views module
 
 from cachetools import TTLCache, cached
 
+# import flask_dance
+# from jose import jwt
+
 # OPENCAGE API KEY
 # aad0f13ea1af46c6b89153e6b7bd7928
 
@@ -233,13 +236,24 @@ print('plan blueprint registered')
 app.register_blueprint(chart_bp, url_prefix='/charts', name='charts')
 print('chart blueprint registered')
 
-
-
 # Load API key from environment variable
 openai.api_key = os.getenv("OPENAI_API_KEY")
 print('openAI ready')
 
 #fred = Fred(api_key='FRED_API_KEY')
+
+'''
+
+# Add the environment variables to app.config
+app.config['APPLE_CLIENT_ID'] = os.getenv('APPLE_CLIENT_ID')
+app.config['APPLE_TEAM_ID'] = os.getenv('APPLE_TEAM_ID')
+app.config['APPLE_KEY_ID'] = os.getenv('APPLE_KEY_ID')
+app.config['PRIVATE_KEY_PATH'] = os.getenv('PRIVATE_KEY_PATH')
+
+app.config['REDIRECT_URI'] = os.getenv('REDIRECT_URI')
+app.config['APPLE_AUTH_URL'] = os.getenv('APPLE_AUTH_URL')
+app.config['APPLE_TOKEN_URL'] = os.getenv('APPLE_TOKEN_URL')
+'''
 
 # Setup Limiter
 limiter = Limiter(
@@ -320,6 +334,78 @@ def get_version_from_file():
             return file.read().strip()
     except Exception as e:
         return "Version information not available"
+
+
+'''
+
+def generate_apple_client_secret():
+    with open(app.config['PRIVATE_KEY_PATH'], "r") as key_file:
+        private_key = key_file.read()
+
+    payload = {
+        "iss": app.config['APPLE_TEAM_ID'],
+        "iat": datetime.datetime.utcnow(),
+        "exp": datetime.datetime.utcnow() + datetime.timedelta(days=180),
+        "aud": "https://appleid.apple.com",
+        "sub": app.config['APPLE_CLIENT_ID'],
+    }
+    headers = {"kid": app.config['APPLE_KEY_ID']}
+    client_secret = jwt.encode(payload, private_key, algorithm="ES256", headers=headers)
+    return client_secret
+
+
+@app.route("/login/apple")
+def login_with_apple():
+    params = {
+        "response_type": "code id_token",
+        "client_id": app.config['APPLE_CLIENT_ID'],
+        "redirect_uri": app.config['REDIRECT_URI'],
+        "scope": "name email",
+    }
+    url = f"{app.config['APPLE_AUTH_URL']}?{requests.compat.urlencode(params)}"
+    return redirect(url)
+
+@app.route("/login/apple/authorized")
+def apple_authorized():
+    code = request.args.get("code")
+    id_token = request.args.get("id_token")
+
+    if not code:
+        return "Authorization failed!", 400
+
+    # Exchange code for tokens
+    client_secret = generate_apple_client_secret()
+    token_data = {
+        "client_id": app.config['APPLE_CLIENT_ID'],
+        "client_secret": client_secret,
+        "code": code,
+        "grant_type": "authorization_code",
+        "redirect_uri": app.config['REDIRECT_URI'],
+    }
+    token_response = requests.post(app.config['APPLE_TOKEN_URL'], data=token_data)
+    tokens = token_response.json()
+
+    if "id_token" in tokens:
+        # Decode the id_token
+        claims = jwt.decode(tokens["id_token"], verify=False)  # Optionally verify signature
+        email = claims.get("email")
+        first_name = claims.get("given_name")
+        last_name = claims.get("family_name")
+
+        # Find or create user in your database
+        user = User.query.filter_by(email=email).first()
+        if not user:
+            user = User(email=email, first_name=first_name, last_name=last_name)
+            db.session.add(user)
+            db.session.commit()
+
+        # Log in the user
+        login_user(user)
+
+        return redirect(url_for("home"))  # Redirect to your home page
+    else:
+        return "Failed to fetch tokens", 500
+'''
 
 # Serve the React app
 @app.errorhandler(OperationalError)
@@ -439,26 +525,25 @@ def before_request():
     try:
         if current_user.is_authenticated:
             session['session_workflows'] = get_session_workflows(db.session, current_user)
-
             session['roles'] = [role.name for role in current_user.roles] if current_user.roles else ['Guest']
             session['is_authenticated'] = True
-            # Set the user email in the session
             session['user_email'] = current_user.email
             g.current_user = current_user
-            session.permanent = True
+            session.permanent = True  # Make session permanent for authenticated users
         else:
-            # Default to 'Guest' for unauthenticated users
             session['roles'] = ['Guest']
             session['is_authenticated'] = False
-            # Set the user email in the session
-            session['user_email'] = None # right?
+            session['user_email'] = None
+            session.permanent = False  # Non-permanent session for unauthenticated users
+
         session.modified = True
+        # Optional debug print to check session state
         # print('session roles and authentication', session['roles'], session['is_authenticated'])
 
     except Exception as e:
-        logging.error(f"Error in before_request: {str(e)}")
-        raise e
-    pass
+        # Handle any potential errors gracefully
+        print(f"Error in before_request: {e}")
+
 
 bcrypt = Bcrypt(app)
 # Set the login view (replace 'login' with your actual login route)
@@ -1680,25 +1765,24 @@ def index():
 @app.route('/access/logout', methods=['GET'])
 @login_required
 def logout():
-
-
-    # Clear the user roles from the session
-    session.pop('user_roles', None)
-    # Clear the user session
+    # Log out the user
+    logout_user()
     session.clear()
+    session.permanent = False
+    response = redirect(url_for('guest_home'))  # Redirect to a new guest view
+    response.set_cookie('remember_token', '', expires=0)  # Clear persistent cookies
+    return response
 
-    # Clear user-specific session data but preserve CAPTCHA and other necessary data
-
-    '''user_specific_keys = ['user_id', 'username', 'user_roles']
-    for key in user_specific_keys:
-        session.pop(key, None)
-        '''
-
+# Guest home view with customized menu and additional data
+@app.route('/guest_home')
+def guest_home():
     # Build 'Guest' menu
     guest_menu_builder = MenuBuilder(main_menu_items, allowed_roles=["Guest"])
-    guest_menu_data = guest_menu_builder.parse_menu_data(user_roles=["Guest"],
-                                                         is_authenticated=False, include_protected=False)
-    # Render the home page with 'Guest' menu
+    guest_menu_data = guest_menu_builder.parse_menu_data(
+        user_roles=["Guest"],
+        is_authenticated=False,
+        include_protected=False
+    )
     additional_data = {
         "username": "Guest",
         "is_authenticated": False,
@@ -1711,9 +1795,7 @@ def logout():
         "user_roles": ["Guest"],
         "allowed_roles": ["Guest"]
     }
-
     return render_template('access/logout.html', **additional_data)
-
 
 @app.route('/show_cards')
 @login_required
@@ -2426,13 +2508,82 @@ def signup():
     return render_template('access/signup.html', title='Sign Up', form=form)
 
 
+@app.route('/home/about_us')
+def about_us():
+    about_content = TextContent.query.filter_by(content_type='about_us').order_by(TextContent.content_version.desc()).first()
+
+    # Render content with any needed placeholders (none needed here, so we just render directly)
+    rendered_content = render_template_string(about_content.content_body)
+
+    return render_template('home/about_us.html', content=rendered_content)
+
+
+@app.route('/home/mission')
+def mission():
+    mission_content = TextContent.query.filter_by(content_type='mission').order_by(TextContent.content_version.desc()).first()
+    rendered_content = render_template_string(mission_content.content_body)
+    return render_template('home/mission.html', content=rendered_content)
+
+
+@app.route('/home/history')
+def history():
+    history_content = TextContent.query.filter_by(content_type='history').order_by(TextContent.content_version.desc()).first()
+    rendered_content = render_template_string(history_content.content_body)
+    return render_template('home/history.html', content=rendered_content)
+
+
+
 @app.route('/home/terms_of_use')
 def terms_of_use():
-    return render_template('home/terms_of_use.html')
+    terms_content = TextContent.query.filter_by(content_type='terms_of_use').order_by(
+        TextContent.content_version.desc()).first()
 
-@app.route('/home/privacy_policy', methods=['GET', 'POST'])
+    # Dynamic content replacements
+    rendered_content = render_template_string(
+        terms_content.content_body,
+        last_updated=datetime.utcnow().strftime('%Y-%m-%d'),
+        app_name="Your Application",
+        website_url="https://yourwebsite.com",
+        company_name="Your Company Name",
+        country="Your Country/State",
+        contact_information="contact@yourwebsite.com"
+    )
+
+    return render_template('home/terms_of_use.html', content=rendered_content)
+
+
+@app.route('/home/privacy_policy')
 def privacy_policy():
-    return render_template('home/privacy_policy.html')
+    policy_content = TextContent.query.filter_by(content_type='privacy_policy').order_by(TextContent.content_version.desc()).first()
+
+    # Render with dynamic placeholders
+    rendered_content = render_template_string(
+        policy_content.content_body,
+        last_updated=datetime.utcnow().strftime('%Y-%m-%d'),
+        contact_email="your-email@example.com",
+        business_address="Your Business Address"
+    )
+
+    return render_template('home/privacy_policy.html', content=rendered_content)
+
+@app.route('/home/site_map_act', methods=['GET'])
+@login_required
+@roles_required('Admin')
+def site_map():
+    # Path to your menuStructure.json file
+    json_file_path = os.path.join(app.static_folder, 'js/menuStructure101.json')
+
+    # Load and read the JSON structure
+    with open(json_file_path, 'r') as file:
+         menu_structure = json.lodeactivatead(file)
+         app.logger.info(f"Menu structure: {menu_structure}")  # Log the JSON structure
+
+    # Generate the menu tree HTML
+    # menu_tree_html = generate_menu_tree(menu_structure)
+
+    menu_tree_html = Markup(generate_menu_tree(menu_structure))
+
+    return render_template('home/site_map_act.html', content=menu_tree_html)
 
 
 @app.route('/create_step', methods=['GET', 'POST'])
@@ -2472,17 +2623,9 @@ def test_carousel():
     return render_template('carousel/wrapper_test.html')
 
 
-@app.route('/home/mission',  methods=['GET', 'POST'])
-def mission():
-    return render_template('home/mission.html')
-
 @app.route('/home/products',  methods=['GET', 'POST'])
 def products():
     return render_template('home/services.html')
-
-@app.route('/home/history',  methods=['GET', 'POST'])
-def history():
-    return render_template('home/history.html')
 
 
 @app.route('/workflow/control_areas/area_1', methods=['GET', 'POST'])
@@ -2601,12 +2744,6 @@ def update_cell():
 
     # Handle other HTTP methods if needed
     return jsonify({'success': False, 'message': 'Invalid request method'})
-
-
-@app.route('/home/aboutus_1',  methods=['GET', 'POST'])
-def aboutus_1():
-    return render_template('home/aboutus_1.html')
-
 
 
 @app.route('/dashboard/company')
@@ -3063,23 +3200,6 @@ def control_area_3():
     return render_template('control_area_3.html',
                            current_route=current_route_url, current_app=current_app)
 
-
-@app.route('/home/site_map', methods=['GET', 'POST'])
-@login_required
-@roles_required('Admin')
-def site_map():
-    # ... (your existing code)
-
-    # Load and read the content of menuStructure.json
-    with open(json_file_path, 'r') as file:
-        menu_structure = json.load(file)
-
-    # Generate the menu tree
-
-    menu_tree = generate_menu_tree(menu_structure)
-
-    # Pass the menu_tree to the template
-    return render_template('home/site_map.html', menu_tree=menu_tree)
 
 def generate_captcha(width, height, length):
     characters = "&%?ABCDEFGHJKLMNPRSTUVWXYZ2345679"

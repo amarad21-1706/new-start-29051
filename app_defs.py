@@ -91,8 +91,51 @@ def create_message(session=None, user_id=None, message_type=None, subject=None, 
 # create_message(session, user_id=1, message_type='email', subject='New Notification', body='You have a new notification.')
 
 
+def generate_menu_tree(menu_data):
+    def build_html(items, level=0):
+        # Start an unordered list with indentation based on level
+        html = '<ul style="margin-left: {}px">'.format(level * 20)
 
-def generate_menu_tree(menu, depth=0):
+        for key, item in items.items():
+            # Get the URL or default to "#"
+            url = item.get('url', '#')
+            label = item.get('label', 'Untitled')
+
+            # Add the menu item as a list item
+            html += '<li><a href="{}">{}</a>'.format(url, label)
+
+            # Recursively build submenus if they exist
+            if 'submenus' in item and item['submenus']:
+                html += build_html(item['submenus'], level + 1)
+
+            # Close the list item
+            html += '</li>'
+
+        # Close the unordered list
+        html += '</ul>'
+        return html
+
+    return build_html(menu_data)
+
+
+def generate_menu_tree_2(menu_data):
+    def build_html(items, level=0):
+        html = '<ul style="margin-left: {}px">'.format(level * 20)  # Indent each level
+        for key, item in items.items():
+            # Create a clickable link for each menu item using its 'url'
+            html += '<li><a href="{}">{}</a></li>'.format(item['url'], item['label'])
+
+            # Check if there are submenus and recursively build for each
+            if 'submenus' in item and item['submenus']:
+                html += build_html(item['submenus'], level + 1)
+
+        html += '</ul>'
+        return html
+
+    return build_html(menu_data)
+
+
+def generate_menu_tree_old(menu, depth=0):
     """
     Recursively generates a clean tree from the menu structure.
 

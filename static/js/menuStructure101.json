@@ -17,7 +17,7 @@
         "submenus": {
             "About us": {
                 "label": "About us",
-                "url": "/home/aboutus_1",
+                "url": "/home/about_us",
                 "protected": false,
                 "allowed_roles": [
                     "Admin",
@@ -91,7 +91,7 @@
             },
             "Site map": {
                 "label": "Site map",
-                "url": "/home/site_map",
+                "url": "/home/site_map_act",
                 "protected": false,
                 "allowed_roles": [
                     "Admin",
@@ -109,7 +109,7 @@
     },
     "Dashboard": {
         "label": "Dashboard",
-        "url": "/dashboard",
+        "url": "/overview_statistics_1",
         "protected": true,
         "allowed_roles": [
             "Admin",
@@ -160,7 +160,7 @@
     },
     "Reserved": {
         "label": "Reserved Area",
-        "url": "/reserved",
+        "url": "/argon/main_dashboard",
         "protected": false,
         "allowed_roles": ["Admin", "Authority", "Employee", "Manager"],
         "widget": {
@@ -279,7 +279,7 @@
     },
     "Admin": {
         "label": "Admin",
-        "url": "/dashboard/ILM/dashboard_m1",
+        "url": "/open_admin_4",
         "protected": true,
         "allowed_roles": [
             "Admin"
@@ -943,7 +943,7 @@
     },
     "Contacts": {
         "label": "Contact",
-        "url": "/contact",
+        "url": "/home/contact/contact_us",
         "protected": false,
         "allowed_roles": [
             "Admin",
@@ -1014,7 +1014,7 @@
     },
     "Access": {
         "label": "Access",
-        "url": "/access",
+        "url": "/access/login",
         "protected": false,
         "allowed_roles": [
             "Admin",

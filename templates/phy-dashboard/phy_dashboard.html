@@ -99,10 +99,18 @@
         sessionStorage.setItem('show_spinner', 'true');
     }
 
-    // Always hide the spinner when the page loads
+    window.addEventListener('pageshow', function(event) {
+        if (event.persisted) {
+            // For back/forward cache cases, ensure the spinner is hidden
+            document.getElementById('loadingSpinner').style.display = 'none';
+            sessionStorage.removeItem('show_spinner');
+        }
+    });
+
+    // Always hide the spinner when the page loads, regardless of previous states
     window.onload = function() {
         document.getElementById('loadingSpinner').style.display = 'none';
-        // Clear sessionStorage if it's used
+        // Clear sessionStorage if it was used
         sessionStorage.removeItem('show_spinner');
     };
 </script>
