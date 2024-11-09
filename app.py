@@ -2575,7 +2575,7 @@ def site_map():
 
     # Load and read the JSON structure
     with open(json_file_path, 'r') as file:
-         menu_structure = json.lodeactivatead(file)
+         menu_structure = json.load(file)
          app.logger.info(f"Menu structure: {menu_structure}")  # Log the JSON structure
 
     # Generate the menu tree HTML
