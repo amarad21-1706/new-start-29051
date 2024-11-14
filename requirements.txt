@@ -202,7 +202,6 @@ nbconvert==7.12.0
 nbformat==5.9.2
 nest-asyncio==1.5.8
 networkx==3.1
-nltk==3.9.1
 notebook==7.0.6
 notebook_shim==0.2.3
 numba==0.58.0
@@ -250,6 +249,7 @@ pure-eval==0.2.2
 py-moneyed==0.8.0
 pyasn1==0.5.0
 pyasn1-modules==0.3.0
+PyAudio==0.2.14
 pycountry==23.12.11
 pycparser==2.21
 pydantic==2.4.2
@@ -340,7 +340,6 @@ traitlets==5.10.0
 transaction==4.0
 trio==0.22.2
 trio-websocket==0.11.1
-ttkthemes==3.2.2
 twilio==9.1.0
 typer==0.9.0
 types-python-dateutil==2.8.19.14
