@@ -1,6 +1,6 @@
 import json
 from db import db
-from flask import Markup
+from markupsafe import Markup
 
 from flask_bcrypt import generate_password_hash, check_password_hash
 from flask_security import RoleMixin, UserMixin

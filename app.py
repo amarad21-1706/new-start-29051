@@ -25,8 +25,10 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.exceptions import HTTPException
 from db import db
 from flask import (Flask, render_template, redirect, url_for, request, g,
-                   make_response, flash, Markup,
+                   make_response, flash,
                    send_from_directory)
+from markupsafe import Markup
+
 import datetime
 from datetime import date, timedelta, time, timezone
 from dateutil import rrule
@@ -189,6 +191,7 @@ from custom_encoder import CustomJSONEncoder
 from admin_views import create_admin_views  # Import the admin views module
 
 from cachetools import TTLCache, cached
+from flask_babel import _
 
 # import flask_dance
 # from jose import jwt
@@ -1091,7 +1094,8 @@ def attach_documents_to_workflow():
         # Commit the changes to the database
         db.session.commit()
 
-        flash("Documents successfully attached to the workflow.", "success")
+        flash(_("Documents successfully attached to the workflow."), "success")
+
         return redirect(url_for('open_admin_3.index'))
 
     except Exception as e:
@@ -1501,12 +1505,13 @@ def forgot_password():
                 mail.send(msg)
 
                 # Convert LazyString to str before passing to flash
-                flash(str(_('An email has been sent with instructions to reset your password.')), 'success')
+                flash(_('An email has been sent with instructions to reset your password.'), 'success')
             else:
-                flash(str(_('No user found with that email address.')), 'danger')
+                flash(_('No user found with that email address.'), 'danger')
+
             return redirect(url_for('forgot_password'))
         except Exception as e:
-            flash(str(_('An error occurred while processing your request. Please try again later.')), 'danger')
+            flash(_('An error occurred while processing your request. Please try again later.'), 'danger')
             return render_template('access/forgot_password.html', form=form)
     return render_template('access/forgot_password.html', form=form)
 
@@ -1516,7 +1521,7 @@ def forgot_password():
 def reset_password(token):
     user = Users.query.filter_by(user_2fa_secret=token).first()
     if not user:
-        flash('The password reset token is invalid or expired.', 'warning')
+        flash(_('The password reset token is invalid or expired.'), 'warning')
         return redirect(url_for('login'))
 
     form = ResetPasswordForm101()  # Assuming you have a ResetPasswordForm for new password entry
@@ -1524,7 +1529,8 @@ def reset_password(token):
         user.set_password(form.password.data)  # Use a secure password hashing method
         user.user_2fa_secret = None  # Invalidate the token after reset
         db.session.commit()
-        flash('Your password has been reset successfully.', 'success')
+
+        flash(_('Your password has been reset successfully.'), 'success')
         return redirect(url_for('login'))
     return render_template('access/reset_password.html', form=form, token=token)
 
@@ -1557,7 +1563,7 @@ def send_email():
     # send_simple_message(api_key, domain, sender, recipient, subject, text)
     send_simple_message333()
     # Set flash message
-    flash('Mail sent successfully.', 'success')
+    flash(_('Mail sent successfully.'), 'success')
     return redirect(url_for('index'))  # Redirect to your home page
 
 
@@ -1589,17 +1595,27 @@ def login():
                         # login_user(user, remember=False) # no long term cookies
                         remember = 'remember' in request.form # user defined set up
                         login_user(user, remember=remember)
-                        flash('Login Successful')
+                        flash(_('Login Successful'))
                         cet_time = get_cet_time()
                         try:
-                            create_message(db.session, user_id=user.id, message_type='email', subject='Security check',
-                                           body='È stato rilevato un nuovo accesso al tuo account il ' +
-                                                cet_time.strftime('%Y-%m-%d') + '. Se eri tu, non devi fare nulla. ' +
-                                                'In caso contrario, ti aiuteremo a proteggere il tuo account; ' +
-                                                "non rispondere a questo messaggio, apri un ticket o contatta " +
-                                                "l'amministratore del sistema.",
-                                           sender='System', company_id=None,
-                                           lifespan='one-off', allow_overwrite=True)
+                            create_message(
+                                db.session,
+                                user_id=user.id,
+                                message_type='email',
+                                subject=_('Security check'),
+                                body=_(
+                                    'A new login to your account was detected on {date}. '
+                                    'If it was you, no action is required. '
+                                    'Otherwise, we will help you secure your account. '
+                                    'Do not reply to this message; instead, open a ticket or contact '
+                                    'the system administrator.'
+                                ).format(date=cet_time.strftime('%Y-%m-%d')),
+                                sender=_('System'),
+                                company_id=None,
+                                lifespan='one-off',
+                                allow_overwrite=True
+                            )
+
                         except Exception as e:
                             print('Error creating logon message:', e)
 
@@ -1626,7 +1642,7 @@ def login():
                     # Redirect based on user roles
                     return redirect_based_on_role(user)
                 else:
-                    flash('Invalid username or password. Please try again.', 'error')
+                    flash(_('Invalid username or password. Please try again.'), 'error')
                     captcha_text, captcha_image = generate_captcha(300, 100, 5)
                     session['captcha'] = captcha_text
                     return render_template('access/login.html', form=form, captcha_image=captcha_image)
@@ -1634,7 +1650,7 @@ def login():
                 return handle_db_error(e)
         else:
             # CAPTCHA entered incorrectly
-            flash('Incorrect CAPTCHA! Please try again.', 'error')
+            flash(_('Incorrect CAPTCHA! Please try again.'), 'error')
             captcha_text, captcha_image = generate_captcha(300, 100, 5)
             session['captcha'] = captcha_text
             return render_template('access/login.html', form=form, captcha_image=captcha_image)
@@ -2453,12 +2469,12 @@ def signup():
         if form.validate_on_submit():
             # Check if the user has accepted the terms of use
             if not form.terms_accepted.data:
-                flash('You must agree with the Terms and conditions to sign up.', 'error')
+                flash(_('You must agree with the Terms and conditions to sign up.'), 'error')
                 return render_template('access/signup.html', title='Sign Up', form=form)
 
             # Check if the user has accepted the privacy policy
             if not form.privacy_policy_accepted.data:
-                flash('You must agree with the Privacy Policy to sign up.', 'error')
+                flash(_('You must agree with the Privacy Policy to sign up.'), 'error')
                 return render_template('access/signup.html', title='Sign Up', form=form)
 
             try:
@@ -2494,7 +2510,7 @@ def signup():
                 db.session.add(new_user)
                 db.session.commit()
 
-                flash('Your account has been created! You can now log in.', 'success')
+                flash(_('Your account has been created! You can now log in.'), 'success')
                 return redirect(url_for('login'))
 
             except Exception as e:
@@ -2503,7 +2519,7 @@ def signup():
                 logging.error(traceback.format_exc())
                 flash('An error occurred during signup', 'error')
         else:
-            flash('Form validation failed. Please check your input.', 'error')
+            flash(_('Form validation failed. Please check your input.'), 'error')
 
     return render_template('access/signup.html', title='Sign Up', form=form)
 
@@ -3609,13 +3625,13 @@ def submit_confirmed():
         # Retrieve questionnaire_id safely
         questionnaire_id = request.form.get('questionnaire_id', default=None)
         if questionnaire_id is None:
-            flash("No questionnaire ID provided.", "error")
+            flash(_("No questionnaire ID provided."), "error")
             return redirect(url_for('open_admin_10.index')) # Redirect to a default route or error page
 
         try:
             questionnaire_id = int(questionnaire_id)
         except ValueError:
-            flash("Invalid questionnaire ID.", "error")
+            flash(_("Invalid questionnaire ID."), "error")
             return redirect(url_for('open_admin_10.index'))
 
         return redirect(url_for('show_survey', questionnaire_id=questionnaire_id))
@@ -3625,7 +3641,7 @@ def submit_confirmed():
         save_answers(pending_data)
         return redirect(url_for('thank_you'))
     else:
-        flash('No data to save or session expired.', 'error')
+        flash(_('No data to save or session expired.'), 'error')
         return redirect(url_for('show_survey', questionnaire_id=request.form.get('questionnaire_id')))
 
 
@@ -3830,7 +3846,7 @@ def show_survey(questionnaire_id):
 
             return handle_post_submission(form, company_id, user_id, questionnaire_id, answers_to_save)
         else:
-            flash('Error with form data. Please check your entries.', 'error')
+            flash(_('Error with form data. Please check your entries.'), 'error')
 
     # Fetch the questionnaire details and questions via QuestionnaireQuestions
     # reset answer_fields in Question
@@ -3860,7 +3876,7 @@ def show_survey(questionnaire_id):
             answers_to_save = serialize_answers(request.form)
             return handle_post_submission(form, company_id, user_id, questionnaire_id, answers_to_save)
         else:
-            flash('Error with form data. Please check your entries.', 'error')
+            flash(_('Error with form data. Please check your entries.'), 'error')
 
     questionnaire_questions = QuestionnaireQuestions.query.filter_by(
         questionnaire_id=questionnaire_id
@@ -3896,7 +3912,7 @@ def handle_post_submission(form, company_id, user_id, questionnaire_id, answers_
     action_id = request.form.get('action_id', 'load')
 
     if check_existing_data(company_id, user_id, questionnaire_id):
-        flash('Existing data found, please confirm to overwrite.', 'warning')
+        flash(_('Existing data found, please confirm to overwrite.'), 'warning')
         session['pending_answer_data'] = {
             'action_id': action_id,
             'company_id': company_id,
@@ -3973,7 +3989,7 @@ def is_substantive(data):
 def save_answers(data):
     try:
         if not is_substantive(data['answer_data']):
-            flash('No substantial data to save.', 'error')
+            flash(_('No substantial data to save.'), 'error')
             return redirect(url_for('show_survey', questionnaire_id=data['questionnaire_id']))
 
         action_id = data['action_id']
@@ -4026,12 +4042,12 @@ def save_answers(data):
             if q_company:
                 q_company.status_id = 10  # Set to 'submitted' status
                 db.session.commit()
-                flash('Form submitted and status updated.', 'success')
+                flash(_('Form submitted and status updated.'), 'success')
             else:
-                flash('Questionnaire company record not found.', 'error')
+                flash(_('Questionnaire company record not found.'), 'error')
         elif changes_made:
             db.session.commit()
-            flash('Data saved successfully!', 'success')
+            flash(_('Data saved successfully!'), 'success')
 
         return redirect(url_for('thank_you'))
     except Exception as e:
@@ -4172,7 +4188,7 @@ def verify_2fa():
             return redirect(url_for('index'))
         else:
             # Verification failed
-            flash('Invalid OTP', 'danger')
+            flash(_('Invalid OTP'), 'danger')
     return render_template('access/verify_2fa.html', form=form)
 
 
@@ -4247,9 +4263,9 @@ def noticeboard():
             for message in messages_to_mark:
                 message.marked_as_read = True
             db.session.commit()
-            flash('Selected messages marked as read.', 'success')
+            flash(_('Selected messages marked as read.'), 'success')
         else:
-            flash('No messages selected.', 'warning')
+            flash(_('No messages selected.'), 'warning')
         return redirect(url_for('noticeboard'))
 
     unmarked_messages = Post.query.filter_by(user_id=user_id, marked_as_read=False).all()
@@ -4402,7 +4418,7 @@ def handle_checkout_session(session):
     try:
         # Check if 'email' exists in session
         if 'email' not in session:
-            flash('Email not found in session', 'error')
+            flash(_('Email not found in session'), 'error')
             return
 
         # Find the user by email
@@ -4410,7 +4426,7 @@ def handle_checkout_session(session):
 
         # If user not found, handle it appropriately
         if not user:
-            flash('User not found', 'error')
+            flash(_('User not found'), 'error')
             return
 
         # Update subscription details
@@ -4421,7 +4437,7 @@ def handle_checkout_session(session):
 
         # Commit changes to the database
         db.session.commit()
-        flash('Subscription updated successfully', 'success')
+        flash(_('Subscription updated successfully'), 'success')
 
     except Exception as e:
         # Rollback the session in case of error
@@ -4504,7 +4520,7 @@ def subscribe():
 
             if not plan_id:
                 logging.error("Plan ID is missing.")
-                flash("Please select a plan.", "danger")
+                flash(_("Please select a plan."), "danger")
                 return redirect(url_for('subscriptions'))
 
             plan_id = int(plan_id)
@@ -4517,7 +4533,7 @@ def subscribe():
 
             if not user:
                 logging.error("User not found.")
-                flash("User not found.", "danger")
+                flash(_("User not found."), "danger")
                 return redirect(url_for('subscriptions'))
 
             # Mark previous subscriptions as inactive
@@ -4541,16 +4557,16 @@ def subscribe():
             try:
                 db.session.commit()
                 logging.debug(f"Subscription created successfully: {new_subscription.id}")
-                flash("Subscription updated successfully.", "success")
+                flash(_("Subscription updated successfully."), "success")
             except Exception as e:
                 db.session.rollback()
                 logging.error(f"Error committing subscription to the database: {e}")
-                flash("An error occurred while updating the subscription.", "danger")
+                flash(_("An error occurred while updating the subscription."), "danger")
 
             return redirect(url_for('subscriptions'))  # Ensure updated subscription info is fetched
         else:
             logging.debug(f'Form validation failed: {form.errors}')
-            flash("Invalid form submission.", "danger")
+            flash(_("Invalid form submission."), "danger")
             return redirect(url_for('subscriptions'))
     except Exception as e:
         logging.error(f"Unexpected error: {e}")
@@ -4565,19 +4581,19 @@ def cancel_subscription():
     try:
         subscription_id = request.form.get('subscription_id')
         if not subscription_id:
-            flash("Subscription ID not provided.", "danger")
+            flash(_("Subscription ID not provided."), "danger")
             return redirect(url_for('subscriptions'))
 
         subscription = Subscription.query.filter_by(id=subscription_id, status='active').first()
 
         if not subscription:
-            flash("No active subscription found to cancel.", "warning")
+            flash(_("No active subscription found to cancel."), "warning")
             return redirect(url_for('subscriptions'))
 
         # Fetch the plan associated with the subscription
         plan = Plan.query.get(subscription.plan_id)
         if not plan:
-            flash("Subscription plan not found.", "danger")
+            flash(_("Subscription plan not found."), "danger")
             return redirect(url_for('subscriptions'))
 
         # Calculate end_date based on billing_cycle
@@ -4594,7 +4610,7 @@ def cancel_subscription():
 
         try:
             db.session.commit()
-            flash("Subscription canceled successfully.", "success")
+            flash(_("Subscription canceled successfully."), "success")
         except Exception as e:
             db.session.rollback()
             logging.error(f"Error committing subscription cancellation to the database: {e}")
@@ -4631,7 +4647,7 @@ def subscription_report():
             subscriptions = subscriptions_query.filter_by(user_id=user_id).order_by(Subscription.start_date.desc()).all()
 
         else:
-            flash("You do not have permission to view this report.", "danger")
+            flash(_("You do not have permission to view this report."), "danger")
             return redirect(url_for('index'))
 
         # Fetch product names for additional products
@@ -4863,7 +4879,7 @@ def admin_dashboard(area_id, subarea_id):
         mapping = DataMapping.query.filter_by(area_id=area_id, subarea_id=subarea_id).first()
 
         if not mapping:
-            flash("No data mapping found for this area and subarea.", "danger")
+            flash(_("No data mapping found for this area and subarea."), "danger")
             return redirect(url_for('index'))
 
         data_key = mapping.data_key
@@ -4976,7 +4992,7 @@ def admin_news():
         )
         db.session.add(new_entry)
         db.session.commit()
-        flash('News item created successfully!')
+        flash(_('News item created successfully!'))
         return redirect(url_for('admin_news'))
 
     news_items = Container.query.filter_by(content_type='news').all()
@@ -5009,7 +5025,7 @@ def edit_news(id):
         try:
             db.session.flush()  # Add this line
             db.session.commit()
-            flash('News item updated successfully!')
+            flash(_('News item updated successfully!'))
         except Exception as e:
             db.session.rollback()
             flash('An error occurred while updating the news item. Please try again.', 'danger')
@@ -5026,7 +5042,7 @@ def delete_news(id):
     news_item = Container.query.get_or_404(id)
     db.session.delete(news_item)
     db.session.commit()
-    flash('News item deleted successfully!')
+    flash(_('News item deleted successfully!'))
     return redirect(url_for('admin_news'))
 
 
@@ -5061,7 +5077,7 @@ def create_ticket():
         )
         db.session.add(new_ticket)
         db.session.commit()
-        flash('Ticket created successfully!')
+        flash(_('Ticket created successfully!'))
         return redirect(url_for('view_tickets'))
     return render_template('create_ticket.html', form=form)
 
@@ -5071,7 +5087,7 @@ def create_ticket():
 def edit_ticket(ticket_id):
     ticket = Ticket.query.get_or_404(ticket_id)
     if ticket.user_id != current_user.id:
-        flash('You do not have permission to edit this ticket.')
+        flash(_('You do not have permission to edit this ticket.'))
         return redirect(url_for('view_tickets'))
     form = TicketForm(obj=ticket)
     form.subject.choices = [(s.id, s.name) for s in Subject.query.all()]
@@ -5079,7 +5095,7 @@ def edit_ticket(ticket_id):
         ticket.subject_id = form.subject.data
         ticket.description = form.description.data
         db.session.commit()
-        flash('Ticket updated successfully!')
+        flash(_('Ticket updated successfully!'))
         return redirect(url_for('view_tickets'))
     return render_template('edit_ticket.html', form=form, ticket=ticket)
 
@@ -5095,7 +5111,7 @@ def view_tickets():
 @roles_required('Admin')
 def admin_tickets():
     if 'Admin' not in [role.name for role in current_user.roles]:
-        flash('You do not have permission to view this page.')
+        flash(_('You do not have permission to view this page.'))
         return redirect(url_for('index'))
     tickets = Ticket.query.all()
     return render_template('admin_tickets.html', tickets=tickets)
@@ -5105,7 +5121,7 @@ def admin_tickets():
 @roles_required('Admin')
 def respond_ticket(ticket_id):
     if 'Admin' not in [role.name for role in current_user.roles]:
-        flash('You do not have permission to respond to tickets.')
+        flash(_('You do not have permission to respond to tickets.'))
         return redirect(url_for('index'))
     ticket = Ticket.query.get_or_404(ticket_id)
     form = ResponseForm()
@@ -5114,7 +5130,7 @@ def respond_ticket(ticket_id):
         ticket.response = form.response.data
         ticket.status_id = form.status.data
         db.session.commit()
-        flash('Response sent successfully!')
+        flash(_('Response sent successfully!'))
         return redirect(url_for('admin_tickets'))
     return render_template('respond_ticket.html', form=form, ticket=ticket)
 
@@ -5141,7 +5157,7 @@ def update_account():
         current_user.mobile_phone = form.mobile_phone.data
         current_user.work_phone = form.work_phone.data
         db.session.commit()
-        flash('Your account has been updated!', 'success')
+        flash(_('Your account has been updated!'), 'success')
         return redirect(url_for('home'))  # Redirect to home page or another page
     elif request.method == 'GET':
         form.username.data = current_user.username
@@ -5356,11 +5372,11 @@ def add_event():
                     db.session.add(event)
 
                 db.session.commit()
-                flash('Event added successfully!', 'success')
+                flash(_('Event added successfully!'), 'success')
                 app.logger.info('Event added successfully!')
                 return redirect(url_for('calendar'))
             else:
-                flash('User not logged in', 'warning')
+                flash(_('User not logged in'), 'warning')
                 app.logger.warning('User not logged in')
                 return redirect(url_for('login'))
         else:
@@ -5385,13 +5401,13 @@ def edit_event(event_id):
     event = Event.query.get_or_404(event_id)
 
     if not current_user or not current_user.is_authenticated:
-        flash('User not authenticated', 'warning')
+        flash(_('User not authenticated'), 'warning')
         return redirect(url_for('login'))
 
     is_manager = Role.query.join(UserRoles).filter(UserRoles.user_id == current_user.id, Role.name == 'Manager').count() > 0
 
     if not is_manager and event.user_id != current_user.id:
-        flash('Permission denied', 'danger')
+        flash(_('Permission denied'), 'danger')
         return redirect(url_for('calendar'))
 
     form = EventForm(obj=event)
@@ -5415,7 +5431,7 @@ def edit_event(event_id):
                     event.recurrence_end = None
 
                 db.session.commit()
-                flash('Event updated successfully!', 'success')
+                flash(_('Event updated successfully!'), 'success')
                 return redirect(url_for('calendar'))
             except Exception as e:
                 db.session.rollback()
@@ -5433,18 +5449,18 @@ def delete_event(event_id):
     event = Event.query.get_or_404(event_id)
 
     if not current_user or not current_user.is_authenticated:
-        flash('User not authenticated', 'warning')
+        flash(_('User not authenticated'), 'warning')
         return redirect(url_for('login'))
 
     is_manager = Role.query.join(UserRoles).filter(UserRoles.user_id == current_user.id, Role.name == 'Manager').count() > 0
 
     if not is_manager and event.user_id != current_user.id:
-        flash('Permission denied', 'danger')
+        flash(_('Permission denied'), 'danger')
         return redirect(url_for('calendar'))
 
     db.session.delete(event)
     db.session.commit()
-    flash('Event deleted successfully!', 'success')
+    flash(_('Event deleted successfully!'), 'success')
     return redirect(url_for('calendar'))
 
 
@@ -5527,7 +5543,7 @@ def plans_page():
 @login_required
 def add_plan_to_cart(plan_id):
     # Logic to add the plan to the cart
-    flash('Plan added to cart successfully!', 'success')
+    flash(_('Plan added to cart successfully!'), 'success')
     return redirect(url_for('plans_page'))
 
 
@@ -5554,9 +5570,9 @@ def add_to_cart(product_id):
                 )
                 db.session.add(new_cart_item)
             db.session.commit()
-            flash('Product added to cart successfully!', 'success')
+            flash(_('Product added to cart successfully!'), 'success')
         else:
-            flash('Product not found.', 'error')
+            flash(_('Product not found.'), 'error')
         return redirect(url_for('products_page'))
     except Exception as e:
         db.session.rollback()
@@ -5643,9 +5659,9 @@ def update_cart_item(product_id):
         if cart_item:
             cart_item.quantity = quantity
             db.session.commit()
-            flash('Cart updated successfully!', 'success')
+            flash(_('Cart updated successfully!'), 'success')
         else:
-            flash('Cart item not found.', 'error')
+            flash(_('Cart item not found.'), 'error')
         return redirect(url_for('cart'))
     except Exception as e:
         db.session.rollback()
@@ -5664,9 +5680,9 @@ def remove_from_cart(product_id):
         if cart_item:
             db.session.delete(cart_item)
             db.session.commit()
-            flash('Item removed from cart successfully!', 'success')
+            flash(_('Item removed from cart successfully!'), 'success')
         else:
-            flash('Cart item not found.', 'error')
+            flash(_('Cart item not found.'), 'error')
         return redirect(url_for('cart'))
     except Exception as e:
         db.session.rollback()
@@ -5687,7 +5703,7 @@ def checkout():
             # For simplicity, let's just clear the cart after "checkout"
             Cart.query.filter_by(user_id=user_id, company_id=company_id).delete()
             db.session.commit()
-            flash('Checkout successful! Your order has been placed.', 'success')
+            flash(_('Checkout successful! Your order has been placed.'), 'success')
             return redirect(url_for('products_page'))
 
         # For GET request, render the checkout page
@@ -5714,14 +5730,14 @@ def create_article():
 
         # Check if all required fields are present
         if not contract_id or not article_title or not article_body:
-            flash("All fields are required.", "danger")
+            flash(_("All fields are required."), "danger")
             return redirect(request.referrer)
 
         # Validate CSRF token
         try:
             validate_csrf(csrf_token)
         except Exception as e:
-            flash("CSRF token is invalid or missing.", "danger")
+            flash(_("CSRF token is invalid or missing."), "danger")
             print(f"Error validating CSRF token: {str(e)}")
             return redirect(request.referrer)
 
@@ -5738,7 +5754,7 @@ def create_article():
         db.session.add(new_article)
         db.session.commit()
 
-        flash("Article created successfully.", "success")
+        flash(_("Article created successfully."), "success")
         return redirect(url_for('drafting_contracts.index_view'))  # Corrected endpoint name
 
     except Exception as e:
@@ -5772,13 +5788,13 @@ def sign_agreement():
     user_email = session.get('user_email')
     if not user_email:
         print('User email not found in session')
-        flash("User not logged in.", "danger")
+        flash(_("User not logged in."), "danger")
         return redirect(url_for('index'))
 
     user = Users.query.filter_by(email=user_email).first()
     if not user:
         print('User not found in database')
-        flash("User not found in the system.", "danger")
+        flash(_("User not found in the system."), "danger")
         return redirect(url_for('index'))
 
     # Fetch the contract using contract_name
@@ -5786,13 +5802,13 @@ def sign_agreement():
 
     if not contract:
         print('Contract not found')
-        flash("The membership agreement could not be found. Please contact support.", "danger")
+        flash(_("The membership agreement could not be found. Please contact support."), "danger")
         return redirect(url_for('checklist'))
 
     # Ensure the contract has a contract_id attribute
     if not hasattr(contract, 'contract_id'):
         print('Contract object does not have a contract_id attribute')
-        flash("Contract object is invalid. Please contact support.", "danger")
+        flash(_("Contract object is invalid. Please contact support."), "danger")
         return redirect(url_for('checklist'))
 
     if request.method == 'POST':
@@ -5803,15 +5819,15 @@ def sign_agreement():
                 user.agreement_signed = True
                 user.agreement_signed_date = datetime.utcnow()  # Record the date of agreement
                 db.session.commit()
-                flash("You have successfully signed the agreement.", "success")
+                flash(_("You have successfully signed the agreement."), "success")
                 return redirect(url_for('checklist'))
             else:
                 print('Agreement checkbox not checked')
-                flash("You must accept the agreement to proceed.", "danger")
+                flash(_("You must accept the agreement to proceed."), "danger")
                 return redirect(url_for('sign_agreement'))
         except Exception as e:
             print(f'Error occurred while signing the agreement: {e}')
-            flash("An error occurred while signing the agreement. Please try again.", "danger")
+            flash(_("An error occurred while signing the agreement. Please try again."), "danger")
             return redirect(url_for('sign_agreement'))
 
     print('Handling GET request')
@@ -5822,13 +5838,13 @@ def sign_agreement():
         print(f'Articles found: {articles}')  # Debugging output
         if not articles:
             print('No articles found for the contract')
-            flash("No articles found for the agreement. Please contact support.", "danger")
+            flash(_("No articles found for the agreement. Please contact support."), "danger")
             return redirect(url_for('checklist'))
 
         return render_template('sign_agreement.html', contract=contract, articles=articles)
     except Exception as e:
         print(f'Error occurred while fetching articles: {e}')
-        flash("An error occurred while fetching the agreement articles.", "danger")
+        flash(_("An error occurred while fetching the agreement articles."), "danger")
         return redirect(url_for('checklist'))
 
 
@@ -5840,7 +5856,7 @@ def request_role():
         support_subject = Subject.query.filter_by(name='Support').first()
 
         if not support_subject:
-            flash('Support subject not found. Please contact the admin.', 'danger')
+            flash(_('Support subject not found. Please contact the admin.'), 'danger')
             return redirect(url_for('checklist'))
 
         subject_id = support_subject.id  # Assign the correct subject ID for "Support"
@@ -5857,7 +5873,7 @@ def request_role():
         )
         db.session.add(new_ticket)
         db.session.commit()
-        flash('Role request submitted successfully under Support!', 'success')
+        flash(_('Role request submitted successfully under Support!'), 'success')
     except Exception as e:
         db.session.rollback()
         flash(f"Error submitting role request: {e}", "danger")
@@ -5886,7 +5902,7 @@ def request_company():
     db.session.add(new_ticket)
     db.session.commit()
 
-    flash('Your request for company assignment has been submitted successfully!')
+    flash(_('Your request for company assignment has been submitted successfully!'))
 
     return redirect(url_for('checklist'))
 
@@ -5899,12 +5915,12 @@ def subscribe_service():
 
     # Check if the user has signed the agreement
     if not session['user_roles']:
-        flash("You must apply for and be granted membership to access our services.", "danger")
+        flash(_("You must apply for and be granted membership to access our services."), "danger")
         return redirect(url_for('checklist'))
 
     # Check if the user has signed the agreement
     if not current_user.agreement_signed:
-        flash("You must sign the agreement before subscribing to services.", "danger")
+        flash(_("You must sign the agreement before subscribing to services."), "danger")
         return redirect(url_for('checklist'))
 
     try:
@@ -5923,12 +5939,12 @@ def opt_plan():
 
     # Check if the user has signed the agreement
     if not session['user_roles']:
-        flash("You must apply for and be granted membership to access our plans.", "danger")
+        flash(_("You must apply for and be granted membership to access our plans."), "danger")
         return redirect(url_for('checklist'))
 
     # Check if the user has signed the agreement
     if not current_user.agreement_signed:
-        flash("You must sign the agreement before subscribing to plans.", "danger")
+        flash(_("You must sign the agreement before subscribing to plans."), "danger")
         return redirect(url_for('checklist'))
 
     try:
@@ -6078,7 +6094,7 @@ def finalize_attach_to_dossier_two():
 
         dossier = Dossier.query.get(dossier_id)
         if not dossier:
-            flash("Dossier not found.", "error")
+            flash(_("Dossier not found."), "error")
             return redirect(url_for('open_admin_3.index'))
 
         # Attach each document to the selected Dossier
@@ -6104,7 +6120,7 @@ def finalize_attach_to_dossier_two():
 @login_required
 def manage_extra_time():
     if not current_user.has_role('Admin'):
-        flash("You are not authorized to access this page.", "danger")
+        flash(_("You are not authorized to access this page."), "danger")
         return redirect(url_for('index'))
 
     companies = Company.query.all()
@@ -6128,7 +6144,7 @@ def manage_extra_time():
             # If the record exists, update the existing record with the new extra time end date
             existing_record.extra_time_end = extra_time_end
             db.session.commit()
-            flash("Extra time authorization updated.", "success")
+            flash(_("Extra time authorization updated."), "success")
         else:
             # If no record exists, create a new one
             new_extra_time = ExtraTimeAuthorization(
@@ -6139,7 +6155,7 @@ def manage_extra_time():
             )
             db.session.add(new_extra_time)
             db.session.commit()
-            flash("Extra time authorization saved.", "success")
+            flash(_("Extra time authorization saved."), "success")
 
         return redirect(url_for('manage_extra_time'))
 
@@ -6159,7 +6175,7 @@ def manage_extra_time():
 @login_required
 def edit_extra_time(record_id):
     if not current_user.has_role('Admin'):
-        flash("You are not authorized to access this page.", "danger")
+        flash(_("You are not authorized to access this page."), "danger")
         return redirect(url_for('index'))
 
     extra_time_record = ExtraTimeAuthorization.query.get_or_404(record_id)
@@ -6171,7 +6187,7 @@ def edit_extra_time(record_id):
         extra_time_record.extra_time_end = request.form.get('extra_time_end')
 
         db.session.commit()
-        flash("Extra time authorization updated successfully.", "success")
+        flash(_("Extra time authorization updated successfully."), "success")
         return redirect(url_for('manage_extra_time'))
 
     companies = Company.query.all()
@@ -6190,14 +6206,14 @@ def edit_extra_time(record_id):
 @login_required
 def delete_extra_time(record_id):
     if not current_user.has_role('Admin'):
-        flash("You are not authorized to access this page.", "danger")
+        flash(_("You are not authorized to access this page."), "danger")
         return redirect(url_for('index'))
 
     extra_time_record = ExtraTimeAuthorization.query.get_or_404(record_id)
 
     db.session.delete(extra_time_record)
     db.session.commit()
-    flash("Extra time authorization deleted successfully.", "success")
+    flash(_("Extra time authorization deleted successfully."), "success")
     return redirect(url_for('manage_extra_time'))
 
 
@@ -6206,6 +6222,24 @@ def checkout_success():
     Cart.query.delete()
     db.session.commit()
     return render_template('checkout_success.html')
+
+
+@app.route('/change_language/<language>', methods=['GET'])
+def change_language(language):
+    print(f"Requested language: {language}")
+    if language not in ['en', 'it', 'es', 'fr', 'ar']:
+        language = 'en'
+    session['lang'] = language
+    print(f"Session language set to: {session['lang']}")
+    return redirect(request.referrer or url_for('index'))
+
+
+@app.route('/debug_locale', methods=['GET'])
+def debug_locale():
+    from flask_babel import get_locale
+    print(f"Session language: {session.get('lang')}")
+    print(f"Current locale: {get_locale()}")
+    return f"Session language: {session.get('lang')}, Current locale: {get_locale()}"
 
 
 if __name__ == '__main__':

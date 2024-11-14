@@ -557,6 +557,17 @@
             <div class="navbar-logo">
                 <img src="{{ url_for('static', filename='icons/globe_icon.png') }}" alt="My Logo">
             </div>
+
+            <form id="language-form" method="get" action="">
+                <select id="language-select" name="language" onchange="updateActionAndSubmit(this)">
+                    <option value="en" {% if session.get('lang') == 'en' %}selected{% endif %}>English</option>
+                    <option value="it" {% if session.get('lang') == 'it' %}selected{% endif %}>Italiano</option>
+                    <option value="es" {% if session.get('lang') == 'es' %}selected{% endif %}>Español</option>
+                    <option value="fr" {% if session.get('lang') == 'fr' %}selected{% endif %}>Français</option>
+                    <option value="ar" {% if session.get('lang') == 'ar' %}selected{% endif %}>العربية</option>
+                </select>
+            </form>
+
         </div>
     </nav>
 
@@ -1098,6 +1109,13 @@
                 });
             }
         });
+
+        function updateActionAndSubmit(selectElement) {
+            const language = selectElement.value;
+            const form = document.getElementById('language-form');
+            form.action = `/change_language/${language}`;
+            form.submit();
+        }
     </script>
     <p style="font-size: 8px;">Current Version: {{ git_version }}</p>
 </body>

@@ -19,12 +19,11 @@ from password_reset import password_reset_bp  # Import the blueprint
 import datetime
 from datetime import date, timedelta, time, timezone
 
+from flask_babel import Babel
+from flask_babel import get_locale
+
 csrf = CSRFProtect()  # Define csrf globally
 # babel = Babel()  # Initialize Babel without an app instance
-
-def my_locale_selector():
-    return 'en_EN'  # Example for French
-
 
 def roles_required(*required_roles):
     def decorator(func):
@@ -68,6 +67,7 @@ def subscription_required(f):
 
     return decorated_function
 
+
 def create_app(conf=None):
     if conf is None:
         conf = Config()
@@ -76,6 +76,22 @@ def create_app(conf=None):
     # app = Flask(__name__, static_folder='static')
     # app = Flask(__name__, static_folder="static", static_url_path="/")
     app = Flask(__name__, static_folder='static', static_url_path='/static')
+
+    # Configuration
+    app.config['BABEL_DEFAULT_LOCALE'] = 'en'
+    app.config['BABEL_DEFAULT_TIMEZONE'] = 'UTC'
+
+    babel = Babel(app)
+
+    # Initialize extensions
+    babel.init_app(app, locale_selector=get_locale)
+
+    # Use direct assignment instead of decorator
+    babel.locale_selector_func = lambda: (
+        request.args.get('lang') or
+        session.get('lang') or
+        request.accept_languages.best_match(['en', 'it', 'es', 'fr', 'ar'])
+    )
 
     # Explicitly set debug mode based on an environment variable or configuration
     app.config['DEBUG'] = os.environ.get('FLASK_DEBUG', 'False').lower() in ['true', '1']
@@ -132,3 +148,9 @@ def create_app(conf=None):
     app.register_blueprint(password_reset_bp)  # Register the blueprint
 
     return app
+
+
+def get_locale():
+    # Use the language stored in the session, or default to English
+    print('session in get_locale', session.get('lang'))
+    return session.get('lang', 'en')

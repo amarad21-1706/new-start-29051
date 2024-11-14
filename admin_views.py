@@ -98,9 +98,8 @@ from wtforms import (SelectField, BooleanField, ValidationError, EmailField, Hid
 from config.config import (Config, check_status, check_status_limited,
                            check_status_extended)
 
-from flask import session
-
-from flask import flash, redirect, url_for, Markup
+from flask import flash, redirect, url_for, session
+from markupsafe import Markup
 from flask_admin.contrib.sqla import ModelView
 from sqlalchemy.exc import IntegrityError, ProgrammingError
 import uuid
