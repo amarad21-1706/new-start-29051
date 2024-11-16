@@ -40,7 +40,6 @@ def roles_required(*required_roles):
     return decorator
 
 
-
 def subscription_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -179,3 +178,6 @@ def get_locale():
     # Use the language stored in the session, or default to English
     print('session in get_locale', session.get('lang'))
     return session.get('lang', 'en')
+
+
+

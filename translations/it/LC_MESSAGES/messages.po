@@ -109,6 +109,28 @@ msgstr "Riporta una pagina"
 msgid "Accessibility"
 msgstr "Accesso facilitato"
 
+msgid "Signup"
+msgstr "Registrati"
+
+msgid "About us"
+msgstr "Chi siamo"
+
+msgid "Services"
+msgstr "Prodotti e servizi"
+
+msgid "History"
+msgstr "Storia"
+
+msgid "Mission"
+msgstr "Missione"
+
+msgid "Site map"
+msgstr "Mappa del sito"
+
+msgid "Archive"
+msgstr "Archivio"
+
+
 #: forms/forms.py:395 forms/forms.py:401 new-start-29051/forms/forms.py:395
 #: new-start-29051/forms/forms.py:401
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/forms.py:37

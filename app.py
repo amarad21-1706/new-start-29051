@@ -524,8 +524,29 @@ def log_request():
 '''
 
 @app.before_request
+def inject_translated_menu():
+    global main_menu_items  # Ensure `main_menu_items` is globally available
+    print("Original Menu Items:", main_menu_items)  # Debug output
+    translated_menu = translate_menu_items(main_menu_items)
+    print("Translated Menu Items:", translated_menu)  # Debug output
+    g.translated_menu_items = translated_menu
+
+
+@app.before_request
 def before_request():
+
+    global main_menu_items
+    print(f"Session language before translation: {session.get('lang', 'en')}")
+
     try:
+
+        print("Original Menu Items:", main_menu_items)  # Debug log
+        translated_menu = translate_menu_items(main_menu_items)
+        # Translate menu items and store in `g`
+
+        print("Translated Menu Items:", translated_menu)  # Debug log
+        g.translated_menu_items = translated_menu
+
         if current_user.is_authenticated:
             session['session_workflows'] = get_session_workflows(db.session, current_user)
             session['roles'] = [role.name for role in current_user.roles] if current_user.roles else ['Guest']
@@ -1178,27 +1199,21 @@ def process_menu_items(menu_items, is_authenticated, user_roles):
     def recursive_process(items):
         # Iterate through each menu item
         for key, item in items.items():
-            # Check if the item itself has a widget that should be displayed as a widget
-            if 'widget' in item and item['widget'].get('display', False):
-                allowed_roles = item.get('allowed_roles', [])
-                # Find the intersection between user_roles and allowed_roles
-                intersection = set(user_roles).intersection(allowed_roles)
-
-                # print('Widget to display:', key, is_authenticated, user_roles, allowed_roles, 'Intersection:',
-                #      intersection)
-
-                if intersection:
-                    widgets_to_display.append(item)
+            # Check if the item is a dictionary
+            if isinstance(item, dict):
+                # Check if the item itself has a widget that should be displayed as a widget
+                if 'widget' in item and item['widget'].get('display', False):
+                    allowed_roles = item.get('allowed_roles', [])
+                    intersection = set(user_roles).intersection(allowed_roles)
+                    if intersection:
+                        widgets_to_display.append(item)
                 else:
                     menus_to_display.append(item)
-            else:
-                # If not a widget, consider it a menu item to display
-                menus_to_display.append(item)
 
-            # Process submenus recursively (if any)
-            submenus = item.get('submenus', {})
-            if submenus:
-                recursive_process(submenus)
+                # Process submenus recursively (if any)
+                submenus = item.get('submenus', {})
+                if submenus and isinstance(submenus, dict):
+                    recursive_process(submenus)
 
     # Start processing from the top-level menu items
     recursive_process(menu_items)
@@ -1206,7 +1221,175 @@ def process_menu_items(menu_items, is_authenticated, user_roles):
     return menus_to_display, widgets_to_display
 
 
+def translate_menu_items(menu_items):
+    """
+    Recursively translate menu items using Flask-Babel's _() function.
+    """
+    translated_menu = {}
+    for key, menu_item in menu_items.items():
+        if isinstance(menu_item, dict):
+            translated_item = menu_item.copy()  # Copy the original item
+            translated_item['label'] = _(menu_item.get('label', ''))  # Translate the label
+            # Recursively process submenus
+            if 'submenus' in menu_item and isinstance(menu_item['submenus'], dict):
+                translated_item['submenus'] = translate_menu_items(menu_item['submenus'])
+            translated_menu[key] = translated_item
+    return translated_menu
+
+
 def generate_route_and_menu(route, allowed_roles, template, include_protected=False, limited_menu=False):
+    def decorator(func):
+        @app.route(route)
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+
+            # Determine user authentication status
+            if callable(getattr(current_user, 'is_authenticated', None)):
+                is_authenticated = current_user.is_authenticated()
+            else:
+                is_authenticated = current_user.is_authenticated
+
+            username = current_user.username if current_user.is_authenticated else "Guest"
+            user_roles = session.get('user_roles', ['Guest'])
+
+            # Identify overlapping roles
+            intersection = set(user_roles) & {"Employee", "Manager", "Authority", "Admin", "Provider"}
+            allowed_roles = list(intersection) if intersection else ["Guest"]
+
+            # Build the menu
+            menu_builder_instance = MenuBuilder(main_menu_items, allowed_roles=allowed_roles)
+
+            # Ensure user roles are set correctly
+            if hasattr(g, 'user') and g.user:
+                user_roles = [role.name for role in g.user.roles] if g.user.roles else ['Guest']
+                is_authenticated = g.user.is_authenticated
+
+            # Translate the menu items
+            translated_menu_items = translate_menu_items(main_menu_items)
+            print('translated menu items', translated_menu_items)
+
+            # Parse menu data
+            if limited_menu:
+                menu_data = menu_builder_instance.parse_menu_data(
+                    user_roles=user_roles,
+                    is_authenticated=is_authenticated,
+                    include_protected=False
+                )
+            else:
+                menu_data = menu_builder_instance.parse_menu_data(
+                    user_roles=user_roles,
+                    is_authenticated=is_authenticated,
+                    include_protected=include_protected
+                )
+
+            # Prepare URLs for admin menus
+            buttons = []
+            admin_1_url = url_for('open_admin_1.index')
+            admin_2_url = url_for('open_admin_2.index')
+            admin_3_url = url_for('open_admin_3.index')
+            admin_4_url = url_for('open_admin_4.index')
+
+            try:
+                admin_5_url = url_for('open_admin_5.index')
+            except Exception as e:
+                print('Error generating admin_5_url:', str(e))
+
+            try:
+                admin_6_url = url_for('open_admin_6.index')
+            except Exception as e:
+                print('Error generating admin_6_url:', str(e))
+
+            admin_10_url = url_for('open_admin_10.index')
+
+            # Fetch the user's company name
+            company_name = ' '
+            if current_user:
+                user_id = current_user.id if current_user.is_authenticated else 0
+                company_name = db.session.query(Company.name) \
+                    .join(CompanyUsers, CompanyUsers.company_id == Company.id) \
+                    .filter(CompanyUsers.user_id == user_id) \
+                    .first()
+
+            # Count unread notices
+            unread_notices_count = Post.query.filter_by(user_id=current_user.id, marked_as_read=False).count() if is_authenticated else 0
+
+            # Count tickets
+            if is_authenticated:
+                if 'Admin' in [role.name for role in current_user.roles]:
+                    admin_tickets_count = Ticket.query.filter_by(status_id=2, marked_as_read=False).count()
+                    open_tickets_count = 0
+                else:
+                    admin_tickets_count = 0
+                    open_tickets_count = Ticket.query.filter_by(user_id=current_user.id, status_id=2, marked_as_read=False).count()
+            else:
+                admin_tickets_count = 0
+                open_tickets_count = 0
+
+            # Fetch user role IDs
+            role_ids = []
+            for role_name in user_roles:
+                role = Role.query.filter_by(name=role_name).first()
+                if role:
+                    role_ids.append(role.id)
+
+            # Fetch containers
+            try:
+                containers = Container.query.filter(
+                    Container.role_id.in_(role_ids)
+                ).order_by(Container.container_order).all()
+            except:
+                containers = None
+
+            # Fetch card data
+            company_id = session.get('company_id')
+            card_data = get_cards(company_id)
+
+            # Check cookies accepted status
+            cookies_accepted = 'true' if current_user.is_authenticated and current_user.cookies_accepted else 'false'
+            show_cookie_banner = 'Admin' not in user_roles and cookies_accepted == 'false'
+
+            # Process menus and widgets
+            menus_to_display, widgets_to_display = process_menu_items(translated_menu_items, is_authenticated, user_roles)
+
+            # Additional data for rendering
+            additional_data = {
+                "username": username,
+                "company_name": company_name,
+                "is_authenticated": is_authenticated,
+                "main_menu_items": menu_data,
+                "menus_to_display": menus_to_display,
+                "widgets_to_display": widgets_to_display,
+                "admin_menu_data": None,
+                "authority_menu_data": None,
+                "manager_menu_data": None,
+                "employee_menu_data": None,
+                "guest_menu_data": None,
+                "user_roles": user_roles,
+                "allowed_roles": allowed_roles,
+                "limited_menu": limited_menu,
+                "buttons": buttons,
+                "admin_1_url": admin_1_url,
+                "admin_2_url": admin_2_url,
+                "admin_3_url": admin_3_url,
+                "admin_4_url": admin_4_url,
+                "admin_10_url": admin_10_url,
+                "left_menu_items": menu_data,
+                "unread_notices_count": unread_notices_count,
+                "admin_tickets_count": admin_tickets_count,
+                "open_tickets_count": open_tickets_count,
+                "containers": containers,
+                "cards": card_data,
+                "show_cookie_banner": show_cookie_banner,
+            }
+
+            return render_template(template, **additional_data)
+
+        return wrapper
+
+    return decorator
+
+
+def generate_route_and_menu_old(route, allowed_roles, template, include_protected=False, limited_menu=False):
     def decorator(func):
         @app.route(route)
         @wraps(func)
@@ -1221,9 +1404,9 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
             user_roles = session.get('user_roles', ['Guest'])
 
             intersection = set(user_roles) & {"Employee", "Manager", "Authority", "Admin", "Provider"}
-
             allowed_roles = list(intersection) if intersection else ["Guest"]
 
+            print('Menu builder 1')
             menu_builder_instance = MenuBuilder(main_menu_items, allowed_roles=allowed_roles)
 
             # Check if g.user is set and if the user is authenticated
@@ -1724,6 +1907,7 @@ def left_menu():
         "limited_menu": None,  # Assuming limited_menu is defined elsewhere
         "left_menu_items": left_menu_items,
         "containers": containers,
+        "main_menu_items": g.translated_menu_items,
     }
 
     return render_template('home/home.html', **additional_data)
@@ -1742,6 +1926,8 @@ def index():
     show_cookie_banner = 'Admin' not in user_roles and cookies_accepted == 'false'
 
     # Create MenuBuilder with user roles
+
+    print('Menu builder 2')
     menu_builder = MenuBuilder(main_menu_items, allowed_roles=user_roles)
     # Generate menu for the current user
 
@@ -1775,7 +1961,9 @@ def index():
                         generated_menu=generated_menu,
                         show_cookie_banner=show_cookie_banner,
                         has_events=has_events,
-                        git_version=git_version)
+                        git_version=git_version,
+                       main_menu_items=g.translated_menu_items
+                       )
 
 
 @app.route('/access/logout', methods=['GET'])
@@ -1793,6 +1981,8 @@ def logout():
 @app.route('/guest_home')
 def guest_home():
     # Build 'Guest' menu
+
+    print('Menu builder 3')
     guest_menu_builder = MenuBuilder(main_menu_items, allowed_roles=["Guest"])
     guest_menu_data = guest_menu_builder.parse_menu_data(
         user_roles=["Guest"],
@@ -2364,6 +2554,7 @@ def employee_page():
             'left_menu_items': left_menu,
             'user_roles': session.get('user_roles', []),
             'allowed_roles': ["Manager", "Employee", "Admin"],
+            'main_menu_items': g.translated_menu_items,
         }
         return render_template('home/home.html', **additional_data)
 
@@ -2379,6 +2570,8 @@ def get_left_menu_items(role):
         left_menu_items = json.load(file)
 
     # Create a MenuBuilder instance for the "Guest" role
+
+    print('Menu builder L4')
     left_menu_builder = MenuBuilder(left_menu_items, role)
     left_menu_items = left_menu_builder.parse_menu_data(user_roles=role, is_authenticated=True, include_protected=True)
     # Pass the "Guest" menu data to the template
@@ -2398,6 +2591,8 @@ def get_left_menu_items_limited(role, area):
             left_menu_items = json.load(file)
 
     # Create a MenuBuilder instance for the "Guest" role
+
+    print('Menu builder L5L')
     left_menu_builder = MenuBuilder(left_menu_items, role)
     left_menu_items = left_menu_builder.parse_menu_data(user_roles=role, is_authenticated=True, include_protected=True)
     return left_menu_items
@@ -6375,11 +6570,12 @@ def checkout_success():
 
 @app.route('/change_language/<language>', methods=['GET'])
 def change_language(language):
-    print(f"Requested language: {language}")
+    print(f"*** Requested language: {language}")
     if language not in ['en', 'it', 'es', 'fr', 'ar']:
         language = 'en'
     session['lang'] = language
-    print(f"Session language set to: {session['lang']}")
+    print(f"*** Session language set to: {session['lang']}")
+
     return redirect(request.referrer or url_for('index'))
 
 
@@ -6390,6 +6586,7 @@ def debug_locale():
     print(f"Current locale: {get_locale()}")
     return f"Session language: {session.get('lang')}, Current locale: {get_locale()}"
 
+
 if __name__ == '__main__':
     # Load menu items from JSON file
     current_dir = get_current_directory()
@@ -6397,6 +6594,7 @@ if __name__ == '__main__':
     with open(Path(json_file_path), 'r') as file:
         main_menu_items = json.load(file)
 
+    print('Menu builder 0')
     # Create a MenuBuilder instance for the "Guest" role
     guest_menu_builder = MenuBuilder(main_menu_items, ["guest"])
     guest_menu_data = guest_menu_builder.parse_menu_data(user_roles=["guest"],
