@@ -38,6 +38,9 @@ msgstr "D.E.R.E. - Piattaforma digitale per il settore dell'energia"
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/forms.py:30
 #: venv/lib/python3.11/site-packages/flask_security/forms.py:30
 
+msgid "Main Dashboard"
+msgstr "Pannello Principale"
+
 msgid "Home"
 msgstr "Pagina iniziale"
 

@@ -37,6 +37,9 @@ msgstr "D.E.R.E. - Environnement numérique pour le secteur énergétique régle
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/forms.py:30
 #: venv/lib/python3.11/site-packages/flask_security/forms.py:30
 
+msgid "Main Dashboard"
+msgstr "Tableau de Bord Principal"
+
 msgid "Home"
 msgstr "Accueil"
 
