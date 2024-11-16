@@ -627,7 +627,7 @@
     <div class="container mt-4 general-content">
         <div class="row">
             <div class="col-md-9">
-                <h2>D.E.R.E. - Digital Environment for Regulated Energy Sector</h2>
+                <h2>{{ _("D.E.R.E. - Digital Environment for Regulated Energy Sector") }}</h2>
                 <h3>Energy going digital</h3>
 
                 <!-- Render Widgets Section -->
@@ -913,36 +913,36 @@
         <div class="container">
             <div class="row footer-links">
                 <div class="col">
-                    <div class="column-title">About</div>
+                    <div class="column-title">{{ _("About") }}</div>
                     <div class="column-content">
-                        <a href="{{ url_for('about_us') }}">Who we are</a>
-                        <a href="{{ url_for('history') }}">Our history</a>
-                        <a href="{{ url_for('public_news') }}">News and insights</a>
+                        <a href="{{ url_for('about_us') }}">{{ _("Who Are We") }}</a>
+                        <a href="{{ url_for('history') }}">{{ _("Our History") }}</a>
+                        <a href="{{ url_for('public_news') }}">{{ _("News and Insights") }}</a>
                         <a href="#">Events</a>
-                        <a href="{{ url_for('site_map') }}">Sitemap</a>
+                        <a href="{{ url_for('site_map') }}">{{ _("Sitemap") }}</a>
                     </div>
                 </div>
                 <div class="col">
-                    <div class="column-title">Legal</div>
+                    <div class="column-title">{{ _("Legal") }}</div>
                     <div class="column-content">
-                        <a href="#">Disclaimer</a>
-                        <a href="{{ url_for('privacy_policy') }}">Privacy Statement</a>
-                        <a href="{{ url_for('cookie_settings') }}">Cookie Settings</a>
-                        <a href="{{ url_for('terms_of_use') }}">Terms of Use</a>
-                        <a href="#">Cookie Statement</a>
-                        <a href="#">Accessibility</a>
+                        <a href="#">{{ _("Disclaimer") }}</a>
+                        <a href="{{ url_for('privacy_policy') }}">{{ _("Privacy Statement") }}</a>
+                        <a href="{{ url_for('cookie_settings') }}">{{ _("Cookie Settings") }}</a>
+                        <a href="{{ url_for('terms_of_use') }}">{{ _("Terms of Use") }}</a>
+                        <a href="#">{{ _("Cookie Statement") }}</a>
+                        <a href="#">{{ _("Accessibility") }}</a>
                     </div>
                 </div>
                 <div class="col">
-                    <div class="column-title">Contact</div>
+                    <div class="column-title">{{ _("Contact") }}</div>
                     <div class="column-content">
-                        <a href="{{ url_for('create_ticket') }}">Report an issue</a>
-                        <a href="{{ url_for('contact_us') }}">Contact</a>
-                        <a href="#">Report a page</a>
+                        <a href="{{ url_for('create_ticket') }}">{{ _("Report an issue") }}</a>
+                        <a href="{{ url_for('contact_us') }}">{{ _("Contact") }}</a>
+                        <a href="#">{{ _("Report a page") }}</a>
                     </div>
                 </div>
                 <div class="col">
-                    <div class="column-title">Explore</div>
+                    <div class="column-title">{{ _("Explore") }}</div>
                     <div class="column-content">
                         <a href="https://www.ilmgroup.net" target="_blank">ILM Group</a>
                         <a href="https://www.arera.it" target="_blank">ARERA</a>
@@ -964,11 +964,11 @@
     <!-- Cookie Consent Banner -->
     {% if show_cookie_banner %}
         <div id="cookie-consent-banner" class="cookie-banner">
-            <p>We use cookies to enhance your experience. By continuing to visit this site you agree to our use of cookies.</p>
+            <p>{{ _("We use cookies to enhance your experience. By continuing to visit this site you agree to our use of cookies.") }}</p>
             <form method="POST" action="{{ url_for('set_cookies') }}">
-                <button type="submit" name="consent" value="allow_all">Allow All</button>
-                <button type="submit" name="consent" value="reject_all">Reject All</button>
-                <button type="button" onclick="showCustomizeOptions()">Customize</button>
+                <button type="submit" name="consent" value="allow_all">{{ _("Allow All") }}</button>
+                <button type="submit" name="consent" value="reject_all">{{ _("Reject All") }}</button>
+                <button type="button" onclick="showCustomizeOptions()">{{ _("Customize") }}</button>
             </form>
             <div id="customize-options" style="display:none;">
                 <form method="POST" action="{{ url_for('set_cookies') }}">
@@ -979,7 +979,7 @@
                     <label>
                         <input type="checkbox" name="marketing" value="true" checked> Marketing
                     </label>
-                    <button type="submit">Save Preferences</button>
+                    <button type="submit">{{ _("Save Preferences") }}</button>
                 </form>
             </div>
         </div>

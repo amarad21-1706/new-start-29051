@@ -29,9 +29,10 @@ msgstr "Non è stato trovato alcun utente con quell'indirizzo e-mail."
 
 #: app.py:1509 new-start-29051/app.py:1424
 msgid "An error occurred while processing your request. Please try again later."
-msgstr ""
-"Si è verificato un errore durante l'elaborazione della richiesta. Si prega di "
-"riprovare più tardi."
+msgstr "Si è verificato un errore durante l'elaborazione della richiesta. Si prega di riprovare più tardi."
+
+msgid "D.E.R.E. - Digital Environment for Regulated Energy Sector"
+msgstr "D.E.R.E. - Piattaforma digitale per il settore dell'energia"
 
 #: forms/forms.py:393 new-start-29051/forms/forms.py:393
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/forms.py:30
@@ -39,13 +40,22 @@ msgstr ""
 msgid "Email Address"
 msgstr "Indirizzo Email"
 
+msgid "About"
+msgstr "Chi siamo"
+
 msgid "Our Services"
 msgstr "I nostri servizi"
+
+msgid "Our History"
+msgstr "La nostra storia"
 
 msgid "Our Products and Services"
 msgstr "I nostri prodotti e servizi"
 
 msgid "About Us"
+msgstr "Chi siamo"
+
+msgid "Who Are We"
 msgstr "Chi siamo"
 
 msgid "of Your Country/State"
@@ -54,6 +64,51 @@ msgstr "nel tuo Paese"
 msgid "in Your Country/State"
 msgstr "nel tuo Paese"
 
+msgid "Sitemap"
+msgstr "Mappa del sito"
+
+msgid "Privacy Statement"
+msgstr "Dichiarazione sulla privacy"
+
+msgid "Cookie Settings"
+msgstr "Impostazioni cookies"
+
+msgid "Cookie Statement"
+msgstr "Cookies"
+
+msgid "Legal"
+msgstr "Legale"
+
+msgid "News and Insights"
+msgstr "Notizie"
+
+msgid "Terms of Use"
+msgstr "Condizioni di utilizzo"
+
+msgid "Disclaimer"
+msgstr "Avvertenza"
+
+msgid "Contacts"
+msgstr "Contatti"
+
+msgid "Contact"
+msgstr "Contatto"
+
+msgid "Explore"
+msgstr "Esplora"
+
+msgid "Events"
+msgstr "Eventi"
+
+msgid "Report an issue"
+msgstr "Riporta un problema"
+
+msgid "Report a page"
+msgstr "Riporta una pagina"
+
+msgid "Accessibility"
+msgstr "Accesso facilitato"
+
 #: forms/forms.py:395 forms/forms.py:401 new-start-29051/forms/forms.py:395
 #: new-start-29051/forms/forms.py:401
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/forms.py:37
@@ -61,13 +116,19 @@ msgstr "nel tuo Paese"
 msgid "Reset Password"
 msgstr "Reimposta Password"
 
+msgid "News"
+msgstr "Notizie"
+
+msgid "Your Apps"
+msgstr "Le tue applicazioni"
+
 #: forms/forms.py:398 new-start-29051/forms/forms.py:398
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/forms.py:39
 #: venv/lib/python3.11/site-packages/flask_security/forms.py:39
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:68
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:318
 msgid "New Password"
-msgstr "Nuova Password"
+msgstr "Nuova password"
 
 #: forms/forms.py:399 new-start-29051/forms/forms.py:399
 msgid "Confirm New Password"
