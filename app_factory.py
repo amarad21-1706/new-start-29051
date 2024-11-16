@@ -20,7 +20,9 @@ import datetime
 from datetime import date, timedelta, time, timezone
 
 from flask_babel import Babel
-from flask_babel import get_locale
+from flask_babel import get_locale, _
+# Example function for translating text
+from flask_babel import gettext as _
 
 csrf = CSRFProtect()  # Define csrf globally
 # babel = Babel()  # Initialize Babel without an app instance
@@ -32,7 +34,7 @@ def roles_required(*required_roles):
             if 'user_roles' in session and any(r.lower() in [role.lower() for role in required_roles] for r in session['user_roles']):
                 return func(*args, **kwargs)
             else:
-                flash("You do not have the necessary permissions to access this page.", "danger")
+                flash(_("You do not have the necessary permissions to access this page."), "danger")
                 return redirect(request.referrer or url_for('index'))
         return wrapper
     return decorator
@@ -58,7 +60,7 @@ def subscription_required(f):
         user = Users.query.filter_by(email=email).first()
 
         if not user or user.subscription_status != 'active':
-            flash('You need an active subscription to access this page.')
+            flash(_('You need an active subscription to access this page.'))
             #current_app.logger.debug('No active subscription, redirecting to subscriptions page...')
             return redirect(url_for('subscriptions'))
 
@@ -92,6 +94,29 @@ def create_app(conf=None):
         session.get('lang') or
         request.accept_languages.best_match(['en', 'it', 'es', 'fr', 'ar'])
     )
+
+
+    def translate_text(text):
+        """
+        Dynamically translate database text.
+        """
+        print('text is', text)
+        if not text:
+            return ""
+        try:
+            print(f"Translating: {text}")
+            translated = _(text)  # Uses Flask-Babel's gettext
+            print(f"Translated: {translated}")
+            return translated
+        except Exception as e:
+            print(f"Translation error: {e}")
+            return text  # Fallback to original text if translation fails
+
+    # Register the function with Jinja2
+    @app.context_processor
+    def inject_translation_helpers():
+        print('translation injected', get_locale())
+        return dict(_=translate_text)
 
     # Explicitly set debug mode based on an environment variable or configuration
     app.config['DEBUG'] = os.environ.get('FLASK_DEBUG', 'False').lower() in ['true', '1']

@@ -2524,40 +2524,168 @@ def signup():
     return render_template('access/signup.html', title='Sign Up', form=form)
 
 
-@app.route('/home/about_us')
+@app.route('/home/about_us', methods=['GET', 'POST'])
 def about_us():
-    about_content = TextContent.query.filter_by(content_type='about_us').order_by(TextContent.content_version.desc()).first()
+    user_lang = session.get('lang', 'en')
 
-    # Render content with any needed placeholders (none needed here, so we just render directly)
-    rendered_content = render_template_string(about_content.content_body)
+    about_us_content = TextContent.query.filter_by(
+        content_type='about_us',
+        language_code=user_lang
+    ).order_by(TextContent.content_version.desc()).first()
 
-    return render_template('home/about_us.html', content=rendered_content)
+    if not about_us_content:
+        about_us_content = TextContent.query.filter_by(
+            content_type='about_us',
+            language_code='en'
+        ).order_by(TextContent.content_version.desc()).first()
+
+        rendered_content = (
+            render_template_string(about_us_content.content_body, _=_)
+            if about_us_content
+            else _("About us content not available.")
+        )
+    else:
+        rendered_content = about_us_content.content_body
+
+    title = _("Chi siamo")  # Italian for "About Us"
+    print(f"title: {title}")  # Debugging
+
+    return render_template(
+        'home/about_us.html',
+        title=title,
+        content=rendered_content,
+        app_name=_("ILM")  # Pass the app name for the navbar
+    )
+
+@app.route('/home/products',  methods=['GET', 'POST'])
+def products():
+
+    # Determine the user's preferred language
+    user_lang = session.get('lang', 'en')
+
+    # Attempt to fetch the mission content in the preferred language
+    services_content = TextContent.query.filter_by(
+        content_type='services',
+        language_code=user_lang
+    ).order_by(TextContent.content_version.desc()).first()
+
+    if not services_content:
+        # Fallback to dynamically translate the English version
+        services_content = TextContent.query.filter_by(
+            content_type='services',
+            language_code='en'
+        ).order_by(TextContent.content_version.desc()).first()
+
+        if services_content:
+            # Dynamically translate the content
+            rendered_content = render_template_string(services_content.content_body, _=_)
+        else:
+            rendered_content = _("Services content not available.")
+    else:
+        rendered_content = services_content.content_body
+
+    title = _("Our Services")  # Ensure this is translated
+    print('title', title, 'rendered_content', rendered_content)
+    # Render the mission page
+    return render_template('home/services.html', title=title, content=rendered_content)
 
 
 @app.route('/home/mission')
 def mission():
-    mission_content = TextContent.query.filter_by(content_type='mission').order_by(TextContent.content_version.desc()).first()
-    rendered_content = render_template_string(mission_content.content_body)
+    # Determine the user's preferred language
+    user_lang = session.get('lang', 'en')
+
+    # Attempt to fetch the mission content in the preferred language
+    mission_content = TextContent.query.filter_by(
+        content_type='mission',
+        language_code=user_lang
+    ).order_by(TextContent.content_version.desc()).first()
+
+    if not mission_content:
+        # Fallback to dynamically translate the English version
+        mission_content = TextContent.query.filter_by(
+            content_type='mission',
+            language_code='en'
+        ).order_by(TextContent.content_version.desc()).first()
+
+        if mission_content:
+            # Dynamically translate the content
+            rendered_content = render_template_string(mission_content.content_body, _=_)
+        else:
+            rendered_content = _("Mission content not available.")
+    else:
+        rendered_content = mission_content.content_body
+
+    # Render the mission page
     return render_template('home/mission.html', content=rendered_content)
 
 
-@app.route('/home/history')
+
+@app.route('/home/history',  methods=['GET', 'POST'])
 def history():
-    history_content = TextContent.query.filter_by(content_type='history').order_by(TextContent.content_version.desc()).first()
-    rendered_content = render_template_string(history_content.content_body)
-    return render_template('home/history.html', content=rendered_content)
+
+    # Determine the user's preferred language
+    user_lang = session.get('lang', 'en')
+
+    # Attempt to fetch the mission content in the preferred language
+    history_content = TextContent.query.filter_by(
+        content_type='history',
+        language_code=user_lang
+    ).order_by(TextContent.content_version.desc()).first()
+
+    if not history_content:
+        # Fallback to dynamically translate the English version
+        history_content = TextContent.query.filter_by(
+            content_type='history',
+            language_code='en'
+        ).order_by(TextContent.content_version.desc()).first()
+
+        if history_content:
+            # Dynamically translate the content
+            rendered_content = render_template_string(history_content.content_body, _=_)
+        else:
+            rendered_content = _("Services content not available.")
+    else:
+        rendered_content = history_content.content_body
+
+    title = _("Our History")  # Ensure this is translated
+    print('title', title, 'rendered_content', rendered_content)
+    # Render the mission page
+    return render_template('home/history.html', title=title, content=rendered_content)
 
 
-
-@app.route('/home/terms_of_use')
+@app.route('/home/terms_of_use', methods=['GET', 'POST'])
 def terms_of_use():
-    terms_content = TextContent.query.filter_by(content_type='terms_of_use').order_by(
-        TextContent.content_version.desc()).first()
 
+    # Determine the user's preferred language
+    user_lang = session.get('lang', 'en')
+
+    # Attempt to fetch the mission content in the preferred language
+    terms_of_use_content = TextContent.query.filter_by(
+        content_type='terms_of_use',
+        language_code=user_lang
+    ).order_by(TextContent.content_version.desc()).first()
+
+    if not terms_of_use_content:
+        # Fallback to dynamically translate the English version
+        terms_of_use_content = TextContent.query.filter_by(
+            content_type='terms_of_use',
+            language_code='en'
+        ).order_by(TextContent.content_version.desc()).first()
+
+        if terms_of_use_content:
+            # Dynamically translate the content
+            rendered_content = render_template_string(terms_of_use_content.content_body, _=_)
+        else:
+            rendered_content = _("Terms of Use content not available.")
+    else:
+        rendered_content = terms_of_use_content.content_body
+
+    title = _("Terms of Use")  # Ensure this is translated
     # Dynamic content replacements
     rendered_content = render_template_string(
-        terms_content.content_body,
-        last_updated=datetime.utcnow().strftime('%Y-%m-%d'),
+        terms_of_use_content.content_body,
+        updated_on=datetime.utcnow().strftime('%Y-%m-%d'),
         app_name="Your Application",
         website_url="https://yourwebsite.com",
         company_name="Your Company Name",
@@ -2565,22 +2693,47 @@ def terms_of_use():
         contact_information="contact@yourwebsite.com"
     )
 
-    return render_template('home/terms_of_use.html', content=rendered_content)
+    return render_template('home/terms_of_use.html', title=title, content=rendered_content)
 
 
-@app.route('/home/privacy_policy')
+@app.route('/home/privacy_policy',  methods=['GET', 'POST'])
 def privacy_policy():
-    policy_content = TextContent.query.filter_by(content_type='privacy_policy').order_by(TextContent.content_version.desc()).first()
 
-    # Render with dynamic placeholders
-    rendered_content = render_template_string(
-        policy_content.content_body,
-        last_updated=datetime.utcnow().strftime('%Y-%m-%d'),
-        contact_email="your-email@example.com",
-        business_address="Your Business Address"
-    )
+    # Determine the user's preferred language
+    user_lang = session.get('lang', 'en')
 
-    return render_template('home/privacy_policy.html', content=rendered_content)
+    # Attempt to fetch the mission content in the preferred language
+    privacy_policy_content = TextContent.query.filter_by(
+        content_type='privacy_policy',
+        language_code=user_lang
+    ).order_by(TextContent.content_version.desc()).first()
+
+    if not privacy_policy_content:
+        # Fallback to dynamically translate the English version
+        privacy_policy_content = TextContent.query.filter_by(
+            content_type='privacy_policy',
+            language_code='en'
+        ).order_by(TextContent.content_version.desc()).first()
+
+        if privacy_policy_content:
+            # Dynamically translate the content
+            rendered_content = render_template_string(privacy_policy_content.content_body, _=_)
+        else:
+            rendered_content = _("Privacy policy content not available.")
+    else:
+        rendered_content = render_template_string(
+            privacy_policy_content.content_body,
+            updated_on=datetime.utcnow().strftime('%Y-%m-%d'),
+            website_url="https://yourwebsite.com",
+            company_name="Your Company Name",
+            country="Your Country/State",
+            contact_information="contact@yourwebsite.com"
+        )
+    title = _("Privacy Policy")  # Ensure this is translated
+    print('title', title, 'privacy_policy_content', rendered_content)
+    # Render the mission page
+    return render_template('home/privacy_policy.html', title=title, content=rendered_content)
+
 
 @app.route('/home/site_map_act', methods=['GET'])
 @login_required
@@ -2638,10 +2791,6 @@ def contact_us():
 def test_carousel():
     return render_template('carousel/wrapper_test.html')
 
-
-@app.route('/home/products',  methods=['GET', 'POST'])
-def products():
-    return render_template('home/services.html')
 
 
 @app.route('/workflow/control_areas/area_1', methods=['GET', 'POST'])
@@ -6240,7 +6389,6 @@ def debug_locale():
     print(f"Session language: {session.get('lang')}")
     print(f"Current locale: {get_locale()}")
     return f"Session language: {session.get('lang')}, Current locale: {get_locale()}"
-
 
 if __name__ == '__main__':
     # Load menu items from JSON file

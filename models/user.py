@@ -1969,6 +1969,5 @@ class TextContent(db.Model):
     content_version = db.Column(db.Integer, nullable=False, default=1)  # Useful for version control
     title = db.Column(db.String(100))  # Optional, for sections that have titles
     content_body = db.Column(db.Text, nullable=False)  # Main content
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, onupdate=datetime.utcnow)
-
+    created_on = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_on = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now())

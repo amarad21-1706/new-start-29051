@@ -45,7 +45,7 @@ from flask_admin.form import JSONField
 from flask.views import MethodView
 from sqlalchemy import distinct
 from copy import deepcopy
-
+from flask_babel import _
 from flask_admin.model.template import macro
 import traceback
 
@@ -551,7 +551,7 @@ class ContractArticleAdmin(ModelView):
             url = self.get_create_url()  # Call get_create_url method
             if not url:  # Check if URL construction failed (missing contract_id?)
                 # Handle missing contract_id (e.g., display an error message)
-                flash("Contract ID is required for creating a new article.")
+                flash(_("Contract ID is required for creating a new article."))
                 return
             return redirect(url)  # Redirect to the constructed URL
         super(ContractArticleAdmin, self).on_model_change(form, model, is_created)
@@ -3580,7 +3580,7 @@ class DocumentUploadView(BaseDataViewCommon):
             if is_created:
                 # Example: Set some initial values or states for the new record
                 model.created_on = datetime.utcnow()
-                flash(f'New document upload created successfully.', 'success')
+                flash(_('New document upload created successfully.'), 'success')
             else:
                 flash(f'Document upload updated successfully.', 'success')
         except Exception as ex:
@@ -3723,11 +3723,15 @@ class CombinedDocumentAdminView(BaseDataViewCommon):
                         current_workflow.step_id = next_step.id
                         current_workflow.updated_on = datetime.utcnow()
                         db.session.commit()
-                        flash(f"Document {document.id} transitioned to next step {next_step.name}.", 'success')
+                        flash(_('Document %(doc_id)s transitioned to next step %(step_name)s.',
+                                doc_id=document.id,
+                                step_name=next_step.name), 'success')
                     else:
-                        flash(f"No next step found for document {document.id}.", 'error')
+                        flash(_('No next step found for document %(doc_id)s.', doc_id=document.id), 'error')
+
                 else:
-                    flash(f"No workflow found for document {document.id}.", 'error')
+                    flash(_('No workflow found for document %(doc_id).', doc_id=document.id), 'error')
+
 
         except Exception as e:
             db.session.rollback()
@@ -3910,7 +3914,7 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
         try:
             # Ensure number_of_doc is selected
             if not form.number_of_doc.data:
-                flash('Error: Document number is required.', 'error')
+                flash(_('Error: Document number is required.'), 'error')
                 form.number_of_doc.errors.append('Document number cannot be empty.')
                 return False
 
@@ -3918,7 +3922,7 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
 
             # Ensure document date is present
             if not selected_document.date_of_doc:
-                flash('Error: Document date is required.', 'error')
+                flash(_('Error: Document date is required.'), 'error')
                 form.number_of_doc.errors.append('Document date cannot be empty.')
                 return False
 
@@ -3945,7 +3949,7 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
                     step_id = step.id if step else None
 
                     if not workflow_id or not step_id:
-                        flash('Error: Workflow and Step are required.', 'error')
+                        flash(_('Error: Workflow and Step are required.'), 'error')
                         return False
 
                     # Before querying for potential duplicates, ensure the session is flushed
@@ -4003,14 +4007,14 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
 
                 # Ensure number_of_doc and date_of_doc are present
                 if not form.number_of_doc.data:
-                    flash('Error: Document number is required.', 'error')
+                    flash(_('Error: Document number is required.'), 'error')
                     form.number_of_doc.errors.append('Document number cannot be empty.')
                     raise ValidationError('Document number is missing')
 
                 selected_document = form.number_of_doc.data
 
                 if not selected_document.date_of_doc:
-                    flash('Error: Document date is required.', 'error')
+                    flash(_('Error: Document date is required.'), 'error')
                     form.number_of_doc.errors.append('Document date cannot be empty.')
                     raise ValidationError('Document date is missing')
 
@@ -4027,14 +4031,14 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
 
                         # Check if workflow and step are objects and not dicts
                         if isinstance(workflow, dict) or isinstance(step, dict):
-                            flash('Error: Invalid workflow or step selection.', 'error')
+                            flash(_('Error: Invalid workflow or step selection.'), 'error')
                             raise ValidationError('Invalid workflow or step')
 
                         workflow_id = workflow.id if workflow else None
                         step_id = step.id if step else None
 
                         if not workflow_id or not step_id:
-                            flash('Error: Workflow and Step are required.', 'error')
+                            flash(_('Error: Workflow and Step are required.'), 'error')
                             raise ValidationError('Workflow and Step are required')
 
                         # Query for potential duplicates
@@ -4065,9 +4069,9 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
         except IntegrityError as e:
             self.session.rollback()
             if 'uq_base_data_workflow_step' in str(e.orig):
-                flash('Error: The combination of Document, Workflow, and Step must be unique.', 'error')
+                flash(_('Error: The combination of Document, Workflow, and Step must be unique.'), 'error')
             else:
-                flash('Error: A database error occurred.', 'error')
+                flash(_('Error: A database error occurred.'), 'error')
             return False
 
         except Exception as e:
@@ -4088,14 +4092,14 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
 
                 # Ensure number_of_doc and date_of_doc are present
                 if not form.number_of_doc.data:
-                    flash('Error: Document number is required.', 'error')
+                    flash(_('Error: Document number is required.'), 'error')
                     form.number_of_doc.errors.append('Document number cannot be empty.')
                     raise ValidationError('Document number is missing')
 
                 selected_document = form.number_of_doc.data
 
                 if not selected_document.date_of_doc:
-                    flash('Error: Document date is required.', 'error')
+                    flash(_('Error: Document date is required.'), 'error')
                     form.number_of_doc.errors.append('Document date cannot be empty.')
                     raise ValidationError('Document date is missing')
 
@@ -4129,14 +4133,14 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
 
                         # Check if workflow and step are objects and not dicts
                         if isinstance(workflow, dict) or isinstance(step, dict):
-                            flash('Error: Invalid workflow or step selection.', 'error')
+                            flash(_('Error: Invalid workflow or step selection.'), 'error')
                             raise ValidationError('Invalid workflow or step')
 
                         workflow_id = workflow.id if workflow else None
                         step_id = step.id if step else None
 
                         if not workflow_id or not step_id:
-                            flash('Error: Workflow and Step are required.', 'error')
+                            flash(_('Error: Workflow and Step are required.'), 'error')
                             return False
 
                         # Query for potential duplicates
@@ -4167,9 +4171,9 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
         except IntegrityError as e:
             self.session.rollback()
             if 'uq_base_data_workflow_step' in str(e.orig):
-                flash('Error: The combination of Document, Workflow, and Step must be unique.', 'error')
+                flash(_('Error: The combination of Document, Workflow, and Step must be unique.'), 'error')
             else:
-                flash('Error: A database error occurred.', 'error')
+                flash(_('Error: A database error occurred.'), 'error')
             return False
 
         except Exception as e:
@@ -4184,7 +4188,7 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
         # Rollback the session in case of IntegrityError or general errors
         if isinstance(exc, IntegrityError) or isinstance(exc, ValidationError):
             db.session.rollback()
-            flash("The transaction was rolled back due to an error.", 'error')
+            flash(_("The transaction was rolled back due to an error."), 'error')
             return False  # Suppress Flask-Admin's default behavior for this error
         return super(DocumentUploadViewExisting, self).handle_view_exception(exc)
 
@@ -6490,7 +6494,7 @@ class SurveyResponseView(MethodView):
            answer = Answer(question_id=question_id, user_id=current_user.id, response=response)
            db.session.add(answer)
        db.session.commit()
-       flash('Survey responses submitted successfully.')
+       flash(_('Survey responses submitted successfully.'))
        return redirect(url_for('home'))
 
 

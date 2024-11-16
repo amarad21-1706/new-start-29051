@@ -1,5 +1,6 @@
 import json
 from flask import Flask, jsonify
+from flask_babel import _
 from forms.forms import MainForm
 import requests
 from models.user import (Users, UserRoles, Event, Role,
@@ -38,7 +39,7 @@ def delete_chart(id):
     chart = ConfigChart.query.get_or_404(id)
     db.session.delete(chart)
     db.session.commit()
-    flash('Chart configuration deleted successfully!')
+    flash(_('Chart configuration deleted successfully!'))
     return redirect(url_for('charts.list_charts'))
 
 
@@ -97,7 +98,7 @@ def add_chart():
 
         db.session.commit()
 
-        flash('Chart configuration added successfully!')
+        flash(_('Chart configuration added successfully!'))
         return redirect(url_for('charts.list_charts'))
 
     return render_template('charts/add_chart.html', form=form)
@@ -162,7 +163,7 @@ def edit_chart(chart_id):
 
         db.session.commit()
 
-        flash('Chart configuration updated successfully!')
+        flash(_('Chart configuration updated successfully!'))
         return redirect(url_for('charts.list_charts'))
 
     return render_template('charts/edit_chart.html', form=form)
@@ -212,7 +213,7 @@ def view_chart(chart_id):
     # Check if base_data_query returns any data
     if not base_data_result:
         print("No data found for this chart configuration.")
-        flash('No data available for this chart.')
+        flash(_('No data available for this chart.'))
         return redirect(url_for('charts.list_charts'))
 
     # Prepare data for the chart (assuming we're generating JSON for a chart library like Chart.js)

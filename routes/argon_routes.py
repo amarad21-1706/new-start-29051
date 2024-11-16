@@ -11,6 +11,7 @@ from models.user import (BaseData, Users, UserRoles, Event,
         Dossier, Action
         )
 
+from flask_babel import _
 import os
 from werkzeug.utils import secure_filename
 
@@ -241,13 +242,13 @@ def create_plan():
             db.session.add(new_plan)
             db.session.commit()
 
-            flash('Plan created successfully!', 'success')
+            flash(_('Plan created successfully!'), 'success')
             return redirect(url_for('argon.plans_view'))
 
         except IntegrityError:
             # Rollback the session in case of an error
             db.session.rollback()
-            flash('Error: A plan with this name already exists. Please choose a different name.', 'danger')
+            flash(_('Error: A plan with this name already exists. Please choose a different name.'), 'danger')
             return redirect(url_for('argon.create_plan'))
 
     # Render the create plan template
@@ -267,7 +268,7 @@ def edit_plan(id):
         plan.billing_cycle = request.form['billing_cycle']
         try:
             db.session.commit()
-            flash('Plan updated successfully!', 'success')
+            flash(_('Plan updated successfully!'), 'success')
             return redirect(url_for('argon.view_plan', id=plan.id))
         except:
             flash('Error updating plan', 'danger')
@@ -283,7 +284,7 @@ def delete_plan(id):
     try:
         db.session.delete(plan)
         db.session.commit()
-        flash('Plan deleted successfully!', 'success')
+        flash(_('Plan deleted successfully!'), 'success')
         return redirect(url_for('argon.plans_view'))  # Redirect to the plans view
     except Exception as e:
         db.session.rollback()
@@ -334,7 +335,7 @@ def create_questionnaire():
             # Try to add and commit the new questionnaire
             db.session.add(new_questionnaire)
             db.session.commit()
-            flash('Questionnaire created successfully!', 'success')
+            flash(_('Questionnaire created successfully!'), 'success')
             return redirect(url_for('argon.questionnaires_view'))
 
         except IntegrityError:
@@ -359,7 +360,7 @@ def edit_questionnaire(id):
 
         try:
             db.session.commit()
-            flash('Questionnaire updated successfully!', 'success')
+            flash(_('Questionnaire updated successfully!'), 'success')
             return redirect(url_for('argon.view_questionnaire', id=questionnaire.id))
         except Exception as e:
             db.session.rollback()
@@ -377,7 +378,7 @@ def delete_questionnaire(id):
     try:
         db.session.delete(questionnaire)
         db.session.commit()
-        flash('Questionnaire deleted successfully!', 'success')
+        flash(_('Questionnaire deleted successfully!'), 'success')
         return redirect(url_for('argon.questionnaires_view'))  # Redirect to the questionnaires view
     except Exception as e:
         db.session.rollback()
@@ -422,7 +423,7 @@ def create_question():
             db.session.add(new_question)
             db.session.commit()
 
-            flash('Question created successfully!', 'success')
+            flash(_('Question created successfully!'), 'success')
             return redirect(url_for('argon.questions_view'))  # Redirect to the question list view
         except IntegrityError:
             db.session.rollback()  # Rollback the session in case of error
@@ -447,7 +448,7 @@ def edit_question(id):
 
         try:
             db.session.commit()  # Commit changes to the database
-            flash('Question updated successfully!', 'success')
+            flash(_('Question updated successfully!'), 'success')
             return redirect(url_for('argon.questions_view'))  # Redirect to the question list view
         except IntegrityError:
             db.session.rollback()  # Rollback the session in case of error
@@ -470,7 +471,7 @@ def delete_question(id):
     try:
         db.session.delete(question)  # Delete the question from the database
         db.session.commit()
-        flash('Question deleted successfully!', 'success')
+        flash(_('Question deleted successfully!'), 'success')
     except:
         db.session.rollback()  # Rollback in case of error
         flash('Error deleting question. Please try again.', 'danger')
@@ -550,7 +551,7 @@ def add_question_to_survey(questionnaire_id):
         db.session.add(new_link)
         db.session.commit()
 
-        flash('Question successfully added to the questionnaire!', 'success')
+        flash(_('Question successfully added to the questionnaire!'), 'success')
         return redirect(url_for('argon.surveys_view'))
 
     questions = Question.query.all()  # Fetch all questions
@@ -895,7 +896,7 @@ def create_product():
         )
         db.session.add(product)
         db.session.commit()
-        flash('Product created successfully', 'success')
+        flash(_('Product created successfully'), 'success')
         return redirect(url_for('argon.products_view'))
     return render_template('argon-dashboard/create_product.html', form=form)
 
@@ -924,7 +925,7 @@ def edit_product(id):
         product.path = form.path.data
         product.icon = form.icon.data
         db.session.commit()
-        flash('Product updated successfully', 'success')
+        flash(_('Product updated successfully'), 'success')
         return redirect(url_for('argon.view_product', id=product.id))
     return render_template('argon-dashboard/edit_product.html', form=form)
 
@@ -1112,7 +1113,7 @@ def submit_create_dossier():
     db.session.add(new_dossier)
     db.session.commit()
 
-    flash('Dossier created successfully!', 'success')
+    flash(_('Dossier created successfully!'), 'success')
 
     # Redirect to the dossier view, passing the new dossier's ID
     return redirect(url_for('argon.dossier_view', dossier_id=new_dossier.id))
@@ -1185,7 +1186,7 @@ def submit_action(dossier_id):
     if action_type == 'document_added':
         # Check if a document is uploaded
         if 'document' not in request.files or request.files['document'].filename == '':
-            flash('No document uploaded', 'danger')
+            flash(_('No document uploaded'), 'danger')
             return redirect(url_for('argon.dossier_details', dossier_id=dossier_id))
 
         document = request.files['document']
@@ -1231,7 +1232,7 @@ def submit_action(dossier_id):
     db.session.add(new_action)
     db.session.commit()
 
-    flash('Action submitted successfully!', 'success')
+    flash(_('Action submitted successfully!'), 'success')
     return redirect(url_for('argon.dossier_details', dossier_id=dossier_id))
 
 
@@ -1344,7 +1345,7 @@ def edit_dossier(dossier_id):
         dossier.status = new_status
         db.session.commit()
 
-        flash("Dossier updated successfully", "success")
+        flash(_("Dossier updated successfully"), "success")
         return redirect(url_for('argon.dossier_view'))
 
     return render_template('argon-dashboard/edit_dossier.html', dossier=dossier, companies=companies)
@@ -1358,6 +1359,6 @@ def delete_dossier(dossier_id):
     dossier = Dossier.query.get_or_404(dossier_id)
     db.session.delete(dossier)
     db.session.commit()
-    flash("Dossier deleted successfully", "success")
+    flash(_("Dossier deleted successfully"), "success")
     return redirect(url_for('argon.dossier_view'))
 

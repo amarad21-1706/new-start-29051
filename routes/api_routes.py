@@ -15,7 +15,7 @@ from flask_login import current_user
 from datetime import datetime, timedelta
 
 from flask import Blueprint, render_template, session
-from flask import flash, jsonify, redirect, url_for, render_template, request, redirect
+from flask import jsonify, redirect, url_for, render_template, request, redirect
 from db import db
 from forms.forms import (PhysicalContractForm) # Assuming your form is in forms.py
 from flask_login import login_required

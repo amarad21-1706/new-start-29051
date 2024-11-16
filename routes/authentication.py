@@ -1,6 +1,7 @@
 # app/routes/authentication.py
 from flask import current_app, redirect, render_template, url_for, flash
 from flask_login import login_user
+from flask_babel import _
 from flask import Blueprint
 
 from userManager101 import UserManager
@@ -20,10 +21,10 @@ def login():
 
         if user:
             login_user(user)
-            flash('Login Successful')
+            flash(_('Login Successful'))
             return redirect(url_for('index'))  # Redirect to the home page upon successful login
         else:
-            flash('Login Failed')
+            flash(_('Login Failed'))
             return redirect(url_for('login'))
 
     return render_template('access/login.html')

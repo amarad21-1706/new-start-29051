@@ -2,7 +2,7 @@
 import os
 
 from fredapi import Fred
-
+from flask_babel import _
 import requests
 from models.user import (BaseData, Users, UserRoles, Event,
         Questionnaire, Question, QuestionnaireQuestions, Questionnaire_psf, Response_psf,
@@ -160,7 +160,7 @@ def compare_physical_contracts(contract_id):
     # Fetch the specific PhysicalContract by ID
     contract = PhysicalContract.query.get(contract_id)
     if not contract:
-        flash("Contract not found.", "danger")
+        flash(_("Contract not found."), "danger")
         return redirect(url_for('phy.add_contract'))
 
     # Perform multi-faceted comparative analysis
@@ -183,7 +183,7 @@ def search_contract():
         # Redirect to the compare_physical_contracts with the provided contract_id
         return redirect(url_for('phy.compare_physical_contracts', contract_id=contract_id))
     else:
-        flash("Please enter a valid Contract ID.", "warning")
+        flash(_("Please enter a valid Contract ID."), "warning")
         return redirect(url_for('phy.phy_dashboard'))  # Redirect back to dashboard or appropriate page
 
 
@@ -194,7 +194,7 @@ def add_contract():
         # Check if contract already exists to avoid duplicates
         existing_contract = PhysicalContract.query.filter_by(contract_id=form.contract_id.data).first()
         if existing_contract:
-            flash("Contract already exists.")
+            flash(_("Contract already exists."))
             return redirect(url_for('phy.add_contract'))
 
         # Create and add new contract
@@ -297,11 +297,11 @@ def load_data():
     try:
         print('loading data from Fred triggered')
         load_data_from_fred()  # Fetch and load data from FRED
-        flash("Data loaded successfully!", "success")
+        flash(_("Data loaded successfully!"), "success")
         return jsonify({"message": "Data loaded successfully"}), 200
     except Exception as e:
         print(f"Error loading data: {e}")
-        flash("Failed to load data from FRED.", "danger")
+        flash(_("Failed to load data from FRED."), "danger")
         return jsonify({"message": "Failed to load data"}), 500
 
 from datetime import datetime
@@ -399,7 +399,7 @@ def load_data_from_fred():
 
         db.session.commit()
         print("All data loaded successfully.")
-        flash("All data loaded successfully!", "success")
+        flash(_("All data loaded successfully!"), "success")
 
     except Exception as e:
         print(f"Error loading data: {e}")

@@ -8,7 +8,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2024-11-14 11:24+0100\n"
+"POT-Creation-Date: 2024-11-15 09:35+0100\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: LANGUAGE <LL@li.org>\n"
@@ -17,34 +17,465 @@ msgstr ""
 "Content-Transfer-Encoding: 8bit\n"
 "Generated-By: Babel 2.12.1\n"
 
-#: app.py:1504 new-start-29051/app.py:1419
+#: admin_views.py:554
+msgid "Contract ID is required for creating a new article."
+msgstr ""
+
+#: admin_views.py:3583
+msgid "New document upload created successfully."
+msgstr ""
+
+#: admin_views.py:3726
+#, python-format
+msgid "Document %(doc_id)s transitioned to next step %(step_name)s."
+msgstr ""
+
+#: admin_views.py:3730
+#, python-format
+msgid "No next step found for document %(doc_id)s."
+msgstr ""
+
+#: admin_views.py:3733
+msgid "No workflow found for document %(doc_id)."
+msgstr ""
+
+#: admin_views.py:3917 admin_views.py:4010 admin_views.py:4095
+msgid "Error: Document number is required."
+msgstr ""
+
+#: admin_views.py:3925 admin_views.py:4017 admin_views.py:4102
+msgid "Error: Document date is required."
+msgstr ""
+
+#: admin_views.py:3952 admin_views.py:4041 admin_views.py:4143
+msgid "Error: Workflow and Step are required."
+msgstr ""
+
+#: admin_views.py:4034 admin_views.py:4136
+msgid "Error: Invalid workflow or step selection."
+msgstr ""
+
+#: admin_views.py:4072 admin_views.py:4174
+msgid "Error: The combination of Document, Workflow, and Step must be unique."
+msgstr ""
+
+#: admin_views.py:4074 admin_views.py:4176
+msgid "Error: A database error occurred."
+msgstr ""
+
+#: admin_views.py:4191
+msgid "The transaction was rolled back due to an error."
+msgstr ""
+
+#: admin_views.py:6497
+msgid "Survey responses submitted successfully."
+msgstr ""
+
+#: app.py:1097
+msgid "Documents successfully attached to the workflow."
+msgstr ""
+
+#: app.py:1508 new-start-29051/app.py:1419
 msgid "An email has been sent with instructions to reset your password."
 msgstr ""
 
-#: app.py:1506 new-start-29051/app.py:1421
+#: app.py:1510 new-start-29051/app.py:1421
 msgid "No user found with that email address."
 msgstr ""
 
-#: app.py:1509 new-start-29051/app.py:1424
+#: app.py:1514 new-start-29051/app.py:1424
 msgid "An error occurred while processing your request. Please try again later."
+msgstr ""
+
+#: app.py:1524
+msgid "The password reset token is invalid or expired."
+msgstr ""
+
+#: app.py:1533
+#: venv/lib/python3.11/site-packages/flask_user/user_manager__views.py:594
+msgid "Your password has been reset successfully."
+msgstr ""
+
+#: app.py:1566
+msgid "Mail sent successfully."
+msgstr ""
+
+#: app.py:1598 routes/authentication.py:24
+msgid "Login Successful"
+msgstr ""
+
+#: app.py:1605
+msgid "Security check"
+msgstr ""
+
+#: app.py:1606
+msgid ""
+"A new login to your account was detected on {date}. If it was you, no "
+"action is required. Otherwise, we will help you secure your account. Do "
+"not reply to this message; instead, open a ticket or contact the system "
+"administrator."
+msgstr ""
+
+#: app.py:1613
+msgid "System"
+msgstr ""
+
+#: app.py:1645
+msgid "Invalid username or password. Please try again."
+msgstr ""
+
+#: app.py:1653
+msgid "Incorrect CAPTCHA! Please try again."
+msgstr ""
+
+#: app.py:2472
+msgid "You must agree with the Terms and conditions to sign up."
+msgstr ""
+
+#: app.py:2477
+msgid "You must agree with the Privacy Policy to sign up."
+msgstr ""
+
+#: app.py:2513
+msgid "Your account has been created! You can now log in."
+msgstr ""
+
+#: app.py:2522
+msgid "Form validation failed. Please check your input."
+msgstr ""
+
+#: app.py:2579
+msgid "Mission content not available."
+msgstr ""
+
+#: app.py:3671
+msgid "No questionnaire ID provided."
+msgstr ""
+
+#: app.py:3677
+msgid "Invalid questionnaire ID."
+msgstr ""
+
+#: app.py:3687
+msgid "No data to save or session expired."
+msgstr ""
+
+#: app.py:3892 app.py:3922
+msgid "Error with form data. Please check your entries."
+msgstr ""
+
+#: app.py:3958
+msgid "Existing data found, please confirm to overwrite."
+msgstr ""
+
+#: app.py:4035
+msgid "No substantial data to save."
+msgstr ""
+
+#: app.py:4088
+msgid "Form submitted and status updated."
+msgstr ""
+
+#: app.py:4090
+msgid "Questionnaire company record not found."
+msgstr ""
+
+#: app.py:4093
+msgid "Data saved successfully!"
+msgstr ""
+
+#: app.py:4234
+msgid "Invalid OTP"
+msgstr ""
+
+#: app.py:4309
+msgid "Selected messages marked as read."
+msgstr ""
+
+#: app.py:4311
+msgid "No messages selected."
+msgstr ""
+
+#: app.py:4464
+msgid "Email not found in session"
+msgstr ""
+
+#: app.py:4472
+msgid "User not found"
+msgstr ""
+
+#: app.py:4483
+msgid "Subscription updated successfully"
+msgstr ""
+
+#: app.py:4566
+msgid "Please select a plan."
+msgstr ""
+
+#: app.py:4579
+msgid "User not found."
+msgstr ""
+
+#: app.py:4603
+msgid "Subscription updated successfully."
+msgstr ""
+
+#: app.py:4607
+msgid "An error occurred while updating the subscription."
+msgstr ""
+
+#: app.py:4612
+msgid "Invalid form submission."
+msgstr ""
+
+#: app.py:4627
+msgid "Subscription ID not provided."
+msgstr ""
+
+#: app.py:4633
+msgid "No active subscription found to cancel."
+msgstr ""
+
+#: app.py:4639
+msgid "Subscription plan not found."
+msgstr ""
+
+#: app.py:4656
+msgid "Subscription canceled successfully."
+msgstr ""
+
+#: app.py:4693
+msgid "You do not have permission to view this report."
+msgstr ""
+
+#: app.py:4925
+msgid "No data mapping found for this area and subarea."
+msgstr ""
+
+#: app.py:5038
+msgid "News item created successfully!"
+msgstr ""
+
+#: app.py:5071
+msgid "News item updated successfully!"
+msgstr ""
+
+#: app.py:5088
+msgid "News item deleted successfully!"
+msgstr ""
+
+#: app.py:5123
+msgid "Ticket created successfully!"
+msgstr ""
+
+#: app.py:5133
+msgid "You do not have permission to edit this ticket."
+msgstr ""
+
+#: app.py:5141
+msgid "Ticket updated successfully!"
+msgstr ""
+
+#: app.py:5157
+msgid "You do not have permission to view this page."
+msgstr ""
+
+#: app.py:5167
+msgid "You do not have permission to respond to tickets."
+msgstr ""
+
+#: app.py:5176
+msgid "Response sent successfully!"
+msgstr ""
+
+#: app.py:5203
+msgid "Your account has been updated!"
+msgstr ""
+
+#: app.py:5418
+msgid "Event added successfully!"
+msgstr ""
+
+#: app.py:5422
+msgid "User not logged in"
+msgstr ""
+
+#: app.py:5447 app.py:5495
+msgid "User not authenticated"
+msgstr ""
+
+#: app.py:5453 app.py:5501
+msgid "Permission denied"
+msgstr ""
+
+#: app.py:5477
+msgid "Event updated successfully!"
+msgstr ""
+
+#: app.py:5506
+msgid "Event deleted successfully!"
+msgstr ""
+
+#: app.py:5589
+msgid "Plan added to cart successfully!"
+msgstr ""
+
+#: app.py:5616
+msgid "Product added to cart successfully!"
+msgstr ""
+
+#: app.py:5618
+msgid "Product not found."
+msgstr ""
+
+#: app.py:5705
+msgid "Cart updated successfully!"
+msgstr ""
+
+#: app.py:5707 app.py:5728
+msgid "Cart item not found."
+msgstr ""
+
+#: app.py:5726
+msgid "Item removed from cart successfully!"
+msgstr ""
+
+#: app.py:5749
+msgid "Checkout successful! Your order has been placed."
+msgstr ""
+
+#: app.py:5776
+msgid "All fields are required."
+msgstr ""
+
+#: app.py:5783
+msgid "CSRF token is invalid or missing."
+msgstr ""
+
+#: app.py:5800
+msgid "Article created successfully."
+msgstr ""
+
+#: app.py:5834
+msgid "User not logged in."
+msgstr ""
+
+#: app.py:5840
+msgid "User not found in the system."
+msgstr ""
+
+#: app.py:5848
+msgid "The membership agreement could not be found. Please contact support."
+msgstr ""
+
+#: app.py:5854
+msgid "Contract object is invalid. Please contact support."
+msgstr ""
+
+#: app.py:5865
+msgid "You have successfully signed the agreement."
+msgstr ""
+
+#: app.py:5869
+msgid "You must accept the agreement to proceed."
+msgstr ""
+
+#: app.py:5873
+msgid "An error occurred while signing the agreement. Please try again."
+msgstr ""
+
+#: app.py:5884
+msgid "No articles found for the agreement. Please contact support."
+msgstr ""
+
+#: app.py:5890
+msgid "An error occurred while fetching the agreement articles."
+msgstr ""
+
+#: app.py:5902
+msgid "Support subject not found. Please contact the admin."
+msgstr ""
+
+#: app.py:5919
+msgid "Role request submitted successfully under Support!"
+msgstr ""
+
+#: app.py:5948
+msgid "Your request for company assignment has been submitted successfully!"
+msgstr ""
+
+#: app.py:5961
+msgid "You must apply for and be granted membership to access our services."
+msgstr ""
+
+#: app.py:5966
+msgid "You must sign the agreement before subscribing to services."
+msgstr ""
+
+#: app.py:5985
+msgid "You must apply for and be granted membership to access our plans."
+msgstr ""
+
+#: app.py:5990
+msgid "You must sign the agreement before subscribing to plans."
+msgstr ""
+
+#: app.py:6140
+msgid "Dossier not found."
+msgstr ""
+
+#: app.py:6166 app.py:6221 app.py:6252
+msgid "You are not authorized to access this page."
+msgstr ""
+
+#: app.py:6190
+msgid "Extra time authorization updated."
+msgstr ""
+
+#: app.py:6201
+msgid "Extra time authorization saved."
+msgstr ""
+
+#: app.py:6233
+msgid "Extra time authorization updated successfully."
+msgstr ""
+
+#: app.py:6259
+msgid "Extra time authorization deleted successfully."
+msgstr ""
+
+#: app_factory.py:35
+msgid "You do not have the necessary permissions to access this page."
+msgstr ""
+
+#: app_factory.py:61
+msgid "You need an active subscription to access this page."
+msgstr ""
+
+#: password_reset.py:55
+msgid "Current password is incorrect."
+msgstr ""
+
+#: password_reset.py:72
+msgid "Password has been changed successfully."
 msgstr ""
 
 #: forms/forms.py:393 new-start-29051/forms/forms.py:393
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/forms.py:30
-#: venv/lib/python3.11/site-packages/flask_security/forms.py:30
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:62
 msgid "Email Address"
 msgstr ""
 
 #: forms/forms.py:395 forms/forms.py:401 new-start-29051/forms/forms.py:395
 #: new-start-29051/forms/forms.py:401
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/forms.py:37
-#: venv/lib/python3.11/site-packages/flask_security/forms.py:37
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:70
 msgid "Reset Password"
 msgstr ""
 
 #: forms/forms.py:398 new-start-29051/forms/forms.py:398
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/forms.py:39
-#: venv/lib/python3.11/site-packages/flask_security/forms.py:39
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:72
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:68
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:318
 msgid "New Password"
@@ -2372,96 +2803,94 @@ msgid "show this help message and exit"
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:99
-#: venv/lib/python3.11/site-packages/flask_security/core.py:99
+#: venv/lib/python3.11/site-packages/flask_security/core.py:285
 msgid "Login Required"
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:100
-#: venv/lib/python3.11/site-packages/flask_security/core.py:100
+#: venv/lib/python3.11/site-packages/flask_security/core.py:286
 msgid "Welcome"
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:101
-#: venv/lib/python3.11/site-packages/flask_security/core.py:101
+#: venv/lib/python3.11/site-packages/flask_security/core.py:287
 msgid "Please confirm your email"
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:102
-#: venv/lib/python3.11/site-packages/flask_security/core.py:102
+#: venv/lib/python3.11/site-packages/flask_security/core.py:288
 msgid "Login instructions"
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:103
-#: venv/lib/python3.11/site-packages/flask_security/core.py:103
+#: venv/lib/python3.11/site-packages/flask_security/core.py:289
 msgid "Your password has been reset"
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:104
-#: venv/lib/python3.11/site-packages/flask_security/core.py:104
+#: venv/lib/python3.11/site-packages/flask_security/core.py:290
 msgid "Your password has been changed"
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:106
-#: venv/lib/python3.11/site-packages/flask_security/core.py:106
+#: venv/lib/python3.11/site-packages/flask_security/core.py:291
 msgid "Password reset instructions"
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:132
-#: venv/lib/python3.11/site-packages/flask_security/core.py:132
+#: venv/lib/python3.11/site-packages/flask_security/core.py:404
 msgid "You do not have permission to view this resource."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:134
-#: venv/lib/python3.11/site-packages/flask_security/core.py:134
 #, python-format
 msgid "Thank you. Confirmation instructions have been sent to %(email)s."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:138
-#: venv/lib/python3.11/site-packages/flask_security/core.py:138
+#: venv/lib/python3.11/site-packages/flask_security/core.py:421
 msgid "Thank you. Your email has been confirmed."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:140
-#: venv/lib/python3.11/site-packages/flask_security/core.py:140
+#: venv/lib/python3.11/site-packages/flask_security/core.py:422
 msgid "Your email has already been confirmed."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:142
-#: venv/lib/python3.11/site-packages/flask_security/core.py:142
+#: venv/lib/python3.11/site-packages/flask_security/core.py:423
 #: venv/lib/python3.11/site-packages/flask_user/user_manager__views.py:173
 msgid "Invalid confirmation token."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:144
-#: venv/lib/python3.11/site-packages/flask_security/core.py:144
+#: venv/lib/python3.11/site-packages/flask_security/core.py:425
 #, python-format
 msgid "%(email)s is already associated with an account."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:146
-#: venv/lib/python3.11/site-packages/flask_security/core.py:146
+#: venv/lib/python3.11/site-packages/flask_security/core.py:447
 msgid "Password does not match"
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:148
-#: venv/lib/python3.11/site-packages/flask_security/core.py:148
+#: venv/lib/python3.11/site-packages/flask_security/core.py:448
 msgid "Passwords do not match"
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:150
-#: venv/lib/python3.11/site-packages/flask_security/core.py:150
+#: venv/lib/python3.11/site-packages/flask_security/core.py:449
 msgid "Redirections outside the domain are forbidden"
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:152
-#: venv/lib/python3.11/site-packages/flask_security/core.py:152
+#: venv/lib/python3.11/site-packages/flask_security/core.py:453
 #, python-format
 msgid "Instructions to reset your password have been sent to %(email)s."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:155
-#: venv/lib/python3.11/site-packages/flask_security/core.py:155
 #, python-format
 msgid ""
 "You did not reset your password within %(within)s. New instructions have "
@@ -2469,23 +2898,22 @@ msgid ""
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:158
-#: venv/lib/python3.11/site-packages/flask_security/core.py:158
+#: venv/lib/python3.11/site-packages/flask_security/core.py:460
 msgid "Invalid reset password token."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:160
-#: venv/lib/python3.11/site-packages/flask_security/core.py:160
+#: venv/lib/python3.11/site-packages/flask_security/core.py:461
 msgid "Email requires confirmation."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:162
-#: venv/lib/python3.11/site-packages/flask_security/core.py:162
+#: venv/lib/python3.11/site-packages/flask_security/core.py:463
 #, python-format
 msgid "Confirmation instructions have been sent to %(email)s."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:164
-#: venv/lib/python3.11/site-packages/flask_security/core.py:164
 #, python-format
 msgid ""
 "You did not confirm your email within %(within)s. New instructions to "
@@ -2493,7 +2921,7 @@ msgid ""
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:168
-#: venv/lib/python3.11/site-packages/flask_security/core.py:168
+#: venv/lib/python3.11/site-packages/flask_security/core.py:471
 #, python-format
 msgid ""
 "You did not login within %(within)s. New instructions to login have been "
@@ -2501,139 +2929,137 @@ msgid ""
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:171
-#: venv/lib/python3.11/site-packages/flask_security/core.py:171
+#: venv/lib/python3.11/site-packages/flask_security/core.py:478
 #, python-format
 msgid "Instructions to login have been sent to %(email)s."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:173
-#: venv/lib/python3.11/site-packages/flask_security/core.py:173
+#: venv/lib/python3.11/site-packages/flask_security/core.py:481
 msgid "Invalid login token."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:175
-#: venv/lib/python3.11/site-packages/flask_security/core.py:175
+#: venv/lib/python3.11/site-packages/flask_security/core.py:482
 msgid "Account is disabled."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:177
-#: venv/lib/python3.11/site-packages/flask_security/core.py:177
+#: venv/lib/python3.11/site-packages/flask_security/core.py:483
 msgid "Email not provided"
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:179
-#: venv/lib/python3.11/site-packages/flask_security/core.py:179
+#: venv/lib/python3.11/site-packages/flask_security/core.py:484
 msgid "Invalid email address"
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:181
-#: venv/lib/python3.11/site-packages/flask_security/core.py:181
+#: venv/lib/python3.11/site-packages/flask_security/core.py:486
 msgid "Password not provided"
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:183
-#: venv/lib/python3.11/site-packages/flask_security/core.py:183
 msgid "No password is set for this user"
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:185
-#: venv/lib/python3.11/site-packages/flask_security/core.py:185
 msgid "Password must be at least 6 characters"
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:187
-#: venv/lib/python3.11/site-packages/flask_security/core.py:187
+#: venv/lib/python3.11/site-packages/flask_security/core.py:498
 msgid "Specified user does not exist"
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:189
-#: venv/lib/python3.11/site-packages/flask_security/core.py:189
+#: venv/lib/python3.11/site-packages/flask_security/core.py:499
 msgid "Invalid password"
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:191
-#: venv/lib/python3.11/site-packages/flask_security/core.py:191
+#: venv/lib/python3.11/site-packages/flask_security/core.py:501
 msgid "You have successfully logged in."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:193
-#: venv/lib/python3.11/site-packages/flask_security/core.py:193
+#: venv/lib/python3.11/site-packages/flask_security/core.py:502
 msgid "Forgot password?"
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:195
-#: venv/lib/python3.11/site-packages/flask_security/core.py:195
+#: venv/lib/python3.11/site-packages/flask_security/core.py:504
 msgid ""
 "You successfully reset your password and you have been logged in "
 "automatically."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:198
-#: venv/lib/python3.11/site-packages/flask_security/core.py:198
+#: venv/lib/python3.11/site-packages/flask_security/core.py:518
 msgid "Your new password must be different than your previous password."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:201
-#: venv/lib/python3.11/site-packages/flask_security/core.py:201
+#: venv/lib/python3.11/site-packages/flask_security/core.py:521
 msgid "You successfully changed your password."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:203
-#: venv/lib/python3.11/site-packages/flask_security/core.py:203
+#: venv/lib/python3.11/site-packages/flask_security/core.py:522
 msgid "Please log in to access this page."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:205
-#: venv/lib/python3.11/site-packages/flask_security/core.py:205
+#: venv/lib/python3.11/site-packages/flask_security/core.py:523
 msgid "Please reauthenticate to access this page."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/forms.py:31
-#: venv/lib/python3.11/site-packages/flask_security/forms.py:31
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:63
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:159
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:251
 msgid "Password"
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/forms.py:32
-#: venv/lib/python3.11/site-packages/flask_security/forms.py:32
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:64
 msgid "Remember Me"
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/forms.py:33
-#: venv/lib/python3.11/site-packages/flask_security/forms.py:33
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:65
 msgid "Login"
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/forms.py:34
-#: venv/lib/python3.11/site-packages/flask_security/forms.py:34
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:67
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:258
 msgid "Register"
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/forms.py:35
-#: venv/lib/python3.11/site-packages/flask_security/forms.py:35
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:68
 msgid "Resend Confirmation Instructions"
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/forms.py:36
-#: venv/lib/python3.11/site-packages/flask_security/forms.py:36
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:69
 msgid "Recover Password"
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/forms.py:38
-#: venv/lib/python3.11/site-packages/flask_security/forms.py:38
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:71
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:254
 msgid "Retype Password"
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/forms.py:40
-#: venv/lib/python3.11/site-packages/flask_security/forms.py:40
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:73
 msgid "Change Password"
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/forms.py:41
-#: venv/lib/python3.11/site-packages/flask_security/forms.py:41
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:74
 msgid "Send Login Link"
 msgstr ""
 
@@ -5327,6 +5753,610 @@ msgstr ""
 msgid "view"
 msgstr ""
 
+#: routes/argon_routes.py:245
+msgid "Plan created successfully!"
+msgstr ""
+
+#: routes/argon_routes.py:251
+msgid ""
+"Error: A plan with this name already exists. Please choose a different "
+"name."
+msgstr ""
+
+#: routes/argon_routes.py:271
+msgid "Plan updated successfully!"
+msgstr ""
+
+#: routes/argon_routes.py:287
+msgid "Plan deleted successfully!"
+msgstr ""
+
+#: routes/argon_routes.py:338
+msgid "Questionnaire created successfully!"
+msgstr ""
+
+#: routes/argon_routes.py:363
+msgid "Questionnaire updated successfully!"
+msgstr ""
+
+#: routes/argon_routes.py:381
+msgid "Questionnaire deleted successfully!"
+msgstr ""
+
+#: routes/argon_routes.py:426
+msgid "Question created successfully!"
+msgstr ""
+
+#: routes/argon_routes.py:451
+msgid "Question updated successfully!"
+msgstr ""
+
+#: routes/argon_routes.py:474
+msgid "Question deleted successfully!"
+msgstr ""
+
+#: routes/argon_routes.py:554
+msgid "Question successfully added to the questionnaire!"
+msgstr ""
+
+#: routes/argon_routes.py:899
+msgid "Product created successfully"
+msgstr ""
+
+#: routes/argon_routes.py:928
+msgid "Product updated successfully"
+msgstr ""
+
+#: routes/argon_routes.py:1116
+msgid "Dossier created successfully!"
+msgstr ""
+
+#: routes/argon_routes.py:1189
+msgid "No document uploaded"
+msgstr ""
+
+#: routes/argon_routes.py:1235
+msgid "Action submitted successfully!"
+msgstr ""
+
+#: routes/argon_routes.py:1348
+msgid "Dossier updated successfully"
+msgstr ""
+
+#: routes/argon_routes.py:1362
+msgid "Dossier deleted successfully"
+msgstr ""
+
+#: routes/authentication.py:27
+msgid "Login Failed"
+msgstr ""
+
+#: routes/chart_routes.py:42
+msgid "Chart configuration deleted successfully!"
+msgstr ""
+
+#: routes/chart_routes.py:101
+msgid "Chart configuration added successfully!"
+msgstr ""
+
+#: routes/chart_routes.py:166
+msgid "Chart configuration updated successfully!"
+msgstr ""
+
+#: routes/chart_routes.py:216
+msgid "No data available for this chart."
+msgstr ""
+
+#: routes/phy_routes.py:163
+msgid "Contract not found."
+msgstr ""
+
+#: routes/phy_routes.py:186
+msgid "Please enter a valid Contract ID."
+msgstr ""
+
+#: routes/phy_routes.py:197
+msgid "Contract already exists."
+msgstr ""
+
+#: routes/phy_routes.py:300
+msgid "Data loaded successfully!"
+msgstr ""
+
+#: routes/phy_routes.py:304
+msgid "Failed to load data from FRED."
+msgstr ""
+
+#: routes/phy_routes.py:402
+msgid "All data loaded successfully!"
+msgstr ""
+
+#: templates/home/home.html:578
+msgid "English"
+msgstr ""
+
+#: templates/home/home.html:579
+msgid "Italiano"
+msgstr ""
+
+#: templates/home/home.html:580
+msgid "Español"
+msgstr ""
+
+#: templates/home/home.html:581
+msgid "Français"
+msgstr ""
+
+#: templates/home/home.html:582
+msgid "العربية"
+msgstr ""
+
+#: templates/home/mission.html:4
+msgid "Our Mission"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:239
+msgid "Confirm your new email address"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:294
+msgid "Two-factor Login"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:295
+msgid "Two-factor Rescue"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:342
+msgid "Verification Code"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:388
+msgid "Input not appropriate for requested API"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:390
+msgid "Authentication failed - identity or password/passcode invalid"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:394
+msgid ""
+"If that email address is in our system, you will receive an email "
+"describing how to reset your password."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:401
+msgid "If that identity is in our system, you were sent a code."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:406
+msgid "You must sign in to view this resource."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:410
+msgid "You must re-authenticate to access this endpoint"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:414
+#, python-format
+msgid ""
+"Thank you. To confirm your email address %(email)s, please click on the "
+"link in the email we have just sent to you."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:429
+#, python-format
+msgid ""
+"Identity attribute '%(attr)s' with value '%(value)s' is already "
+"associated with an account."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:436
+#, python-format
+msgid "Identity %(id)s not registered"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:440
+#, python-format
+msgid ""
+"An error occurred while communicating with the Oauth provider: "
+"(%(exerror)s - %(exdesc)s). Please try again."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:450
+msgid "Recovery code invalid"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:451
+msgid "No recovery codes generated yet"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:457
+#, python-format
+msgid "You did not reset your password within %(within)s. "
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:467
+#, python-format
+msgid "You did not confirm your email within %(within)s. "
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:485
+#: venv/lib/python3.11/site-packages/flask_security/core.py:531
+msgid "Invalid code"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:488
+#, python-format
+msgid "Password must be at least %(length)s characters"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:491
+msgid "Password not complex enough"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:492
+msgid "Password on breached list"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:494
+msgid "Failed to contact breached passwords site"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:497
+msgid "Phone number not valid e.g. missing country code"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:500
+msgid "Password or code submitted is not valid"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:511
+msgid ""
+"You successfully reset your password. Please authenticate using your new "
+"password."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:524
+msgid "Reauthentication successful"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:526
+msgid "You can only access this endpoint when not logged in."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:529
+msgid "Code has been sent."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:530
+msgid "Failed to send code. Please try again later"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:532
+msgid "Your code has been confirmed"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:534
+msgid "You successfully changed your two-factor method."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:538
+msgid "You currently do not have permissions to access this page"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:541
+msgid "Marked method is not valid"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:543
+msgid "You successfully disabled two factor authorization."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:547
+#: venv/lib/python3.11/site-packages/flask_security/core.py:556
+#, python-format
+msgid "Setup must be completed within %(within)s. Please start over."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:551
+#, python-format
+msgid "Currently active sign in options: %(method_list)s."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:554
+msgid "Requested method is not valid"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:559
+msgid "Unified sign in setup successful"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:560
+msgid "You must specify a valid identity to sign in"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:561
+#, python-format
+msgid "Use this code to sign in: %(code)s."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:563
+#, python-format
+msgid ""
+"Username must be at least %(min)d characters and less than %(max)d "
+"characters"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:570
+msgid "Username contains illegal characters"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:574
+msgid "Username can contain only letters and numbers"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:577
+msgid "Username not provided"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:579
+#, python-format
+msgid "%(username)s is already associated with an account."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:583
+#, python-format
+msgid "WebAuthn operation must be completed within %(within)s. Please start over."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:587
+msgid "Nickname for new credential is required."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:591
+#, python-format
+msgid "%(name)s is already associated with a credential."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:595
+#, python-format
+msgid "%(name)s not registered with current user."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:599
+#, python-format
+msgid "Successfully deleted WebAuthn credential with name: %(name)s"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:603
+#, python-format
+msgid "Successfully added WebAuthn credential with name: %(name)s"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:607
+msgid "WebAuthn credential id already registered."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:611
+msgid "Unregistered WebAuthn credential id."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:615
+msgid "WebAuthn credential doesn't belong to any user."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:619
+#, python-format
+msgid "Could not verify WebAuthn credential: %(cause)s."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:623
+msgid "Credential not registered for this use (first or secondary)"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:627
+msgid "Credential user handle didn't match"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:631
+#, python-format
+msgid "Confirmation must be completed within %(within)s. Please start over."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:635
+msgid "Change of email address confirmed"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:639
+#, python-format
+msgid ""
+"Instructions to confirm your new email address have been sent to "
+"%(email)s."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:66
+msgid "Sign In"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:75
+msgid "Verify Password"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:76
+msgid "Change Method"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:77
+msgid "Phone Number"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:78
+msgid "Authentication Code"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:79
+msgid "Submit"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:80
+msgid "Submit Code"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:81
+msgid "Error(s)"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:82
+msgid "Identity"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:83
+msgid "Send Code"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:84
+msgid "Passcode"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:85
+#: venv/lib/python3.11/site-packages/flask_user/forms.py:152
+#: venv/lib/python3.11/site-packages/flask_user/forms.py:212
+#: venv/lib/python3.11/site-packages/flask_user/forms.py:243
+msgid "Username"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:86
+msgid "Delete"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:87
+msgid "Set up using email"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:88
+msgid "Set up using an authenticator app (e.g. google, lastpass, authy)"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:91
+msgid "Set up using SMS"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:96
+msgid "Google Authenticator"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:97
+msgid "authenticator"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:98
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:99
+msgid "email"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:100
+msgid "SMS"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:101
+msgid "password"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:102
+msgid "none"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:780
+#: venv/lib/python3.11/site-packages/flask_security/unified_signin.py:167
+msgid "Available Methods"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:782
+msgid "Disable two factor authentication"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:866
+msgid "Trouble Accessing Your Account?/Lost Mobile Device?"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:868
+msgid "Contact Administrator"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/recovery_codes.py:142
+msgid "Show Recovery Codes"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/recovery_codes.py:144
+msgid "Generate New Recovery Codes"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/recovery_codes.py:160
+msgid "Recovery Code"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/tf_plugin.py:52
+msgid "Available Second Factor Methods:"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/tf_plugin.py:53
+msgid "Select"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/twofactor.py:135
+msgid "Send code via email"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/twofactor.py:147
+msgid "Use previously downloaded recovery code"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/unified_signin.py:160
+msgid "Code or Password"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/unified_signin.py:169
+msgid "Via email"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/unified_signin.py:170
+msgid "Via SMS"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/unified_signin.py:298
+msgid "Setup additional sign in option"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/unified_signin.py:311
+msgid "Delete active sign in option"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/webauthn.py:122
+#: venv/lib/python3.11/site-packages/flask_security/webauthn.py:356
+msgid "Nickname"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/webauthn.py:126
+msgid "Usage"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/webauthn.py:128
+msgid "Use as a first authentication factor"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/webauthn.py:131
+msgid "Use as a secondary authentication factor"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/webauthn.py:218
+msgid "Start"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/webauthn.py:934
+msgid "webauthn"
+msgstr ""
+
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:40
 msgid "This Username is already in use. Please try another one."
 msgstr ""
@@ -5421,12 +6451,6 @@ msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:144
 msgid "Update"
-msgstr ""
-
-#: venv/lib/python3.11/site-packages/flask_user/forms.py:152
-#: venv/lib/python3.11/site-packages/flask_user/forms.py:212
-#: venv/lib/python3.11/site-packages/flask_user/forms.py:243
-msgid "Username"
 msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:160
@@ -5565,10 +6589,6 @@ msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/user_manager__views.py:571
 msgid "Your reset password token is invalid."
-msgstr ""
-
-#: venv/lib/python3.11/site-packages/flask_user/user_manager__views.py:594
-msgid "Your password has been reset successfully."
 msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/user_manager__views.py:611

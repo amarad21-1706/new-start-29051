@@ -474,12 +474,36 @@
           height: 30px;
         }
 
+        #language-form select.language-dropdown1 {
+            font-size: 0.75em !important; /* Ensure smaller font size */
+            background-color: #444444 !important; /* Optional: Darker background */
+            color: #ffffff !important; /* Optional: Light font color */
+            border: 1px solid #666666 !important; /* Optional: Border styling */
+            padding: 5px; /* Optional: Adjust padding */
+            width: 100%; /* Optional: Set a width */
+        }
+
         .github #gh-project {
           font-size: 20px;
           padding-left: 5px;
           font-weight: bold;
           vertical-align: bottom;
         }
+
+        #language-select {
+            background-color: black; /* Set background color */
+            color: white; /* Set font color */
+            border: 1px solid white; /* Optional: Add a white border */
+            padding: 5px; /* Optional: Add padding for better appearance */
+            font-size: 16px; /* Optional: Adjust font size */
+            border-radius: 4px; /* Optional: Add rounded corners */
+        }
+
+        #language-select option {
+            background-color: black; /* Keep options background black */
+            color: white; /* Keep options font white */
+        }
+
     </style>
 </head>
 
@@ -559,12 +583,12 @@
             </div>
 
             <form id="language-form" method="get" action="">
-                <select id="language-select" name="language" onchange="updateActionAndSubmit(this)">
-                    <option value="en" {% if session.get('lang') == 'en' %}selected{% endif %}>English</option>
-                    <option value="it" {% if session.get('lang') == 'it' %}selected{% endif %}>Italiano</option>
-                    <option value="es" {% if session.get('lang') == 'es' %}selected{% endif %}>Español</option>
-                    <option value="fr" {% if session.get('lang') == 'fr' %}selected{% endif %}>Français</option>
-                    <option value="ar" {% if session.get('lang') == 'ar' %}selected{% endif %}>العربية</option>
+                <select id="language-select" name="language" class="language-dropdown1" onchange="updateActionAndSubmit(this)">
+                    <option value="en" {% if session.get('lang') == 'en' %}selected{% endif %}>{{ _("English") }}</option>
+                    <option value="it" {% if session.get('lang') == 'it' %}selected{% endif %}>{{ _("Italiano") }}</option>
+                    <option value="es" {% if session.get('lang') == 'es' %}selected{% endif %}>{{ _("Español") }}</option>
+                    <option value="fr" {% if session.get('lang') == 'fr' %}selected{% endif %}>{{ _("Français") }}</option>
+                    <option value="ar" {% if session.get('lang') == 'ar' %}selected{% endif %}>{{ _("العربية") }}</option>
                 </select>
             </form>
 

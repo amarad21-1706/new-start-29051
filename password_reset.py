@@ -6,6 +6,7 @@ from wtforms.validators import DataRequired, EqualTo
 from flask_login import login_required, current_user
 from models.user import Users
 from db import db
+from flask_babel import _
 
 password_reset_bp = Blueprint('password_reset', __name__)
 
@@ -51,7 +52,7 @@ def user_change_password_route():
             reset_password(current_user, new_password)
             return redirect(url_for('index'))
         else:
-            flash('Current password is incorrect.', 'danger')
+            flash(_('Current password is incorrect.'), 'danger')
 
     return render_template('user_change_password.html', form=form)
 
@@ -68,5 +69,5 @@ def reset_password_adm(username, new_password):
 def reset_password(user, new_password):
     user.set_password(new_password)
     db.session.commit()
-    flash(f"Password has been changed successfully.", 'success')
+    flash(_("Password has been changed successfully."), 'success')
 
