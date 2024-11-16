@@ -1,4 +1,4 @@
-# Italian translations for PROJECT.
+# French translations for PROJECT.
 # Copyright (C) 2024 ORGANIZATION
 # This file is distributed under the same license as the PROJECT project.
 # FIRST AUTHOR <EMAIL@ADDRESS>, 2024.
@@ -7,364 +7,803 @@ msgid ""
 msgstr ""
 "Project-Id-Version: PROJECT VERSION\n"
 "Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
-"POT-Creation-Date: 2024-11-14 11:24+0100\n"
-"PO-Revision-Date: 2024-11-15 09:53+0100\n"
-"Last-Translator: \n"
-"Language-Team: it <LL@li.org>\n"
-"Language: it\n"
+"POT-Creation-Date: 2024-11-15 09:35+0100\n"
+"PO-Revision-Date: 2024-11-16 21:54+0100\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: fr\n"
+"Language-Team: fr <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n > 1);\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=utf-8\n"
 "Content-Transfer-Encoding: 8bit\n"
-"Plural-Forms: nplurals=2; plural=(n != 1);\n"
 "Generated-By: Babel 2.12.1\n"
-"X-Generator: Poedit 3.5\n"
 
 #: app.py:1504 new-start-29051/app.py:1419
 msgid "An email has been sent with instructions to reset your password."
-msgstr "È stata inviata un'e-mail con le istruzioni per reimpostare la password."
+msgstr "Un email a été envoyé avec les instructions pour réinitialiser votre mot de passe."
 
 #: app.py:1506 new-start-29051/app.py:1421
 msgid "No user found with that email address."
-msgstr "Non è stato trovato alcun utente con quell'indirizzo e-mail."
+msgstr "Aucun utilisateur trouvé avec cette adresse e-mail."
 
 #: app.py:1509 new-start-29051/app.py:1424
 msgid "An error occurred while processing your request. Please try again later."
-msgstr "Si è verificato un errore durante l'elaborazione della richiesta. Si prega di riprovare più tardi."
+msgstr "Une erreur s'est produite lors du traitement de votre demande. Veuillez réessayer plus tard."
 
 msgid "D.E.R.E. - Digital Environment for Regulated Energy Sector"
-msgstr "D.E.R.E. - Piattaforma digitale per il settore dell'energia"
+msgstr "D.E.R.E. - Environnement numérique pour le secteur énergétique réglementé"
 
 #: forms/forms.py:393 new-start-29051/forms/forms.py:393
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/forms.py:30
 #: venv/lib/python3.11/site-packages/flask_security/forms.py:30
 
 msgid "Home"
-msgstr "Pagina iniziale"
+msgstr "Accueil"
 
 msgid "Overview"
-msgstr "Panoramica"
+msgstr "Aperçu"
 
 msgid "Dashboard"
-msgstr "Cruscotto"
+msgstr "Tableau de bord"
 
 msgid "Statistics"
-msgstr "Statistiche"
+msgstr "Statistiques"
 
 msgid "Reserved Area"
-msgstr "Area riservata"
+msgstr "Zone réservée"
 
 msgid "Deadlines"
-msgstr "Scadenze"
+msgstr "Délais"
 
 msgid "Email Address"
-msgstr "Indirizzo Email"
+msgstr "Adresse e-mail"
 
 msgid "Contract Management"
-msgstr "Gestione contratti"
+msgstr "Gestion des contrats"
 
 msgid "Plans, Contracts, Questionnaires"
-msgstr "Piani, contratti, questionnari"
+msgstr "Plans, contrats, questionnaires"
 
 msgid "Assign Products to Plans"
-msgstr "Associa servizi ai piani"
+msgstr "Attribuer des produits aux plans"
 
 msgid "Message Manager"
-msgstr "Gestione messaggi"
+msgstr "Gestion des messages"
 
 msgid "Workflow Chart"
-msgstr "Grafici workflow"
+msgstr "Diagramme de flux de travail"
 
 msgid "Documents Manager"
-msgstr "Gestione documenti"
+msgstr "Gestion des documents"
 
 msgid "Reset User Password"
-msgstr "Reimposta password utente"
+msgstr "Réinitialiser le mot de passe de l'utilisateur"
 
 msgid "Manage Tickets"
-msgstr "Gestione ticket"
+msgstr "Gestion des tickets"
 
 msgid "Email Address"
-msgstr "Indirizzo Email"
+msgstr "Adresse e-mail"
 
 msgid "About"
-msgstr "Chi siamo"
+msgstr "À propos"
 
 msgid "Access"
-msgstr "Accesso"
+msgstr "Accès"
 
 msgid "Logout"
-msgstr "Esci"
+msgstr "Déconnexion"
 
 msgid "Contact Us"
-msgstr "Contattaci"
+msgstr "Contactez-nous"
 
 msgid "Privacy Policy"
-msgstr "Regole di riservatezza"
+msgstr "Politique de confidentialité"
 
 msgid "Control Areas - Charts"
-msgstr "Aree di controllo"
+msgstr "Zones de contrôle - Graphiques"
 
 msgid "Control Areas"
-msgstr "Aree di controllo"
+msgstr "Zones de contrôle"
 
 msgid "Open Actions"
-msgstr "Da fare"
+msgstr "Actions ouvertes"
 
 msgid "My Actions"
-msgstr "La mia agenda"
+msgstr "Mes actions"
 
 msgid "Workflow Tree"
-msgstr "Albero degli workflow"
+msgstr "Arbre de flux de travail"
 
 msgid "Content Management"
-msgstr "Gestione contenuti"
+msgstr "Gestion de contenu"
 
 msgid "Associate Products to Plans"
-msgstr "Associa servizi ai piani"
+msgstr "Associer des produits aux plans"
 
 msgid "Show Plans & Products"
-msgstr "Visualizza piani e servizi"
+msgstr "Afficher les plans et produits"
 
 msgid "Subscriptions"
-msgstr "Abbonamenti"
+msgstr "Abonnements"
 
 msgid "User Map"
-msgstr "Mappa utenti"
+msgstr "Carte des utilisateurs"
 
 msgid "Activity Log"
-msgstr "Lista attività"
+msgstr "Journal des activités"
 
 msgid "Audit Trail"
-msgstr "Registro di controllo"
+msgstr "Piste de vérification"
 
 msgid "User Management"
-msgstr "Gestione utenti"
+msgstr "Gestion des utilisateurs"
 
 msgid "System Settings"
-msgstr "Impostazioni generali"
+msgstr "Paramètres du système"
 
 msgid "Our Services"
-msgstr "I nostri servizi"
+msgstr "Nos services"
 
 msgid "Our History"
-msgstr "La nostra storia"
+msgstr "Notre histoire"
 
 msgid "Our Products and Services"
-msgstr "I nostri prodotti e servizi"
+msgstr "Nos produits et services"
 
 msgid "News and Blog"
-msgstr "Notizie & blog"
+msgstr "Actualités et blog"
 
 msgid "Admin"
-msgstr "Amministratore"
+msgstr "Administrateur"
 
 msgid "About Us"
-msgstr "Chi siamo"
+msgstr "À propos de nous"
 
 msgid "Who Are We"
-msgstr "Chi siamo"
+msgstr "Qui sommes-nous"
 
 msgid "of Your Country/State"
-msgstr "nel tuo Paese"
+msgstr "de votre pays/état"
 
 msgid "in Your Country/State"
-msgstr "nel tuo Paese"
+msgstr "dans votre pays/état"
 
 msgid "Sitemap"
-msgstr "Mappa del sito"
+msgstr "Plan du site"
 
 msgid "Privacy Statement"
-msgstr "Dichiarazione sulla privacy"
+msgstr "Déclaration de confidentialité"
 
 msgid "Cookie Settings"
-msgstr "Impostazioni cookies"
+msgstr "Paramètres des cookies"
 
 msgid "Cookie Statement"
-msgstr "Cookies"
+msgstr "Déclaration sur les cookies"
 
 msgid "Legal"
-msgstr "Legale"
+msgstr "Légal"
 
 msgid "News and Insights"
-msgstr "Notizie"
+msgstr "Actualités et perspectives"
 
 msgid "Terms of Use"
-msgstr "Condizioni di utilizzo"
+msgstr "Conditions d'utilisation"
 
 msgid "Disclaimer"
-msgstr "Avvertenza"
+msgstr "Avertissement"
 
 msgid "Contacts"
-msgstr "Contatti"
+msgstr "Contacts"
 
 msgid "Contact"
-msgstr "Contatto"
+msgstr "Contact"
 
 msgid "Explore"
-msgstr "Esplora"
+msgstr "Explorer"
 
 msgid "Events"
-msgstr "Eventi"
+msgstr "Événements"
 
 msgid "Report an issue"
-msgstr "Riporta un problema"
+msgstr "Signaler un problème"
 
 msgid "Report a page"
-msgstr "Riporta una pagina"
+msgstr "Signaler une page"
 
 msgid "Accessibility"
-msgstr "Accesso facilitato"
+msgstr "Accessibilité"
 
 msgid "Signup"
-msgstr "Registrati"
+msgstr "Inscription"
 
 msgid "About us"
-msgstr "Chi siamo"
+msgstr "À propos de nous"
 
 msgid "Services"
-msgstr "Prodotti e servizi"
+msgstr "Services"
 
 msgid "History"
-msgstr "Storia"
+msgstr "Histoire"
 
 msgid "Mission"
-msgstr "Missione"
+msgstr "Mission"
 
 msgid "Site map"
-msgstr "Mappa del sito"
+msgstr "Plan du site"
 
 msgid "Archive"
-msgstr "Archivio"
+msgstr "Archives"
 
+#: admin_views.py:554
+msgid "Contract ID is required for creating a new article."
+msgstr ""
+
+#: admin_views.py:3583
+msgid "New document upload created successfully."
+msgstr ""
+
+#: admin_views.py:3726
+#, python-format
+msgid "Document %(doc_id)s transitioned to next step %(step_name)s."
+msgstr ""
+
+#: admin_views.py:3730
+#, python-format
+msgid "No next step found for document %(doc_id)s."
+msgstr ""
+
+#: admin_views.py:3733
+msgid "No workflow found for document %(doc_id)."
+msgstr ""
+
+#: admin_views.py:3917 admin_views.py:4010 admin_views.py:4095
+msgid "Error: Document number is required."
+msgstr ""
+
+#: admin_views.py:3925 admin_views.py:4017 admin_views.py:4102
+msgid "Error: Document date is required."
+msgstr ""
+
+#: admin_views.py:3952 admin_views.py:4041 admin_views.py:4143
+msgid "Error: Workflow and Step are required."
+msgstr ""
+
+#: admin_views.py:4034 admin_views.py:4136
+msgid "Error: Invalid workflow or step selection."
+msgstr ""
+
+#: admin_views.py:4072 admin_views.py:4174
+msgid "Error: The combination of Document, Workflow, and Step must be unique."
+msgstr ""
+
+#: admin_views.py:4074 admin_views.py:4176
+msgid "Error: A database error occurred."
+msgstr ""
+
+#: admin_views.py:4191
+msgid "The transaction was rolled back due to an error."
+msgstr ""
+
+#: admin_views.py:6497
+msgid "Survey responses submitted successfully."
+msgstr ""
+
+#: app.py:1097
+msgid "Documents successfully attached to the workflow."
+msgstr ""
+
+#: app.py:1508 new-start-29051/app.py:1419
+msgid "An email has been sent with instructions to reset your password."
+msgstr ""
+
+#: app.py:1510 new-start-29051/app.py:1421
+msgid "No user found with that email address."
+msgstr ""
+
+#: app.py:1514 new-start-29051/app.py:1424
+msgid "An error occurred while processing your request. Please try again later."
+msgstr ""
+
+#: app.py:1524
+msgid "The password reset token is invalid or expired."
+msgstr ""
+
+#: app.py:1533
+#: venv/lib/python3.11/site-packages/flask_user/user_manager__views.py:594
+msgid "Your password has been reset successfully."
+msgstr ""
+
+#: app.py:1566
+msgid "Mail sent successfully."
+msgstr ""
+
+#: app.py:1598 routes/authentication.py:24
+msgid "Login Successful"
+msgstr ""
+
+#: app.py:1605
+msgid "Security check"
+msgstr ""
+
+#: app.py:1606
+msgid ""
+"A new login to your account was detected on {date}. If it was you, no "
+"action is required. Otherwise, we will help you secure your account. Do "
+"not reply to this message; instead, open a ticket or contact the system "
+"administrator."
+msgstr ""
+
+#: app.py:1613
+msgid "System"
+msgstr ""
+
+#: app.py:1645
+msgid "Invalid username or password. Please try again."
+msgstr ""
+
+#: app.py:1653
+msgid "Incorrect CAPTCHA! Please try again."
+msgstr ""
+
+#: app.py:2472
+msgid "You must agree with the Terms and conditions to sign up."
+msgstr ""
+
+#: app.py:2477
+msgid "You must agree with the Privacy Policy to sign up."
+msgstr ""
+
+#: app.py:2513
+msgid "Your account has been created! You can now log in."
+msgstr ""
+
+#: app.py:2522
+msgid "Form validation failed. Please check your input."
+msgstr ""
+
+#: app.py:2579
+msgid "Mission content not available."
+msgstr ""
+
+#: app.py:3671
+msgid "No questionnaire ID provided."
+msgstr ""
+
+#: app.py:3677
+msgid "Invalid questionnaire ID."
+msgstr ""
+
+#: app.py:3687
+msgid "No data to save or session expired."
+msgstr ""
+
+#: app.py:3892 app.py:3922
+msgid "Error with form data. Please check your entries."
+msgstr ""
+
+#: app.py:3958
+msgid "Existing data found, please confirm to overwrite."
+msgstr ""
+
+#: app.py:4035
+msgid "No substantial data to save."
+msgstr ""
+
+#: app.py:4088
+msgid "Form submitted and status updated."
+msgstr ""
+
+#: app.py:4090
+msgid "Questionnaire company record not found."
+msgstr ""
+
+#: app.py:4093
+msgid "Data saved successfully!"
+msgstr ""
+
+#: app.py:4234
+msgid "Invalid OTP"
+msgstr ""
+
+#: app.py:4309
+msgid "Selected messages marked as read."
+msgstr ""
+
+#: app.py:4311
+msgid "No messages selected."
+msgstr ""
+
+#: app.py:4464
+msgid "Email not found in session"
+msgstr ""
+
+#: app.py:4472
+msgid "User not found"
+msgstr ""
+
+#: app.py:4483
+msgid "Subscription updated successfully"
+msgstr ""
+
+#: app.py:4566
+msgid "Please select a plan."
+msgstr ""
+
+#: app.py:4579
+msgid "User not found."
+msgstr ""
+
+#: app.py:4603
+msgid "Subscription updated successfully."
+msgstr ""
+
+#: app.py:4607
+msgid "An error occurred while updating the subscription."
+msgstr ""
+
+#: app.py:4612
+msgid "Invalid form submission."
+msgstr ""
+
+#: app.py:4627
+msgid "Subscription ID not provided."
+msgstr ""
+
+#: app.py:4633
+msgid "No active subscription found to cancel."
+msgstr ""
+
+#: app.py:4639
+msgid "Subscription plan not found."
+msgstr ""
+
+#: app.py:4656
+msgid "Subscription canceled successfully."
+msgstr ""
+
+#: app.py:4693
+msgid "You do not have permission to view this report."
+msgstr ""
+
+#: app.py:4925
+msgid "No data mapping found for this area and subarea."
+msgstr ""
+
+#: app.py:5038
+msgid "News item created successfully!"
+msgstr ""
+
+#: app.py:5071
+msgid "News item updated successfully!"
+msgstr ""
+
+#: app.py:5088
+msgid "News item deleted successfully!"
+msgstr ""
+
+#: app.py:5123
+msgid "Ticket created successfully!"
+msgstr ""
+
+#: app.py:5133
+msgid "You do not have permission to edit this ticket."
+msgstr ""
+
+#: app.py:5141
+msgid "Ticket updated successfully!"
+msgstr ""
+
+#: app.py:5157
+msgid "You do not have permission to view this page."
+msgstr ""
+
+#: app.py:5167
+msgid "You do not have permission to respond to tickets."
+msgstr ""
+
+#: app.py:5176
+msgid "Response sent successfully!"
+msgstr ""
+
+#: app.py:5203
+msgid "Your account has been updated!"
+msgstr ""
+
+#: app.py:5418
+msgid "Event added successfully!"
+msgstr ""
+
+#: app.py:5422
+msgid "User not logged in"
+msgstr ""
+
+#: app.py:5447 app.py:5495
+msgid "User not authenticated"
+msgstr ""
+
+#: app.py:5453 app.py:5501
+msgid "Permission denied"
+msgstr ""
+
+#: app.py:5477
+msgid "Event updated successfully!"
+msgstr ""
+
+#: app.py:5506
+msgid "Event deleted successfully!"
+msgstr ""
+
+#: app.py:5589
+msgid "Plan added to cart successfully!"
+msgstr ""
+
+#: app.py:5616
+msgid "Product added to cart successfully!"
+msgstr ""
+
+#: app.py:5618
+msgid "Product not found."
+msgstr ""
+
+#: app.py:5705
+msgid "Cart updated successfully!"
+msgstr ""
+
+#: app.py:5707 app.py:5728
+msgid "Cart item not found."
+msgstr ""
+
+#: app.py:5726
+msgid "Item removed from cart successfully!"
+msgstr ""
+
+#: app.py:5749
+msgid "Checkout successful! Your order has been placed."
+msgstr ""
+
+#: app.py:5776
+msgid "All fields are required."
+msgstr ""
+
+#: app.py:5783
+msgid "CSRF token is invalid or missing."
+msgstr ""
+
+#: app.py:5800
+msgid "Article created successfully."
+msgstr ""
+
+#: app.py:5834
+msgid "User not logged in."
+msgstr ""
+
+#: app.py:5840
+msgid "User not found in the system."
+msgstr ""
+
+#: app.py:5848
+msgid "The membership agreement could not be found. Please contact support."
+msgstr ""
+
+#: app.py:5854
+msgid "Contract object is invalid. Please contact support."
+msgstr ""
+
+#: app.py:5865
+msgid "You have successfully signed the agreement."
+msgstr ""
+
+#: app.py:5869
+msgid "You must accept the agreement to proceed."
+msgstr ""
+
+#: app.py:5873
+msgid "An error occurred while signing the agreement. Please try again."
+msgstr ""
+
+#: app.py:5884
+msgid "No articles found for the agreement. Please contact support."
+msgstr ""
+
+#: app.py:5890
+msgid "An error occurred while fetching the agreement articles."
+msgstr ""
+
+#: app.py:5902
+msgid "Support subject not found. Please contact the admin."
+msgstr ""
+
+#: app.py:5919
+msgid "Role request submitted successfully under Support!"
+msgstr ""
+
+#: app.py:5948
+msgid "Your request for company assignment has been submitted successfully!"
+msgstr ""
+
+#: app.py:5961
+msgid "You must apply for and be granted membership to access our services."
+msgstr ""
+
+#: app.py:5966
+msgid "You must sign the agreement before subscribing to services."
+msgstr ""
+
+#: app.py:5985
+msgid "You must apply for and be granted membership to access our plans."
+msgstr ""
+
+#: app.py:5990
+msgid "You must sign the agreement before subscribing to plans."
+msgstr ""
+
+#: app.py:6140
+msgid "Dossier not found."
+msgstr ""
+
+#: app.py:6166 app.py:6221 app.py:6252
+msgid "You are not authorized to access this page."
+msgstr ""
+
+#: app.py:6190
+msgid "Extra time authorization updated."
+msgstr ""
+
+#: app.py:6201
+msgid "Extra time authorization saved."
+msgstr ""
+
+#: app.py:6233
+msgid "Extra time authorization updated successfully."
+msgstr ""
+
+#: app.py:6259
+msgid "Extra time authorization deleted successfully."
+msgstr ""
+
+#: app_factory.py:35
+msgid "You do not have the necessary permissions to access this page."
+msgstr ""
+
+#: app_factory.py:61
+msgid "You need an active subscription to access this page."
+msgstr ""
+
+#: password_reset.py:55
+msgid "Current password is incorrect."
+msgstr ""
+
+#: password_reset.py:72
+msgid "Password has been changed successfully."
+msgstr ""
+
+#: forms/forms.py:393 new-start-29051/forms/forms.py:393
+#: new-start-29051/venv/lib/python3.11/site-packages/flask_security/forms.py:30
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:62
+msgid "Email Address"
+msgstr ""
 
 #: forms/forms.py:395 forms/forms.py:401 new-start-29051/forms/forms.py:395
 #: new-start-29051/forms/forms.py:401
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/forms.py:37
-#: venv/lib/python3.11/site-packages/flask_security/forms.py:37
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:70
 msgid "Reset Password"
-msgstr "Reimposta Password"
-
-msgid "News"
-msgstr "Notizie"
-
-msgid "Your Apps"
-msgstr "Le tue applicazioni"
+msgstr ""
 
 #: forms/forms.py:398 new-start-29051/forms/forms.py:398
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/forms.py:39
-#: venv/lib/python3.11/site-packages/flask_security/forms.py:39
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:72
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:68
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:318
 msgid "New Password"
-msgstr "Nuova password"
+msgstr ""
 
 #: forms/forms.py:399 new-start-29051/forms/forms.py:399
 msgid "Confirm New Password"
-msgstr "Conferma la nuova password"
+msgstr ""
 
 #: forms/forms.py:400 new-start-29051/forms/forms.py:400
 msgid "Passwords must match"
-msgstr "Le password devono corrispondere"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:132
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:132
 #, python-format
 msgid "Error: Cannot handle glob %s"
-msgstr "Errore: Impossibile gestire glob %s"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:286
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:286
 #, python-format
 msgid "Cannot read %s"
-msgstr "Impossibile leggere %s"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:456
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:456
 #, python-format
 msgid "Unimplemented function: %s"
-msgstr "Funzione non implementata: %s"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:606
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:606
 #, python-format
 msgid "new name needed for rename of %s"
-msgstr "Nuovo nome necessario per la ridenominazione di %s"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:628
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:628
 #, python-format
 msgid "Unhandled filechange type: %s"
-msgstr "Tipo di modifica dei file non gestiti: %s"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1034
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1034
 msgid "Couldn't parse rename source"
-msgstr "Impossibile analizzare la ridenominazione del sorgente"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1064
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1064
 #, python-format
 msgid "Malformed %(refname)s line: '%(line)s'"
-msgstr "Riga %(refname)s non corretta: '%(line)s'"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1432
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1432
 #, python-format
 msgid "Unsupported command: '%s'"
-msgstr "Comando non supportato: '%s'"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1434
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1434
 #, python-format
 msgid "Could not parse line: '%s'"
-msgstr "Impossibile analizzare la riga: '%s'"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1503
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1503
 #, python-format
 msgid "%s does not appear to be a valid git repository"
-msgstr "%s non sembra essere un repository git valido"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1549
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1549
 #, python-format
 msgid "Processed %d blob sizes"
-msgstr "Dimensioni dei BLOB elaborati %d"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1624
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1624
 msgid ""
-"Error: --path-rename expects one colon in its argument: <old_name:new_name>."
+"Error: --path-rename expects one colon in its argument: "
+"<old_name:new_name>."
 msgstr ""
-"Errore: --path-rename prevede due punti nel suo argomento: <old_name:new_name>."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1628
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1628
 msgid ""
-"Error: With --path-rename, if OLD_NAME and NEW_NAME are both non-empty and "
-"either ends with a slash then both must."
+"Error: With --path-rename, if OLD_NAME and NEW_NAME are both non-empty "
+"and either ends with a slash then both must."
 msgstr ""
-"Errore: Con --path-rename, se OLD_NAME e NEW_NAME sono entrambi non vuoti e uno "
-"dei due termina con una barra, allora entrambi devono."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1632
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1639
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1632
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1639
 msgid "Error: Pathnames cannot begin with a '/'"
-msgstr "Errore: i nomi dei percorsi non possono iniziare con un '/'"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1642
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1642
 #, python-format
 msgid "Error: Invalid path component '%s' found in '%s'"
-msgstr "Errore: componente del percorso non valido '%s' trovato in '%s'"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1665
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1665
 #, python-format
 msgid "Error: HelperFilter given invalid option_string: %s"
-msgstr "Errore: HelperFilter non valido option_string: %s"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1677
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1677
@@ -372,7 +811,8 @@ msgid ""
 "Rewrite (or analyze) repository history\n"
 "\n"
 "    git-filter-repo destructively rewrites history (unless --analyze or\n"
-"    --dry-run are given) according to specified rules.  It refuses to do any\n"
+"    --dry-run are given) according to specified rules.  It refuses to do "
+"any\n"
 "    rewriting unless either run from a clean fresh clone, or --force was\n"
 "    given.\n"
 "\n"
@@ -383,29 +823,14 @@ msgid ""
 "    See EXAMPLES section for details.\n"
 "    "
 msgstr ""
-"Riscrivere (o analizzare) la cronologia del repository\n"
-"\n"
-"git-filter-repo riscrive in modo distruttivo la cronologia (a meno che --"
-"analyze o\n"
-"    --dry-run sono dati) secondo regole specificate.  Si rifiuta di fare "
-"qualsiasi\n"
-"    riscrittura a meno che non venga eseguito da un clone pulito e fresco, o --"
-"force non sia stato\n"
-"    dedito.\n"
-"\n"
-"Utilizzo di base:\n"
-"      git-filter-repo --analyze\n"
-"      git-filter-repo [OPZIONI DI FILTRO/RIDENOMINAZIONE/CONTROLLO]\n"
-"\n"
-"Per ulteriori informazioni, vedere la sezione ESEMPI.\n"
-"    "
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1692
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1692
 msgid ""
 "CALLBACKS\n"
 "\n"
-"    All callback functions are of the same general format.  For a command line\n"
+"    All callback functions are of the same general format.  For a command"
+" line\n"
 "    argument like\n"
 "      --foo-callback 'BODY'\n"
 "\n"
@@ -418,19 +843,20 @@ msgid ""
 "b\"John\")'\n"
 "\n"
 "    To remove all 'Tested-by' tags in commit (or tag) messages:\n"
-"      git filter-repo --message-callback 'return re.sub(br\"\\nTested-by:.*\", "
-"\"\", message)'\n"
+"      git filter-repo --message-callback 'return re.sub(br\"\\nTested-"
+"by:.*\", \"\", message)'\n"
 "\n"
 "    To remove all .DS_Store files:\n"
-"      git filter-repo --filename-callback 'return None if os.path."
-"basename(filename) == b\".DS_Store\" else filename'\n"
+"      git filter-repo --filename-callback 'return None if "
+"os.path.basename(filename) == b\".DS_Store\" else filename'\n"
 "\n"
-"    Note that if BODY resolves to a filename, then the contents of that file\n"
+"    Note that if BODY resolves to a filename, then the contents of that "
+"file\n"
 "    will be used as the BODY in the callback function.\n"
 "\n"
 "    For more detailed examples and explanations AND caveats, see\n"
-"      https://htmlpreview.github.io/?https://github.com/newren/git-filter-repo/"
-"blob/docs/html/git-filter-repo.html#CALLBACKS\n"
+"      https://htmlpreview.github.io/?https://github.com/newren/git-"
+"filter-repo/blob/docs/html/git-filter-repo.html#CALLBACKS\n"
 "\n"
 "EXAMPLES\n"
 "\n"
@@ -443,7 +869,8 @@ msgid ""
 "    be useful to re-run this command after filtering to regenerate the\n"
 "    report and verify the changes look correct.)\n"
 "\n"
-"    To extract the history that touched just 'guides' and 'tools/releases':\n"
+"    To extract the history that touched just 'guides' and "
+"'tools/releases':\n"
 "      git filter-repo --path guides/ --path tools/releases\n"
 "\n"
 "    To remove foo.zip and bar/baz/zips from every revision in history:\n"
@@ -456,170 +883,85 @@ msgid ""
 "    committers, and taggers throughout history and make it permanent:\n"
 "      git filter-repo --use-mailmap\n"
 "\n"
-"    To extract the history of 'src/', rename all files to have a new leading\n"
-"    directory 'my-module' (e.g. src/foo.java -> my-module/src/foo.java), and\n"
+"    To extract the history of 'src/', rename all files to have a new "
+"leading\n"
+"    directory 'my-module' (e.g. src/foo.java -> my-module/src/foo.java), "
+"and\n"
 "    add a 'my-module-' prefix to all tags:\n"
-"      git filter-repo --path src/ --to-subdirectory-filter my-module --tag-"
-"rename '':'my-module-'\n"
+"      git filter-repo --path src/ --to-subdirectory-filter my-module "
+"--tag-rename '':'my-module-'\n"
 "\n"
 "    For more detailed examples and explanations, see\n"
-"      https://htmlpreview.github.io/?https://github.com/newren/git-filter-repo/"
-"blob/docs/html/git-filter-repo.html#EXAMPLES"
+"      https://htmlpreview.github.io/?https://github.com/newren/git-"
+"filter-repo/blob/docs/html/git-filter-repo.html#EXAMPLES"
 msgstr ""
-"CALLBACK\n"
-"\n"
-"Tutte le funzioni di callback hanno lo stesso formato generale.  Per una riga "
-"di comando\n"
-"    argomento come\n"
-"      --foo-callback 'CORPO'\n"
-"\n"
-"Verrà compilato e chiamato il codice seguente:\n"
-"      def foo_callback(pippo):\n"
-"        CORPO\n"
-"\n"
-"Quindi, per sostituire 'Jon' con 'John' nei nomi dell'autore/committer/tagger:\n"
-"      git filter-repo --nome-callback 'ritorna nome.replace(b\"Jon\", "
-"b\"John\")'\n"
-"\n"
-"Per rimuovere tutti i tag 'Tested-by' nei messaggi di commit (o tag):\n"
-"      git filter-repo --message-callback 'return re.sub(br\"\\nTested-by:.*\", "
-"\"\", message)'\n"
-"\n"
-"Per rimuovere tutti i file .DS_Store:\n"
-"      git filter-repo --nomefile-callback 'return None if os.path."
-"basename(nomefile) == b\".DS_Store\" else nomefile'\n"
-"\n"
-"Si noti che se BODY si risolve in un nome di file, il contenuto di tale file\n"
-"    verrà utilizzato come BODY nella funzione di callback.\n"
-"\n"
-"Per esempi e spiegazioni più dettagliate E avvertenze, vedere\n"
-"      https://htmlpreview.github.io/?https://github.com/newren/git-filter-repo/"
-"blob/docs/html/git-filter-repo.html#CALLBACKS\n"
-"\n"
-"ESEMPI\n"
-"\n"
-"Per ottenere un mucchio di rapporti che menzionano le rinominazioni che si sono "
-"verificate in\n"
-"    il tuo repository e le dimensioni dell'elenco degli oggetti aggregati per "
-"qualsiasi percorso,\n"
-"    directory, estensione o blob-id:\n"
-"      git filter-repo --analyze\n"
-"\n"
-"Questi report consentono di scegliere come filtrare il repository.\n"
-"    essere utile per eseguire nuovamente questo comando dopo il filtraggio per "
-"rigenerare il\n"
-"    Segnala e verifica che le modifiche siano corrette.)\n"
-"\n"
-"Per estrarre la cronologia che ha toccato solo 'guide' e 'strumenti/versioni':\n"
-"      git filter-repo --guide percorsi/ --strumenti percorsi/rilasci\n"
-"\n"
-"Per rimuovere foo.zip e bar/baz/zips da ogni revisione nella cronologia:\n"
-"      git filter-repo --path foo.zip --path bar/baz/zips/ --invert-paths\n"
-"\n"
-"Per sostituire il testo 'password' con 'p455w0rd':\n"
-"      git filter-repo --replace-text <(echo \"password==>p455w0rd\")\n"
-"\n"
-"Per utilizzare la versione corrente del file .mailmap per aggiornare gli "
-"autori,\n"
-"    committers e tagger nel corso della storia e renderlo permanente:\n"
-"      git filter-repo --use-mailmap\n"
-"\n"
-"Per estrarre la cronologia di 'src/', rinomina tutti i file in modo che abbiano "
-"una nuova interlinea\n"
-"    directory 'mio-modulo' (ad esempio src/foo.java -> mio-modulo/src/foo."
-"java), e\n"
-"    Aggiungi un prefisso 'my-module-' a tutti i tag:\n"
-"      git filter-repo --path src/ --to-subdirectory-filter my-module --tag-"
-"rename '':'mio-modulo-'\n"
-"\n"
-"Per esempi e spiegazioni più dettagliate, vedere\n"
-"      https://htmlpreview.github.io/?https://github.com/newren/git-filter-repo/"
-"blob/docs/html/git-filter-repo.html#EXAMPLES"
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1756
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1756
 msgid "Analysis"
-msgstr "Analisi"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1758
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1758
 msgid ""
 "Analyze repository history and create a report that may be useful in "
-"determining what to filter in a subsequent run. Will not modify your repo."
+"determining what to filter in a subsequent run. Will not modify your "
+"repo."
 msgstr ""
-"Analizzare la cronologia del repository e creare un report che possa essere "
-"utile per determinare gli elementi da filtrare in un'esecuzione successiva. Non "
-"modificherà il tuo repository."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1765
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1765
 msgid ""
-"Directory to write report, defaults to GIT_DIR/filter_repo/analysis,refuses to "
-"run if exists, --force delete existing dir first."
+"Directory to write report, defaults to "
+"GIT_DIR/filter_repo/analysis,refuses to run if exists, --force delete "
+"existing dir first."
 msgstr ""
-"Directory per scrivere il report, il valore predefinito è GIT_DIR/filter_repo/"
-"analysis, si rifiuta di essere eseguito se esiste, --force delete existing dir "
-"prima."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1768
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1768
 msgid "Filtering based on paths (see also --filename-callback)"
-msgstr "Filtraggio basato sui percorsi (vedi anche --filename-callback)"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1770
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1770
 msgid ""
 "\n"
-"           These options specify the paths to select.  Note that much like git\n"
+"           These options specify the paths to select.  Note that much "
+"like git\n"
 "           itself, renames are NOT followed so you may need to specify "
 "multiple\n"
 "           paths, e.g. `--path olddir/ --path newdir/`\n"
 "           "
 msgstr ""
-"\n"
-"Queste opzioni specificano i percorsi da selezionare.  Si noti che è molto "
-"simile a git\n"
-"           le rinominazioni NON vengono seguite, quindi potrebbe essere "
-"necessario specificare più\n"
-"           percorsi, ad esempio '--path olddir/ --path newdir/'\n"
-"           "
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1777
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1777
 msgid ""
-"Invert the selection of files from the specified --path-{match,glob,regex} "
-"options below, i.e. only select files matching none of those options."
+"Invert the selection of files from the specified "
+"--path-{match,glob,regex} options below, i.e. only select files matching "
+"none of those options."
 msgstr ""
-"Invertire la selezione dei file dalle opzioni --path-{match,glob,regex} "
-"specificate di seguito, cioè selezionare solo i file che non corrispondono a "
-"nessuna di queste opzioni."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1784
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1784
 msgid ""
-"Exact paths (files or directories) to include in filtered history.  Multiple --"
-"path options can be specified to get a union of paths."
+"Exact paths (files or directories) to include in filtered history.  "
+"Multiple --path options can be specified to get a union of paths."
 msgstr ""
-"Percorsi esatti (file o directory) da includere nella cronologia filtrata.  È "
-"possibile specificare più opzioni --path per ottenere un'unione di percorsi."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1789
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1789
 msgid ""
-"Glob of paths to include in filtered history. Multiple --path-glob options can "
-"be specified to get a union of paths."
+"Glob of paths to include in filtered history. Multiple --path-glob "
+"options can be specified to get a union of paths."
 msgstr ""
-"Glob di percorsi da includere nella cronologia filtrata. È possibile "
-"specificare più opzioni --path-glob per ottenere un'unione di percorsi."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1794
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1794
 msgid ""
-"Regex of paths to include in filtered history. Multiple --path-regex options "
-"can be specified to get a union of paths"
+"Regex of paths to include in filtered history. Multiple --path-regex "
+"options can be specified to get a union of paths"
 msgstr ""
-"Regex dei percorsi da includere nella cronologia filtrata. È possibile "
-"specificare più opzioni --path-regex per ottenere un'unione di percorsi"
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1798
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1798
@@ -628,265 +970,196 @@ msgid ""
 "Incompatible with --path-rename, and incompatible with matching against "
 "directory names."
 msgstr ""
-"Corrispondenza con il nome di base del file anziché con il percorso completo "
-"dall'inizio del repository.  Incompatibile con --path-rename e incompatibile "
-"con la corrispondenza con i nomi delle directory."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1802
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1802
 msgid "Renaming based on paths (see also --filename-callback)"
-msgstr "Rinominare in base ai percorsi (vedi anche --filename-callback)"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1807
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1807
 msgid ""
-"Path to rename; if filename or directory matches OLD_NAME rename to NEW_NAME.  "
-"Multiple --path-rename options can be specified.  NOTE: If you combine "
-"filtering options with renaming ones, do not rely on a rename argument to "
-"select paths; you also need a filter to select them."
+"Path to rename; if filename or directory matches OLD_NAME rename to "
+"NEW_NAME.  Multiple --path-rename options can be specified.  NOTE: If you"
+" combine filtering options with renaming ones, do not rely on a rename "
+"argument to select paths; you also need a filter to select them."
 msgstr ""
-"Percorso da rinominare; Se il nome del file o la directory corrispondono "
-"OLD_NAME rinominarli in NEW_NAME.  È possibile specificare più opzioni --path-"
-"rename.  NOTA: se si combinano le opzioni di filtro con quelle di "
-"ridenominazione, non fare affidamento su un argomento di ridenominazione per "
-"selezionare i percorsi; Hai anche bisogno di un filtro per selezionarli."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1813
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1813
 msgid "Path shortcuts"
-msgstr "Scorciatoie del percorso"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1817
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1817
 msgid ""
-"Specify several path filtering and renaming directives, one per line.  Lines "
-"with '==>' in them specify path renames, and lines can begin with 'literal:' "
-"(the default), 'glob:', or 'regex:' to specify different matching styles.  "
-"Blank lines and lines starting with a '#' are ignored."
+"Specify several path filtering and renaming directives, one per line.  "
+"Lines with '==>' in them specify path renames, and lines can begin with "
+"'literal:' (the default), 'glob:', or 'regex:' to specify different "
+"matching styles.  Blank lines and lines starting with a '#' are ignored."
 msgstr ""
-"Specificare diverse direttive di filtro e ridenominazione dei percorsi, una per "
-"riga.  Le righe con '==>' specificano la rinomina dei percorsi, e le righe "
-"possono iniziare con 'letteral:' (l'impostazione predefinita), 'glob:' o "
-"'regex:' per specificare diversi stili di corrispondenza.  Le righe vuote e le "
-"righe che iniziano con un '#' vengono ignorate."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1824
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1824
 msgid ""
 "Only look at history that touches the given subdirectory and treat that "
-"directory as the project root.  Equivalent to using '--path DIRECTORY/ --path-"
-"rename DIRECTORY/:'"
+"directory as the project root.  Equivalent to using '--path DIRECTORY/ "
+"--path-rename DIRECTORY/:'"
 msgstr ""
-"Guarda solo la cronologia che tocca la sottodirectory data e considera quella "
-"directory come la radice del progetto.  Equivale a usare '--path DIRECTORY/ --"
-"path-rename DIRECTORY/:'"
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1829
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1829
 msgid ""
-"Treat the project root as instead being under DIRECTORY. Equivalent to using '--"
-"path-rename :DIRECTORY/'"
+"Treat the project root as instead being under DIRECTORY. Equivalent to "
+"using '--path-rename :DIRECTORY/'"
 msgstr ""
-"Considera la radice del progetto come se fosse invece sotto DIRECTORY. Equivale "
-"a usare '--path-rename :D IRECTORY/'"
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1832
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1832
 msgid "Content editing filters (see also --blob-callback)"
-msgstr "Filtri di modifica dei contenuti (vedi anche --blob-callback)"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1840
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1840
 msgid ""
-"A file with expressions that, if found, will be replaced. By default, each "
-"expression is treated as literal text, but 'regex:' and 'glob:' prefixes are "
-"supported.  You can end the line with '==>' and some replacement text to choose "
-"a replacement choice other than the default of '{}'."
+"A file with expressions that, if found, will be replaced. By default, "
+"each expression is treated as literal text, but 'regex:' and 'glob:' "
+"prefixes are supported.  You can end the line with '==>' and some "
+"replacement text to choose a replacement choice other than the default of"
+" '{}'."
 msgstr ""
-"Un file con espressioni che, se trovate, verranno sostituite. Per impostazione "
-"predefinita, ogni espressione viene considerata come testo letterale, ma sono "
-"supportati i prefissi 'regex:' e 'glob:'.  Puoi terminare la riga con '==>' e "
-"un po' di testo sostitutivo per scegliere un'opzione di sostituzione diversa da "
-"quella predefinita di '{}'."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1843
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1843
 msgid "Strip blobs (files) bigger than specified size (e.g. '5M', '2G', etc)"
 msgstr ""
-"Elimina i blob (file) di dimensioni superiori a quelle specificate (ad es. "
-"'5M', '2G', ecc.)"
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1846
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1846
 msgid ""
-"Read git object ids from each line of the given file, and strip all of them "
-"from history"
+"Read git object ids from each line of the given file, and strip all of "
+"them from history"
 msgstr ""
-"Leggi gli ID degli oggetti git da ogni riga del file dato e rimuovili tutti "
-"dalla cronologia"
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1849
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1849
 msgid "Renaming of refs (see also --refname-callback)"
-msgstr "Rinominare i ref (vedi anche --refname-callback)"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1852
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1852
 msgid ""
-"Rename tags starting with OLD to start with NEW.  For example, --tag-rename foo:"
-"bar will rename tag foo-1.2.3 to bar-1.2.3; either OLD or NEW can be empty."
+"Rename tags starting with OLD to start with NEW.  For example, --tag-"
+"rename foo:bar will rename tag foo-1.2.3 to bar-1.2.3; either OLD or NEW "
+"can be empty."
 msgstr ""
-"Rinomina i tag che iniziano con OLD per iniziare con NEW.  Ad esempio, --tag-"
-"rename pippo:bar rinominerà il tag pippo-1.2.3 in bar-1.2.3; OLD o NEW possono "
-"essere vuoti."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1856
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1856
 msgid "Filtering of commit messages (see also --message-callback)"
-msgstr "Filtraggio dei messaggi di commit (vedi anche --message-callback)"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1859
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1859
 msgid ""
-"A file with expressions that, if found in commit messages, will be replaced. "
-"This file uses the same syntax as --replace-text."
+"A file with expressions that, if found in commit messages, will be "
+"replaced. This file uses the same syntax as --replace-text."
 msgstr ""
-"Un file con espressioni che, se trovate nei messaggi di commit, verranno "
-"sostituite. Questo file utilizza la stessa sintassi di --replace-text."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1863
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1863
 msgid ""
-"By default, since commits are rewritten and thus gain new hashes, references to "
-"old commit hashes in commit messages are replaced with new commit hashes "
-"(abbreviated to the same length as the old reference).  Use this flag to turn "
-"off updating commit hashes in commit messages."
+"By default, since commits are rewritten and thus gain new hashes, "
+"references to old commit hashes in commit messages are replaced with new "
+"commit hashes (abbreviated to the same length as the old reference).  Use"
+" this flag to turn off updating commit hashes in commit messages."
 msgstr ""
-"Per impostazione predefinita, poiché i commit vengono riscritti e quindi "
-"ottengono nuovi hash, i riferimenti ai vecchi hash di commit nei messaggi di "
-"commit vengono sostituiti con nuovi hash di commit (abbreviati alla stessa "
-"lunghezza del vecchio riferimento).  Utilizzare questo flag per disattivare "
-"l'aggiornamento degli hash di commit nei messaggi di commit."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1869
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1869
 msgid ""
-"Do not reencode commit messages into UTF-8.  By default, if the commit object "
-"specifies an encoding for the commit message, the message is re-encoded into "
-"UTF-8."
+"Do not reencode commit messages into UTF-8.  By default, if the commit "
+"object specifies an encoding for the commit message, the message is re-"
+"encoded into UTF-8."
 msgstr ""
-"Non ricodificare i messaggi di commit in UTF-8.  Per impostazione predefinita, "
-"se l'oggetto commit specifica una codifica per il messaggio di commit, il "
-"messaggio viene ricodificato in UTF-8."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1873
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1873
 msgid ""
-"Filtering of names & emails (see also --name-callback and --email-callback)"
+"Filtering of names & emails (see also --name-callback and --email-"
+"callback)"
 msgstr ""
-"Filtraggio di nomi ed e-mail (vedi anche --name-callback e --email-callback)"
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1878
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1878
 msgid ""
-"Use specified mailmap file (see git-shortlog(1) for details on the format) when "
-"rewriting author, committer, and tagger names and emails.  If the specified "
-"file is part of git history, historical versions of the file will be ignored; "
-"only the current contents are consulted."
+"Use specified mailmap file (see git-shortlog(1) for details on the "
+"format) when rewriting author, committer, and tagger names and emails.  "
+"If the specified file is part of git history, historical versions of the "
+"file will be ignored; only the current contents are consulted."
 msgstr ""
-"Usa il file mailmap specificato (vedi git-shortlog(1) per i dettagli sul "
-"formato) quando riscrivi i nomi e le email dell'autore, del committer e del "
-"tagger.  Se il file specificato fa parte della cronologia git, le versioni "
-"storiche del file verranno ignorate; Vengono consultati solo i contenuti "
-"aggiornati."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1885
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1885
 msgid "Same as: '--mailmap .mailmap' "
-msgstr "Uguale a: '--mailmap .mailmap' "
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1887
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1887
 msgid "Parent rewriting"
-msgstr "Riscrittura padre"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1892
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1892
 msgid ""
-"Replace refs (see git-replace(1)) are used to rewrite parents (unless turned "
-"off by the usual git mechanism); this flag specifies what do do with those refs "
-"afterward. Replace refs can either be deleted or updated to point at new commit "
-"hashes.  Also, new replace refs can be added for each commit rewrite.  With "
-"'update-or-add', new replace refs are only added for commit rewrites that "
-"aren't used to update an existing replace ref. default is 'update-and-add' if "
-"$GIT_DIR/filter-repo/already_ran does not exist; 'update-or-add' otherwise."
+"Replace refs (see git-replace(1)) are used to rewrite parents (unless "
+"turned off by the usual git mechanism); this flag specifies what do do "
+"with those refs afterward. Replace refs can either be deleted or updated "
+"to point at new commit hashes.  Also, new replace refs can be added for "
+"each commit rewrite.  With 'update-or-add', new replace refs are only "
+"added for commit rewrites that aren't used to update an existing replace "
+"ref. default is 'update-and-add' if $GIT_DIR/filter-repo/already_ran does"
+" not exist; 'update-or-add' otherwise."
 msgstr ""
-"I ref di sostituzione (vedi git-replace(1)) vengono utilizzati per riscrivere i "
-"genitori (a meno che non vengano disattivati dal consueto meccanismo git); "
-"Questo flag specifica cosa fare con quei riferimenti in seguito. I ref di "
-"sostituzione possono essere eliminati o aggiornati per puntare a nuovi hash di "
-"commit.  Inoltre, è possibile aggiungere nuovi riferimenti di sostituzione per "
-"ogni riscrittura del commit.  Con 'update-or-add', i nuovi ref di sostituzione "
-"vengono aggiunti solo per le riscritture di commit che non vengono utilizzate "
-"per aggiornare un ref di sostituzione esistente. Il valore predefinito è "
-"'update-and-add' se $GIT_DIR/filter-repo/already_ran non esiste; 'aggiorna o "
-"aggiungi' in caso contrario."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1904
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1904
 msgid ""
-"Whether to prune empty commits.  'auto' (the default) means only prune commits "
-"which become empty (not commits which were empty in the original repo, unless "
-"their parent was pruned). When the parent of a commit is pruned, the first non-"
-"pruned ancestor becomes the new parent."
+"Whether to prune empty commits.  'auto' (the default) means only prune "
+"commits which become empty (not commits which were empty in the original "
+"repo, unless their parent was pruned). When the parent of a commit is "
+"pruned, the first non-pruned ancestor becomes the new parent."
 msgstr ""
-"Se eliminare i commit vuoti.  'auto' (impostazione predefinita) indica solo i "
-"commit di potatura che diventano vuoti (non i commit che erano vuoti nel "
-"repository originale, a meno che il loro genitore non sia stato eliminato). "
-"Quando l'elemento padre di un commit viene sfoltito, il primo predecessore non "
-"potato diventa il nuovo padre."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1911
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1911
 msgid ""
-"Since merge commits are needed for history topology, they are typically exempt "
-"from pruning.  However, they can become degenerate with the pruning of other "
-"commits (having fewer than two parents, having one commit serve as both "
-"parents, or having one parent as the ancestor of the other.)  If such merge "
-"commits have no file changes, they can be pruned.  The default ('auto') is to "
-"only prune empty merge commits which become degenerate (not which started as "
-"such)."
+"Since merge commits are needed for history topology, they are typically "
+"exempt from pruning.  However, they can become degenerate with the "
+"pruning of other commits (having fewer than two parents, having one "
+"commit serve as both parents, or having one parent as the ancestor of the"
+" other.)  If such merge commits have no file changes, they can be pruned."
+"  The default ('auto') is to only prune empty merge commits which become "
+"degenerate (not which started as such)."
 msgstr ""
-"Poiché i commit di merge sono necessari per la topologia della cronologia, sono "
-"in genere esenti dall'eliminazione.  Tuttavia, possono degenerare con la "
-"potatura di altri commit (avere meno di due genitori, avere un commit che funge "
-"da entrambi i genitori o avere un genitore come antenato dell'altro).  Se tali "
-"commit di merge non hanno modifiche ai file, possono essere eliminati.  "
-"L'impostazione predefinita ('auto') è di sfoltire solo i commit di fusione "
-"vuoti che diventano degenerati (non quelli che sono iniziati come tali)."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1920
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1920
 msgid ""
-"Even if the first parent is or becomes an ancestor of another parent, do not "
-"prune it.  This modifies how --prune-degenerate behaves, and may be useful in "
-"projects who always use merge --no-ff."
+"Even if the first parent is or becomes an ancestor of another parent, do "
+"not prune it.  This modifies how --prune-degenerate behaves, and may be "
+"useful in projects who always use merge --no-ff."
 msgstr ""
-"Anche se il primo genitore è o diventa un antenato di un altro genitore, non "
-"potarlo.  Questo modifica il modo in cui --prune-degenerate si comporta, e può "
-"essere utile nei progetti che usano sempre merge --no-ff."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1925
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1925
 msgid "Generic callback code snippets"
-msgstr "Frammenti di codice di callback generici"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1927
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1927
 msgid "Python code body for processing filenames; see CALLBACKS sections below."
 msgstr ""
-"Corpo del codice Python per l'elaborazione dei nomi dei file; vedere le sezioni "
-"CALLBACKS di seguito."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1930
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1930
@@ -898,18 +1171,16 @@ msgstr ""
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1933
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1933
 msgid ""
-"Python code body for processing names of people; see CALLBACKS section below."
+"Python code body for processing names of people; see CALLBACKS section "
+"below."
 msgstr ""
-"Corpo del codice Python per l'elaborazione dei nomi delle persone; vedere la "
-"sezione CALLBACK di seguito."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1936
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1936
 msgid ""
-"Python code body for processing emails addresses; see CALLBACKS section below."
+"Python code body for processing emails addresses; see CALLBACKS section "
+"below."
 msgstr ""
-"Corpo del codice Python per l'elaborazione degli indirizzi email; vedere la "
-"sezione CALLBACK di seguito."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1939
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1939
@@ -920,31 +1191,25 @@ msgstr ""
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1943
 msgid "Python code body for processing blob objects; see CALLBACKS section below."
 msgstr ""
-"Corpo del codice Python per l'elaborazione di oggetti blob; vedere la sezione "
-"CALLBACK di seguito."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1946
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1946
 msgid ""
-"Python code body for processing commit objects; see CALLBACKS section below."
+"Python code body for processing commit objects; see CALLBACKS section "
+"below."
 msgstr ""
-"Corpo del codice Python per l'elaborazione degli oggetti commit; vedere la "
-"sezione CALLBACK di seguito."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1949
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1949
 msgid "Python code body for processing tag objects; see CALLBACKS section below."
 msgstr ""
-"Corpo del codice Python per l'elaborazione di oggetti tag; vedere la sezione "
-"CALLBACK di seguito."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1952
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1952
 msgid ""
-"Python code body for processing reset objects; see CALLBACKS section below."
+"Python code body for processing reset objects; see CALLBACKS section "
+"below."
 msgstr ""
-"Corpo del codice Python per l'elaborazione di oggetti di reset; vedere la "
-"sezione CALLBACK di seguito."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1955
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1955
@@ -954,298 +1219,272 @@ msgid ""
 "unlike normal uses of --partial, this doesn't risk mixing old and new\n"
 "history since the old and new histories are in different repositories."
 msgstr ""
-"Specificare posizioni alternative di origine o di destinazione implica --"
-"partial,\n"
-"tranne per il fatto che viene utilizzato il normale valore predefinito per --"
-"replace-refs.  Tuttavia\n"
-"A differenza dei normali usi di --partial, questo non rischia di mescolare "
-"vecchio e nuovo\n"
-"La storia poiché la vecchia e la nuova storia sono in archivi diversi."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1960
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1960
 msgid "Location to filter from/to"
-msgstr "Posizione da/verso cui filtrare"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1963
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1963
 msgid "Git repository to read from"
-msgstr "Repository Git da cui leggere"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1965
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1965
 msgid "Git repository to overwrite with filtered history"
-msgstr "Repository Git da sovrascrivere con la cronologia filtrata"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1967
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1967
 msgid "Miscellaneous options"
-msgstr "Opzioni varie"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1969
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1969
 msgid "Show this help message and exit."
-msgstr "Mostra questo messaggio di aiuto ed esci."
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1971
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1971
 msgid "Display filter-repo's version and exit."
-msgstr "Visualizza la versione del repository del filtro e usci."
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1973
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1973
 msgid ""
-"Rewrite repository history even if the current repo does not look like a fresh "
-"clone.  History rewriting is irreversible (and includes immediate pruning of "
-"reflogs and old objects), so be cautious about using this flag."
+"Rewrite repository history even if the current repo does not look like a "
+"fresh clone.  History rewriting is irreversible (and includes immediate "
+"pruning of reflogs and old objects), so be cautious about using this "
+"flag."
 msgstr ""
-"Riscrivi la cronologia del repository anche se il repository corrente non "
-"sembra un clone nuovo.  La riscrittura della cronologia è irreversibile (e "
-"include l'eliminazione immediata di reflog e vecchi oggetti), quindi fai "
-"attenzione nell'usare questo flag."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1978
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1978
 msgid ""
-"Do a partial history rewrite, resulting in the mixture of old and new history.  "
-"This implies a default of update-no-add for --replace-refs, disables rewriting "
-"refs/remotes/origin/* to refs/heads/*, disables removing of the 'origin' "
-"remote, disables removing unexported refs, disables expiring the reflog, and "
-"disables the automatic post-filter gc.  Also, this modifies --tag-rename and --"
-"refname-callback options such that instead of replacing old refs with new "
-"refnames, it will instead create new refs and keep the old ones around.  Use "
-"with caution."
+"Do a partial history rewrite, resulting in the mixture of old and new "
+"history.  This implies a default of update-no-add for --replace-refs, "
+"disables rewriting refs/remotes/origin/* to refs/heads/*, disables "
+"removing of the 'origin' remote, disables removing unexported refs, "
+"disables expiring the reflog, and disables the automatic post-filter gc."
+"  Also, this modifies --tag-rename and --refname-callback options such "
+"that instead of replacing old refs with new refnames, it will instead "
+"create new refs and keep the old ones around.  Use with caution."
 msgstr ""
-"Fai una riscrittura parziale della storia, risultando nella miscela di vecchia "
-"e nuova storia.  Ciò implica un valore predefinito di update-no-add per --"
-"replace-refs, disabilita la riscrittura di refs/remotes/origin/* in refs/heads/"
-"*, disabilita la rimozione del telecomando 'origin', disabilita la rimozione di "
-"refs non esportati, disabilita la scadenza del reflog e disabilita il post-"
-"filtro automatico gc.  Inoltre, questo modifica le opzioni --tag-rename e --"
-"refname-callback in modo tale che invece di sostituire i vecchi ref con nuovi "
-"refname, creerà invece nuovi ref e manterrà quelli vecchi in giro.  Utilizzare "
-"con cautela."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:1994
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:1994
 msgid ""
-"Limit history rewriting to the specified refs.  Implies --partial.  In addition "
-"to the normal caveats of --partial (mixing old and new history, no automatic "
-"remapping of refs/remotes/origin/* to refs/heads/*, etc.), this also may cause "
-"problems for pruning of degenerate empty merge commits when negative revisions "
-"are specified."
+"Limit history rewriting to the specified refs.  Implies --partial.  In "
+"addition to the normal caveats of --partial (mixing old and new history, "
+"no automatic remapping of refs/remotes/origin/* to refs/heads/*, etc.), "
+"this also may cause problems for pruning of degenerate empty merge "
+"commits when negative revisions are specified."
 msgstr ""
-"Limita la riscrittura della cronologia ai riferimenti specificati.  Implica --"
-"parziale.  Oltre ai normali avvertimenti di --partial (mescolando vecchia e "
-"nuova cronologia, nessuna rimappatura automatica di refs/remotes/origin/* in "
-"refs/heads/*, ecc.), questo può anche causare problemi per la potatura di "
-"commit di merge vuoti degenerati quando vengono specificate revisioni negative."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:2002
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:2002
 msgid ""
-"Do not change the repository.  Run `git fast-export` and filter its output, and "
-"save both the original and the filtered version for comparison.  This also "
-"disables rewriting commit messages due to not knowing new commit IDs and "
-"disables filtering of some empty commits due to inability to query the fast-"
-"import backend."
+"Do not change the repository.  Run `git fast-export` and filter its "
+"output, and save both the original and the filtered version for "
+"comparison.  This also disables rewriting commit messages due to not "
+"knowing new commit IDs and disables filtering of some empty commits due "
+"to inability to query the fast-import backend."
 msgstr ""
-"Non modificare il repository.  Esegui 'git fast-export' e filtra il suo output "
-"e salva sia la versione originale che quella filtrata per il confronto.  In "
-"questo modo viene disabilitata anche la riscrittura dei messaggi di commit a "
-"causa della mancata conoscenza di nuovi ID commit e viene disabilitato il "
-"filtraggio di alcuni commit vuoti a causa dell'impossibilità di eseguire query "
-"sul back-end di importazione rapida."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:2009
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:2009
 msgid ""
-"Print additional information about operations being performed and commands "
-"being run.  When used together with --dry-run, also show extra information "
-"about what would be run."
+"Print additional information about operations being performed and "
+"commands being run.  When used together with --dry-run, also show extra "
+"information about what would be run."
 msgstr ""
-"Consente di stampare informazioni aggiuntive sulle operazioni eseguite e sui "
-"comandi eseguiti.  Se usato insieme a --dry-run, mostra anche informazioni "
-"extra su ciò che verrebbe eseguito."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:2031
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:2031
 msgid ""
-"Instead of running `git fast-export` and filtering its output, filter the fast-"
-"export stream from stdin.    The stdin must be in the expected input format (e."
-"g. it needs to include original-oid directives)."
+"Instead of running `git fast-export` and filtering its output, filter the"
+" fast-export stream from stdin.    The stdin must be in the expected "
+"input format (e.g. it needs to include original-oid directives)."
 msgstr ""
-"Invece di eseguire 'git fast-export' e filtrare il suo output, filtra il flusso "
-"di esportazione veloce da stdin.    Lo stdin deve essere nel formato di input "
-"previsto (ad esempio, deve includere le direttive original-oid)."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:2036
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:2036
 msgid "Pass --quiet to other git commands called"
-msgstr "Passa --quiet ad altri comandi git chiamati"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:2042
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:2042
 msgid ""
-"Error: --analyze is incompatible with --path* flags; it's a read-only operation."
+"Error: --analyze is incompatible with --path* flags; it's a read-only "
+"operation."
 msgstr ""
-"Errore: --analyze è incompatibile con i flag --path*; Si tratta di "
-"un'operazione di sola lettura."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:2045
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:2045
 msgid "Error: --analyze is incompatible with --stdin."
-msgstr "Errore: --analyze è incompatibile con --stdin."
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:2060
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:2060
 msgid "Error: --use-base-name and --path-rename are incompatible."
-msgstr "Errore: --use-base-name e --path-rename sono incompatibili."
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:2075
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:2075
 msgid "Error: need git >= 2.24.0"
-msgstr "Errore: serve git >= 2.24.0"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:2079
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:2079
 msgid "Error: need git >= 2.23.0"
-msgstr "Errore: bisogno git >= 2.23.0"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:2092
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:2092
 msgid "Error: need git >= 2.22.0"
-msgstr "Errore: bisogno git >= 2.22.0"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:2099
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:2099
 #, python-format
 msgid "Error: could not parse --strip-blobs-bigger-than argument %s"
-msgstr "Errore: impossibile analizzare l'argomento --strip-blobs-bigger-than %s"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:2164
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:2164
 #, python-format
 msgid ""
-"Error: In %s, 'glob:' and '==>' are incompatible (renaming globs makes no sense)"
+"Error: In %s, 'glob:' and '==>' are incompatible (renaming globs makes no"
+" sense)"
 msgstr ""
-"Errore: In %s, 'glob:' e '==>' sono incompatibili (rinominare glob non ha senso)"
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:2172
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:2172
 msgid ""
-"Error: When rename directories, if OLDNAME and NEW_NAME are both non-empty and "
-"either ends with a slash then both must."
+"Error: When rename directories, if OLDNAME and NEW_NAME are both non-"
+"empty and either ends with a slash then both must."
 msgstr ""
-"Errore: Quando si rinominano le directory, se OLDNAME e NEW_NAME sono entrambi "
-"non vuoti e terminano con una barra, devono essere entrambi necessari."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:2195
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:2195
 msgid "No arguments specified."
-msgstr "Nessun argomento specificato."
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:2320
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:2320
 #, python-format
 msgid "Unhandled change type(s): %(change_type)s (in commit %(commit)s)"
-msgstr "Tipi di modifica non gestiti: %(change_type)s (in %(commit)s di commit)"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:2339
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:2339
 #, python-format
 msgid "Processed %d commits"
-msgstr "Commit %d elaborati"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:2349
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:2349
 msgid "Nothing to analyze; repository is empty."
-msgstr "Niente da analizzare; Il repository è vuoto."
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:2406
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:2406
 msgid "Error: rev-list|diff-tree pipeline failed; see above."
-msgstr "Errore: rev-list|diff-tree pipeline failed; vedi sopra."
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:2413
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:2413
 msgid "<present>"
-msgstr "<present>"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:2463
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:2463
 msgid "Overall Statistics"
-msgstr "Statistiche complessive"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:2464
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:2464
 msgid "Number of commits"
-msgstr "Numero di commit"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:2466
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:2466
 msgid "Number of filenames"
-msgstr "Numero di nomi di file"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:2468
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:2468
 msgid "Number of directories"
-msgstr "Numero di directory"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:2470
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:2470
 msgid "Number of file extensions"
-msgstr "Numero di estensioni di file"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:2473
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:2473
 msgid "Total unpacked size (bytes)"
-msgstr "Dimensione totale decompressa (byte)"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:2475
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:2475
 msgid "Total packed size (bytes)"
-msgstr "Dimensione totale compressa (byte)"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:2480
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:2480
 msgid "Caveats"
-msgstr "Avvertimenti"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:2481
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:2481
 msgid "Sizes"
-msgstr "Taglie"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/git_filter_repo.py:2482
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:2482
 msgid ""
 "\n"
 "        Packed size represents what size your repository would be if no\n"
-"        trees, commits, tags, or other metadata were included (though it may\n"
-"        fail to represent de-duplication; see below).  It also represents the\n"
-"        current packing, which may be suboptimal if you haven't gc'ed for a\n"
+"        trees, commits, tags, or other metadata were included (though it "
+"may\n"
+"        fail to represent de-duplication; see below).  It also represents"
+" the\n"
+"        current packing, which may be suboptimal if you haven't gc'ed for"
+" a\n"
 "        while.\n"
 "\n"
-"        Unpacked size represents what size your repository would be if no\n"
+"        Unpacked size represents what size your repository would be if no"
+"\n"
 "        trees, commits, tags, or other metadata were included AND if no\n"
 "        files were packed; i.e., without delta-ing or compression.\n"
 "\n"
-"        Both unpacked and packed sizes can be slightly misleading.  Deleting\n"
+"        Both unpacked and packed sizes can be slightly misleading.  "
+"Deleting\n"
 "        a blob from history not save as much space as the unpacked size,\n"
 "        because it is obviously normally stored in packed form.  Also,\n"
-"        deleting a blob from history may not save as much space as its packed\n"
-"        size either, because another blob could be stored as a delta against\n"
-"        that blob, so when you remove one blob another blob's packed size may\n"
+"        deleting a blob from history may not save as much space as its "
+"packed\n"
+"        size either, because another blob could be stored as a delta "
+"against\n"
+"        that blob, so when you remove one blob another blob's packed size"
+" may\n"
 "        grow.\n"
 "\n"
 "        Also, the sum of the packed sizes can add up to more than the\n"
-"        repository size; if the same contents appeared in the repository in\n"
-"        multiple places, git will automatically de-dupe and store only one\n"
-"        copy, while the way sizes are added in this analysis adds the size\n"
-"        for each file path that has those contents.  Further, if a file is\n"
+"        repository size; if the same contents appeared in the repository "
+"in\n"
+"        multiple places, git will automatically de-dupe and store only "
+"one\n"
+"        copy, while the way sizes are added in this analysis adds the "
+"size\n"
+"        for each file path that has those contents.  Further, if a file "
+"is\n"
 "        ever reverted to a previous version's contents, the previous\n"
-"        version's size will be counted multiple times in this analysis, even\n"
+"        version's size will be counted multiple times in this analysis, "
+"even\n"
 "        though git will only store it once.\n"
 "        "
 msgstr ""
@@ -1260,21 +1499,31 @@ msgstr ""
 #, python-format
 msgid ""
 "\n"
-"        Whether a file is deleted is not a binary quality, since it can be\n"
-"        deleted on some branches but still exist in others.  Also, it might\n"
-"        exist in an old tag, but have been deleted in versions newer than\n"
-"        that.  More thorough tracking could be done, including looking at\n"
+"        Whether a file is deleted is not a binary quality, since it can "
+"be\n"
+"        deleted on some branches but still exist in others.  Also, it "
+"might\n"
+"        exist in an old tag, but have been deleted in versions newer than"
+"\n"
+"        that.  More thorough tracking could be done, including looking at"
+"\n"
 "        merge commits where one side of history deleted and the other "
 "modified,\n"
-"        in order to give a more holistic picture of deletions.  However, that\n"
-"        algorithm would not only be more complex to implement, it'd also be\n"
-"        quite difficult to present and interpret by users.  Since --analyze\n"
+"        in order to give a more holistic picture of deletions.  However, "
+"that\n"
+"        algorithm would not only be more complex to implement, it'd also "
+"be\n"
+"        quite difficult to present and interpret by users.  Since "
+"--analyze\n"
 "        is just about getting a high-level rough picture of history, it "
 "instead\n"
-"        implements the simplistic rule that is good enough for 98% of cases:\n"
-"          A file is marked as deleted if the last commit in the fast-export\n"
+"        implements the simplistic rule that is good enough for 98% of "
+"cases:\n"
+"          A file is marked as deleted if the last commit in the fast-"
+"export\n"
 "          stream that mentions the file lists it as deleted.\n"
-"        This makes it dependent on topological ordering, but generally gives\n"
+"        This makes it dependent on topological ordering, but generally "
+"gives\n"
 "        the \"right\" answer.\n"
 "        "
 msgstr ""
@@ -1290,21 +1539,26 @@ msgid ""
 "\n"
 "        Renames share the same non-binary nature that deletions do, plus\n"
 "        additional challenges:\n"
-"          * If the renamed file is renamed again, instead of just two names "
-"for\n"
+"          * If the renamed file is renamed again, instead of just two "
+"names for\n"
 "            a path you can have three or more.\n"
-"          * Rename pairs of the form (oldname, newname) that we consider to be\n"
-"            different names of the \"same file\" might only be valid over "
-"certain\n"
-"            commit ranges.  For example, if a new commit reintroduces a file\n"
-"            named oldname, then new versions of oldname aren't the \"same "
-"file\"\n"
+"          * Rename pairs of the form (oldname, newname) that we consider "
+"to be\n"
+"            different names of the \"same file\" might only be valid over"
+" certain\n"
+"            commit ranges.  For example, if a new commit reintroduces a "
+"file\n"
+"            named oldname, then new versions of oldname aren't the \"same"
+" file\"\n"
 "            anymore.  We could try to portray this to the user, but it's "
 "easier\n"
-"            for the user to just break the pairing and only report unbroken\n"
+"            for the user to just break the pairing and only report "
+"unbroken\n"
 "            rename pairings to the user.\n"
-"          * The ability for users to rename files differently in different\n"
-"            branches means that our chains of renames will not necessarily be\n"
+"          * The ability for users to rename files differently in "
+"different\n"
+"            branches means that our chains of renames will not "
+"necessarily be\n"
 "            linear but may branch out.\n"
 "        "
 msgstr ""
@@ -1577,10 +1831,12 @@ msgstr ""
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:3860
 msgid ""
 "\n"
-"          The following commits used to be merge commits but due to filtering\n"
-"          are now regular commits; they likely have suboptimal commit messages\n"
-"          (e.g. \"Merge branch next into master\").  Original commit hash on "
-"the\n"
+"          The following commits used to be merge commits but due to "
+"filtering\n"
+"          are now regular commits; they likely have suboptimal commit "
+"messages\n"
+"          (e.g. \"Merge branch next into master\").  Original commit hash"
+" on the\n"
 "          left, commit hash after filtering/rewriting on the right:\n"
 "          "
 msgstr ""
@@ -1589,9 +1845,12 @@ msgstr ""
 #: venv/lib/python3.11/site-packages/git_filter_repo.py:3872
 msgid ""
 "\n"
-"          The following commits were filtered out, but referenced in another\n"
-"          commit message.  The reference to the now-nonexistent commit hash\n"
-"          (or a substring thereof) was left as-is in any commit messages:\n"
+"          The following commits were filtered out, but referenced in "
+"another\n"
+"          commit message.  The reference to the now-nonexistent commit "
+"hash\n"
+"          (or a substring thereof) was left as-is in any commit messages:"
+"\n"
 "          "
 msgstr ""
 
@@ -2620,24 +2879,24 @@ msgstr ""
 #: venv/lib/python3.11/site-packages/flask_admin/model/template.py:79
 #: venv/lib/python3.11/site-packages/flask_admin/model/template.py:86
 msgid "View Record"
-msgstr "Visualizza voce"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_admin/model/template.py:93
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_admin/model/template.py:100
 #: venv/lib/python3.11/site-packages/flask_admin/model/template.py:93
 #: venv/lib/python3.11/site-packages/flask_admin/model/template.py:100
 msgid "Edit Record"
-msgstr "Modifica registro"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_admin/model/template.py:107
 #: venv/lib/python3.11/site-packages/flask_admin/model/template.py:107
 msgid "Delete Record"
-msgstr "Elimina record"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_admin/model/widgets.py:62
 #: venv/lib/python3.11/site-packages/flask_admin/model/widgets.py:62
 msgid "Please select model"
-msgstr "Seleziona il modello"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_admin/model/widgets.py:116
 #: venv/lib/python3.11/site-packages/flask_admin/model/widgets.py:116
@@ -2762,275 +3021,263 @@ msgid "show this help message and exit"
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:99
-#: venv/lib/python3.11/site-packages/flask_security/core.py:99
+#: venv/lib/python3.11/site-packages/flask_security/core.py:285
 msgid "Login Required"
-msgstr "Login Richiesto"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:100
-#: venv/lib/python3.11/site-packages/flask_security/core.py:100
+#: venv/lib/python3.11/site-packages/flask_security/core.py:286
 msgid "Welcome"
-msgstr "Benvenuto"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:101
-#: venv/lib/python3.11/site-packages/flask_security/core.py:101
+#: venv/lib/python3.11/site-packages/flask_security/core.py:287
 msgid "Please confirm your email"
-msgstr "Per favore, confermate la vostra e-mail"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:102
-#: venv/lib/python3.11/site-packages/flask_security/core.py:102
+#: venv/lib/python3.11/site-packages/flask_security/core.py:288
 msgid "Login instructions"
-msgstr "Istruzioni per l'accesso"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:103
-#: venv/lib/python3.11/site-packages/flask_security/core.py:103
+#: venv/lib/python3.11/site-packages/flask_security/core.py:289
 msgid "Your password has been reset"
-msgstr "La tua password è stata reimpostata"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:104
-#: venv/lib/python3.11/site-packages/flask_security/core.py:104
+#: venv/lib/python3.11/site-packages/flask_security/core.py:290
 msgid "Your password has been changed"
-msgstr "La tua password è stata modificata"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:106
-#: venv/lib/python3.11/site-packages/flask_security/core.py:106
+#: venv/lib/python3.11/site-packages/flask_security/core.py:291
 msgid "Password reset instructions"
-msgstr "Istruzioni reimpostazione password"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:132
-#: venv/lib/python3.11/site-packages/flask_security/core.py:132
+#: venv/lib/python3.11/site-packages/flask_security/core.py:404
 msgid "You do not have permission to view this resource."
-msgstr "Non si dispone dell'autorizzazione per visualizzare questa risorsa."
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:134
-#: venv/lib/python3.11/site-packages/flask_security/core.py:134
 #, python-format
 msgid "Thank you. Confirmation instructions have been sent to %(email)s."
-msgstr "Grazie. Le istruzioni di conferma sono state inviate a %(email)s."
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:138
-#: venv/lib/python3.11/site-packages/flask_security/core.py:138
+#: venv/lib/python3.11/site-packages/flask_security/core.py:421
 msgid "Thank you. Your email has been confirmed."
-msgstr "Grazie. La tua email è stata confermata."
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:140
-#: venv/lib/python3.11/site-packages/flask_security/core.py:140
+#: venv/lib/python3.11/site-packages/flask_security/core.py:422
 msgid "Your email has already been confirmed."
-msgstr "La tua email è già stata confermata."
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:142
-#: venv/lib/python3.11/site-packages/flask_security/core.py:142
+#: venv/lib/python3.11/site-packages/flask_security/core.py:423
 #: venv/lib/python3.11/site-packages/flask_user/user_manager__views.py:173
 msgid "Invalid confirmation token."
-msgstr "Token di conferma non valido."
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:144
-#: venv/lib/python3.11/site-packages/flask_security/core.py:144
+#: venv/lib/python3.11/site-packages/flask_security/core.py:425
 #, python-format
 msgid "%(email)s is already associated with an account."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:146
-#: venv/lib/python3.11/site-packages/flask_security/core.py:146
+#: venv/lib/python3.11/site-packages/flask_security/core.py:447
 msgid "Password does not match"
-msgstr "Le password non coincidono"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:148
-#: venv/lib/python3.11/site-packages/flask_security/core.py:148
+#: venv/lib/python3.11/site-packages/flask_security/core.py:448
 msgid "Passwords do not match"
-msgstr "Le password non corrispondono"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:150
-#: venv/lib/python3.11/site-packages/flask_security/core.py:150
+#: venv/lib/python3.11/site-packages/flask_security/core.py:449
 msgid "Redirections outside the domain are forbidden"
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:152
-#: venv/lib/python3.11/site-packages/flask_security/core.py:152
+#: venv/lib/python3.11/site-packages/flask_security/core.py:453
 #, python-format
 msgid "Instructions to reset your password have been sent to %(email)s."
-msgstr "Le istruzioni per reimpostare la password sono state inviate a %(email)s."
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:155
-#: venv/lib/python3.11/site-packages/flask_security/core.py:155
 #, python-format
 msgid ""
-"You did not reset your password within %(within)s. New instructions have been "
-"sent to %(email)s."
+"You did not reset your password within %(within)s. New instructions have "
+"been sent to %(email)s."
 msgstr ""
-"Non hai reimpostato la password entro %(within)s. Nuove istruzioni sono state "
-"inviate a %(email)s."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:158
-#: venv/lib/python3.11/site-packages/flask_security/core.py:158
+#: venv/lib/python3.11/site-packages/flask_security/core.py:460
 msgid "Invalid reset password token."
-msgstr "Token di reimpostazione della password non valido."
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:160
-#: venv/lib/python3.11/site-packages/flask_security/core.py:160
+#: venv/lib/python3.11/site-packages/flask_security/core.py:461
 msgid "Email requires confirmation."
-msgstr "L'e-mail richiede una conferma."
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:162
-#: venv/lib/python3.11/site-packages/flask_security/core.py:162
+#: venv/lib/python3.11/site-packages/flask_security/core.py:463
 #, python-format
 msgid "Confirmation instructions have been sent to %(email)s."
-msgstr "Le istruzioni di conferma sono state inviate a %(email)s."
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:164
-#: venv/lib/python3.11/site-packages/flask_security/core.py:164
 #, python-format
 msgid ""
-"You did not confirm your email within %(within)s. New instructions to confirm "
-"your email have been sent to %(email)s."
+"You did not confirm your email within %(within)s. New instructions to "
+"confirm your email have been sent to %(email)s."
 msgstr ""
-"Non hai confermato la tua email entro %(within)s. Le nuove istruzioni per "
-"confermare la tua email sono state inviate a %(email)s."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:168
-#: venv/lib/python3.11/site-packages/flask_security/core.py:168
+#: venv/lib/python3.11/site-packages/flask_security/core.py:471
 #, python-format
 msgid ""
-"You did not login within %(within)s. New instructions to login have been sent "
-"to %(email)s."
+"You did not login within %(within)s. New instructions to login have been "
+"sent to %(email)s."
 msgstr ""
-"Non hai effettuato l'accesso entro %(within)s. Le nuove istruzioni per "
-"effettuare il login sono state inviate a %(email)s."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:171
-#: venv/lib/python3.11/site-packages/flask_security/core.py:171
+#: venv/lib/python3.11/site-packages/flask_security/core.py:478
 #, python-format
 msgid "Instructions to login have been sent to %(email)s."
-msgstr "Le istruzioni per effettuare il login sono state inviate a %(email)s."
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:173
-#: venv/lib/python3.11/site-packages/flask_security/core.py:173
+#: venv/lib/python3.11/site-packages/flask_security/core.py:481
 msgid "Invalid login token."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:175
-#: venv/lib/python3.11/site-packages/flask_security/core.py:175
+#: venv/lib/python3.11/site-packages/flask_security/core.py:482
 msgid "Account is disabled."
-msgstr "L'account è disabilitato."
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:177
-#: venv/lib/python3.11/site-packages/flask_security/core.py:177
+#: venv/lib/python3.11/site-packages/flask_security/core.py:483
 msgid "Email not provided"
-msgstr "E-mail non fornita"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:179
-#: venv/lib/python3.11/site-packages/flask_security/core.py:179
+#: venv/lib/python3.11/site-packages/flask_security/core.py:484
 msgid "Invalid email address"
-msgstr "Indirizzo email non valido"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:181
-#: venv/lib/python3.11/site-packages/flask_security/core.py:181
+#: venv/lib/python3.11/site-packages/flask_security/core.py:486
 msgid "Password not provided"
-msgstr "Password non fornita"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:183
-#: venv/lib/python3.11/site-packages/flask_security/core.py:183
 msgid "No password is set for this user"
-msgstr "Non è stata impostata alcuna password per questo utente"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:185
-#: venv/lib/python3.11/site-packages/flask_security/core.py:185
 msgid "Password must be at least 6 characters"
-msgstr "La password deve essere di almeno 6 caratteri"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:187
-#: venv/lib/python3.11/site-packages/flask_security/core.py:187
+#: venv/lib/python3.11/site-packages/flask_security/core.py:498
 msgid "Specified user does not exist"
-msgstr "L'utente specificato non esiste"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:189
-#: venv/lib/python3.11/site-packages/flask_security/core.py:189
+#: venv/lib/python3.11/site-packages/flask_security/core.py:499
 msgid "Invalid password"
-msgstr "Password non valida"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:191
-#: venv/lib/python3.11/site-packages/flask_security/core.py:191
+#: venv/lib/python3.11/site-packages/flask_security/core.py:501
 msgid "You have successfully logged in."
-msgstr "Ti sei collegato con successo."
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:193
-#: venv/lib/python3.11/site-packages/flask_security/core.py:193
+#: venv/lib/python3.11/site-packages/flask_security/core.py:502
 msgid "Forgot password?"
-msgstr "Password dimenticata?"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:195
-#: venv/lib/python3.11/site-packages/flask_security/core.py:195
+#: venv/lib/python3.11/site-packages/flask_security/core.py:504
 msgid ""
-"You successfully reset your password and you have been logged in automatically."
+"You successfully reset your password and you have been logged in "
+"automatically."
 msgstr ""
-"Hai reimpostato con successo la tua password e hai effettuato l'accesso "
-"automaticamente."
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:198
-#: venv/lib/python3.11/site-packages/flask_security/core.py:198
+#: venv/lib/python3.11/site-packages/flask_security/core.py:518
 msgid "Your new password must be different than your previous password."
-msgstr "La nuova password deve essere diversa da quella precedente."
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:201
-#: venv/lib/python3.11/site-packages/flask_security/core.py:201
+#: venv/lib/python3.11/site-packages/flask_security/core.py:521
 msgid "You successfully changed your password."
-msgstr "La password è stata modificata."
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:203
-#: venv/lib/python3.11/site-packages/flask_security/core.py:203
+#: venv/lib/python3.11/site-packages/flask_security/core.py:522
 msgid "Please log in to access this page."
-msgstr "Effettua il login per accedere a questa pagina."
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/core.py:205
-#: venv/lib/python3.11/site-packages/flask_security/core.py:205
+#: venv/lib/python3.11/site-packages/flask_security/core.py:523
 msgid "Please reauthenticate to access this page."
-msgstr "Si prega di autenticarsi nuovamente per accedere a questa pagina."
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/forms.py:31
-#: venv/lib/python3.11/site-packages/flask_security/forms.py:31
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:63
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:159
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:251
 msgid "Password"
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/forms.py:32
-#: venv/lib/python3.11/site-packages/flask_security/forms.py:32
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:64
 msgid "Remember Me"
-msgstr "Ricordami"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/forms.py:33
-#: venv/lib/python3.11/site-packages/flask_security/forms.py:33
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:65
 msgid "Login"
-msgstr "Accedi"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/forms.py:34
-#: venv/lib/python3.11/site-packages/flask_security/forms.py:34
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:67
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:258
 msgid "Register"
-msgstr "Registrati"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/forms.py:35
-#: venv/lib/python3.11/site-packages/flask_security/forms.py:35
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:68
 msgid "Resend Confirmation Instructions"
-msgstr "Invia nuovamente le istruzioni di conferma"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/forms.py:36
-#: venv/lib/python3.11/site-packages/flask_security/forms.py:36
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:69
 msgid "Recover Password"
-msgstr "Reimposta Password"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/forms.py:38
-#: venv/lib/python3.11/site-packages/flask_security/forms.py:38
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:71
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:254
 msgid "Retype Password"
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/forms.py:40
-#: venv/lib/python3.11/site-packages/flask_security/forms.py:40
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:73
 msgid "Change Password"
-msgstr "Cambia Password"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/forms.py:41
-#: venv/lib/python3.11/site-packages/flask_security/forms.py:41
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:74
 msgid "Send Login Link"
 msgstr ""
 
@@ -3046,7 +3293,7 @@ msgstr ""
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_wtf/file.py:93
 #: venv/lib/python3.11/site-packages/flask_wtf/file.py:93
 msgid "File does not have an approved extension: {extensions}"
-msgstr "Il file non ha un'estensione approvata: {extensions}"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_wtf/file.py:101
 #: venv/lib/python3.11/site-packages/flask_wtf/file.py:101
@@ -3285,8 +3532,8 @@ msgstr ""
 #: new-start-29051/venv/lib/python3.11/site-packages/sphinx/builders/html/__init__.py:1299
 #: venv/lib/python3.11/site-packages/sphinx/builders/html/__init__.py:1299
 msgid ""
-"HTML 4 is no longer supported by Sphinx. (\"html4_writer=True\" detected in "
-"configuration options)"
+"HTML 4 is no longer supported by Sphinx. (\"html4_writer=True\" detected "
+"in configuration options)"
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/sphinx/builders/html/__init__.py:1314
@@ -4424,12 +4671,12 @@ msgstr ""
 #: new-start-29051/venv/lib/python3.11/site-packages/wtforms/validators.py:698
 #: venv/lib/python3.11/site-packages/wtforms/validators.py:698
 msgid "This field cannot be edited"
-msgstr "Questo campo non può essere modificato"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/wtforms/validators.py:714
 #: venv/lib/python3.11/site-packages/wtforms/validators.py:714
 msgid "This field is disabled and cannot have a value"
-msgstr "Questo campo è disabilitato e non può avere un valore"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/wtforms/csrf/core.py:96
 #: venv/lib/python3.11/site-packages/wtforms/csrf/core.py:96
@@ -4484,17 +4731,17 @@ msgstr[1] ""
 #: new-start-29051/venv/lib/python3.11/site-packages/wtforms/fields/datetime.py:51
 #: venv/lib/python3.11/site-packages/wtforms/fields/datetime.py:51
 msgid "Not a valid datetime value."
-msgstr "Non è un valore datetime valido."
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/wtforms/fields/datetime.py:77
 #: venv/lib/python3.11/site-packages/wtforms/fields/datetime.py:77
 msgid "Not a valid date value."
-msgstr "Non è un valore di data valido."
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/wtforms/fields/datetime.py:103
 #: venv/lib/python3.11/site-packages/wtforms/fields/datetime.py:103
 msgid "Not a valid time value."
-msgstr "Non è un valore di tempo valido."
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/wtforms/fields/datetime.py:148
 #: venv/lib/python3.11/site-packages/wtforms/fields/datetime.py:148
@@ -4506,23 +4753,22 @@ msgstr ""
 #: venv/lib/python3.11/site-packages/wtforms/fields/numeric.py:82
 #: venv/lib/python3.11/site-packages/wtforms/fields/numeric.py:92
 msgid "Not a valid integer value."
-msgstr "Non è un valore intero valido."
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/wtforms/fields/numeric.py:168
 #: venv/lib/python3.11/site-packages/wtforms/fields/numeric.py:168
 msgid "Not a valid decimal value."
-msgstr "Non è un valore decimale valido."
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/wtforms/fields/numeric.py:197
 #: venv/lib/python3.11/site-packages/wtforms/fields/numeric.py:197
 msgid "Not a valid float value."
-msgstr "Non è un valore float valido."
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/wtforms_components/fields/select_multiple.py:26
 #: venv/lib/python3.11/site-packages/wtforms_components/fields/select_multiple.py:26
 msgid "Invalid choice(s): one or more data inputs could not be coerced"
 msgstr ""
-"Scelta/e non valida/e: non è stato possibile forzare uno o più input di dati"
 
 #: new-start-29051/venv/lib/python3.11/site-packages/wtforms_components/fields/select_multiple.py:38
 #: venv/lib/python3.11/site-packages/wtforms_components/fields/select_multiple.py:38
@@ -4535,7 +4781,7 @@ msgstr ""
 #: venv/lib/python3.11/site-packages/wtforms_ext/fields.py:49
 #: venv/lib/python3.11/site-packages/wtforms_ext/fields.py:64
 msgid "Not a valid choice!"
-msgstr "Non è una scelta valida!"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/wtforms_ext/validators.py:35
 #: venv/lib/python3.11/site-packages/wtforms_ext/validators.py:35
@@ -4583,8 +4829,8 @@ msgstr ""
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/browsermenu/interfaces.py:63
 #: venv/lib/python3.11/site-packages/zope/browsermenu/interfaces.py:63
 msgid ""
-"A description of the menu. This might be shown on menu pages or in pop-up help "
-"for menus."
+"A description of the menu. This might be shown on menu pages or in pop-up"
+" help for menus."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/browsermenu/interfaces.py:83
@@ -4600,13 +4846,13 @@ msgstr ""
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/browsermenu/interfaces.py:89
 #: venv/lib/python3.11/site-packages/zope/browsermenu/interfaces.py:89
 msgid "Menu item description"
-msgstr "Descrizione della voce di menu"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/browsermenu/interfaces.py:90
 #: venv/lib/python3.11/site-packages/zope/browsermenu/interfaces.py:90
 msgid ""
-"A description of the menu item. This might be shown on menu pages or in pop-up "
-"help for menu items."
+"A description of the menu item. This might be shown on menu pages or in "
+"pop-up help for menu items."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/browsermenu/interfaces.py:96
@@ -4620,8 +4866,8 @@ msgstr ""
 #: venv/lib/python3.11/site-packages/zope/browsermenu/interfaces.py:97
 msgid ""
 "When a user selects a browser menu item, the URLgiven in the action is "
-"displayed. The action is usually given as a relative URL, relative to the "
-"object the menu item is for."
+"displayed. The action is usually given as a relative URL, relative to the"
+" object the menu item is for."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/browsermenu/interfaces.py:105
@@ -4632,8 +4878,8 @@ msgstr ""
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/browsermenu/interfaces.py:106
 #: venv/lib/python3.11/site-packages/zope/browsermenu/interfaces.py:106
 msgid ""
-"This attribute provides a hint for menu item ordering.Menu items will generally "
-"be sorted by the `for_`attribute and then by the order."
+"This attribute provides a hint for menu item ordering.Menu items will "
+"generally be sorted by the `for_`attribute and then by the order."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/browsermenu/interfaces.py:112
@@ -4644,8 +4890,8 @@ msgstr ""
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/browsermenu/interfaces.py:113
 #: venv/lib/python3.11/site-packages/zope/browsermenu/interfaces.py:113
 msgid ""
-"The condition is given as a TALES expression. The expression has access to the "
-"variables:\n"
+"The condition is given as a TALES expression. The expression has access "
+"to the variables:\n"
 "\n"
 "context -- The object the menu is being displayed for\n"
 "\n"
@@ -4681,8 +4927,8 @@ msgstr ""
 #: venv/lib/python3.11/site-packages/zope/browsermenu/interfaces.py:150
 msgid ""
 "When a user selects a browser menu item, the URL given in the action is "
-"displayed. The action is usually given as a relative URL, relative to the "
-"object the menu item is for."
+"displayed. The action is usually given as a relative URL, relative to the"
+" object the menu item is for."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/component/zcml.py:65
@@ -4693,9 +4939,9 @@ msgstr ""
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/component/zcml.py:66
 #: venv/lib/python3.11/site-packages/zope/component/zcml.py:66
 msgid ""
-"Python name of the implementation object.  This must identify an object in a "
-"module using the full dotted name.  If specified, the ``factory`` field must be "
-"left blank."
+"Python name of the implementation object.  This must identify an object "
+"in a module using the full dotted name.  If specified, the ``factory`` "
+"field must be left blank."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/component/zcml.py:74
@@ -4714,7 +4960,7 @@ msgstr ""
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/component/zcml.py:75
 #: venv/lib/python3.11/site-packages/zope/component/zcml.py:75
 msgid "Permission required to use this component."
-msgstr "Per utilizzare questo componente è necessaria l'autorizzazione."
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/component/zcml.py:80
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/component/zcml.py:544
@@ -4726,9 +4972,9 @@ msgstr ""
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/component/zcml.py:81
 #: venv/lib/python3.11/site-packages/zope/component/zcml.py:81
 msgid ""
-"Python name of a factory which can create the implementation object.  This must "
-"identify an object in a module using the full dotted name. If specified, the "
-"``component`` field must be left blank."
+"Python name of a factory which can create the implementation object.  "
+"This must identify an object in a module using the full dotted name. If "
+"specified, the ``component`` field must be left blank."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/component/zcml.py:96
@@ -4892,8 +5138,8 @@ msgstr ""
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/component/zcml.py:385
 #: venv/lib/python3.11/site-packages/zope/component/zcml.py:385
 msgid ""
-"Name of the registration.  This is used by application code when locating a "
-"utility."
+"Name of the registration.  This is used by application code when locating"
+" a utility."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/component/zcml.py:438
@@ -5065,9 +5311,9 @@ msgstr ""
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/pagetemplate/engine.py:162
 #: venv/lib/python3.11/site-packages/zope/pagetemplate/engine.py:162
 msgid ""
-"Inline Code Evaluation is deactivated, which means that you cannot have inline "
-"code snippets in your Page Template. Activate Inline Code Evaluation and try "
-"again."
+"Inline Code Evaluation is deactivated, which means that you cannot have "
+"inline code snippets in your Page Template. Activate Inline Code "
+"Evaluation and try again."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/pagetemplate/engine.py:171
@@ -5093,17 +5339,17 @@ msgstr ""
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/schema/_bootstrapinterfaces.py:146
 #: venv/lib/python3.11/site-packages/zope/schema/_bootstrapinterfaces.py:146
 msgid "Value is too big"
-msgstr "Il valore è troppo grande"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/schema/_bootstrapinterfaces.py:152
 #: venv/lib/python3.11/site-packages/zope/schema/_bootstrapinterfaces.py:152
 msgid "Value is too small"
-msgstr "Il valore è troppo piccolo"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/schema/_bootstrapinterfaces.py:166
 #: venv/lib/python3.11/site-packages/zope/schema/_bootstrapinterfaces.py:166
 msgid "Value is too long"
-msgstr "Il valore è troppo lungo"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/schema/_bootstrapinterfaces.py:172
 #: venv/lib/python3.11/site-packages/zope/schema/_bootstrapinterfaces.py:172
@@ -5113,7 +5359,7 @@ msgstr ""
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/schema/_bootstrapinterfaces.py:178
 #: venv/lib/python3.11/site-packages/zope/schema/_bootstrapinterfaces.py:178
 msgid "Invalid value"
-msgstr "Valore non valido"
+msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/schema/_bootstrapinterfaces.py:182
 #: venv/lib/python3.11/site-packages/zope/schema/_bootstrapinterfaces.py:182
@@ -5394,8 +5640,8 @@ msgstr ""
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/schema/interfaces.py:753
 #: venv/lib/python3.11/site-packages/zope/schema/interfaces.py:753
 msgid ""
-"The ISource, IContextSourceBinder or IBaseVocabulary object that provides "
-"values for this field."
+"The ISource, IContextSourceBinder or IBaseVocabulary object that provides"
+" values for this field."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/schema/interfaces.py:760
@@ -5441,8 +5687,8 @@ msgstr ""
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/schema/interfaces.py:863
 #: venv/lib/python3.11/site-packages/zope/schema/interfaces.py:863
 msgid ""
-"A boolean that says whether ``schema.validateInvariants`` is called from ``self."
-"validate()``. The default is true."
+"A boolean that says whether ``schema.validateInvariants`` is called from "
+"``self.validate()``. The default is true."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/schema/interfaces.py:880
@@ -5591,7 +5837,8 @@ msgstr ""
 #: venv/lib/python3.11/site-packages/zope/security/metadirectives.py:100
 msgid ""
 "\n"
-"        This argument says that this content class should be configured in the\n"
+"        This argument says that this content class should be configured "
+"in the\n"
 "        same way the specified class' security is. If this argument is\n"
 "        specified, no other argument can be used."
 msgstr ""
@@ -5653,8 +5900,8 @@ msgstr ""
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/traversing/browser/absoluteurl.py:36
 #: venv/lib/python3.11/site-packages/zope/traversing/browser/absoluteurl.py:36
 msgid ""
-"There isn't enough context to get URL information. This is probably due to a "
-"bug in setting up location information."
+"There isn't enough context to get URL information. This is probably due "
+"to a bug in setting up location information."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/viewlet/metadirectives.py:43
@@ -5665,8 +5912,8 @@ msgstr ""
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/viewlet/metadirectives.py:44
 #: venv/lib/python3.11/site-packages/zope/viewlet/metadirectives.py:44
 msgid ""
-"The view can either be an interface or a class. By default the provider is "
-"registered for all views, the most common case."
+"The view can either be an interface or a class. By default the provider "
+"is registered for all views, the most common case."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/viewlet/metadirectives.py:51
@@ -5677,8 +5924,8 @@ msgstr ""
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/viewlet/metadirectives.py:52
 #: venv/lib/python3.11/site-packages/zope/viewlet/metadirectives.py:52
 msgid ""
-"The name of the content provider is used in the TALES ``provider`` namespace to "
-"look up the content provider."
+"The name of the content provider is used in the TALES ``provider`` "
+"namespace to look up the content provider."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/viewlet/metadirectives.py:75
@@ -5703,8 +5950,8 @@ msgstr ""
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/viewlet/metadirectives.py:116
 #: venv/lib/python3.11/site-packages/zope/viewlet/metadirectives.py:116
 msgid ""
-"Refers to a file containing a page template (should end in extension ``.pt`` or "
-"``.html``)."
+"Refers to a file containing a page template (should end in extension "
+"``.pt`` or ``.html``)."
 msgstr ""
 
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/viewlet/metadirectives.py:131
@@ -5722,6 +5969,610 @@ msgstr ""
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/viewlet/metadirectives.py:153
 #: venv/lib/python3.11/site-packages/zope/viewlet/metadirectives.py:153
 msgid "view"
+msgstr ""
+
+#: routes/argon_routes.py:245
+msgid "Plan created successfully!"
+msgstr ""
+
+#: routes/argon_routes.py:251
+msgid ""
+"Error: A plan with this name already exists. Please choose a different "
+"name."
+msgstr ""
+
+#: routes/argon_routes.py:271
+msgid "Plan updated successfully!"
+msgstr ""
+
+#: routes/argon_routes.py:287
+msgid "Plan deleted successfully!"
+msgstr ""
+
+#: routes/argon_routes.py:338
+msgid "Questionnaire created successfully!"
+msgstr ""
+
+#: routes/argon_routes.py:363
+msgid "Questionnaire updated successfully!"
+msgstr ""
+
+#: routes/argon_routes.py:381
+msgid "Questionnaire deleted successfully!"
+msgstr ""
+
+#: routes/argon_routes.py:426
+msgid "Question created successfully!"
+msgstr ""
+
+#: routes/argon_routes.py:451
+msgid "Question updated successfully!"
+msgstr ""
+
+#: routes/argon_routes.py:474
+msgid "Question deleted successfully!"
+msgstr ""
+
+#: routes/argon_routes.py:554
+msgid "Question successfully added to the questionnaire!"
+msgstr ""
+
+#: routes/argon_routes.py:899
+msgid "Product created successfully"
+msgstr ""
+
+#: routes/argon_routes.py:928
+msgid "Product updated successfully"
+msgstr ""
+
+#: routes/argon_routes.py:1116
+msgid "Dossier created successfully!"
+msgstr ""
+
+#: routes/argon_routes.py:1189
+msgid "No document uploaded"
+msgstr ""
+
+#: routes/argon_routes.py:1235
+msgid "Action submitted successfully!"
+msgstr ""
+
+#: routes/argon_routes.py:1348
+msgid "Dossier updated successfully"
+msgstr ""
+
+#: routes/argon_routes.py:1362
+msgid "Dossier deleted successfully"
+msgstr ""
+
+#: routes/authentication.py:27
+msgid "Login Failed"
+msgstr ""
+
+#: routes/chart_routes.py:42
+msgid "Chart configuration deleted successfully!"
+msgstr ""
+
+#: routes/chart_routes.py:101
+msgid "Chart configuration added successfully!"
+msgstr ""
+
+#: routes/chart_routes.py:166
+msgid "Chart configuration updated successfully!"
+msgstr ""
+
+#: routes/chart_routes.py:216
+msgid "No data available for this chart."
+msgstr ""
+
+#: routes/phy_routes.py:163
+msgid "Contract not found."
+msgstr ""
+
+#: routes/phy_routes.py:186
+msgid "Please enter a valid Contract ID."
+msgstr ""
+
+#: routes/phy_routes.py:197
+msgid "Contract already exists."
+msgstr ""
+
+#: routes/phy_routes.py:300
+msgid "Data loaded successfully!"
+msgstr ""
+
+#: routes/phy_routes.py:304
+msgid "Failed to load data from FRED."
+msgstr ""
+
+#: routes/phy_routes.py:402
+msgid "All data loaded successfully!"
+msgstr ""
+
+#: templates/home/home.html:578
+msgid "English"
+msgstr ""
+
+#: templates/home/home.html:579
+msgid "Italiano"
+msgstr ""
+
+#: templates/home/home.html:580
+msgid "Español"
+msgstr ""
+
+#: templates/home/home.html:581
+msgid "Français"
+msgstr ""
+
+#: templates/home/home.html:582
+msgid "العربية"
+msgstr ""
+
+#: templates/home/mission.html:4
+msgid "Our Mission"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:239
+msgid "Confirm your new email address"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:294
+msgid "Two-factor Login"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:295
+msgid "Two-factor Rescue"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:342
+msgid "Verification Code"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:388
+msgid "Input not appropriate for requested API"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:390
+msgid "Authentication failed - identity or password/passcode invalid"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:394
+msgid ""
+"If that email address is in our system, you will receive an email "
+"describing how to reset your password."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:401
+msgid "If that identity is in our system, you were sent a code."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:406
+msgid "You must sign in to view this resource."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:410
+msgid "You must re-authenticate to access this endpoint"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:414
+#, python-format
+msgid ""
+"Thank you. To confirm your email address %(email)s, please click on the "
+"link in the email we have just sent to you."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:429
+#, python-format
+msgid ""
+"Identity attribute '%(attr)s' with value '%(value)s' is already "
+"associated with an account."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:436
+#, python-format
+msgid "Identity %(id)s not registered"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:440
+#, python-format
+msgid ""
+"An error occurred while communicating with the Oauth provider: "
+"(%(exerror)s - %(exdesc)s). Please try again."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:450
+msgid "Recovery code invalid"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:451
+msgid "No recovery codes generated yet"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:457
+#, python-format
+msgid "You did not reset your password within %(within)s. "
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:467
+#, python-format
+msgid "You did not confirm your email within %(within)s. "
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:485
+#: venv/lib/python3.11/site-packages/flask_security/core.py:531
+msgid "Invalid code"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:488
+#, python-format
+msgid "Password must be at least %(length)s characters"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:491
+msgid "Password not complex enough"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:492
+msgid "Password on breached list"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:494
+msgid "Failed to contact breached passwords site"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:497
+msgid "Phone number not valid e.g. missing country code"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:500
+msgid "Password or code submitted is not valid"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:511
+msgid ""
+"You successfully reset your password. Please authenticate using your new "
+"password."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:524
+msgid "Reauthentication successful"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:526
+msgid "You can only access this endpoint when not logged in."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:529
+msgid "Code has been sent."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:530
+msgid "Failed to send code. Please try again later"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:532
+msgid "Your code has been confirmed"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:534
+msgid "You successfully changed your two-factor method."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:538
+msgid "You currently do not have permissions to access this page"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:541
+msgid "Marked method is not valid"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:543
+msgid "You successfully disabled two factor authorization."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:547
+#: venv/lib/python3.11/site-packages/flask_security/core.py:556
+#, python-format
+msgid "Setup must be completed within %(within)s. Please start over."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:551
+#, python-format
+msgid "Currently active sign in options: %(method_list)s."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:554
+msgid "Requested method is not valid"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:559
+msgid "Unified sign in setup successful"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:560
+msgid "You must specify a valid identity to sign in"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:561
+#, python-format
+msgid "Use this code to sign in: %(code)s."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:563
+#, python-format
+msgid ""
+"Username must be at least %(min)d characters and less than %(max)d "
+"characters"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:570
+msgid "Username contains illegal characters"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:574
+msgid "Username can contain only letters and numbers"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:577
+msgid "Username not provided"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:579
+#, python-format
+msgid "%(username)s is already associated with an account."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:583
+#, python-format
+msgid "WebAuthn operation must be completed within %(within)s. Please start over."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:587
+msgid "Nickname for new credential is required."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:591
+#, python-format
+msgid "%(name)s is already associated with a credential."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:595
+#, python-format
+msgid "%(name)s not registered with current user."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:599
+#, python-format
+msgid "Successfully deleted WebAuthn credential with name: %(name)s"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:603
+#, python-format
+msgid "Successfully added WebAuthn credential with name: %(name)s"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:607
+msgid "WebAuthn credential id already registered."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:611
+msgid "Unregistered WebAuthn credential id."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:615
+msgid "WebAuthn credential doesn't belong to any user."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:619
+#, python-format
+msgid "Could not verify WebAuthn credential: %(cause)s."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:623
+msgid "Credential not registered for this use (first or secondary)"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:627
+msgid "Credential user handle didn't match"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:631
+#, python-format
+msgid "Confirmation must be completed within %(within)s. Please start over."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:635
+msgid "Change of email address confirmed"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/core.py:639
+#, python-format
+msgid ""
+"Instructions to confirm your new email address have been sent to "
+"%(email)s."
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:66
+msgid "Sign In"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:75
+msgid "Verify Password"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:76
+msgid "Change Method"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:77
+msgid "Phone Number"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:78
+msgid "Authentication Code"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:79
+msgid "Submit"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:80
+msgid "Submit Code"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:81
+msgid "Error(s)"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:82
+msgid "Identity"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:83
+msgid "Send Code"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:84
+msgid "Passcode"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:85
+#: venv/lib/python3.11/site-packages/flask_user/forms.py:152
+#: venv/lib/python3.11/site-packages/flask_user/forms.py:212
+#: venv/lib/python3.11/site-packages/flask_user/forms.py:243
+msgid "Username"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:86
+msgid "Delete"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:87
+msgid "Set up using email"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:88
+msgid "Set up using an authenticator app (e.g. google, lastpass, authy)"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:91
+msgid "Set up using SMS"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:96
+msgid "Google Authenticator"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:97
+msgid "authenticator"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:98
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:99
+msgid "email"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:100
+msgid "SMS"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:101
+msgid "password"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:102
+msgid "none"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:780
+#: venv/lib/python3.11/site-packages/flask_security/unified_signin.py:167
+msgid "Available Methods"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:782
+msgid "Disable two factor authentication"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:866
+msgid "Trouble Accessing Your Account?/Lost Mobile Device?"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/forms.py:868
+msgid "Contact Administrator"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/recovery_codes.py:142
+msgid "Show Recovery Codes"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/recovery_codes.py:144
+msgid "Generate New Recovery Codes"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/recovery_codes.py:160
+msgid "Recovery Code"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/tf_plugin.py:52
+msgid "Available Second Factor Methods:"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/tf_plugin.py:53
+msgid "Select"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/twofactor.py:135
+msgid "Send code via email"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/twofactor.py:147
+msgid "Use previously downloaded recovery code"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/unified_signin.py:160
+msgid "Code or Password"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/unified_signin.py:169
+msgid "Via email"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/unified_signin.py:170
+msgid "Via SMS"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/unified_signin.py:298
+msgid "Setup additional sign in option"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/unified_signin.py:311
+msgid "Delete active sign in option"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/webauthn.py:122
+#: venv/lib/python3.11/site-packages/flask_security/webauthn.py:356
+msgid "Nickname"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/webauthn.py:126
+msgid "Usage"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/webauthn.py:128
+msgid "Use as a first authentication factor"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/webauthn.py:131
+msgid "Use as a secondary authentication factor"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/webauthn.py:218
+msgid "Start"
+msgstr ""
+
+#: venv/lib/python3.11/site-packages/flask_security/webauthn.py:934
+msgid "webauthn"
 msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:40
@@ -5746,103 +6597,97 @@ msgstr ""
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:248
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:348
 msgid "Email is required"
-msgstr "L'Email è richiesta"
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:58
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:157
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:249
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:349
 msgid "Invalid Email"
-msgstr "Email non valida"
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:60
 msgid "Add Email"
-msgstr "Aggiungi Email"
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:65
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:110
 msgid "Old Password"
-msgstr "Vecchia password"
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:66
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:111
 msgid "Old Password is required"
-msgstr "È richiesta una vecchia password"
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:69
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:319
 msgid "New Password is required"
-msgstr "È richiesta una nuova password"
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:72
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:322
 msgid "Retype New Password"
-msgstr "Digita nuovamente la nuova password"
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:73
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:323
 msgid "New Password and Retype Password did not match"
-msgstr "La nuova password e la password di ridigitazione non corrispondono"
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:75
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:325
 msgid "Change password"
-msgstr "Cambia password"
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:96
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:131
 msgid "Old Password is incorrect"
-msgstr "La vecchia password non è corretta"
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:105
 msgid "New Username"
-msgstr "Nuovo nome utente"
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:106
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:153
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:244
 msgid "Username is required"
-msgstr "Username richiesto"
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:113
 msgid "Change username"
-msgstr "Cambia nome utente"
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:141
 msgid "First name"
-msgstr "Nome"
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:142
 msgid "Last name"
-msgstr "Cognome"
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:144
 msgid "Update"
-msgstr "Aggiorna"
-
-#: venv/lib/python3.11/site-packages/flask_user/forms.py:152
-#: venv/lib/python3.11/site-packages/flask_user/forms.py:212
-#: venv/lib/python3.11/site-packages/flask_user/forms.py:243
-msgid "Username"
-msgstr "Nome utente"
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:160
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:252
 msgid "Password is required"
-msgstr "Password obbligatoria"
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:162
 msgid "Remember me"
-msgstr "Ricordami"
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:164
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:355
 msgid "Sign in"
-msgstr "Accedi"
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:171
 msgid "Username or Email"
-msgstr "Nome utente o Email"
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:208
 msgid "Username/Email"
@@ -5856,7 +6701,7 @@ msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:225
 msgid "Incorrect Password"
-msgstr "Password Errata"
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:229
 #, python-format
@@ -5865,7 +6710,7 @@ msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:255
 msgid "Password and Retype Password did not match"
-msgstr "La password e la password di ridigitazione non corrispondono"
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:256
 msgid "Token"
@@ -5874,12 +6719,12 @@ msgstr ""
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:293
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:309
 msgid "Your email address"
-msgstr "Il tuo indirizzo email"
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:294
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:310
 msgid "Email address is required"
-msgstr "L'indirizzo e-mail è obbligatorio"
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:295
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:311
@@ -5888,11 +6733,11 @@ msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:297
 msgid "Send reset password email"
-msgstr "Invia e-mail di reimpostazione della password"
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:313
 msgid "Resend email confirmation email"
-msgstr "Invia nuovamente l'e-mail di conferma"
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:351
 msgid "Invite!"
@@ -5900,15 +6745,15 @@ msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:356
 msgid "Sign out"
-msgstr "Esci"
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:357
 msgid "Home Page"
-msgstr "Home Page"
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:358
 msgid "User profile"
-msgstr "Profilo utente"
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:359
 msgid "Member Page"
@@ -5916,32 +6761,30 @@ msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:360
 msgid "Admin Page"
-msgstr "Pagina Amministratore"
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/user_manager.py:250
 msgid ""
 "Password must have at least 6 characters with one lowercase letter, one "
 "uppercase letter and one number"
 msgstr ""
-"La password deve contenere almeno 6 caratteri con una lettera minuscola, una "
-"lettera maiuscola e un numero"
 
 #: venv/lib/python3.11/site-packages/flask_user/user_manager.py:266
 msgid "Username must be at least 3 characters long"
-msgstr "Il nome utente deve essere composto da almeno 3 caratteri"
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/user_manager.py:272
 msgid "Username may only contain letters, numbers, '-', '.' and '_'"
-msgstr "Il nome utente può contenere solo lettere, numeri, '-', '.' e '_'"
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/user_manager__views.py:113
 msgid "Your password has been changed successfully."
-msgstr "Password modificata con successo."
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/user_manager__views.py:148
 #, python-format
 msgid "Your username has been changed to '%(username)s'."
-msgstr "Il tuo nome utente è stato modificato in \"%(username)s\"."
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/user_manager__views.py:185
 msgid "Your email has been confirmed."
@@ -5950,67 +6793,57 @@ msgstr ""
 #: venv/lib/python3.11/site-packages/flask_user/user_manager__views.py:278
 #, python-format
 msgid ""
-"A reset password email has been sent to '%(email)s'. Open that email and follow "
-"the instructions to reset your password."
+"A reset password email has been sent to '%(email)s'. Open that email and "
+"follow the instructions to reset your password."
 msgstr ""
-"Un'e-mail di reimpostazione della password è stata inviata a \"%(email)s\". "
-"Apri l'e-mail e segui le istruzioni per reimpostare la password."
 
 #: venv/lib/python3.11/site-packages/flask_user/user_manager__views.py:349
 msgid "Invitation has been sent."
-msgstr "L'invito è stato inviato."
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/user_manager__views.py:418
 msgid "You have signed out successfully."
-msgstr "La disconnessione è riuscita."
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/user_manager__views.py:571
 msgid "Your reset password token is invalid."
-msgstr "Il token di reimpostazione della password non è valido."
-
-#: venv/lib/python3.11/site-packages/flask_user/user_manager__views.py:594
-msgid "Your password has been reset successfully."
-msgstr "Password modificata con successo."
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/user_manager__views.py:611
 #, python-format
 msgid "You must be signed in to access '%(url)s'."
-msgstr "Per accedere a \"%(url)s\" è necessario aver effettuato l'accesso."
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/user_manager__views.py:622
 #, python-format
 msgid "You do not have permission to access '%(url)s'."
-msgstr "Non disponi dell'autorizzazione per accedere a '%(url)s'."
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/user_manager__views.py:648
 #: venv/lib/python3.11/site-packages/flask_user/user_manager__views.py:662
 #, python-format
 msgid ""
-"A confirmation email has been sent to %(email)s with instructions to complete "
-"your registration."
+"A confirmation email has been sent to %(email)s with instructions to "
+"complete your registration."
 msgstr ""
-"A %(email)s è stata inviata un'e-mail di conferma con le istruzioni per "
-"completare la registrazione."
 
 #: venv/lib/python3.11/site-packages/flask_user/user_manager__views.py:650
 msgid "You have registered successfully."
-msgstr "La registrazione è riuscita."
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/user_manager__views.py:671
 msgid "Your account has not been enabled."
-msgstr "Il tuo account non è stato abilitato."
+msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/user_manager__views.py:680
 #, python-format
 msgid ""
-"Your email address has not yet been confirmed. Check your email Inbox and Spam "
-"folders for the confirmation email or <a href=\"%(url)s\">Re-send confirmation "
-"email</a>."
+"Your email address has not yet been confirmed. Check your email Inbox and"
+" Spam folders for the confirmation email or <a href=\"%(url)s\">Re-send "
+"confirmation email</a>."
 msgstr ""
-"Il tuo indirizzo e-mail non è stato ancora confermato. Controlla la cartella "
-"Posta in arrivo e Spam per l'e-mail di conferma o <a href=\"%(url)s\">l'e-mail "
-"di conferma inviata di nuovo</a>."
 
 #: venv/lib/python3.11/site-packages/flask_user/user_manager__views.py:691
 msgid "You have signed in successfully."
-msgstr "L'accesso è stato eseguito correttamente."
+msgstr ""
+

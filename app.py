@@ -526,9 +526,7 @@ def log_request():
 @app.before_request
 def inject_translated_menu():
     global main_menu_items  # Ensure `main_menu_items` is globally available
-    print("Original Menu Items:", main_menu_items)  # Debug output
     translated_menu = translate_menu_items(main_menu_items)
-    print("Translated Menu Items:", translated_menu)  # Debug output
     g.translated_menu_items = translated_menu
 
 
@@ -536,15 +534,10 @@ def inject_translated_menu():
 def before_request():
 
     global main_menu_items
-    print(f"Session language before translation: {session.get('lang', 'en')}")
 
     try:
-
-        print("Original Menu Items:", main_menu_items)  # Debug log
         translated_menu = translate_menu_items(main_menu_items)
         # Translate menu items and store in `g`
-
-        print("Translated Menu Items:", translated_menu)  # Debug log
         g.translated_menu_items = translated_menu
 
         if current_user.is_authenticated:
@@ -1266,7 +1259,6 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
 
             # Translate the menu items
             translated_menu_items = translate_menu_items(main_menu_items)
-            print('translated menu items', translated_menu_items)
 
             # Parse menu data
             if limited_menu:

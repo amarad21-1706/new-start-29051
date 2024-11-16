@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ session.get('lang', 'en') }}">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8">
@@ -516,7 +516,7 @@
             {% if menu_item_allowed(menu_item, user_roles) %}
                 <li class="nav-item{% if menu_item.submenus %} has-submenu{% endif %}">
                     <a class="nav-link" href="{{ menu_item.url }}">
-                        {{ _(menu_item.label) }} <!-- Translation applied here -->
+                        {{ menu_item.label }}
                         {% if menu_item.submenus %}
                             <span class="submenu-indicator"></span>
                         {% endif %}
@@ -555,32 +555,54 @@
 
     <!-- Navbar -->
     <nav class="navbar navbar-expand-lg navbar-light bg-dark sticky-top">
+        <!-- Brand/Logo -->
         <a class="navbar-brand" href="{{ url_for('index') }}"></a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+
+        <!-- Toggler for mobile view -->
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>
         </button>
+
+        <!-- Collapsible Menu -->
         <div class="collapse navbar-collapse" id="navbarNav">
-            <!-- Main menu -->
             <ul class="navbar-nav main-menu">
-                {{ render_menu(main_menu_items, user_roles) }}
+                {% for key, item in g.translated_menu_items.items() %}
+                    <li class="nav-item{% if item.submenus %} dropdown{% endif %}">
+                        <a class="nav-link{% if item.submenus %} dropdown-toggle{% endif %}" href="{{ item.url }}"
+                           {% if item.submenus %} role="button" data-bs-toggle="dropdown" aria-expanded="false" {% endif %}>
+                            {{ item.label }}
+                        </a>
+                        {% if item.submenus %}
+                            <ul class="dropdown-menu">
+                                {% for sub_key, sub_item in item.submenus.items() %}
+                                    <li>
+                                        <a class="dropdown-item" href="{{ sub_item.url }}">{{ sub_item.label }}</a>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        {% endif %}
+                    </li>
+                {% endfor %}
             </ul>
         </div>
 
-        <!-- Icons container -->
+        <!-- Right Icons/Language Selector -->
         <div class="d-flex align-items-center ml-auto icons-container">
             <!-- Calendar Icon -->
-            <div class="calendar-icon mr-2">
+            <div class="calendar-icon me-2">
                 <a href="/calendar">
                     <img src="{{ url_for('static', filename='icons/calendar-icon-2.png') }}" alt="Calendar Icon" class="{{ 'colored' if has_events else 'grayed' }}">
                 </a>
             </div>
+
             <!-- Logo Icon -->
             <div class="navbar-logo">
-                <img src="{{ url_for('static', filename='icons/globe_icon.png') }}" alt="My Logo">
+                <img src="{{ url_for('static', filename='icons/globe_icon.png') }}" alt="Logo">
             </div>
 
-            <form id="language-form" method="get" action="">
-                <select id="language-select" name="language" class="language-dropdown1" onchange="updateActionAndSubmit(this)">
+            <!-- Language Selector -->
+            <form id="language-form" method="get" action="" class="ms-3">
+                <select id="language-select" name="language" class="form-select form-select-sm" style="width: auto;" onchange="updateActionAndSubmit(this)">
                     <option value="en" {% if session.get('lang') == 'en' %}selected{% endif %}>{{ _("English") }}</option>
                     <option value="it" {% if session.get('lang') == 'it' %}selected{% endif %}>{{ _("Italiano") }}</option>
                     <option value="es" {% if session.get('lang') == 'es' %}selected{% endif %}>{{ _("Español") }}</option>
@@ -588,7 +610,6 @@
                     <option value="ar" {% if session.get('lang') == 'ar' %}selected{% endif %}>{{ _("العربية") }}</option>
                 </select>
             </form>
-
         </div>
     </nav>
 
@@ -1137,6 +1158,7 @@
             form.action = `/change_language/${language}`;
             form.submit();
         }
+
     </script>
     <p style="font-size: 8px;">Current Version: {{ git_version }}</p>
 </body>
