@@ -769,8 +769,6 @@ def check_status_limited(is_created, company_id, subject_id, legal_document_id, 
             return True, "Data for this period was not found."
 
 
-
-
 # interval_id: 1 year, 2 'semester', 3 quadrimenter, 4 quarter, 12 month, 26 fortnight, 52 week
 def check_status_extended(is_created, company_id, lexic_id, subject_id, legal_document_id, interval_ord, interval_id, year_id,
                  area_id, subarea_id, fi1, fi2, fi3, fn1, fn2, fn3, fc1, fc2, fc3, current_date, session):

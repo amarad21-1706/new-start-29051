@@ -66,7 +66,7 @@ msgid "Contract Management"
 msgstr "Gestione contratti"
 
 msgid "Plans, Contracts, Questionnaires"
-msgstr "Piani, contratti, questionnari"
+msgstr "Piani, contratti, questionari"
 
 msgid "Assign Products to Plans"
 msgstr "Associa servizi ai piani"
@@ -106,6 +106,84 @@ msgstr "Regole di riservatezza"
 
 msgid "Control Areas - Charts"
 msgstr "Aree di controllo"
+
+msgid "Area 3 - Document Workflows"
+msgstr "Area 3 - flusso documenti"
+
+msgid "Area 3 - Document Workflows"
+msgstr "Area 3 - flusso documenti"
+
+msgid "Area 3 - Document Workflows"
+msgstr "Area 3 - flusso documenti"
+
+msgid "Area 3 - Document Workflows"
+msgstr "Area 3 - flusso documenti"
+
+msgid "Area 3 - Document Workflows"
+msgstr "Area 3 - flusso documenti"
+
+msgid "Contracts"
+msgstr "Contratti"
+
+msgid "Current Status"
+msgstr "Stato Attuale"
+
+msgid "Deadlines Dashboard"
+msgstr "Dashboard delle Scadenze"
+
+msgid "Dashboard by Control Area"
+msgstr "Dashboard per Area di controllo"
+
+msgid "AI Insights"
+msgstr "Approfondimenti AI"
+
+msgid "Contract Benchmarking"
+msgstr "Benchmarking contratti"
+
+msgid "Settings"
+msgstr "Impostazioni"
+
+msgid "Complex Settings"
+msgstr "Impostazioni complesse"
+
+msgid "Current Setup"
+msgstr "Configurazione attuale"
+
+msgid "Users"
+msgstr "Utenti"
+
+msgid "Areas"
+msgstr "Aree"
+
+msgid "Surveys & Questionnaires"
+msgstr "Sondaggi e questionari"
+
+msgid "Workflows"
+msgstr "Workflow"
+
+msgid "Associate users to companies"
+msgstr "Associa utenti alle imprese"
+
+msgid "Associate roles to user"
+msgstr "Associa ruoli agli utenti"
+
+msgid "Areas and Subareas"
+msgstr "Aree e Sottoaree"
+
+msgid "Attach questions to questionnaire"
+msgstr "Associa domande al questionario"
+
+msgid "Assign questionnaire to company"
+msgstr "Assegna questionario all'impresa"
+
+msgid "Assign steps (phases) to workflow"
+msgstr "Assegna fasi (step) al workflow"
+
+msgid "Assign documents to workflow"
+msgstr "Assegna documenti al workflow"
+
+msgid "Documents-workflow-steps management"
+msgstr "Gestione documenti-workflow-step"
 
 msgid "Control Areas"
 msgstr "Aree di controllo"
@@ -238,6 +316,60 @@ msgstr "Mappa del sito"
 
 msgid "Archive"
 msgstr "Archivio"
+
+msgid "Document Workflows"
+msgstr "Flussi di lavoro dei documenti"
+
+msgid "Create Team"
+msgstr "Crea gruppo di lavoro"
+
+msgid "Teams Setup"
+msgstr "Configurazione dei gruppi di lavoro"
+
+msgid "My Account"
+msgstr "Il mio account"
+
+msgid "Registration Status"
+msgstr "Stato della registrazione"
+
+msgid "Subscribe Plan"
+msgstr "Sottoscrivi piano"
+
+msgid "Subscriptions Report"
+msgstr "Rapporto abbonamenti"
+
+msgid "Products"
+msgstr "Prodotti"
+
+msgid "Plans"
+msgstr "Piani"
+
+msgid "Checklist"
+msgstr "Spunta"
+
+msgid "Manage Charts"
+msgstr "Gestione grafici"
+
+msgid "Companies and Users Report"
+msgstr "Rapporto imprese e utenti"
+
+msgid "Users and Roles"
+msgstr "Utenti e ruoli"
+
+msgid "Control Areas and Subareas"
+msgstr "Aree di controllo e sottoaree"
+
+msgid "Manage Extra Time"
+msgstr "Gestisci tempo extra"
+
+msgid "Questionnaires and Companies"
+msgstr "Questionari e imprese"
+
+msgid "Questionnaires Structure"
+msgstr "Struttura dei questionari"
+
+msgid "Workflows Structure"
+msgstr "Struttura dei flussi di lavoro"
 
 
 #: forms/forms.py:395 forms/forms.py:401 new-start-29051/forms/forms.py:395
@@ -4112,97 +4244,97 @@ msgstr ""
 #: new-start-29051/venv/lib/python3.11/site-packages/tornado/locale.py:281
 #: venv/lib/python3.11/site-packages/tornado/locale.py:281
 msgid "January"
-msgstr ""
+msgstr "Gennaio"
 
 #: new-start-29051/venv/lib/python3.11/site-packages/tornado/locale.py:282
 #: venv/lib/python3.11/site-packages/tornado/locale.py:282
 msgid "February"
-msgstr ""
+msgstr "Febbraio"
 
 #: new-start-29051/venv/lib/python3.11/site-packages/tornado/locale.py:283
 #: venv/lib/python3.11/site-packages/tornado/locale.py:283
 msgid "March"
-msgstr ""
+msgstr "Marzo"
 
 #: new-start-29051/venv/lib/python3.11/site-packages/tornado/locale.py:284
 #: venv/lib/python3.11/site-packages/tornado/locale.py:284
 msgid "April"
-msgstr ""
+msgstr "Aprile"
 
 #: new-start-29051/venv/lib/python3.11/site-packages/tornado/locale.py:285
 #: venv/lib/python3.11/site-packages/tornado/locale.py:285
 msgid "May"
-msgstr ""
+msgstr "Maggio"
 
 #: new-start-29051/venv/lib/python3.11/site-packages/tornado/locale.py:286
 #: venv/lib/python3.11/site-packages/tornado/locale.py:286
 msgid "June"
-msgstr ""
+msgstr "Giugno"
 
 #: new-start-29051/venv/lib/python3.11/site-packages/tornado/locale.py:287
 #: venv/lib/python3.11/site-packages/tornado/locale.py:287
 msgid "July"
-msgstr ""
+msgstr "Luglio"
 
 #: new-start-29051/venv/lib/python3.11/site-packages/tornado/locale.py:288
 #: venv/lib/python3.11/site-packages/tornado/locale.py:288
 msgid "August"
-msgstr ""
+msgstr "Agosto"
 
 #: new-start-29051/venv/lib/python3.11/site-packages/tornado/locale.py:289
 #: venv/lib/python3.11/site-packages/tornado/locale.py:289
 msgid "September"
-msgstr ""
+msgstr "Settembre"
 
 #: new-start-29051/venv/lib/python3.11/site-packages/tornado/locale.py:290
 #: venv/lib/python3.11/site-packages/tornado/locale.py:290
 msgid "October"
-msgstr ""
+msgstr "Ottobre"
 
 #: new-start-29051/venv/lib/python3.11/site-packages/tornado/locale.py:291
 #: venv/lib/python3.11/site-packages/tornado/locale.py:291
 msgid "November"
-msgstr ""
+msgstr "Novembre"
 
 #: new-start-29051/venv/lib/python3.11/site-packages/tornado/locale.py:292
 #: venv/lib/python3.11/site-packages/tornado/locale.py:292
 msgid "December"
-msgstr ""
+msgstr "Dicembre"
 
 #: new-start-29051/venv/lib/python3.11/site-packages/tornado/locale.py:295
 #: venv/lib/python3.11/site-packages/tornado/locale.py:295
 msgid "Monday"
-msgstr ""
+msgstr "Lunedì"
 
 #: new-start-29051/venv/lib/python3.11/site-packages/tornado/locale.py:296
 #: venv/lib/python3.11/site-packages/tornado/locale.py:296
 msgid "Tuesday"
-msgstr ""
+msgstr "Martedì"
 
 #: new-start-29051/venv/lib/python3.11/site-packages/tornado/locale.py:297
 #: venv/lib/python3.11/site-packages/tornado/locale.py:297
 msgid "Wednesday"
-msgstr ""
+msgstr "Mercoledì"
 
 #: new-start-29051/venv/lib/python3.11/site-packages/tornado/locale.py:298
 #: venv/lib/python3.11/site-packages/tornado/locale.py:298
 msgid "Thursday"
-msgstr ""
+msgstr "Giovedì"
 
 #: new-start-29051/venv/lib/python3.11/site-packages/tornado/locale.py:299
 #: venv/lib/python3.11/site-packages/tornado/locale.py:299
 msgid "Friday"
-msgstr ""
+msgstr "Venerdì"
 
 #: new-start-29051/venv/lib/python3.11/site-packages/tornado/locale.py:300
 #: venv/lib/python3.11/site-packages/tornado/locale.py:300
 msgid "Saturday"
-msgstr ""
+msgstr "Sabato"
 
 #: new-start-29051/venv/lib/python3.11/site-packages/tornado/locale.py:301
 #: venv/lib/python3.11/site-packages/tornado/locale.py:301
 msgid "Sunday"
-msgstr ""
+msgstr "Domenica"
 
 #: new-start-29051/venv/lib/python3.11/site-packages/tornado/locale.py:377
 #: venv/lib/python3.11/site-packages/tornado/locale.py:377
@@ -5602,7 +5734,7 @@ msgstr ""
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/security/metadirectives.py:116
 #: venv/lib/python3.11/site-packages/zope/security/metadirectives.py:116
 msgid "Attributes"
-msgstr ""
+msgstr "Attributi"
 
 #: new-start-29051/venv/lib/python3.11/site-packages/zope/security/metadirectives.py:132
 #: venv/lib/python3.11/site-packages/zope/security/metadirectives.py:132
@@ -5729,11 +5861,11 @@ msgstr ""
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:40
 msgid "This Username is already in use. Please try another one."
-msgstr ""
+msgstr "Questo nome utente è già presente."
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:47
 msgid "This Email is already in use. Please try another one."
-msgstr ""
+msgstr "Questo indirizzo email è già presente."
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:56
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:155
@@ -5760,7 +5892,7 @@ msgstr "Email non valida"
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:60
 msgid "Add Email"
-msgstr "Aggiungi Email"
+msgstr "Aggiungi email"
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:65
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:110
@@ -5845,34 +5977,34 @@ msgstr "Accedi"
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:171
 msgid "Username or Email"
-msgstr "Nome utente o Email"
+msgstr "Nome utente o email"
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:208
 msgid "Username/Email"
-msgstr ""
+msgstr "Nome utente/email"
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:222
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:304
 #, python-format
 msgid "%(username_or_email)s does not exist"
-msgstr ""
+msgstr "Utente o email non trovati"
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:225
 msgid "Incorrect Password"
-msgstr "Password Errata"
+msgstr "Password errata"
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:229
 #, python-format
 msgid "Incorrect %(username_or_email)s and/or Password"
-msgstr ""
+msgstr "Nome utente o password non corretti"
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:255
 msgid "Password and Retype Password did not match"
-msgstr "La password e la password di ridigitazione non corrispondono"
+msgstr "Le password non corrispondono"
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:256
 msgid "Token"
-msgstr ""
+msgstr "Token"
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:293
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:309
@@ -5887,7 +6019,7 @@ msgstr "L'indirizzo e-mail è obbligatorio"
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:295
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:311
 msgid "Invalid Email address"
-msgstr ""
+msgstr "Indirizzo email non valido"
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:297
 msgid "Send reset password email"
@@ -5899,7 +6031,7 @@ msgstr "Invia nuovamente l'e-mail di conferma"
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:351
 msgid "Invite!"
-msgstr ""
+msgstr "Invita"
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:356
 msgid "Sign out"
@@ -5907,7 +6039,7 @@ msgstr "Esci"
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:357
 msgid "Home Page"
-msgstr "Home Page"
+msgstr "Pagina iniziale"
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:358
 msgid "User profile"
@@ -5915,7 +6047,7 @@ msgstr "Profilo utente"
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:359
 msgid "Member Page"
-msgstr ""
+msgstr "Pagina utente"
 
 #: venv/lib/python3.11/site-packages/flask_user/forms.py:360
 msgid "Admin Page"

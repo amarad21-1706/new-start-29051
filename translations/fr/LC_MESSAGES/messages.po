@@ -37,6 +37,15 @@ msgstr "D.E.R.E. - Environnement numérique pour le secteur énergétique régle
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/forms.py:30
 #: venv/lib/python3.11/site-packages/flask_security/forms.py:30
 
+msgid "Document Workflows"
+msgstr "Flux de travail des documents"
+
+msgid "Create Team"
+msgstr "Créer une Équipe"
+
+msgid "Teams Setup"
+msgstr "Configuration des Équipes"
+
 msgid "Main Dashboard"
 msgstr "Tableau de Bord Principal"
 
@@ -238,6 +247,123 @@ msgstr "Plan du site"
 msgid "Archive"
 msgstr "Archives"
 
+msgid "Contracts"
+msgstr "Contrats"
+
+msgid "Current Status"
+msgstr "Statut Actuel"
+
+msgid "Deadlines Dashboard"
+msgstr "Tableau de Bord des Échéances"
+
+msgid "Dashboard by Control Area"
+msgstr "Tableau de Bord par Zone de Contrôle"
+
+msgid "AI Insights"
+msgstr "Aperçus IA"
+
+msgid "Contract Benchmarking"
+msgstr "Comparaison des Contrats"
+
+msgid "Settings"
+msgstr "Paramètres"
+
+msgid "Complex Settings"
+msgstr "Paramètres Complexes"
+
+msgid "Current Setup"
+msgstr "Configuration Actuelle"
+
+msgid "Users"
+msgstr "Utilisateurs"
+
+msgid "Areas"
+msgstr "Zones"
+
+msgid "Surveys & Questionnaires"
+msgstr "Sondages et Questionnaires"
+
+msgid "Workflows"
+msgstr "Flux de Travail"
+
+msgid "Associate users to companies"
+msgstr "Associer les utilisateurs aux entreprises"
+
+msgid "Associate roles to user"
+msgstr "Associer des rôles aux utilisateurs"
+
+msgid "Areas and Subareas"
+msgstr "Zones et Sous-zones"
+
+msgid "Attach questions to questionnaire"
+msgstr "Joindre des questions au questionnaire"
+
+msgid "Assign questionnaire to company"
+msgstr "Attribuer un questionnaire à une entreprise"
+
+msgid "Assign steps (phases) to workflow"
+msgstr "Attribuer des étapes au flux de travail"
+
+msgid "Assign documents to workflow"
+msgstr "Attribuer des documents au flux de travail"
+
+msgid "Documents-workflow-steps management"
+msgstr "Gestion des documents-flux de travail-étapes"
+
+msgid "My Account"
+msgstr "Mon compte"
+
+msgid "Registration Status"
+msgstr "Statut d'inscription"
+
+msgid "Subscribe Plan"
+msgstr "Souscrire un plan"
+
+msgid "Subscriptions Report"
+msgstr "Rapport des abonnements"
+
+msgid "Products"
+msgstr "Produits"
+
+msgid "Plans"
+msgstr "Plans"
+
+msgid "Companies and Users Report"
+msgstr "Rapport des entreprises et des utilisateurs"
+
+msgid "Users and Roles"
+msgstr "Utilisateurs et rôles"
+
+msgid "Control Areas and Subareas"
+msgstr "Zones et sous-zones de contrôle"
+
+msgid "Manage Extra Time"
+msgstr "Gérer le temps supplémentaire"
+
+msgid "Questionnaires and Companies"
+msgstr "Questionnaires et entreprises"
+
+msgid "Questionnaires Structure"
+msgstr "Structure des questionnaires"
+
+msgid "Workflows Structure"
+msgstr "Structure des flux de travail"
+
+msgid "Login"
+msgstr "Connexion"
+
+msgid "Change Password"
+msgstr "Changer le mot de passe"
+
+msgid "News"
+msgstr "Actualités"
+
+msgid "Blog"
+msgstr "Blog"
+
+msgid "Area 3 - Document Workflows"
+msgstr "Zone 3 - Flux de travail des documents"
+
 #: admin_views.py:554
 msgid "Contract ID is required for creating a new article."
 msgstr ""
@@ -245,6 +371,12 @@ msgstr ""
 #: admin_views.py:3583
 msgid "New document upload created successfully."
 msgstr ""
+
+msgid "Checklist"
+msgstr "Liste de contrôle"
+
+msgid "Manage Charts"
+msgstr "Gérer les graphiques"
 
 #: admin_views.py:3726
 #, python-format

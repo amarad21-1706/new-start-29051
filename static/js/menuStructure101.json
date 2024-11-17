@@ -147,7 +147,7 @@
                 }
             },
             "Charts and Views 1": {
-                "label": "Control areas - Charts",
+                "label": "Control Areas - Charts",
                 "url": "/chart_form",
                 "protected": true,
                 "allowed_roles": [
@@ -223,7 +223,7 @@
                 }
             },
             "Reserved Area 1c Res": {
-                "label": "Check list",
+                "label": "Checklist",
                 "url": "/questionnaire_psf",
                 "protected": true,
                 "allowed_roles": [

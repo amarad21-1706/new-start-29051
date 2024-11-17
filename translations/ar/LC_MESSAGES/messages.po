@@ -242,6 +242,163 @@ msgstr "خريطة الموقع"
 msgid "Archive"
 msgstr "الأرشيف"
 
+msgid "Document Workflows"
+msgstr "تدفقات عمل الوثائق"
+
+msgid "Create Team"
+msgstr "إنشاء فريق"
+
+msgid "Teams Setup"
+msgstr "إعداد الفرق"
+
+msgid "My Account"
+msgstr "حسابي"
+
+msgid "Registration Status"
+msgstr "حالة التسجيل"
+
+msgid "Subscribe Plan"
+msgstr "الاشتراك في الخطة"
+
+msgid "Subscriptions Report"
+msgstr "تقرير الاشتراكات"
+
+msgid "Products"
+msgstr "المنتجات"
+
+msgid "Plans"
+msgstr "الخطط"
+
+msgid "Contracts"
+msgstr "العقود"
+
+msgid "Current Status"
+msgstr "الحالة الحالية"
+
+msgid "Deadlines Dashboard"
+msgstr "لوحة تحكم المواعيد النهائية"
+
+msgid "Dashboard by Control Area"
+msgstr "لوحة تحكم حسب منطقة التحكم"
+
+msgid "AI Insights"
+msgstr "رؤى الذكاء الاصطناعي"
+
+msgid "Contract Benchmarking"
+msgstr "قياس أداء العقود"
+
+msgid "Settings"
+msgstr "الإعدادات"
+
+msgid "Complex Settings"
+msgstr "إعدادات معقدة"
+
+msgid "Current Setup"
+msgstr "الإعداد الحالي"
+
+msgid "Users"
+msgstr "المستخدمون"
+
+msgid "Areas"
+msgstr "المناطق"
+
+msgid "Surveys & Questionnaires"
+msgstr "الاستبيانات والاستطلاعات"
+
+msgid "Workflows"
+msgstr "تدفقات العمل"
+
+msgid "Associate users to companies"
+msgstr "ربط المستخدمين بالشركات"
+
+msgid "Associate roles to user"
+msgstr "ربط الأدوار بالمستخدمين"
+
+msgid "Areas and Subareas"
+msgstr "المناطق والمناطق الفرعية"
+
+msgid "Attach questions to questionnaire"
+msgstr "إرفاق الأسئلة بالاستبيان"
+
+msgid "Assign questionnaire to company"
+msgstr "تعيين استبيان لشركة"
+
+msgid "Assign steps (phases) to workflow"
+msgstr "تعيين المراحل لتدفق العمل"
+
+msgid "Assign documents to workflow"
+msgstr "تعيين الوثائق لتدفق العمل"
+
+msgid "Documents-workflow-steps management"
+msgstr "إدارة الوثائق-تدفقات العمل-المراحل"
+
+
+msgid "Document Workflows"
+msgstr "تدفقات عمل الوثائق"
+
+msgid "Create Team"
+msgstr "إنشاء فريق"
+
+msgid "Teams Setup"
+msgstr "إعداد الفرق"
+
+msgid "My Account"
+msgstr "حسابي"
+
+msgid "Registration Status"
+msgstr "حالة التسجيل"
+
+msgid "Subscribe Plan"
+msgstr "الاشتراك في خطة"
+
+msgid "Subscriptions Report"
+msgstr "تقرير الاشتراكات"
+
+msgid "Companies and Users Report"
+msgstr "تقرير الشركات والمستخدمين"
+
+msgid "Users and Roles"
+msgstr "المستخدمون والأدوار"
+
+msgid "Control Areas and Subareas"
+msgstr "مناطق وأقسام التحكم"
+
+msgid "Manage Extra Time"
+msgstr "إدارة الوقت الإضافي"
+
+msgid "Questionnaires and Companies"
+msgstr "الاستبيانات والشركات"
+
+msgid "Questionnaires Structure"
+msgstr "هيكل الاستبيانات"
+
+msgid "Workflows Structure"
+msgstr "هيكل تدفقات العمل"
+
+msgid "Login"
+msgstr "تسجيل الدخول"
+
+msgid "Change Password"
+msgstr "تغيير كلمة المرور"
+
+msgid "News"
+msgstr "الأخبار"
+
+msgid "Blog"
+msgstr "المدونة"
+
+msgid "Area 3 - Document Workflows"
+msgstr "المنطقة 3 - تدفقات عمل الوثائق"
+
+msgid "Agenda"
+msgstr "جدول الأعمال"
+
+msgid "Collections"
+msgstr "المجموعات"
+
+msgid "Email"
+msgstr "البريد الإلكتروني"
+
 #: admin_views.py:554
 msgid "Contract ID is required for creating a new article."
 msgstr ""
@@ -332,6 +489,9 @@ msgstr ""
 #: app.py:1605
 msgid "Security check"
 msgstr ""
+
+msgid "Checklist"
+msgstr "قائمة التحقق"
 
 #: app.py:1606
 msgid ""
