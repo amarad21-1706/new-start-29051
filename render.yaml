@@ -7,6 +7,7 @@ services:
       pip install -r requirements.txt
       npm install
       npm run build
+      apt-get update && apt-get install -y gnupg
       echo "Clearing Render Cache"
     startCommand: gunicorn app:app --log-level debug
     staticPublishPath: static
