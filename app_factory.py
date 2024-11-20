@@ -47,8 +47,6 @@ def subscription_required(f):
         user_roles = session.get('user_roles', [])
         #current_app.logger.debug(f'user_roles: {user_roles}')
 
-        print('decorator: status is 2. user roles', user_roles)
-
         if 'Admin' in user_roles or 'Authority' in user_roles:
             # current_app.logger.debug('User has Admin or Authority role, granting access...')
             return f(*args, **kwargs)  # Allow access if user has Admin or Authority role
@@ -99,13 +97,10 @@ def create_app(conf=None):
         """
         Dynamically translate database text.
         """
-        print('text is', text)
         if not text:
             return ""
         try:
-            print(f"Translating: {text}")
             translated = _(text)  # Uses Flask-Babel's gettext
-            print(f"Translated: {translated}")
             return translated
         except Exception as e:
             print(f"Translation error: {e}")
@@ -114,7 +109,6 @@ def create_app(conf=None):
     # Register the function with Jinja2
     @app.context_processor
     def inject_translation_helpers():
-        print('translation injected', get_locale())
         return dict(_=translate_text)
 
     # Explicitly set debug mode based on an environment variable or configuration
@@ -176,8 +170,5 @@ def create_app(conf=None):
 
 def get_locale():
     # Use the language stored in the session, or default to English
-    print('session in get_locale', session.get('lang'))
     return session.get('lang', 'en')
-
-
 

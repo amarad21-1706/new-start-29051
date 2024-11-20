@@ -1,12 +1,25 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>Title</title>
+    <title>Two-Factor Authentication</title>
 </head>
 <body>
-
-    <img src="data:image/png;base64,{{ qr_image_data }}" alt="QR Code">
-
+    <h1>Two-Factor Authentication</h1>
+    <form method="POST" action="{{ url_for('verify_2fa_code') }}">
+        <label for="verification_code">Enter the verification code sent to your email:</label><br>
+        <input type="text" id="verification_code" name="verification_code" required>
+        <button type="submit">Verify</button>
+    </form>
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div>
+          {% for category, message in messages %}
+            <div class="alert alert-{{ category }}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
 </body>
 </html>

@@ -12,7 +12,7 @@ import requests
 import stripe
 from fredapi import Fred
 import openai
-
+import string
 import logging
 from logging import FileHandler, Formatter
 from flask_wtf.csrf import CSRFProtect, generate_csrf, validate_csrf
@@ -40,7 +40,6 @@ from flask_session import Session
 from wtforms import SubmitField
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired
 
-from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
 from flask_mail import Mail, Message
 from itsdangerous import URLSafeTimedSerializer, SignatureExpired, BadSignature
@@ -81,7 +80,6 @@ from forms.forms import (AddPlanToCartForm, SignupForm, UpdateAccountForm, Ticke
         UpdateCartItemForm, AddProductToCartForm, SubscriptionForm,
         MainForm)
 
-from flask_mail import Mail, Message
 # from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as _
 
 from app_factory import create_app, roles_required, subscription_required
@@ -201,9 +199,17 @@ from flask_babel import _
 
 app = create_app()
 
+# Configure Flask-Mail using environment variables
+app.config['MAIL_SERVER'] = os.getenv('MAIL_SERVER')
+app.config['MAIL_PORT'] = int(os.getenv('MAIL_PORT'))
+app.config['MAIL_USE_TLS'] = os.getenv('MAIL_USE_TLS') == 'true'
+app.config['MAIL_USERNAME'] = os.getenv('MAIL_USERNAME')
+app.config['MAIL_PASSWORD'] = os.getenv('MAIL_PASSWORD')
+app.config['MAIL_DEFAULT_SENDER'] = os.getenv('MAIL_DEFAULT_SENDER')
+
 # Setup Mail
 mail = Mail(app)
-print('mail server active')
+print('mail server configured and active')
 
 app.json_encoder = CustomJSONEncoder
 print('JSON decoder on')
@@ -1710,22 +1716,41 @@ def reset_password(token):
     return render_template('access/reset_password.html', form=form, token=token)
 
 
-
-@app.route("/send_email___")
-@login_required
-def send_email___():
-    mail = Mail(app)
-    msg = Message("Hello from ILM",
-                  sender="amarad21@gmail.com",
-                  recipients=["astridel.radulescu1@gmail.com"])
-    msg.body = "This is a test email sent from my App using Postfix."
-    mail.send(msg)
-    return "Email sent successfully."
-
-
 @app.route("/send_email")
 @login_required
 def send_email():
+    try:
+        # Create and send the first email
+        msg1 = Message(
+            'Test Email',
+            recipients=['astridel.radulescu@gmail.com'],  # Replace with the recipient's email
+            body='This is a test email sent from DEREPlatform!'
+        )
+        mail.send(msg1)
+
+        # Create and send the second email
+        '''
+        msg2 = Message(
+            'Test Email',
+            recipients=['antonio.molteni@gmail.com'],  # Replace with the recipient's email
+            body='This is a test email sent from DEREPlatform!'
+        )
+        mail.send(msg2)
+        '''
+
+        # Flash a success message
+        flash('Emails sent successfully!', 'success')
+    except Exception as e:
+        # Flash an error message
+        flash(f'Failed to send emails. Error: {str(e)}', 'danger')
+
+    # Redirect to a suitable page (e.g., dashboard or home)
+    return redirect(url_for('index'))  # Replace 'index' with your desired endpoint
+
+
+@app.route("/send_email_old")
+@login_required
+def send_email_old():
     # Example usage
     api_key = "20cb76ced830ab536fa7cd718d1c1141-b02bcf9f-5936b742"
     domain =  "sandbox8fe87aee4b91456c9d17ffcb802d8b20.mailgun.org"
@@ -1770,6 +1795,13 @@ def login():
                         # login_user(user, remember=False) # no long term cookies
                         remember = 'remember' in request.form # user defined set up
                         login_user(user, remember=remember)
+
+                        # Redirect to 2FA if enabled 20nov2024 to be implemented
+                        '''
+                        session['2fa_pending'] = True  # Mark that 2FA is required
+                        return redirect(url_for('send_2fa_code'))
+                        '''
+
                         flash(_('Login Successful'))
                         cet_time = get_cet_time()
                         try:
@@ -4502,6 +4534,62 @@ def apply_filters(text_filter, answer_type_filter):
 2-factor authentication
 '''
 
+@app.route('/2fa/send_code', methods=['GET'])
+@login_required
+def send_2fa_code():
+    # Generate a 6-character verification code
+
+    verification_code = ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
+    session['verification_code'] = verification_code
+    session['code_expiry'] = datetime.now() + timedelta(minutes=5)
+
+    # user = get_user_from_session_or_db()  # Implement this function to retrieve the user object
+    try:
+        user = Users.query.filter_by(user_id=current_user.id).first()
+    except:
+        user = None
+        pass
+
+    print(f"Current user: {current_user}")  # Debugging
+    print(f"User email: {current_user.email}")  # Debugging
+
+    # Send the code to the user's email
+    try:
+        msg = Message(
+            'Your Verification Code',
+            recipients=user.email,  # Replace with the user's email
+            body=f'Your verification code is: {verification_code}'
+        )
+        mail.send(msg)
+        flash('Verification code sent to your email!', 'success')
+    except Exception as e:
+        flash(f'Failed to send verification code. Error: {str(e)}', 'danger')
+        return redirect(url_for('index'))  # Redirect to a safe page on error
+
+    return render_template('access/verify_2fa.html')  # Render the form to enter the code
+
+
+@app.route('/2fa/verify_code', methods=['POST'])
+@login_required
+def verify_2fa_code():
+    user_code = request.form.get('verification_code')
+    code_expiry = session.get('code_expiry')
+
+    if code_expiry and datetime.now() > code_expiry:
+        flash('Verification code expired. Please request a new one.', 'danger')
+        return redirect(url_for('send_2fa_code'))
+
+    if user_code == session.get('verification_code'):
+        session.pop('verification_code', None)
+        session.pop('code_expiry', None)
+        flash('Verification successful!', 'success')
+        return redirect(url_for('protected_page'))
+    else:
+        flash('Invalid code. Please try again.', 'danger')
+        return redirect(url_for('send_2fa_code'))
+
+
+# NOT used?
 @app.route('/verify_2fa', methods=['GET', 'POST'])
 def verify_2fa():
     form = TwoFactorForm()
@@ -4526,6 +4614,16 @@ def verify_2fa():
             # Verification failed
             flash(_('Invalid OTP'), 'danger')
     return render_template('access/verify_2fa.html', form=form)
+
+
+@app.route('/protected_page')
+@login_required
+def protected_page():
+    if not session.get('verification_code_verified', False):
+        flash('You must complete 2FA to access this page.', 'warning')
+        return redirect(url_for('send_2fa_code'))
+
+    return "This is a protected page."
 
 
 '''
