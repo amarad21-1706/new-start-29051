@@ -6,74 +6,126 @@
     <title>Contact Us</title>
     <style>
         body {
-            background-color: #001f3f;
-            color: #fff;
-            font-family: 'Cambria', sans-serif;
-            margin: 20px; /* 30% margin on left and right */
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f9;
+            color: #333;
+        }
+
+        header {
+            background-color: #007BFF;
+            color: white;
+            padding: 10px 20px;
+            text-align: center;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 20px auto;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
             padding: 20px;
         }
 
         h1 {
-            color: #5cdb95;
-            font-size: 20px;
-            margin-bottom: 20px; /* Add some space below headers */
+            color: #007BFF;
         }
 
         p {
-            margin-bottom: 10px;
-            font-size: 16px;
+            line-height: 1.6;
         }
 
-        div {
-            color: #5cdb95;
-            font-size: 14px;
-            margin-top: 20px; /* Add space above the debug message */
+        .contact-info {
+            margin-bottom: 20px;
+        }
+
+        .contact-info div {
+            margin-bottom: 10px;
+        }
+
+        .contact-info i {
+            color: #007BFF;
+            margin-right: 10px;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+        }
+
+        input, textarea {
+            margin-bottom: 15px;
+            padding: 10px;
+            font-size: 1rem;
+            border: 1px solid #ccc;
+            border-radius: 4px;
         }
 
         button {
-            background-color: #5cdb95;
-            color: #001f3f;
-            padding: 10px 15px;
-            margin-right: 10px;
-            cursor: pointer;
+            padding: 10px;
+            font-size: 1rem;
+            background-color: #007BFF;
+            color: white;
             border: none;
-            border-radius: 5px;
-            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
         }
 
-        /* Add more styles as needed */
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 20px;
+            padding: 10px 0;
+            background-color: #007BFF;
+            color: white;
+        }
+
+        footer a {
+            color: #FFD700;
+            text-decoration: none;
+        }
     </style>
 </head>
 <body>
-    <h1>You can reach us at:</h1>
-    <p>...</p>
-    <p>Email: ___@___.it</p>
-    <p>...</p>
-    <p>Phone: +39.02.1111111.</p>
-    <p>...</p>
-    <p>Address: ... ITALY</p>
-    <p>...</p>
+    <header>
+        <h1>Contact Us</h1>
+    </header>
+    <div class="container">
+        <p>We would love to hear from you! Reach out to us via the contact details below or send us a message using the form.</p>
 
-    <div>
-        <p>{{ debug_message }}</p>
+        <div class="contact-info">
+            <div>
+                <i>📧</i>Email: <a href="mailto:admin@dere-platform.com">admin@dere-platform.com</a>
+            </div>
+            <div>
+                <i>📍</i>Address: 123 Innovation Road, Tech City, TC 45678
+            </div>
+            <div>
+                <i>📞</i>Phone: <a href="tel:+1234567890">+1 234 567 890</a>
+            </div>
+        </div>
+
+        <form action="/submit-contact-form" method="POST">
+            <label for="name">Your Name:</label>
+            <input type="text" id="name" name="name" placeholder="Enter your name" required>
+
+            <label for="email">Your Email:</label>
+            <input type="email" id="email" name="email" placeholder="Enter your email" required>
+
+            <label for="message">Your Message:</label>
+            <textarea id="message" name="message" rows="5" placeholder="Write your message here" required></textarea>
+
+            <button type="submit">Send Message</button>
+        </form>
     </div>
 
-    <!-- Back Button -->
-    <button onclick="goBack()">Back</button>
-
-    <!-- Home Button -->
-    <button onclick="goHome()">Home</button>
-
-    <script>
-        // Function to navigate back
-        function goBack() {
-            window.history.back();
-        }
-
-        // Function to navigate to the home page
-        function goHome() {
-            window.location.href = "{{ url_for('index') }}";  // Replace 'index' with the actual route for your home page
-        }
-    </script>
+    <footer>
+        <p>&copy; 2024 Dere Platform. All rights reserved. Visit us at <a href="https://www.dere-platform.com" target="_blank">www.dere-platform.com</a></p>
+    </footer>
 </body>
 </html>

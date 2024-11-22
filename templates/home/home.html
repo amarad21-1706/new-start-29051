@@ -804,7 +804,18 @@
                         </ul>
                     </div>
                 {% else %}
-                    <p>No news available.</p>
+                    <table border="0">
+                        <tr>
+                            <td> </td>
+                        </tr>
+                        <!-- Blank row -->
+                        <tr style="height: 250px;">
+                            <td></td>
+                        </tr>
+                        <tr>
+                            <td> </td>
+                        </tr>
+                    </table>
                 {% endif %}
 
                 {% if cards %}
@@ -871,7 +882,6 @@
                 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.min.js"></script>
 
                 <div class="container mt-4">
-                    <p>"[...] content" (text, documents, multimedia files, charts, cards etc.) to be placed here.</p>
                     {% if containers %}
                         {% for container in containers %}
                             {% if container.content_type == 'text' %}
@@ -896,8 +906,19 @@
                                 <a class="content-block" href="{{ container.content['url'] }}" target="_blank">{{ container.content['title'] }}</a>
                             {% endif %}
                         {% endfor %}
-                    {% else %}
-                        <p>[...]</p>
+                        {% else %}
+                            <table border="0">
+                                <tr>
+                                    <td> </td>
+                                </tr>
+                                <!-- Blank row -->
+                                <tr style="height: 250px;">
+                                    <td></td>
+                                </tr>
+                                <tr>
+                                    <td> </td>
+                                </tr>
+                            </table>
                     {% endif %}
             </div>
 

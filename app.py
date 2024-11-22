@@ -4568,6 +4568,23 @@ def send_2fa_code():
 
     return render_template('access/verify_2fa.html')  # Render the form to enter the code
 
+@app.route('/enable-2fa', methods=['POST', 'GET'])
+def enable_2fa():
+    user = current_user  # Assuming user is logged in
+    if request.method == 'POST':
+        code = request.form['otp_code']
+        if verify_2fa_code(user, code):
+            flash('2FA enabled successfully!', 'success')
+            return redirect(url_for('dashboard'))
+        else:
+            flash('Invalid 2FA code. Please try again.', 'danger')
+    else:
+        if not user.user_2fa_secret:
+            user.user_2fa_secret = pyotp.random_base32()
+            db.session.commit()
+        qr_code_url = get_2fa_qr_code_url(user.email, user.user_2fa_secret)
+        return render_template('access/enable_2fa.html', qr_code_url=qr_code_url)
+
 
 @app.route('/2fa/verify_code', methods=['POST'])
 @login_required
@@ -4614,6 +4631,16 @@ def verify_2fa():
             # Verification failed
             flash(_('Invalid OTP'), 'danger')
     return render_template('access/verify_2fa.html', form=form)
+
+
+# Example during signup or enabling 2FA
+def generate_2fa_secret(user):
+    user.user_2fa_secret = pyotp.random_base32()
+    db.session.commit()
+
+def get_2fa_qr_code_url(user_email, secret):
+    otp = pyotp.TOTP(secret)
+    return otp.provisioning_uri(name=user_email, issuer_name="YourAppName")
 
 
 @app.route('/protected_page')
@@ -5549,6 +5576,7 @@ def admin_tickets():
         return redirect(url_for('index'))
     tickets = Ticket.query.all()
     return render_template('admin_tickets.html', tickets=tickets)
+
 
 @app.route('/respond_ticket/<int:ticket_id>', methods=['GET', 'POST'])
 @login_required
