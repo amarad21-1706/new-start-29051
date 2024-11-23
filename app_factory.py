@@ -23,6 +23,9 @@ from flask_babel import Babel
 from flask_babel import get_locale, _
 # Example function for translating text
 from flask_babel import gettext as _
+import logging
+from logging.handlers import RotatingFileHandler
+from dotenv import load_dotenv
 
 csrf = CSRFProtect()  # Define csrf globally
 # babel = Babel()  # Initialize Babel without an app instance
@@ -68,6 +71,9 @@ def subscription_required(f):
 
 
 def create_app(conf=None):
+    # Load .env variables
+    load_dotenv()
+
     if conf is None:
         conf = Config()
 
@@ -112,30 +118,80 @@ def create_app(conf=None):
         return dict(_=translate_text)
 
     # Explicitly set debug mode based on an environment variable or configuration
-    app.config['DEBUG'] = os.environ.get('FLASK_DEBUG', 'False').lower() in ['true', '1']
+    # app.config['DEBUG'] = os.environ.get('FLASK_DEBUG', 'False').lower() in ['true', '1']
+    app.config['ENV'] = os.getenv('FLASK_ENV', 'production')
+    app.config['DEBUG'] = os.getenv('FLASK_DEBUG', '0') == '1'
+    app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'fallback-secret-key')
+
     app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=60)  # Set 60-minute session lifetime
 
     app.config.from_object(conf)
 
-    lun_sk = len(conf.SECRET_KEY)
-    print(f"S_KEY: [{lun_sk}]")
+    # Print environment details
+    print(f"FLASK_ENV setting = {os.getenv('FLASK_ENV', 'Not set')}")
+    print(f"FLASK_DEBUG = {os.getenv('FLASK_DEBUG', 'Not set')}")
+    print(f"Environment: {app.config['ENV']}")
+    print(f"Debug: {app.debug}")
 
-    app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
 
-    if os.getenv('FLASK_ENV') == 'development':
-        app.config['DEBUG'] = True
+    # Enable secure session cookies in production
+    if os.getenv('FLASK_ENV') == 'production':
+        app.config['SESSION_COOKIE_SECURE'] = True
         app.config['SQLALCHEMY_ECHO'] = False
-        app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
-        app.config['WTF_CSRF_ENABLED'] = False
     else:
-        app.config['DEBUG'] = False
+        app.config['SESSION_COOKIE_SECURE'] = False
         app.config['SQLALCHEMY_ECHO'] = False
-        app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
-        app.config['WTF_CSRF_ENABLED'] = True
+    # Custom logger setup
+    logger = logging.getLogger('app')  # Create or retrieve the logger
+    logger.setLevel(logging.INFO)
 
-    # csrf = CSRFProtect(app) # already defined globally
-    mail = Mail(app)
-    CORS(app)
+    # Add handlers
+    console_handler = logging.StreamHandler()
+    console_handler.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    console_handler.setFormatter(formatter)
+    logger.addHandler(console_handler)
+
+    # Attach logger to app
+    app.logger.handlers = logger.handlers
+    app.logger.setLevel(logger.level)
+
+    # logging.getLogger('sqlalchemy.engine').setLevel(logging.WARNING)
+
+    # not for production, only for development
+    # lun_sk = len(conf.SECRET_KEY)
+    # print(f"S_KEY: [{lun_sk}]")
+
+    if os.getenv('FLASK_ENV') == 'production':
+        app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
+
+    #more secure and explicit:
+    if app.config['DEBUG']:
+        app.config.update({
+            'SQLALCHEMY_ECHO': False,
+            'DEBUG_TB_INTERCEPT_REDIRECTS': False,
+            'WTF_CSRF_ENABLED': False,
+        })
+    else:
+        app.config.update({
+            'SQLALCHEMY_ECHO': False,
+            'DEBUG_TB_INTERCEPT_REDIRECTS': False,
+            'WTF_CSRF_ENABLED': True,
+        })
+
+    csrf = CSRFProtect()  # Initialize globally
+    csrf.init_app(app)  # Attach to Flask app
+
+    base_domains = ["dere-platform.com", "dereplatform.com"]
+    allowed_origins = [f"https://{domain}" for domain in base_domains]
+    allowed_origins += [f"https://www.{domain}" for domain in base_domains]
+    allowed_origins.append("https://new-start-29051.onrender.com")  # Render domain
+
+    # Allow specific domains for CORS
+    if app.config['DEBUG']:
+        CORS(app, resources={r"/*": {"origins": "*"}})  # Allow all origins for development
+    else:
+        CORS(app, resources={r"/*": {"origins": allowed_origins}})
 
     limiter = Limiter(
         get_remote_address,
@@ -162,6 +218,14 @@ def create_app(conf=None):
 
         # Initialize extensions with the app instance
         # babel.init_app(app)  # Initialize Babel with the app instance
+
+    # Configure logging
+    if not app.debug:
+
+        # Set up RotatingFileHandler for error logging
+        file_handler = RotatingFileHandler('error.log', maxBytes=10240, backupCount=10)
+        file_handler.setLevel(logging.ERROR)
+        app.logger.addHandler(file_handler)
 
     app.register_blueprint(password_reset_bp)  # Register the blueprint
 

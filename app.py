@@ -170,8 +170,6 @@ from flask_login import login_user, logout_user, current_user
 from flask_caching import Cache
 
 from urllib.parse import urlparse
-import logging
-from logging import FileHandler, Formatter
 
 # for graphical representation of workflows
 # Additional libraries for visualization (choose one)
@@ -274,8 +272,8 @@ limiter = Limiter(
 print('limiter active')
 
 # Setup CORS
-CORS(app)
-print('CORS active')
+# CORS(app)
+# print('CORS active')
 
 # Setup LoginManager
 login_manager = LoginManager(app)
@@ -283,15 +281,16 @@ login_manager = LoginManager(app)
 stripe.api_key = app.config['STRIPE_API_KEY']
 stripe.publishable_key = app.config['STRIPE_PUBLISHABLE_KEY']
 
+print(f"Environment: {app.config['ENV']}")
+print(f"Debug: {app.config['DEBUG']}")
+
 # Register the password reset route
 # app.add_url_rule('/admin_reset_password', 'admin_reset_password', admin_reset_password, methods=['GET', 'POST'])
 # print('url rule set')
 
-# TODO (in)activate LOGGER LOGGING ETC
-# Create a custom logger
-logger = logging.getLogger()
-# Set the default logging level
-logger.setLevel(logging.DEBUG)
+def log_request_info(response):
+    current_app.logger.info('Headers: %s', request.headers)
+    return response
 
 '''
 # Create handlers
@@ -455,13 +454,6 @@ def test_relationship():
     except Exception as e:
         return str(e), 500
 
-
-@app.after_request
-def log_request_info(response):
-    logger.info('Headers: %s', request.headers)
-    logger.info('Body: %s', request.get_data())
-    logger.info('Response: %s', response.status)
-    return response
 
 
 @login_manager.user_loader
@@ -627,7 +619,7 @@ with app.app_context():
 
     model_document = create_crud_blueprint('model_document', __name__)
 
-app.config['SQLALCHEMY_ECHO'] = True
+# app.config['SQLALCHEMY_ECHO'] = False
 
 # Get the DATABASE_URL from the environment
 database_url = os.getenv('DATABASE_URL')
@@ -5542,7 +5534,6 @@ def create_ticket():
         return redirect(url_for('view_tickets'))
     return render_template('create_ticket.html', form=form)
 
-
 @app.route('/edit_ticket/<int:ticket_id>', methods=['GET', 'POST'])
 @login_required
 def edit_ticket(ticket_id):
@@ -6704,7 +6695,6 @@ def debug_locale():
     print(f"Current locale: {get_locale()}")
     return f"Session language: {session.get('lang')}, Current locale: {get_locale()}"
 
-
 if __name__ == '__main__':
     # Load menu items from JSON file
     current_dir = get_current_directory()
@@ -6726,10 +6716,13 @@ if __name__ == '__main__':
 
     port = int(os.environ.get('PORT', 5000))
 
-    # TODO DEBUG
+    # Configure logging
     logging.basicConfig(filename='app.log', level=logging.DEBUG)
 
-    # Set `debug` in app.run based on config
-    app.run(debug=app.config['DEBUG'], host='0.0.0.0', port=port, extra_files=['./static/js/menuStructure101.json'])
+    print(f"FLASK_ENV = {os.getenv('FLASK_ENV')}")
+    print(f"FLASK_DEBUG = {os.getenv('FLASK_DEBUG')}")
+
+    # Run the app
+    app.run(host='0.0.0.0', port=port, extra_files=['./static/js/menuStructure101.json'])
 
     # app.run(debug=True, host='0.0.0.0', port=port, extra_files=['./static/js/menuStructure101.json'])
