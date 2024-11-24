@@ -189,6 +189,8 @@ from admin_views import create_admin_views  # Import the admin views module
 from cachetools import TTLCache, cached
 from flask_babel import _
 
+import smtplib
+
 # import flask_dance
 # from jose import jwt
 
@@ -1334,12 +1336,34 @@ def generate_route_and_menu(route, allowed_roles, template, include_protected=Fa
             company_id = session.get('company_id')
             card_data = get_cards(company_id)
 
-            # Check cookies accepted status
-            cookies_accepted = 'true' if current_user.is_authenticated and current_user.cookies_accepted else 'false'
-            show_cookie_banner = 'Admin' not in user_roles and cookies_accepted == 'false'
+            # Default to showing the banner
+            show_cookie_banner = True
+            print('Show')
+            # Check if the user has already accepted cookies
+            if request.cookies.get('cookies_accepted'):
+                show_cookie_banner = False
+                print('Accepted')
 
+            # Exclude the banner if the user is an Admin
+            if current_user.is_authenticated and 'Admin' in [role.name for role in current_user.roles]:
+                show_cookie_banner = False
+                print('Admin')
+
+            print('Outcome: Show')
             # Process menus and widgets
+
+            '''
+            print('Show Cookie Banner Debugging:')
+            print('  Cookies Accepted:', request.cookies.get('cookies_accepted'))
+            print('  User Authenticated:', current_user.is_authenticated)
+            print('  User Roles:',
+                  [role.name for role in current_user.roles] if current_user.is_authenticated else 'None')
+            print('  Final show_cookie_banner:', show_cookie_banner)
+            '''
+
             menus_to_display, widgets_to_display = process_menu_items(translated_menu_items, is_authenticated, user_roles)
+
+            # show_cookie_banner = True # test
 
             # Additional data for rendering
             additional_data = {
@@ -1712,6 +1736,15 @@ def reset_password(token):
 @login_required
 def send_email():
     try:
+
+        try:
+            with smtplib.SMTP('smtp.office365.com', 587) as server:
+                server.starttls()
+                server.login('admin@dereplatform.com', 'Ad-maiora-semper-2024')
+                print("SMTP connection successful")
+        except Exception as e:
+            print(f"SMTP Error: {e}")
+
         # Create and send the first email
         msg1 = Message(
             'Test Email',
@@ -5662,6 +5695,7 @@ def set_cookies():
 
     return response
 
+
 def generate_event_instances(event):
     instances = []
     if event.recurrence and event.recurrence_end:
@@ -5970,6 +6004,16 @@ def update_cookies():
 
     current_app.logger.debug("Updated cookie preferences: Analytics - {}, Marketing - {}".format(analytics, marketing))
 
+    return response
+
+
+@app.route('/set-cookie-consent', methods=['POST'])
+def set_cookie_consent():
+    # No authentication required
+    consent_choice = request.json.get('consent_choice')
+    # Save consent choice
+    response = jsonify({'status': 'success'})
+    response.set_cookie('cookie_consent', consent_choice)
     return response
 
 
@@ -6714,7 +6758,7 @@ if __name__ == '__main__':
         "public_menu": guest_menu_data
     }
 
-    port = int(os.environ.get('PORT', 5000))
+    port = int(os.environ.get('PORT', 5001))
 
     # Configure logging
     logging.basicConfig(filename='app.log', level=logging.DEBUG)

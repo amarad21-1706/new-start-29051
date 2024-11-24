@@ -979,7 +979,6 @@
 
     </footer>
 
-    <!-- Cookie Consent Banner -->
     {% if show_cookie_banner %}
         <div id="cookie-consent-banner" class="cookie-banner">
             <p>{{ _("We use cookies to enhance your experience. By continuing to visit this site you agree to our use of cookies.") }}</p>
@@ -1158,6 +1157,16 @@
             form.action = `/change_language/${language}`;
             form.submit();
         }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const banner = document.getElementById('cookie-consent-banner');
+            if (banner) {
+                console.log("Banner is present. Display style: " + banner.style.display);
+            } else {
+                console.log("Banner is not present in the DOM.");
+            }
+        });
+
     </script>
     <p style="font-size: 8px;">Current Version: {{ git_version }}</p>
 </body>
