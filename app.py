@@ -3031,6 +3031,35 @@ def contact_us():
 
 
 
+@app.route('/submit-contact-form', methods=['POST'])
+def submit_contact_form():
+    # Retrieve form data
+    name = request.form.get('name')
+    email = request.form.get('email')
+    message = request.form.get('message')
+
+    # Validate input
+    if not name or not email or not message:
+        flash("All fields are required.", "danger")
+        return redirect(url_for('contact_us'))
+
+    # Send an email
+    try:
+        msg = Message(
+            subject=f"New Contact Form Submission from {name}",
+            sender=app.config['MAIL_DEFAULT_SENDER'],
+            recipients=['admin@dere-platform.com'],  # Replace with the recipient's email
+            body=f"Name: {name}\nEmail: {email}\n\nMessage:\n{message}"
+        )
+        mail.send(msg)
+        flash("Your message has been sent successfully!", "success")
+    except Exception as e:
+        app.logger.error(f"Error sending email: {e}")
+        flash("There was an error sending your message. Please try again later.", "danger")
+
+    return redirect(url_for('contact_us'))
+
+
 @app.route('/test_carousel',  methods=['GET', 'POST'])
 def test_carousel():
     return render_template('carousel/wrapper_test.html')

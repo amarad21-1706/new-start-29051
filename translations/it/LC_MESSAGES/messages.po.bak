@@ -19,6 +19,21 @@ msgstr ""
 "Generated-By: Babel 2.12.1\n"
 "X-Generator: Poedit 3.5\n"
 
+msgid "We would love to hear from you! Reach out to us via the contact details below or send us a message using the form."
+msgstr "Ci farebbe piacere sentirti! Contattaci utilizzando i dettagli qui sotto oppure inviaci un messaggio tramite il modulo."
+
+msgid "2024 Dere Platform. All rights reserved. Visit us at"
+msgstr "024 Dere Platform. Tutti i diritti riservati. Visitaci su"
+
+msgid "Address"
+msgstr "Indirizzo"
+
+msgid "Phone"
+msgstr "Telefono"
+
+msgid "Your Message"
+msgstr "Il tuo messaggio"
+
 #: app.py:1504 new-start-29051/app.py:1419
 msgid "An email has been sent with instructions to reset your password."
 msgstr "È stata inviata un'e-mail con le istruzioni per reimpostare la password."
@@ -38,32 +53,8 @@ msgstr "D.E.R.E. - Piattaforma digitale per il settore dell'energia"
 #: new-start-29051/venv/lib/python3.11/site-packages/flask_security/forms.py:30
 #: venv/lib/python3.11/site-packages/flask_security/forms.py:30
 
-msgid "Contact Us"
-msgstr "Contattaci"
-
-msgid "We would love to hear from you! Reach out to us via the contact details below or send us a message using the form."
-msgstr "Ci farebbe piacere sentirti! Contattaci utilizzando i dettagli di contatto qui sotto oppure inviaci un messaggio tramite il modulo."
-
-msgid "Address"
-msgstr "Indirizzo"
-
-msgid "Phone"
-msgstr "Telefono"
-
-msgid "Your Name:"
-msgstr "Il tuo nome"
-
-msgid "Your Email:"
-msgstr "La tua email:"
-
-msgid "Your Message:"
-msgstr "Il tuo messaggio:"
-
-msgid "Send Message"
-msgstr "Invia messaggio:"
-
-msgid "All rights reserved. Visit us at"
-msgstr "Tutti i diritti riserveti. Visitaci su"
+msgid "Main Dashboard"
+msgstr "Pannello Principale"
 
 msgid "Home"
 msgstr "Pagina iniziale"

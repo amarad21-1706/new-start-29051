@@ -93,39 +93,40 @@
 </head>
 <body>
     <header>
-        <h1>Contact Us</h1>
+        <h1>{{ _("Contact Us") }}</h1>
     </header>
     <div class="container">
-        <p>We would love to hear from you! Reach out to us via the contact details below or send us a message using the form.</p>
+        <p>{{ _("We would love to hear from you! Reach out to us via the contact details below or send us a message using the form.") }}</p>
 
         <div class="contact-info">
             <div>
-                <i>📧</i>Email: <a href="mailto:admin@dere-platform.com">admin@dere-platform.com</a>
+                <i>📧</i>{{ _("Email") }}: <a href="mailto:admin@dere-platform.com">admin@dere-platform.com</a>
             </div>
             <div>
-                <i>📍</i>Address: 123 Innovation Road, Tech City, TC 45678
+                <i>📍</i>{{ _("Address") }}: 123 {{ _("Via [...] CAP Città [...]") }}
             </div>
             <div>
-                <i>📞</i>Phone: <a href="tel:+1234567890">+1 234 567 890</a>
+                <i>📞</i>{{ _("Phone") }}: <a href="tel:+1234567890">+1 234 567 890</a>
             </div>
         </div>
 
         <form action="/submit-contact-form" method="POST">
-            <label for="name">Your Name:</label>
-            <input type="text" id="name" name="name" placeholder="Enter your name" required>
+            <label for="name">{{ _("Your Name:") }}</label>
+            <input type="text" id="name" name="name" placeholder="{{ _("Enter your name") }}" required>
 
-            <label for="email">Your Email:</label>
-            <input type="email" id="email" name="email" placeholder="Enter your email" required>
+            <label for="email">{{ _("Your Email:") }}</label>
+            <input type="email" id="email" name="email" placeholder="{{ _("Enter your email") }}" required>
 
-            <label for="message">Your Message:</label>
-            <textarea id="message" name="message" rows="5" placeholder="Write your message here" required></textarea>
+            <label for="message">{{ _("Your Message:") }}</label>
+            <textarea id="message" name="message" rows="5" placeholder="{{ _("Write your message here") }}" required></textarea>
 
-            <button type="submit">Send Message</button>
+            <button type="submit">{{ _("Send Message") }}</button>
         </form>
     </div>
 
     <footer>
-        <p>&copy; 2024 Dere Platform. All rights reserved. Visit us at <a href="https://www.dere-platform.com" target="_blank">www.dere-platform.com</a></p>
+        <p>&copy; 2024 Dere Platform. {{ _("All rights reserved.") }} {{ _("Visit us at") }} <a href="https://www.dere-platform.com" target="_blank">www.dere-platform.com</a></p>
     </footer>
+
 </body>
 </html>
