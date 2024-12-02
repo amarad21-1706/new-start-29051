@@ -981,20 +981,24 @@
 
     {% if show_cookie_banner %}
         <div id="cookie-consent-banner" class="cookie-banner">
-            <p>{{ _("We use cookies to enhance your experience. By continuing to visit this site you agree to our use of cookies.") }}</p>
+            <p>{{ _("We use essential cookies to make our website work. We’d like to use cookies to improve, tailor what you see and analyze our website’s performance, but only if you accept. Learn more about your choices in our cookie and privacy policies. By continuing to visit this site you agree to our use of cookies.") }}</p>
+
+            <!-- Form for "Allow All" and "Reject All" -->
             <form method="POST" action="{{ url_for('set_cookies') }}">
                 <button type="submit" name="consent" value="allow_all">{{ _("Allow All") }}</button>
                 <button type="submit" name="consent" value="reject_all">{{ _("Reject All") }}</button>
                 <button type="button" onclick="showCustomizeOptions()">{{ _("Customize") }}</button>
             </form>
+
+            <!-- Customize Options Form -->
             <div id="customize-options" style="display:none;">
                 <form method="POST" action="{{ url_for('set_cookies') }}">
                     <input type="hidden" name="consent" value="customize">
                     <label>
-                        <input type="checkbox" name="analytics" value="true" checked> Analytics
+                        <input type="checkbox" name="analytics" value="true" checked> {{ _("Analytics") }}
                     </label>
                     <label>
-                        <input type="checkbox" name="marketing" value="true" checked> Marketing
+                        <input type="checkbox" name="marketing" value="true" checked> {{ _("Marketing") }}
                     </label>
                     <button type="submit">{{ _("Save Preferences") }}</button>
                 </form>
@@ -1158,13 +1162,32 @@
             form.submit();
         }
 
-        document.addEventListener('DOMContentLoaded', function () {
-            const banner = document.getElementById('cookie-consent-banner');
-            if (banner) {
-                console.log("Banner is present. Display style: " + banner.style.display);
-            } else {
-                console.log("Banner is not present in the DOM.");
-            }
+        document.getElementById('cookie-allow-all').addEventListener('click', function() {
+            fetch('/set_cookies', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ consent: 'allow_all' }),
+            })
+            .then(response => {
+                if (response.ok) {
+                    document.getElementById('cookie-banner').style.display = 'none';
+                }
+            })
+            .catch(error => console.error('Error setting cookie consent:', error));
+        });
+
+        document.getElementById('cookie-reject-all').addEventListener('click', function() {
+            fetch('/set_cookies', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: new URLSearchParams({ consent: 'reject_all' }),
+            })
+            .then(response => {
+                if (response.ok) {
+                    document.getElementById('cookie-banner').style.display = 'none';
+                }
+            })
+            .catch(error => console.error('Error setting cookie consent:', error));
         });
 
     </script>
