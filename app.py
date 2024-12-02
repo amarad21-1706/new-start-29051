@@ -6007,9 +6007,10 @@ def set_cookies():
         response.set_cookie('marketing', marketing, max_age=60 * 60 * 24 * 30, secure=True, httponly=True)
         current_app.logger.debug(f"Customized cookies: Analytics-{analytics}, Marketing-{marketing}.")
 
-    response.set_cookie('cookies_accepted', 'true', max_age=60 * 60 * 24 * 30, secure=True, httponly=True)
+    secure_flag = not app.debug  # Secure cookies in production only
+    response.set_cookie('cookies_accepted', 'true', max_age=60 * 60 * 24 * 30, secure=secure_flag, httponly=True)
 
-    if current_user.is_authenticated:
+    if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
         Users.query.filter_by(id=current_user.id).update({'cookies_accepted': True})
         db.session.commit()
         current_app.logger.debug(f"User {current_user.id} set cookies accepted to True")
@@ -6030,7 +6031,7 @@ def update_cookies():
     response.set_cookie('marketing', marketing, max_age=60 * 60 * 24 * 30, secure=True, httponly=True)
     response.set_cookie('cookies_accepted', 'true', max_age=60 * 60 * 24 * 30, secure=True, httponly=True)
 
-    if current_user.is_authenticated:
+    if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
         Users.query.filter_by(id=current_user.id).update({
             'analytics': analytics == 'true',
             'marketing': marketing == 'true'
