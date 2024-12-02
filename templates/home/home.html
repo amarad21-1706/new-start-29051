@@ -1076,9 +1076,7 @@
         };
 
         loadParticles(configs);
-    </script>
 
-    <script>
         $(document).ready(function() {
             function toggleImmediateChildren(submenu) {
                 submenu.children('.has-submenu').toggleClass('show');
@@ -1162,32 +1160,39 @@
             form.submit();
         }
 
-        document.getElementById('cookie-allow-all').addEventListener('click', function() {
+        function handleCookieConsent(consent, preferences = {}) {
+            const params = new URLSearchParams({ consent, ...preferences });
             fetch('/set_cookies', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({ consent: 'allow_all' }),
+                body: params,
             })
             .then(response => {
                 if (response.ok) {
                     document.getElementById('cookie-banner').style.display = 'none';
+                } else {
+                    throw new Error('Failed to save preferences.');
                 }
             })
-            .catch(error => console.error('Error setting cookie consent:', error));
+            .catch(error => {
+                console.error('Error setting cookie consent:', error);
+                alert('An error occurred while saving your preferences. Please try again.');
+            });
+        }
+
+        document.getElementById('cookie-allow-all').addEventListener('click', function() {
+            handleCookieConsent('allow_all');
         });
 
         document.getElementById('cookie-reject-all').addEventListener('click', function() {
-            fetch('/set_cookies', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-                body: new URLSearchParams({ consent: 'reject_all' }),
-            })
-            .then(response => {
-                if (response.ok) {
-                    document.getElementById('cookie-banner').style.display = 'none';
-                }
-            })
-            .catch(error => console.error('Error setting cookie consent:', error));
+            handleCookieConsent('reject_all');
+        });
+
+        // Example for a "Customize" button
+        document.getElementById('cookie-customize').addEventListener('click', function() {
+            const analytics = document.getElementById('analytics-checkbox').checked ? 'true' : 'false';
+            const marketing = document.getElementById('marketing-checkbox').checked ? 'true' : 'false';
+            handleCookieConsent('customize', { analytics, marketing });
         });
 
     </script>

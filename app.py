@@ -5979,6 +5979,7 @@ def update_event(event_id):
 def calendar():
     return render_template('calendar.html')
 
+
 @app.route('/set_cookies', methods=['POST'])
 def set_cookies():
     """
@@ -5987,48 +5988,53 @@ def set_cookies():
     consent = request.form.get('consent')
     response = make_response(redirect(url_for('index')))
 
+    if consent not in ['allow_all', 'reject_all', 'customize']:
+        current_app.logger.warning(f"Invalid consent value received: {consent}")
+        return jsonify({'status': 'error', 'message': 'Invalid consent value'}), 400
+
     if consent == 'allow_all':
-        response.set_cookie('analytics', 'true', max_age=60 * 60 * 24 * 30)  # 30 days
-        response.set_cookie('marketing', 'true', max_age=60 * 60 * 24 * 30)
+        response.set_cookie('analytics', 'true', max_age=60 * 60 * 24 * 30, secure=True, httponly=True)
+        response.set_cookie('marketing', 'true', max_age=60 * 60 * 24 * 30, secure=True, httponly=True)
+        current_app.logger.debug("Allowing all cookies: Analytics and Marketing set to true.")
     elif consent == 'reject_all':
-        response.set_cookie('analytics', 'false', max_age=60 * 60 * 24 * 30)
-        response.set_cookie('marketing', 'false', max_age=60 * 60 * 24 * 30)
+        response.set_cookie('analytics', 'false', max_age=60 * 60 * 24 * 30, secure=True, httponly=True)
+        response.set_cookie('marketing', 'false', max_age=60 * 60 * 24 * 30, secure=True, httponly=True)
+        current_app.logger.debug("Rejecting all cookies: Analytics and Marketing set to false.")
     elif consent == 'customize':
         analytics = request.form.get('analytics', 'false')
         marketing = request.form.get('marketing', 'false')
-        response.set_cookie('analytics', analytics, max_age=60 * 60 * 24 * 30)
-        response.set_cookie('marketing', marketing, max_age=60 * 60 * 24 * 30)
+        response.set_cookie('analytics', analytics, max_age=60 * 60 * 24 * 30, secure=True, httponly=True)
+        response.set_cookie('marketing', marketing, max_age=60 * 60 * 24 * 30, secure=True, httponly=True)
+        current_app.logger.debug(f"Customized cookies: Analytics-{analytics}, Marketing-{marketing}.")
 
-    # Indicate user has made a choice
-    response.set_cookie('cookies_accepted', 'true', max_age=60 * 60 * 24 * 30)
+    response.set_cookie('cookies_accepted', 'true', max_age=60 * 60 * 24 * 30, secure=True, httponly=True)
 
-    # Update user's choice in the database if logged in
     if current_user.is_authenticated:
-        user = Users.query.get(current_user.id)
-        user.cookies_accepted = True
+        Users.query.filter_by(id=current_user.id).update({'cookies_accepted': True})
         db.session.commit()
         current_app.logger.debug(f"User {current_user.id} set cookies accepted to True")
 
     return response
 
 
-@app.route('/update_cookies', methods=['POST'])
+@app.route('/update_cookies', methods=['GET', 'POST'])
 def update_cookies():
     """
-    Updates cookie preferences from the settings page.
+    Updates cookie preferences from the settings page and exits gracefully.
     """
-    response = make_response(redirect(url_for('cookie_settings')))
     analytics = 'true' if request.form.get('analytics') == 'true' else 'false'
     marketing = 'true' if request.form.get('marketing') == 'true' else 'false'
 
-    response.set_cookie('analytics', analytics, max_age=60 * 60 * 24 * 30)  # 30 days
-    response.set_cookie('marketing', marketing, max_age=60 * 60 * 24 * 30)
+    response = jsonify({'status': 'success', 'message': 'Preferences updated'})
+    response.set_cookie('analytics', analytics, max_age=60 * 60 * 24 * 30, secure=True, httponly=True)
+    response.set_cookie('marketing', marketing, max_age=60 * 60 * 24 * 30, secure=True, httponly=True)
+    response.set_cookie('cookies_accepted', 'true', max_age=60 * 60 * 24 * 30, secure=True, httponly=True)
 
-    # Update preferences in the database if logged in
     if current_user.is_authenticated:
-        user = Users.query.get(current_user.id)
-        user.analytics = analytics == 'true'
-        user.marketing = marketing == 'true'
+        Users.query.filter_by(id=current_user.id).update({
+            'analytics': analytics == 'true',
+            'marketing': marketing == 'true'
+        })
         db.session.commit()
         current_app.logger.debug(f"User {current_user.id} updated preferences: Analytics-{analytics}, Marketing-{marketing}")
 
