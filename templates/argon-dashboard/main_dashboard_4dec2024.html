@@ -5,21 +5,15 @@
     <div class="row">
         <!-- Block 1: Raccolta Dati -->
         <div class="col-md-4">
-            <div class="card mb-4 shadow-sm" style="position: relative;">
+            <div class="card mb-4">
                 <div class="card-header">
                     <h3>Raccolta Dati</h3>
                 </div>
                 <div class="card-body">
                     <div class="row text-center">
                         <!-- Sub-block for Area 1 -->
-                        <div class="col-md-4 mb-2 position-relative">
+                        <div class="col-md-4 mb-2">
                             <button type="button" class="btn btn-primary btn-block" onclick="window.location.href='/open_admin_1'">Area 1</button>
-                            <!-- Child Button -->
-                            <button type="button" class="btn btn-sm btn-outline-secondary"
-                                style="position: absolute; top: 40px; right: -10px;"
-                                onclick="window.location.href='/show_survey/5'">
-                                Contingencies
-                            </button>
                         </div>
                         <!-- Sub-block for Area 2 -->
                         <div class="col-md-4 mb-2">
@@ -36,7 +30,7 @@
 
         <!-- Block 2: Audit & Remediation -->
         <div class="col-md-4">
-            <div class="card mb-4 shadow-sm">
+            <div class="card mb-4">
                 <div class="card-header">
                     <h3>Audit & Remediation</h3>
                 </div>
@@ -65,7 +59,7 @@
 
         <!-- Block 3: Fascicolo Elettronico -->
         <div class="col-md-4">
-            <div class="card mb-4 shadow-sm">
+            <div class="card mb-4">
                 <div class="card-header">
                     <h3>Fascicolo Elettronico</h3>
                 </div>
@@ -80,7 +74,7 @@
     <!-- Message Board Block -->
     <div class="row">
         <div class="col-md-12">
-            <div class="card mb-4 shadow-sm">
+            <div class="card mb-4">
                 <div class="card-header">
                     <h3>Message Board</h3>
                 </div>
@@ -99,17 +93,4 @@
         </div>
     </div>
 </div>
-
-<style>
-    /* Shadow effect for cards */
-    .shadow-sm {
-        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1), 0 1px 3px rgba(0, 0, 0, 0.06);
-    }
-
-    /* Child button styling */
-    .btn-outline-secondary {
-        font-size: 0.8rem;
-        padding: 2px 6px;
-    }
-</style>
 {% endblock %}

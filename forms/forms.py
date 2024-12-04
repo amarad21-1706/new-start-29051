@@ -1145,6 +1145,7 @@ def create_dynamic_form(form, data, company_id, horizontal=False):
     base_path = f"static/docs/company_files/company_id_{company_id}/{datetime.now().year}"
 
     for question in questions:
+        print('step 0', question)
         html_form += generate_question_html(question, question['answer_fields'], base_path, horizontal)
 
     html_form += "<div class='button-group'>"
@@ -1157,6 +1158,8 @@ def create_dynamic_form(form, data, company_id, horizontal=False):
 
 def generate_question_html(question, existing_answers, base_path, horizontal=False):
     html = f"<div class='question'><h6>{question['question_id']}. {question['text']}</h6>"
+
+    print('step 1', html)
     answer_fields = json.loads(existing_answers) if isinstance(existing_answers, str) else existing_answers
 
     input_html = "<div class='answers horizontal'>" if horizontal else "<div class='answers vertical'>"

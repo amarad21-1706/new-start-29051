@@ -222,6 +222,16 @@
                     "display": false
                 }
             },
+            "Reserved Area 1_5": {
+                "label": "QCSF",
+                "url": "/show_survey/5",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin", "Employee", "Manager", "Authority"],
+                "widget": {
+                    "display": false
+                }
+            },
             "Reserved Area 1c Res": {
                 "label": "Checklist",
                 "url": "/questionnaire_psf",

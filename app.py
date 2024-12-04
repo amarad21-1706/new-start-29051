@@ -4145,6 +4145,7 @@ def merge_answer_fields(base_fields_json, answer_data_json):
 
 @app.route('/redirect_to_survey/<int:questionnaire_id>')
 def redirect_to_survey(questionnaire_id):
+    print('step -3, questionnaire', questionnaire_id)
     return redirect(url_for('show_survey', questionnaire_id=questionnaire_id))
 
 
@@ -4221,7 +4222,8 @@ def show_survey(questionnaire_id):
             'answer_width': question.answer_width,
             'answer_fields': form_data[str(question.id)]
         })
-        # TODO check why questionnaire ex area 3 does not show up
+        # TODO check why questionnaire ex area 3 (actuakky it's area 1, contingencies, questions S11xxx) does not show up
+        print('step -2', company_id, questions)
     dynamic_html = create_dynamic_form(form, {'questions': questions, 'form_data': form_data}, company_id, horizontal)  # Adjust this function to accept horizontal flag
     return render_template('survey.html', form=form, headers=headers, dynamic_html=dynamic_html, questionnaire_name=selected_questionnaire.name, today=datetime.now().date())
 
