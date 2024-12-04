@@ -944,7 +944,7 @@ def create_dynamic_form_from_data(answers_data):
 
     for answer in answers_data:
         field_name = f'question_{answer.question_id}_field'
-
+        print('field name', field_name)
         try:
             # Attempt to parse answer_type as JSON
             answer_type = json.loads(answer.question.answer_type)
@@ -1020,51 +1020,6 @@ def create_dynamic_form_from_data(answers_data):
                 setattr(DynamicForm, field_name, StringField(label=answer.question.text, default=answer.answer_text))
 
     return DynamicForm()
-
-
-def create_dynamic_form_from_data_sqlite(answers_data):
-    class DynamicForm(Form):
-        pass
-
-    for answer in answers_data:
-        field_name = f'question_{answer.question_id}_field'
-        answer_type = answer.question.answer_type
-
-        # Adjust the field types and attributes based on your Answer model
-        if answer_type == 'text':
-            setattr(DynamicForm, field_name, StringField(label=answer.question.text, default=answer.answer_text))
-        elif answer_type == 'boolean':
-            setattr(DynamicForm, field_name,
-                    BooleanField(label=answer.question.text, default=answer.answer_text == 'yes'))
-        elif answer_type == 'float':
-            setattr(DynamicForm, field_name, FloatField(label=answer.question.text, default=float(
-                answer.answer_text) if answer.answer_text else None))
-        elif answer_type == 'file':
-            # Add file handling logic if needed
-            setattr(DynamicForm, field_name, FileField(label=answer.question.text))
-
-        elif answer_type == 'date':
-            default_value = datetime.strptime(answer.answer_text, '%Y-%m-%d') if answer.answer_text else None
-            setattr(DynamicForm, field_name, DateField(label=answer.question.text, default=default_value))
-
-        elif answer_type == 'time':
-            default_value = datetime.strptime(answer.answer_text, '%hh:%mm:%ss') if answer.answer_text else None
-            setattr(DynamicForm, field_name, DateField(label=answer.question.text, default=default_value))
-
-        elif answer_type == 'yes_no':
-            setattr(DynamicForm, field_name,
-                    SelectField(label=answer.question.text, choices=[('yes', 'Yes'), ('no', 'No')],
-                                default=answer.answer_text))
-        # Add handling for other answer types as needed
-        elif answer_type == 'integer':
-            setattr(DynamicForm, field_name, IntegerField(label=answer.question.text, default=answer.answer_text))
-        elif answer_type == 'float':
-            setattr(DynamicForm, field_name, FloatField(label=answer.question.text, default=answer.answer_text))
-
-        else:
-            setattr(DynamicForm, field_name, StringField(label=answer.question.text, default=answer.answer_text))
-    return DynamicForm()
-
 
 
 class ComplexField(FieldList):
@@ -1145,7 +1100,6 @@ def create_dynamic_form(form, data, company_id, horizontal=False):
     base_path = f"static/docs/company_files/company_id_{company_id}/{datetime.now().year}"
 
     for question in questions:
-        print('step 0', question)
         html_form += generate_question_html(question, question['answer_fields'], base_path, horizontal)
 
     html_form += "<div class='button-group'>"
@@ -1156,10 +1110,10 @@ def create_dynamic_form(form, data, company_id, horizontal=False):
     return html_form
 
 
-def generate_question_html(question, existing_answers, base_path, horizontal=False):
-    html = f"<div class='question'><h6>{question['question_id']}. {question['text']}</h6>"
+def generate_question_html_222(question, existing_answers, base_path, horizontal=False):
 
-    print('step 1', html)
+    #html = f"<div class='question'><h6>{question['question_id']}. {question['text']}</h6>"
+    html = f"<div class='question'><h6>{question['text']}</h6>"
     answer_fields = json.loads(existing_answers) if isinstance(existing_answers, str) else existing_answers
 
     input_html = "<div class='answers horizontal'>" if horizontal else "<div class='answers vertical'>"
@@ -1180,7 +1134,263 @@ def generate_question_html(question, existing_answers, base_path, horizontal=Fal
     return html
 
 
+def generate_question_html(question, existing_answers, base_path, horizontal=False):
+    html = f"<div class='question'><h6>{question['text']}</h6>"
+    answer_fields = json.loads(existing_answers) if isinstance(existing_answers, str) else existing_answers
+    input_html = "<div class='answers horizontal'>" if horizontal else "<div class='answers vertical'>"
+
+    for idx, answer_field in enumerate(answer_fields):
+        try:
+            input_type = answer_field['type']
+            field_name = f"{question['id']}_{idx + 1}_{input_type}"
+            existing_value = answer_field.get('value', '')
+            input_width = answer_field.get('width')
+            order_number = idx + 1 if not horizontal else None
+
+            if input_type == '---':
+                input_html += f"""
+                    <div class='hr-section'>
+                        <hr>
+                        <p style="font-size: 1.6rem; font-weight: bold; color: #0056b3; text-transform: uppercase; margin-top: 10px;">
+                            {existing_value}
+                        </p>
+                    </div>
+                """
+            else:
+                input_html += generate_input_html(input_type, field_name, existing_value, base_path, horizontal, order_number, input_width)
+        except Exception as e:
+            print(f"Error generating input HTML: {e}")
+            pass
+
+    input_html += "</div>"
+    html += input_html
+    html += "</div><hr>"
+    return html
+
+
+def generate_question_html_333(question, existing_answers, base_path, horizontal=False):
+    # Start the question block
+    html = f"<div class='question'><h6>{question['text']}</h6>"
+
+    # Check if there are existing answers
+    answer_fields = json.loads(existing_answers) if isinstance(existing_answers, str) else existing_answers
+    input_html = "<div class='answers horizontal'>" if horizontal else "<div class='answers vertical'>"
+
+    for idx, answer_field in enumerate(answer_fields):
+        try:
+            input_type = answer_field['type']
+            field_name = f"{question['id']}_{idx + 1}_{input_type}"
+            existing_value = answer_field.get('value', '')
+            input_width = answer_field.get('width')  # Extract width from the answer fields
+            order_number = idx + 1 if not horizontal else None
+
+            # Handle the `---` type specifically
+            if input_type == '---':
+                input_html += f"""
+                    <div class='hr-section'>
+                        <hr>
+                        <p class='hr-text'>{existing_value}</p>
+                    </div>
+                """
+            else:
+                # Generate input fields normally for other types
+                input_html += generate_input_html(input_type, field_name, existing_value, base_path, horizontal,
+                                                  order_number, input_width)
+        except Exception as e:
+            print(f"Error generating input HTML: {e}")
+            pass
+
+    input_html += "</div>"
+    html += input_html
+    html += "</div><hr>"
+    return html
+
+
+
 def generate_input_html(input_type, field_name, existing_value, base_path, horizontal=False, order_number=None, width=None):
+    css_class = "form-control"
+    horizontal_class = "horizontal" if horizontal else "vertical"
+    html = ""
+
+    # Define a style for width if provided, and additional flexbox alignment
+    width_style = f" style='width: {width}px; display: flex; align-items: center;'" if width else " style='display: flex; align-items: center;'"
+
+    if input_type == '---':
+        # Render a horizontal line with styled text
+        html += "<div class='hr-section'>"
+        html += f"<hr><p class='hr-text'>{existing_value}</p>"
+        html += "</div>"
+        return html  # Return immediately for `---` type
+
+    if order_number:
+        html += f"<div class='input-group {horizontal_class}'{width_style}>"
+        html += f"<label class='order-number'>{order_number}.</label> "
+    else:
+        order_number = extract_index_with_regex(field_name)
+        html += f"<div class='{horizontal_class}'{width_style}>"
+
+    input_css_class = f"{css_class} form-input"  # Use form-input to handle specific styling
+
+    # Input types logic
+    if input_type == 'CB':
+        checked = 'checked' if existing_value.lower() == 'on' else ''
+        html += f"<input type='hidden' name='{field_name}' value='off'>"
+        html += f"<input type='checkbox' class='form-check-input' id='{field_name}' name='{field_name}' value='on' {checked}>"
+        label_text = f"A.{order_number}" if order_number else "A "
+        html += f"<label class='form-check-label' for='{field_name}'>{label_text}</label>"
+
+    elif input_type == 'TLT':
+        html += f"<textarea name='{field_name}' class='{input_css_class}'>{existing_value}</textarea>"
+
+    elif input_type == 'NI(0-10)':
+        options = ''.join(
+            f"<option value='{num}' {'selected' if str(num) == existing_value else ''}>{num}</option>" for num in range(11))
+        html += f"<select name='{field_name}' class='{input_css_class}'>{options}</select>"
+
+    elif input_type == 'FILE':
+        if existing_value:
+            html += f"Current File: {existing_value}<br>"
+            html += f"""
+                <input type='file' name='{field_name}' class='{input_css_class}'>
+                <label for='{field_name}'>Replace Existing File</label>
+                <input type='checkbox' id='{field_name}_replace' name='replace_existing' value='{existing_value}'>
+                <br>
+                """
+        else:
+            html += f"""
+                <input type='file' name='{field_name}' class='{input_css_class}'>
+                <label for='{field_name}'>Upload File</label>
+                <br>
+                """
+
+    elif input_type == 'DD':
+        html += f"<input type='date' name='{field_name}' value='{existing_value}' class='{input_css_class}'>"
+
+    elif input_type == 'BYN':
+        yes_selected = "selected" if "Yes" == existing_value else ""
+        no_selected = "selected" if "No" == existing_value else ""
+        html += f"<select name='{field_name}' class='{input_css_class}'>"
+        html += f"<option value='Yes' {yes_selected}>Yes</option>"
+        html += f"<option value='No' {no_selected}>No</option></select>"
+
+    elif input_type == 'HML':
+        high_selected = "selected" if existing_value == 'H' else ""
+        medium_selected = "selected" if existing_value == 'M' else ""
+        low_selected = "selected" if existing_value == 'L' else ""
+        html += f"<select name='{field_name}' class='{input_css_class}'>"
+        html += f"<option value='H' {high_selected}>High</option>"
+        html += f"<option value='M' {medium_selected}>Medium</option>"
+        html += f"<option value='L' {low_selected}>Low</option></select>"
+
+    elif input_type == 'NUM':
+        html += f"<input type='number' name='{field_name}' value='{existing_value}' step='0.01' class='{input_css_class}'>"
+
+    elif input_type == 'INT':
+        intervals = db.session.query(Interval).all()
+        options = ''.join(
+            f"<option value='{interval.id}' {'selected' if str(interval.id) == existing_value else ''}>{interval.description}</option>"
+            for interval in intervals)
+        html += f"<select name='{field_name}' class='{input_css_class}'>{options}</select>"
+
+    else:
+        html += f"<input type='text' name='{field_name}' value='{existing_value}' class='{input_css_class}' autocomplete='off'>"
+
+    html += "</div><br>"
+    return html
+
+
+def generate_input_html_555(input_type, field_name, existing_value, base_path, horizontal=False, order_number=None, width=None):
+    css_class = "form-control"
+    horizontal_class = "horizontal" if horizontal else "vertical"
+    html = ""
+
+    # Handle the `---` type for horizontal line
+    if input_type == '---':
+        return "<hr>"  # Directly return the horizontal line and exit
+
+    # Define a style for width if provided, and additional flexbox alignment
+    width_style = f" style='width: {width}px; display: flex; align-items: center;'" if width else " style='display: flex; align-items: center;'"
+
+    if order_number:
+        html += f"<div class='input-group {horizontal_class}'{width_style}>"
+        html += f"<label class='order-number'>{order_number}.</label> "
+    else:
+        order_number = extract_index_with_regex(field_name)
+        html += f"<div class='{horizontal_class}'{width_style}>"
+
+    # Define specific CSS classes for inputs to ensure alignment
+    input_css_class = f"{css_class} form-input"  # Use form-input to handle specific styling
+
+    # Control specific HTML generation
+    if input_type == 'CB':
+        checked = 'checked' if existing_value.lower() == 'on' else ''
+        html += f"<input type='hidden' name='{field_name}' value='off'>"
+        html += f"<input type='checkbox' class='form-check-input' id='{field_name}' name='{field_name}' value='on' {checked}>"
+        label_text = f"A.{order_number}" if order_number else "A "  # Example label
+        html += f"<label class='form-check-label' for='{field_name}'>{label_text}</label>"
+
+    elif input_type == 'TLT':
+        html += f"<textarea name='{field_name}' class='{input_css_class}'>{existing_value}</textarea>"
+
+    elif input_type == 'NI(0-10)':
+        options = ''.join(
+            f"<option value='{num}' {'selected' if str(num) == existing_value else ''}>{num}</option>" for num in
+            range(11))
+        html += f"<select name='{field_name}' class='{input_css_class}'>{options}</select>"
+
+    elif input_type == 'FILE':
+        if existing_value:
+            html += f"Current File: {existing_value}<br>"
+            html += f"""
+                <input type='file' name='{field_name}' class='{input_css_class}'>
+                <label for='{field_name}'>Replace Existing File</label>
+                <input type='checkbox' id='{field_name}_replace' name='replace_existing' value='{existing_value}'>
+                <br>
+                """
+        else:
+            html += f"""
+                <input type='file' name='{field_name}' class='{input_css_class}'>
+                <label for='{field_name}'>Upload File</label>
+                <br>
+                """
+
+    elif input_type == 'DD':
+        html += f"<input type='date' name='{field_name}' value='{existing_value}' class='{input_css_class}'>"
+
+    elif input_type == 'BYN':
+        yes_selected = "selected" if "Yes" == existing_value else ""
+        no_selected = "selected" if "No" == existing_value else ""
+        html += f"<select name='{field_name}' class='{input_css_class}'>"
+        html += f"<option value='Yes' {yes_selected}>Yes</option>"
+        html += f"<option value='No' {no_selected}>No</option></select>"
+
+    elif input_type == 'HML':
+        high_selected = "selected" if existing_value == 'H' else ""
+        medium_selected = "selected" if existing_value == 'M' else ""
+        low_selected = "selected" if existing_value == 'L' else ""
+        html += f"<select name='{field_name}' class='{input_css_class}'>"
+        html += f"<option value='H' {high_selected}>High</option>"
+        html += f"<option value='M' {medium_selected}>Medium</option>"
+        html += f"<option value='L' {low_selected}>Low</option></select>"
+
+    elif input_type == 'NUM':
+        html += f"<input type='number' name='{field_name}' value='{existing_value}' step='0.01' class='{input_css_class}'>"
+
+    elif input_type == 'INT':
+        intervals = db.session.query(Interval).all()
+        options = ''.join(
+            f"<option value='{interval.id}' {'selected' if str(interval.id) == existing_value else ''}>{interval.description}</option>"
+            for interval in intervals)
+        html += f"<select name='{field_name}' class='{input_css_class}'>{options}</select>"
+
+    else:
+        html += f"<input type='text' name='{field_name}' value='{existing_value}' class='{input_css_class}' autocomplete='off'>"
+
+    html += "</div><br>"
+    return html
+
+
+def generate_input_html_222(input_type, field_name, existing_value, base_path, horizontal=False, order_number=None, width=None):
     css_class = "form-control"
     horizontal_class = "horizontal" if horizontal else "vertical"
     html = ""
@@ -1293,7 +1503,7 @@ def generate_input_html(input_type, field_name, existing_value, base_path, horiz
 
 
 
-def generate_input_html222(input_type, field_name, existing_value, base_path, horizontal=False, order_number=None, width=None):
+def generate_input_html_111(input_type, field_name, existing_value, base_path, horizontal=False, order_number=None, width=None):
     css_class = "form-control"
     horizontal_class = "horizontal" if horizontal else "vertical"
     html = ""

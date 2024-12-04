@@ -6520,6 +6520,13 @@ class QuestionForm(ModelView):
                            'text': 'Question text', 'answer_type': 'Type of answer field(s)', 'answer_width': 'Width of answer field(s)'}
 
     column_default_sort = ('question_id', True)  # Sort by question_id (ascending)
+
+    form_args = {
+        'answer_fields': {
+            'validators': [Length(max=10000)]  # Adjust as needed
+        }
+    }
+
     @action('clone', 'Clone', 'Are you sure you want to clone selected records?')
     def action_clone(self, ids):
         for id in ids:

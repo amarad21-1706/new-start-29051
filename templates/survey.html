@@ -150,6 +150,24 @@
         color: #cccbb6; /* Light font color */
         border: 1px solid #555; /* Border color */
     }
+
+    .hr-section {
+        text-align: center;
+        margin: 10px 0;
+    }
+
+    .hr-section hr {
+        border: 1px solid #aaa;
+        margin-bottom: 5px;
+    }
+
+    .hr-section .hr-text {
+        font-size: 1.6rem; /* Larger font size */
+        font-weight: bold; /* Bold text */
+        color: #ffeeba; /* Custom color (example: blue) */
+        text-transform: uppercase; /* Optional: Make the text uppercase for emphasis */
+        margin-top: 10px;
+    }
 </style>
 
 {% with messages = get_flashed_messages(with_categories=true) %}
