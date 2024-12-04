@@ -1151,7 +1151,7 @@ def generate_question_html(question, existing_answers, base_path, horizontal=Fal
                 input_html += f"""
                     <div class='hr-section'>
                         <hr>
-                        <p style="font-size: 1.6rem; font-weight: bold; color: #0056b3; text-transform: uppercase; margin-top: 10px;">
+                        <p style="font-size: 2rem; font-weight: bold; color: #0056b3; text-transform: uppercase; margin-top: 10px;">
                             {existing_value}
                         </p>
                     </div>

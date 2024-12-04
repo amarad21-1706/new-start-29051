@@ -5989,9 +5989,10 @@ def create_admin_views(app, intervals):
             ContenziosiDataView(model=BaseData, session=db.session, name='Contenziosi', intervals=intervals, area_id=1,
                                 subarea_id=3, endpoint='contenziosi_data_view'))
 
-        admin_app1.add_view(
-            ContingenciesDataView(model=BaseData, session=db.session, name='Contingencies', intervals=intervals, area_id=1,
-                                subarea_id=4, endpoint='contingencies_data_view'))
+        # admin_app1.add_view(
+        #     ContingenciesDataView(model=BaseData, session=db.session, name='Contingencies', intervals=intervals, area_id=1,
+        #                         subarea_id=4, endpoint='contingencies_data_view'))
+
         # Conditionally add the "Procedura di settlement fisico" tab
         if 'gas' in company_type.lower():
             admin_app1.add_view(
