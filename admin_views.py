@@ -67,8 +67,8 @@ from config.custom_fields import CustomFileUploadField  # Import the custom fiel
 
 from models.user import (Users, UserRoles, Role, Table, Questionnaire, Question,
                                 QuestionnaireQuestions, BaseData, Product, Plan, PlanProducts,
-                                Answer, Company, Area, Subarea, AreaSubareas,
-                                QuestionnaireCompanies, CompanyUsers, Status, Lexic,
+                                Answer, Company, CompanyUsers, Area, Subarea, AreaSubareas,
+                                QuestionnaireCompanies, Status, Lexic,
                                 Interval, Subject, Cart, AuditLog, Post, Ticket, StepQuestionnaire,
                                 Workflow, Step, BaseData, BaseDataInline, WorkflowSteps, WorkflowBaseData,
                                 DocumentWorkflow, DocumentWorkflowHistory,
@@ -170,7 +170,7 @@ class DocumentsView(ModelView):
     form_columns = ['number_of_doc', 'date_of_doc', 'ft1', 'subject', 'lexic', 'fc1', 'file_path', 'no_action']
 
     form_excluded_columns = (
-        'company_id', 'status_id', 'created_by', 'created_on', 'updated_on', 'user_id',
+        'company_id', 'status_id', 'created_by', 'created_at', 'updated_at', 'user_id',
         # You can add more columns that should be excluded here
     )
 
@@ -182,7 +182,7 @@ class DocumentsView(ModelView):
 
     # Define custom labels for columns
     column_labels = {
-        'number_of_doc': 'Document Number',
+        'number_of_doc': 'Document Number/Code',
         'date_of_doc': 'Document Date',
         'ft1': 'Document Name',
         'fc1': 'Comments',
@@ -197,7 +197,7 @@ class DocumentsView(ModelView):
                 BaseData.area_id.in_([1, 3]),
                 BaseData.record_type == 'document'
             )
-        ).order_by(BaseData.updated_on.desc())
+        ).order_by(BaseData.updated_at.desc())
 
     # Filtering based on user roles
     def get_list(self, page, sort_field, sort_desc, search, filters, execute=True, **kwargs):
@@ -216,7 +216,7 @@ class DocumentsView(ModelView):
 
     # Add file_path with a file upload widget and no_action boolean, add date_of_doc with date picker widget
     form_extra_fields = {
-        'number_of_doc': StringField('Document Number', validators=[DataRequired()]),
+        'number_of_doc': StringField('Document Number/Code', validators=[DataRequired()]),
         'ft1': StringField('Document Name', validators=[DataRequired()]),
         'fc1': StringField('Comments'),
         'file_path': FileField('File Path'),  # Removed base_path
@@ -246,12 +246,12 @@ class DocumentsView(ModelView):
             # Automatically set the company_id and user_id based on the current user's data
             model.user_id = session.get('user_id')
             model.company_id = session.get('company_id')  # Assuming company_id is stored in session
-            model.created_on = datetime.utcnow()
+            model.created_at = datetime.utcnow()
             model.area_id = 3
             model.subarea_id = 1
             model.record_type = 'document'
 
-        model.updated_on = datetime.utcnow()
+        model.updated_at = datetime.utcnow()
 
         # Example of ensuring correct types
         if form.number_of_doc.data:
@@ -345,8 +345,8 @@ class BaseDataView(ModelView):
 
     def on_model_change(self, form, model, is_created):
         if is_created:
-            model.created_on = datetime.utcnow()
-        model.updated_on = datetime.utcnow()
+            model.created_at = datetime.utcnow()
+        model.updated_at = datetime.utcnow()
 
         # Example of ensuring correct types
         if form.number_of_doc.data:
@@ -592,17 +592,16 @@ class DocumentsBaseDataView(ModelView):
     column_list = [
         'number_of_doc', 'date_of_doc', 'company', 'user',
         'fi0', 'interval', 'interval_ord', 'record_type',
-        'area', 'subarea', 'subject', 'lexic', 'file_path', 'no_action', 'fc1', 'created_on', 'updated_on',
+        'area', 'subarea', 'subject', 'lexic', 'file_path', 'no_action', 'fc1',
         'dossiers'
     ]
 
     # Add labels for better readability
     column_labels = {
-        'number_of_doc': 'Document #', 'date_of_doc': 'Date', 'company': 'Company', 'user': 'User',
+        'number_of_doc': 'Document Number/Code', 'date_of_doc': 'Date', 'company': 'Company', 'user': 'User',
         'fi0': 'Year', 'interval_id': 'Interval', 'interval_ord': 'Interval Order', 'record_type': 'Type',
         'area_id': 'Area', 'subarea_id': 'Subarea', 'subject_id': 'Subject', 'lexic_id': 'Action',  # Renamed
-        'file_path': 'File Path', 'no_action': 'No Action', 'fc1': 'Comments', 'created_on': 'Created On',
-        'updated_on': 'Last Update',  # Renamed
+        'file_path': 'File Path', 'no_action': 'No Action', 'fc1': 'Comments',
         'dossiers': 'Audit or Remediation Info'
     }
 
@@ -612,7 +611,7 @@ class DocumentsBaseDataView(ModelView):
         'interval', 'interval_ord',
         'area', 'subarea', 'subject', 'lexic',  # Renamed
         'file_path', 'no_action',  # Ensure no_action comes immediately after file_path
-        'fc1', 'created_on', 'updated_on',  # Renamed
+        'fc1',
         'dossiers'
     ]
 
@@ -633,8 +632,6 @@ class DocumentsBaseDataView(ModelView):
         'company': {'readonly': True},
         'user': {'readonly': True},
         'audit_log': {'readonly': True},
-        'created_on': {'readonly': True},
-        'updated_on': {'readonly': True}
     }
 
     # Add a column formatter for dossier_info
@@ -662,7 +659,7 @@ class DocumentsBaseDataView(ModelView):
             (BaseData.area_id.in_([1, 3])) | (BaseData.record_type == 'document')
         )
 
-        return query.order_by(BaseData.updated_on.desc())
+        return query.order_by(BaseData.updated_at.desc())
 
     def scaffold_form(self):
         """
@@ -680,12 +677,11 @@ class DocumentsBaseDataView(ModelView):
         return form_class
 
     def on_model_change(self, form, model, is_created):
-        # Automatically set fields like company_id, user_id, and updated_on
+        # Automatically set fields like company_id, user_id, and updated_at
         if is_created:
             model.company_id = session['company_id']
             model.user_id = current_user.id
 
-        model.updated_on = datetime.now()
         model.fi0 = form.date_of_doc.data.year if form.date_of_doc.data else datetime.now().year
 
     @action('attach_to_audit', 'Attach to Audit',
@@ -756,8 +752,8 @@ class DocumentsBaseDataView_kookay(ModelView):
         'interval_name': 'Interval', 'interval_ord': 'Interv.#',
         'record_type': 'Type', 'area_name': 'Area', 'subarea_name': 'Subarea',
         'data_type': 'Data Type', 'subject_name': 'Subject', 'legal_name': 'Doc Type',
-        'file_path': 'File', 'created_on': 'Date created', 'number_of_doc': 'Doc. #',
-        'fc1': 'Note', 'no_action': 'No doc.'
+        'file_path': 'File', 'number_of_doc': 'Doc. #',
+        'no_action': 'No doc.', 'fc1': 'Note',
     }
 
     form_columns = [
@@ -766,12 +762,12 @@ class DocumentsBaseDataView_kookay(ModelView):
         'no_action', 'fc1'
     ]
 
-    column_default_sort = ('created_on', True)
+    column_default_sort = ('created_at', True)
     column_searchable_list = ('company_id', 'user_id', 'fi0', 'subject_id', 'legal_document_id', 'file_path')
     column_filters = ('company_id', 'user_id', 'fi0', 'subject_id', 'legal_document_id', 'file_path')
 
     form_excluded_columns = (
-    'company_id', 'user_id', 'status_id', 'created_by', 'created_on', 'updated_on', 'record_type')
+    'company_id', 'user_id', 'status_id', 'created_by', 'record_type')
 
     form_extra_fields = {
         'file_path': FileField('Attachment', render_kw={'class': 'form-control'}),
@@ -806,7 +802,7 @@ class DocumentsBaseDataView_kookay(ModelView):
         print("Scaffold Form - Initializing form fields")
 
         print("Scaffold Form - Adding number_of_doc field")
-        form_class.number_of_doc = IntegerField('Document Number', render_kw={'class': 'form-control'})
+        form_class.number_of_doc = IntegerField('Document Number/Code', render_kw={'class': 'form-control'})
 
         print("Scaffold Form - Adding date_of_doc field")
         form_class.date_of_doc = DateField('Date of Document', format='%Y-%m-%d', render_kw={'class': 'form-control'})
@@ -912,10 +908,6 @@ class DocumentsBaseDataView_kookay(ModelView):
         # Automatically set fields upon creation
         if is_created:
             model.created_by = current_user.id  # Set the creator as the current user
-            model.created_on = datetime.now()
-
-        # Set the updated timestamp on every change
-        model.updated_on = datetime.now()
 
         # Set company_id from the session
         model.company_id = session.get('company_id')  # Ensure company_id is set from the session
@@ -993,7 +985,7 @@ class DocumentsBaseDataView_kookay(ModelView):
             (BaseData.area_id.in_([1, 3])) | (BaseData.record_type == 'document')
         )
 
-        return query.order_by(BaseData.updated_on.desc())
+        return query.order_by(BaseData.updated_at.desc())
 
     def get_list(self, page, sort_column, sort_desc, search, filters, page_size=None):
         count, data = super().get_list(page, sort_column, sort_desc, search, filters, page_size)
@@ -1164,7 +1156,7 @@ class UnassignedDocumentsBaseDataView(ModelView):
         'interval_name', 'interval_ord', 'fi0',
         'record_type', 'area_name', 'subarea_name',
         'data_type', 'subject_name', 'legal_name',
-        'file_path', 'created_on', 'number_of_doc',
+        'file_path', 'number_of_doc',
         'fc1', 'no_action'
     ]
 
@@ -1172,14 +1164,14 @@ class UnassignedDocumentsBaseDataView(ModelView):
                      'interval_name': 'Interval', 'interval_ord': 'Interv.#', 'fi0': 'Year',
                      'record_type': 'Type', 'area_name': 'Area', 'subarea_name': 'Subarea',
                      'data_type': 'Data Type', 'subject_name': 'Subject', 'legal_name': 'Doc Type',
-                     'file_path': 'File', 'created_on': 'Date created', 'number_of_doc': 'Doc. #',
+                     'file_path': 'File', 'number_of_doc': 'Doc. #',
                      'fc1': 'Note', 'no_action': 'No doc.'}
 
-    column_default_sort = ('created_on', True)
+    column_default_sort = ('created_at', True)
     column_searchable_list = ('company_id', 'user_id', 'fi0', 'subject_id', 'legal_document_id', 'file_path')
     column_filters = ('company_id', 'user_id', 'fi0', 'subject_id', 'legal_document_id', 'file_path')
 
-    form_excluded_columns = ('company_id', 'status_id', 'created_by', 'updated_on')
+    form_excluded_columns = ('company_id', 'status_id', 'created_by')
 
     def get_query(self):
         query = super(UnassignedDocumentsBaseDataView, self).get_query()
@@ -1208,8 +1200,8 @@ class UnassignedDocumentsBaseDataView(ModelView):
             (BaseData.area_id.in_([1, 3])) | (BaseData.record_type == 'document')
         )
 
-        # Sort by BaseData.updated_on DESC (if BaseData has an updated_on field) or date_of_doc DESC
-        query = query.order_by(BaseData.updated_on.desc(), BaseData.date_of_doc.desc())
+        # Sort by BaseData.updated_at DESC (if BaseData has an updated_at field) or date_of_doc DESC
+        query = query.order_by(BaseData.updated_at.desc(), BaseData.date_of_doc.desc())
 
         return query
 
@@ -1438,8 +1430,8 @@ class DocumentsBaseDataDetails(ModelView):
             (BaseData.area_id.in_([1, 3])) | (BaseData.record_type == 'document')
         )
 
-        # Sort by updated_on from DocumentWorkflow and date_of_doc from BaseData
-        query = query.order_by(BaseData.updated_on.desc(), DocumentWorkflow.deadline_date.desc())
+        # Sort by updated_at from DocumentWorkflow and date_of_doc from BaseData
+        query = query.order_by(BaseData.updated_at.desc(), DocumentWorkflow.deadline_date.desc())
 
         return query
 
@@ -1454,9 +1446,6 @@ class DocumentsBaseDataDetails(ModelView):
 
         # Other logic if necessary
         super().on_model_change(form, model, is_created)
-
-        if is_created:
-            model.created_on = datetime.now()  # Set created_on date if this is a new record
         return model
 
     def create_form(self):
@@ -1661,7 +1650,7 @@ class Tabella21_dataView(ModelView):
     # Adjust based on your model structure
 
     # Specify fields to be excluded from the form
-    form_excluded_columns = ('user_id', 'status_id', 'created_by', 'created_on', 'updated_on')
+    form_excluded_columns = ('user_id', 'status_id', 'created_by')
 
     column_formatters = {
         'company_id': lambda view, context, model, name: (
@@ -1742,7 +1731,6 @@ class Tabella21_dataView(ModelView):
                     pass
                 model.company_id = company_id  # Set the company_id
                 model.created_by = created_by  # Set the cr by
-                model.created_on = datetime.now()  # Set the created_on
             except AttributeError:
                 pass
 
@@ -1898,7 +1886,6 @@ class Tabella21_dataView(ModelView):
         model.fi0 = fi0_value
         model.fi1 = fi1_value
         model.fi2 = fi2_value
-        model.updated_on = datetime.now()  # Set the created_on
         model.company_id = company_id
         model.fc1 = fc1_value
 
@@ -1953,7 +1940,7 @@ class Tabella22_dataView(ModelView):
     column_filters = ('company_id', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fc1')  # Adjust based on your model structure
 
     # Specify fields to be excluded from the form
-    form_excluded_columns = ('user_id', 'status_id', 'created_by', 'created_on', 'updated_on')
+    form_excluded_columns = ('user_id', 'status_id', 'created_by')
 
     column_formatters = {
         'company_id': lambda view, context, model, name: (
@@ -2028,8 +2015,6 @@ class Tabella22_dataView(ModelView):
                     company_id = None
                     pass
                 model.company_id = company_id  # Set the company_id
-                model.created_by = created_by  # Set the cr by
-                model.created_on = datetime.now()  # Set the created_on
             except AttributeError:
                 pass
             return model
@@ -2086,7 +2071,6 @@ class Tabella22_dataView(ModelView):
             # - Set default values
             # - Send notification
             # Apply your custom logic to set data_type
-            model.created_on = datetime.now()  # Set the created_on
             pass
         else:
             # Handle existing model edit:
@@ -2160,7 +2144,6 @@ class Tabella22_dataView(ModelView):
         model.subject_id = subject_id
         model.interval_ord = form.interval_ord.data
         model.fi0 = form.fi0.data
-        model.updated_on = datetime.now()  # Set the created_on
         model.company_id = company_id
 
         if result == False:
@@ -2224,7 +2207,7 @@ class Tabella24_dataView(ModelView):
     # Adjust based on your model structure
 
     # Specify fields to be excluded from the form
-    form_excluded_columns = ('user_id', 'status_id', 'created_by', 'created_on', 'updated_on')
+    form_excluded_columns = ('user_id', 'status_id', 'created_by')
 
     column_formatters = {
         'company_id': lambda view, context, model, name: (
@@ -2298,7 +2281,6 @@ class Tabella24_dataView(ModelView):
                     pass
                 model.company_id = company_id  # Set the company_id
                 model.created_by = created_by  # Set the cr by
-                model.created_on = datetime.now()  # Set the created_on
             except AttributeError:
                 pass
             return model
@@ -2361,7 +2343,6 @@ class Tabella24_dataView(ModelView):
             # - Set default values
             # - Send notification
             # Apply your custom logic to set data_type
-            model.created_on = datetime.now()  # Set the created_on
             pass
         else:
             # Handle existing model edit:
@@ -2440,7 +2421,6 @@ class Tabella24_dataView(ModelView):
         model.subject_id = subject_id
         model.interval_ord = form.interval_ord.data
         model.fi0 = form.fi0.data
-        model.updated_on = datetime.now()  # Set the created_on
         model.company_id = company_id
 
         if result == False:
@@ -2529,7 +2509,7 @@ class Tabella25_dataView(ModelView):
     column_searchable_list = ('company_id', 'fi0', 'interval_ord', 'subject.name', 'fi1', 'fi2', 'fi4', 'fi5', 'fc1')
     column_filters = ('company_id', 'fi0', 'interval_ord', 'subject.name', 'fi1', 'fi2', 'fi4', 'fi5', 'fc1')
 
-    form_excluded_columns = ('user_id', 'status_id', 'created_by', 'created_on', 'updated_on')
+    form_excluded_columns = ('user_id', 'status_id', 'created_by')
 
     # formaters*
 
@@ -2641,7 +2621,6 @@ class Tabella25_dataView(ModelView):
                 model.record_type = 'control_area'
                 model.data_type = self.subarea_name
                 model.created_by = created_by
-                model.created_on = datetime.now()
 
                 model.area_id = self.area_id
                 model.subarea_id = self.subarea_id
@@ -2700,12 +2679,6 @@ class Tabella25_dataView(ModelView):
         if fi0_value > current_year:
             raise ValidationError(
                 f"Year in fi0 field cannot be in the future. Please enter a year less than or equal to {current_year}.")
-
-        if is_created:
-            model.created_on = datetime.now()
-            pass
-        else:
-            pass
 
         user_id = current_user.id
         try:
@@ -2771,7 +2744,6 @@ class Tabella25_dataView(ModelView):
         model.subject_id = subject_id
         model.interval_ord = form.interval_ord.data
         model.fi0 = form.fi0.data
-        model.updated_on = datetime.now()
         model.company_id = company_id
 
         # calculate totals
@@ -2898,7 +2870,7 @@ class Tabella26_dataView(ModelView):
                       'fi6', 'fi7', 'fi8', 'fi9', 'fi10', 'fi11', 'fc1')
 
     # Specify fields to be excluded from the form
-    form_excluded_columns = ('user_id', 'status_id', 'created_by', 'created_on', 'updated_on')
+    form_excluded_columns = ('user_id', 'status_id', 'created_by')
 
     column_formatters = {
         'fn1': lambda view, context, model, name: "%.2f" % model.fn1 if model.fn1 is not None else None,
@@ -3011,7 +2983,6 @@ class Tabella26_dataView(ModelView):
                     pass
                 model.company_id = company_id  # Set the company_id
                 model.created_by = created_by  # Set the cr by
-                model.created_on = datetime.now()  # Set the created_on
             except AttributeError:
                 pass
             return model
@@ -3038,7 +3009,6 @@ class Tabella26_dataView(ModelView):
             # - Set default values
             # - Send notification
             # Apply your custom logic to set data_type
-            model.created_on = datetime.now()  # Set the created_on
             pass
         else:
             # Handle existing model edit:
@@ -3155,7 +3125,6 @@ class Tabella26_dataView(ModelView):
         model.subject_id = subject_id
         model.interval_ord = form.interval_ord.data
         model.fi0 = form.fi0.data
-        model.updated_on = datetime.now()  # Set the created_on
         model.company_id = company_id
 
         if result == False:
@@ -3226,7 +3195,7 @@ class Tabella27_dataView(ModelView):
     # Adjust based on your model structure
 
     # Specify fields to be excluded from the form
-    form_excluded_columns = ('user_id', 'status_id', 'created_by', 'created_on', 'updated_on')
+    form_excluded_columns = ('user_id', 'status_id', 'created_by')
 
     column_formatters = {
         'fn1': lambda view, context, model, name: "%.2f" % model.fn1 if model.fn1 is not None else None,
@@ -3290,7 +3259,6 @@ class Tabella27_dataView(ModelView):
                     pass
                 model.company_id = company_id  # Set the company_id
                 model.created_by = created_by  # Set the cr by
-                model.created_on = datetime.now()  # Set the created_on
             except AttributeError:
                 pass
             return model
@@ -3352,7 +3320,6 @@ class Tabella27_dataView(ModelView):
             # - Set default values
             # - Send notification
             # Apply your custom logic to set data_type
-            model.created_on = datetime.now()  # Set the created_on
             pass
         else:
             # Handle existing model edit:
@@ -3445,7 +3412,6 @@ class Tabella27_dataView(ModelView):
         model.subject_id = subject_id
         model.interval_ord = form.interval_ord.data
         model.fi0 = form.fi0.data
-        model.updated_on = datetime.now()  # Set the created_on
         model.company_id = company_id
 
         if result == False:
@@ -3554,7 +3520,7 @@ class DocumentUploadView(BaseDataViewCommon):
     column_filters = ('company_id', 'ft1', 'subject', 'fc2', 'no_action')
 
     # Fields to exclude from the form view
-    form_excluded_columns = ('user_id', 'status_id', 'created_on', 'updated_on', 'data_type')
+    form_excluded_columns = ('user_id', 'status_id', 'data_type')
 
     # Define column formatters to display the first 5 letters of the company name
     column_formatters = {
@@ -3579,7 +3545,6 @@ class DocumentUploadView(BaseDataViewCommon):
             # Custom logic if a new model is created
             if is_created:
                 # Example: Set some initial values or states for the new record
-                model.created_on = datetime.utcnow()
                 flash(_('New document upload created successfully.'), 'success')
             else:
                 flash(f'Document upload updated successfully.', 'success')
@@ -3655,7 +3620,7 @@ class CombinedDocumentAdminView(BaseDataViewCommon):
     column_list = [
         'id', 'company_name', 'user_name', 'interval_name', 'interval_ord', 'fi0',
         'record_type', 'area_name', 'subarea_name', 'data_type', 'subject_name',
-        'legal_name', 'file_path', 'created_on', 'number_of_doc', 'fc1', 'no_action'
+        'legal_name', 'file_path', 'number_of_doc', 'fc1', 'no_action'
     ]
 
     column_labels = {
@@ -3663,7 +3628,7 @@ class CombinedDocumentAdminView(BaseDataViewCommon):
         'interval_name': 'Interval', 'interval_ord': 'Interv.#', 'fi0': 'Year',
         'record_type': 'Type', 'area_name': 'Area', 'subarea_name': 'Subarea',
         'data_type': 'Data Type', 'subject_name': 'Subject', 'legal_name': 'Doc Type',
-        'file_path': 'File', 'created_on': 'Date created', 'number_of_doc': 'Doc. #',
+        'file_path': 'File', 'number_of_doc': 'Doc. #',
         'fc1': 'Note', 'no_action': 'No doc.'
     }
 
@@ -3681,7 +3646,7 @@ class CombinedDocumentAdminView(BaseDataViewCommon):
                 self.model.area_id.in_([1, 3]),
                 self.model.record_type == 'document'
             )
-        ).order_by(desc(self.model.updated_on))
+        ).order_by(desc(self.model.updated_at))
 
         if current_user.is_authenticated:
             if current_user.has_role('Admin'):
@@ -3721,7 +3686,6 @@ class CombinedDocumentAdminView(BaseDataViewCommon):
                     if next_step:
                         # Update the current workflow to the next step
                         current_workflow.step_id = next_step.id
-                        current_workflow.updated_on = datetime.utcnow()
                         db.session.commit()
                         flash(_('Document %(doc_id)s transitioned to next step %(step_name)s.',
                                 doc_id=document.id,
@@ -3836,7 +3800,7 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
     column_filters = ('company_id', 'ft1', 'subject', 'fc2', 'no_action')
 
     # Fields to exclude from the form view
-    form_excluded_columns = ('user_id', 'status_id', 'created_on', 'updated_on', 'data_type')
+    form_excluded_columns = ('user_id', 'status_id', 'data_type')
 
     # Define column formatters to display the first 5 letters of the company name
     column_formatters = {
@@ -3873,7 +3837,7 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
             ),
             self.model.subarea_id == self.subarea_id  # Filtering by exact subarea_id
         ).order_by(
-            desc(self.model.updated_on)  # Then order by created_on DESC
+            desc(self.model.updated_at)  # Then order by created_at DESC
         )
 
         if current_user.is_authenticated:
@@ -4221,7 +4185,7 @@ class AttiDataView(BaseDataView):
 
     column_labels = {
         'company_id': 'Comp.',
-        'number_of_doc': 'Nr. documento',
+        'number_of_doc': 'Codice Documento',
         'date_of_doc': 'Data documento',
         'file_path': 'Allegato',
         'no_action': 'Conferma assenza doc.',
@@ -4233,7 +4197,7 @@ class AttiDataView(BaseDataView):
 
     column_descriptions = {
         'company_id': 'Comp.',
-        'number_of_doc': 'Nr. documento allegato',
+        'number_of_doc': 'Numero, protocollo, codice interno documento, numero registro o fascicolo ecc.',
         'date_of_doc': 'Data documento allegato',
         'file_path': 'Allegato',
         'no_action': 'Dichiarazione di assenza di documenti da allegare (1)',
@@ -4244,7 +4208,7 @@ class AttiDataView(BaseDataView):
     }
 
     column_filters = ('company_id', 'number_of_doc', 'date_of_doc', 'subject_id', 'fi0', 'interval_ord', 'fc2')
-    form_excluded_columns = ('company_id', 'user_id', 'status_id', 'created_on', 'updated_on', 'data_type')
+    form_excluded_columns = ('company_id', 'user_id', 'status_id', 'data_type')
 
     column_formatters = {
         'company_id': lambda view, context, model, name: (
@@ -4359,7 +4323,6 @@ class AttiDataView(BaseDataView):
 
         if is_created:
             model.status_id = 1
-            model.created_on = datetime.now()
         else:
             model.status_id = 14 # Updated
 
@@ -4415,7 +4378,7 @@ class ContenziosiDataView(BaseDataView):
 
     column_labels = {
         'company_id': 'Comp.',
-        'number_of_doc': 'Nr. documento',
+        'number_of_doc': 'Codice documento',
         'date_of_doc': 'Data documento',
         'file_path': 'Allegato',
         'no_action': 'Conferma assenza doc.',
@@ -4427,7 +4390,7 @@ class ContenziosiDataView(BaseDataView):
 
     column_descriptions = {
         'company_id': 'Comp.',
-        'number_of_doc': 'Nr. documento allegato',
+        'number_of_doc': 'Numero, protocollo, codice documento, numero registro o fascicolo ecc.',
         'date_of_doc': 'Data documento allegato',
         'file_path': 'Allegato',
         'no_action': 'Dichiarazione di assenza di documenti da allegare (1)',
@@ -4438,7 +4401,7 @@ class ContenziosiDataView(BaseDataView):
     }
 
     column_filters = ('company_id', 'number_of_doc', 'date_of_doc', 'subject_id', 'fi0', 'interval_ord', 'fc2')
-    form_excluded_columns = ('company_id', 'user_id', 'status_id', 'created_on', 'updated_on', 'data_type')
+    form_excluded_columns = ('company_id', 'user_id', 'status_id', 'data_type')
 
     column_formatters = {
         'company_id': lambda view, context, model, name: (
@@ -4552,7 +4515,6 @@ class ContenziosiDataView(BaseDataView):
 
         if is_created:
             model.status_id = 1
-            model.created_on = datetime.now()
         else:
             model.status_id = 14 # Updated
 
@@ -4607,7 +4569,7 @@ class ContingenciesDataView(BaseDataView):
 
     column_labels = {
         'company_id': 'Comp.',
-        'number_of_doc': 'Nr. documento',
+        'number_of_doc': 'Codice documento',
         'date_of_doc': 'Data documento',
         'file_path': 'Allegato',
         'no_action': 'Conferma assenza doc.',
@@ -4619,7 +4581,7 @@ class ContingenciesDataView(BaseDataView):
 
     column_descriptions = {
         'company_id': 'Comp.',
-        'number_of_doc': 'Nr. documento allegato',
+        'number_of_doc': 'Numero, protocollo, codice documento, numero registro o fascicolo ecc.',
         'date_of_doc': 'Data documento allegato',
         'file_path': 'Allegato',
         'no_action': 'Dichiarazione di assenza di documenti da allegare (1)',
@@ -4630,7 +4592,7 @@ class ContingenciesDataView(BaseDataView):
     }
 
     column_filters = ('company_id', 'number_of_doc', 'date_of_doc', 'subject_id', 'fi0', 'interval_ord', 'fc2')
-    form_excluded_columns = ('company_id', 'user_id', 'status_id', 'created_on', 'updated_on', 'data_type')
+    form_excluded_columns = ('company_id', 'user_id', 'status_id', 'data_type')
 
     column_formatters = {
         'company_id': lambda view, context, model, name: (
@@ -4744,7 +4706,6 @@ class ContingenciesDataView(BaseDataView):
 
         if is_created:
             model.status_id = 1
-            model.created_on = datetime.now()
         else:
             model.status_id = 14 # Updated
 
@@ -4800,7 +4761,7 @@ class IniziativeDsoAsDataView(BaseDataView):
 
     column_labels = {
         'company_id': 'Comp.',
-        'number_of_doc': 'Nr. documento',
+        'number_of_doc': 'Codice documento',
         'date_of_doc': 'Data documento',
         'file_path': 'Allegato',
         'no_action': 'Conferma assenza doc.',
@@ -4812,7 +4773,7 @@ class IniziativeDsoAsDataView(BaseDataView):
 
     column_descriptions = {
         'company_id': 'Comp.',
-        'number_of_doc': 'Nr. documento allegato',
+        'number_of_doc': 'Numero, protocollo, codice documento, numero registro o fascicolo ecc.',
         'date_of_doc': 'Data documento allegato',
         'file_path': 'Allegato',
         'no_action': 'Dichiarazione di assenza di documenti da allegare (1)',
@@ -4823,7 +4784,7 @@ class IniziativeDsoAsDataView(BaseDataView):
     }
 
     column_filters = ('company_id', 'number_of_doc', 'date_of_doc', 'subject_id', 'fi0', 'interval_ord', 'fc2')
-    form_excluded_columns = ('company_id', 'user_id', 'status_id', 'created_on', 'updated_on', 'data_type')
+    form_excluded_columns = ('company_id', 'user_id', 'status_id', 'data_type')
 
     column_formatters = {
         'company_id': lambda view, context, model, name: (
@@ -4936,7 +4897,6 @@ class IniziativeDsoAsDataView(BaseDataView):
 
         if is_created:
             model.status_id = 1
-            model.created_on = datetime.now()
         else:
             model.status_id = 14 # Updated
 
@@ -4991,7 +4951,7 @@ class IniziativeAsDsoDataView(BaseDataView):
 
     column_labels = {
         'company_id': 'Comp.',
-        'number_of_doc': 'Nr. documento',
+        'number_of_doc': 'Codice documento',
         'date_of_doc': 'Data documento',
         'file_path': 'Allegato',
         'no_action': 'Conferma assenza doc.',
@@ -5003,7 +4963,7 @@ class IniziativeAsDsoDataView(BaseDataView):
 
     column_descriptions = {
         'company_id': 'Comp.',
-        'number_of_doc': 'Nr. documento allegato',
+        'number_of_doc': 'Numero, protocollo, codice documento, numero registro o fascicolo ecc.',
         'date_of_doc': 'Data documento allegato',
         'file_path': 'Allegato',
         'no_action': 'Dichiarazione di assenza di documenti da allegare (1)',
@@ -5014,7 +4974,7 @@ class IniziativeAsDsoDataView(BaseDataView):
     }
 
     column_filters = ('company_id', 'number_of_doc', 'date_of_doc', 'subject_id', 'fi0', 'interval_ord', 'fc2')
-    form_excluded_columns = ('company_id', 'user_id', 'status_id', 'created_on', 'updated_on', 'data_type')
+    form_excluded_columns = ('company_id', 'user_id', 'status_id', 'data_type')
 
     column_formatters = {
         'company_id': lambda view, context, model, name: (
@@ -5128,7 +5088,6 @@ class IniziativeAsDsoDataView(BaseDataView):
 
         if is_created:
             model.status_id = 1
-            model.created_on = datetime.now()
         else:
             model.status_id = 14 # Updated
 
@@ -5183,7 +5142,7 @@ class IniziativeDsoDsoDataView(BaseDataView):
 
     column_labels = {
         'company_id': 'Comp.',
-        'number_of_doc': 'Nr. documento',
+        'number_of_doc': 'Codice documento',
         'date_of_doc': 'Data documento',
         'file_path': 'Allegato',
         'no_action': 'Conferma assenza doc.',
@@ -5195,7 +5154,7 @@ class IniziativeDsoDsoDataView(BaseDataView):
 
     column_descriptions = {
         'company_id': 'Comp.',
-        'number_of_doc': 'Nr. documento allegato',
+        'number_of_doc': 'Numero, protocollo, codice documento, numero registro o fascicolo ecc.',
         'date_of_doc': 'Data documento allegato',
         'file_path': 'Allegato',
         'no_action': 'Dichiarazione di assenza di documenti da allegare (1)',
@@ -5206,7 +5165,7 @@ class IniziativeDsoDsoDataView(BaseDataView):
     }
 
     column_filters = ('company_id', 'number_of_doc', 'date_of_doc', 'subject_id', 'fi0', 'interval_ord', 'fc2')
-    form_excluded_columns = ('company_id', 'user_id', 'status_id', 'created_on', 'updated_on', 'data_type')
+    form_excluded_columns = ('company_id', 'user_id', 'status_id', 'data_type')
 
     column_formatters = {
         'company_id': lambda view, context, model, name: (
@@ -5319,7 +5278,6 @@ class IniziativeDsoDsoDataView(BaseDataView):
 
         if is_created:
             model.status_id = 1
-            model.created_on = datetime.now()
         else:
             model.status_id = 14 # Updated
 
@@ -5549,10 +5507,6 @@ def create_admin_views(app, intervals):
             def on_model_change(self, form, model, is_created):
                 super().on_model_change(form, model, is_created)
                 form.populate_obj(model)
-                if is_created:
-                    model.created_on = datetime.now()
-                else:
-                    pass
 
                 user_id = current_user.id
                 try:
@@ -5619,7 +5573,6 @@ def create_admin_views(app, intervals):
                     pass
 
                 model.lexic_id = lexic_id
-                model.updated_on = datetime.now()
                 model.user_id = user_id
                 model.company_id = company_id
                 model.data_type = data_type
@@ -5720,7 +5673,7 @@ def create_admin_views(app, intervals):
             # Adjust based on your model structure
 
             # Specify fields to be excluded from the form
-            form_excluded_columns = ('user_id', 'status_id', 'created_by', 'created_on', 'updated_on')
+            form_excluded_columns = ('user_id', 'status_id', 'created_by')
 
             column_formatters = {
                 'company_id': lambda view, context, model, name: (
@@ -5795,7 +5748,6 @@ def create_admin_views(app, intervals):
                             pass
                         model.company_id = company_id  # Set the company_id
                         model.created_by = created_by  # Set the cr by
-                        model.created_on = datetime.now()  # Set the created_on
                     except AttributeError:
                         pass
                     return model
@@ -5911,7 +5863,6 @@ def create_admin_views(app, intervals):
                 model.status_id = status_id
                 model.legal_document_id = legal_document_id
                 model.subject_id = subject_id
-                model.updated_on = datetime.now()  # Set the updated_on timestamp
                 model.company_id = company_id
 
                 if not result:
@@ -6009,6 +5960,14 @@ def create_admin_views(app, intervals):
 
 
         admins_off_set = 0
+        # Fetch the company related to the current_user through the CompanyUsers relationship
+        if hasattr(current_user, 'id'):
+            company_user = CompanyUsers.query.filter_by(user_id=current_user.id).first()
+            current_company = company_user.company if company_user else None
+        else:
+            current_company = None
+
+        company_type = current_company.company_type if current_company else ''
 
         # First Flask-Admin instance with the first custom index view
         admin_app1 = Admin(app,
@@ -6033,15 +5992,21 @@ def create_admin_views(app, intervals):
         admin_app1.add_view(
             ContingenciesDataView(model=BaseData, session=db.session, name='Contingencies', intervals=intervals, area_id=1,
                                 subarea_id=4, endpoint='contingencies_data_view'))
+        # Conditionally add the "Procedura di settlement fisico" tab
+        if 'gas' in company_type.lower():
+            admin_app1.add_view(
+                SettlementFisicoDataView(model=BaseData, session=db.session, name='Procedura di settlement fisico',
+                                         intervals=intervals, area_id=1, subarea_id=9,
+                                         endpoint='settlement_fisico_data_view'))
         admin_app1.add_view(
-            IniziativeDsoAsDataView(model=BaseData, session=db.session, name='DSO-AS Initiatives', intervals=intervals, area_id=1,
+            IniziativeDsoAsDataView(model=BaseData, session=db.session, name='Initiative DSO-Amministrazioni', intervals=intervals, area_id=1,
                                 subarea_id=6, endpoint='iniziative_dso_as_data_view'))
         admin_app1.add_view(
-            IniziativeAsDsoDataView(model=BaseData, session=db.session, name='AS-DSO Initiatives', intervals=intervals, area_id=1,
+            IniziativeAsDsoDataView(model=BaseData, session=db.session, name='Iniziative Amm.-DSO', intervals=intervals, area_id=1,
                                 subarea_id=7, endpoint='iniziative_as_dso_data_view'))
 
         admin_app1.add_view(
-            IniziativeDsoDsoDataView(model=BaseData, session=db.session, name='Iniziative DSO-DSO', intervals=intervals, area_id=1,
+            IniziativeDsoDsoDataView(model=BaseData, session=db.session, name='Rapporti Gestori-Infrastrutture', intervals=intervals, area_id=1,
                                 subarea_id=8, endpoint='iniziative_dso_dso_data_view'))
 
         # Second Flask-Admin instance with the second Area index view
@@ -6509,9 +6474,6 @@ class CompanyForm(FlaskForm):
     taxcode = StringField('Tax Code', render_kw={'readonly': True})
     email = StringField('Email', validators=[Email()])
 
-    created_on = DateTimeField('Created', format='%Y-%m-%d %H:%M:%S', widget=DateTimeInput(), render_kw={'readonly': True})
-    updated_on = DateTimeField('Updated', format='%Y-%m-%d %H:%M:%S', widget=DateTimeInput(), render_kw={'readonly': True})
-
 
 class QuestionnaireForm(ModelView):
     can_create = True
@@ -6522,7 +6484,7 @@ class QuestionnaireForm(ModelView):
     column_labels = {'questionnaire_id': 'Survey ID', 'questionnaire_type': 'Type', 'name': 'Name',
                      'interval': 'Interval', 'deadline_date': 'Deadline', 'status_id': 'Status', 'headers': 'Header'}
     form_columns = column_list
-    column_exclude_list = ('id', 'created_on')  # Specify the columns you want to exclude
+    column_exclude_list = ('id')  # Specify the columns you want to exclude
 
 
 class QuestionnaireQuestionsForm(ModelView):
@@ -6603,7 +6565,7 @@ class UsersView(ModelView):
 
     def on_model_change(self, form, model, is_created):
         # Convert string dates to datetime objects
-        for field_name in ['created_on', 'updated_on', 'end_of_registration']:
+        for field_name in ['end_of_registration']:
             field = getattr(form, field_name)
             if field.data and isinstance(field.data, str):
                 model_data = self._parse_datetime_string(field.data)
@@ -6611,7 +6573,7 @@ class UsersView(ModelView):
 
     def on_form_prefill(self, form, id):
         # Ensure date fields are datetime objects
-        for field_name in ['created_on', 'updated_on', 'end_of_registration']:
+        for field_name in ['end_of_registration']:
             field = getattr(form, field_name)
             data = getattr(field, 'data')
             if data and isinstance(data, str):
@@ -6653,9 +6615,9 @@ class NewSurveyForm(ModelView):
     can_delete = False
     can_export = True
     can_view_details = True
-    column_list = ('questionnaire_id', 'name', 'created_on', 'deadline_date', 'status_id')
+    column_list = ('questionnaire_id', 'name', 'deadline_date', 'status_id')
     column_labels = {'questionnaire_id': 'Survey ID', 'name': 'Name', 'description': 'Description',
-                     'created_on': 'Date of creation', 'status_id': 'Status'}
+                     'status_id': 'Status'}
     form_columns = column_list
     column_exclude_list = ('id')  # Specify the columns you want to exclude
     pass
@@ -6839,44 +6801,36 @@ class WorkflowStepsForm(ModelView):
     pass
 
 
-
 class CompanyView(ModelView):
-    form = CompanyForm  # Set the form
+    # form = CompanyForm  # Custom form
 
-    form_excluded_columns = ('id', 'updated_on', 'created_on')  # Exclude employees relationship from the form
+    # Exclude only the ID
+    form_excluded_columns = ['id']
 
-    column_searchable_list = ['name', 'description', 'address', 'phone_number', 'email']
+    # Search and filter functionality
+    column_searchable_list = ['name', 'description', 'address', 'phone_number', 'email', 'website', 'tax_code', 'company_type']
+
+    # Specify columns to include in the form
+    form_columns = ['name', 'description', 'address', 'phone_number', 'email', 'website', 'tax_code', 'company_type']
+
     column_filters = column_searchable_list
 
-    def on_model_change(self, form, model, is_created):
-        # Convert string dates to datetime objects
-        if hasattr(form, 'created_on') and form.created_on.data:
-            if isinstance(form.created_on.data, str):
-                model.created_on = datetime.strptime(form.created_on.data, '%Y-%m-%d %H:%M:%S')
-            else:
-                model.created_on = form.created_on.data
+    # Pre-set values for company_type
+    COMPANY_TYPES = [('gas', 'Gas'), ('electric', 'Elettricità'), ('water', 'Acqua')]
 
-        if hasattr(form, 'updated_on') and form.updated_on.data:
-            if isinstance(form.updated_on.data, str):
-                model.updated_on = datetime.strptime(form.updated_on.data, '%Y-%m-%d %H:%M:%S')
-            else:
-                model.updated_on = form.updated_on.data
+    # Override the company_type field to use a dropdown
+    form_overrides = {
+        'company_type': SelectField
+    }
 
-    def create_form(self, obj=None):
-        form = super(CompanyView, self).create_form(obj)
-        if form.created_on.data and isinstance(form.created_on.data, str):
-            form.created_on.data = datetime.strptime(form.created_on.data, '%Y-%m-%d %H:%M:%S')
-        if form.updated_on.data and isinstance(form.updated_on.data, str):
-            form.updated_on.data = datetime.strptime(form.updated_on.data, '%Y-%m-%d %H:%M:%S')
-        return form
+    # Define choices for the dropdown
+    form_args = {
+        'company_type': {
+            'choices': COMPANY_TYPES,
+            'label': 'Company Type'
+        }
+    }
 
-    def edit_form(self, obj=None):
-        form = super(CompanyView, self).edit_form(obj)
-        if form.created_on.data and isinstance(form.created_on.data, str):
-            form.created_on.data = datetime.strptime(form.created_on.data, '%Y-%m-%d %H:%M:%S')
-        if form.updated_on.data and isinstance(form.updated_on.data, str):
-            form.updated_on.data = datetime.strptime(form.updated_on.data, '%Y-%m-%d %H:%M:%S')
-        return form
 
 class StepQuestionnaireView(StepQuestionnaireForm):
     can_create = True

@@ -164,11 +164,8 @@ from werkzeug.utils import secure_filename
 
 # Example of using the function with ImmutableMultiDict
 from werkzeug.datastructures import ImmutableMultiDict
-
 from flask_login import login_user, logout_user, current_user
-
 from flask_caching import Cache
-
 from urllib.parse import urlparse
 
 # for graphical representation of workflows
@@ -251,19 +248,6 @@ print('openAI ready')
 
 #fred = Fred(api_key='FRED_API_KEY')
 
-'''
-
-# Add the environment variables to app.config
-app.config['APPLE_CLIENT_ID'] = os.getenv('APPLE_CLIENT_ID')
-app.config['APPLE_TEAM_ID'] = os.getenv('APPLE_TEAM_ID')
-app.config['APPLE_KEY_ID'] = os.getenv('APPLE_KEY_ID')
-app.config['PRIVATE_KEY_PATH'] = os.getenv('PRIVATE_KEY_PATH')
-
-app.config['REDIRECT_URI'] = os.getenv('REDIRECT_URI')
-app.config['APPLE_AUTH_URL'] = os.getenv('APPLE_AUTH_URL')
-app.config['APPLE_TOKEN_URL'] = os.getenv('APPLE_TOKEN_URL')
-'''
-
 # Setup Limiter
 limiter = Limiter(
     get_remote_address,
@@ -318,25 +302,6 @@ logger.addHandler(file_handler)
 logger.info("Logging to both console and file is configured.")
 '''
 
-# Language selection logic
-# Use the correct decorator on the initialized babel object
-'''
-@babel.localeselector
-def get_locale():
-    # Check if a language is set in the session
-    if 'lang' in session:
-        return session['lang']
-    # Default to browser settings if not set
-    return request.accept_languages.best_match(['en', 'it'])
-
-@app.route('/set_language/<language>')
-def set_language(language=None):
-    # Set the user's language preference in the session
-    session['lang'] = language
-    return redirect(request.referrer or '/')
-'''
-
-
 def get_version_from_file():
     try:
         with open('version.txt', 'r') as file:
@@ -345,77 +310,6 @@ def get_version_from_file():
     except Exception as e:
         return "Version information not available"
 
-
-'''
-
-def generate_apple_client_secret():
-    with open(app.config['PRIVATE_KEY_PATH'], "r") as key_file:
-        private_key = key_file.read()
-
-    payload = {
-        "iss": app.config['APPLE_TEAM_ID'],
-        "iat": datetime.datetime.utcnow(),
-        "exp": datetime.datetime.utcnow() + datetime.timedelta(days=180),
-        "aud": "https://appleid.apple.com",
-        "sub": app.config['APPLE_CLIENT_ID'],
-    }
-    headers = {"kid": app.config['APPLE_KEY_ID']}
-    client_secret = jwt.encode(payload, private_key, algorithm="ES256", headers=headers)
-    return client_secret
-
-
-@app.route("/login/apple")
-def login_with_apple():
-    params = {
-        "response_type": "code id_token",
-        "client_id": app.config['APPLE_CLIENT_ID'],
-        "redirect_uri": app.config['REDIRECT_URI'],
-        "scope": "name email",
-    }
-    url = f"{app.config['APPLE_AUTH_URL']}?{requests.compat.urlencode(params)}"
-    return redirect(url)
-
-@app.route("/login/apple/authorized")
-def apple_authorized():
-    code = request.args.get("code")
-    id_token = request.args.get("id_token")
-
-    if not code:
-        return "Authorization failed!", 400
-
-    # Exchange code for tokens
-    client_secret = generate_apple_client_secret()
-    token_data = {
-        "client_id": app.config['APPLE_CLIENT_ID'],
-        "client_secret": client_secret,
-        "code": code,
-        "grant_type": "authorization_code",
-        "redirect_uri": app.config['REDIRECT_URI'],
-    }
-    token_response = requests.post(app.config['APPLE_TOKEN_URL'], data=token_data)
-    tokens = token_response.json()
-
-    if "id_token" in tokens:
-        # Decode the id_token
-        claims = jwt.decode(tokens["id_token"], verify=False)  # Optionally verify signature
-        email = claims.get("email")
-        first_name = claims.get("given_name")
-        last_name = claims.get("family_name")
-
-        # Find or create user in your database
-        user = User.query.filter_by(email=email).first()
-        if not user:
-            user = User(email=email, first_name=first_name, last_name=last_name)
-            db.session.add(user)
-            db.session.commit()
-
-        # Log in the user
-        login_user(user)
-
-        return redirect(url_for("home"))  # Redirect to your home page
-    else:
-        return "Failed to fetch tokens", 500
-'''
 
 # Serve the React app
 @app.errorhandler(OperationalError)
@@ -455,7 +349,6 @@ def test_relationship():
         return f"Contract: {contract.contract_name}, Articles: {len(articles)}"
     except Exception as e:
         return str(e), 500
-
 
 
 @login_manager.user_loader
@@ -520,8 +413,8 @@ def check_internet():
 def log_request():
     if "sample_1280x720_surfing_with_audio.mp4" in request.path:
         print(f"Request path: {request.path} - Method: {request.method}")
-
 '''
+
 
 @app.before_request
 def inject_translated_menu():
@@ -734,8 +627,8 @@ def serialize_base_data(item):
         "status_id": item.status_id,
         "record_type": item.record_type,
         "data_type": item.data_type,
-        "created_on": item.created_on.strftime("%Y-%m-%d") if item.created_on else None,
-        "updated_on": item.updated_on.strftime("%Y-%m-%d") if item.updated_on else None,
+        "created_at": item.created_at.strftime("%Y-%m-%d") if item.created_at else None,
+        "updated_at": item.updated_at.strftime("%Y-%m-%d") if item.updated_at else None,
         "deadline": item.deadline.strftime("%Y-%m-%d") if item.deadline else None,
         "area_id": item.area_id,
         "subarea_id": item.subarea_id,
@@ -835,12 +728,12 @@ def get_documents():
         if not documents:
             return jsonify({"error": "No documents found"}), 404
 
-        # Prepare the response data, including additional fields like number_of_doc, updated_on, area_id, and date_of_doc
+        # Prepare the response data, including additional fields like number_of_doc, updated_at, area_id, and date_of_doc
         document_list = [{
             'id': doc.id,
             'name': doc.number_of_doc or f"Document {doc.id}",
             'number_of_doc': doc.number_of_doc,
-            'updated_on': doc.updated_on.isoformat() if doc.updated_on else None,
+            'updated_at': doc.updated_at.isoformat() if doc.updated_at else None,
             'area_id': doc.area_id,
             'date_of_doc': doc.date_of_doc.isoformat() if doc.date_of_doc else None,
             'workflows': [
@@ -2007,7 +1900,8 @@ def index():
     git_version = get_version_from_file()  # Get version from file
 
     return render_template('home/home.html',
-                        analytics=analytics, marketing=marketing,
+                        analytics=analytics,
+                           marketing=marketing,
                         generated_menu=generated_menu,
                         show_cookie_banner=show_cookie_banner,
                         has_events=has_events,
@@ -2745,8 +2639,8 @@ def signup():
                     terms_accepted=form.terms_accepted.data,
                     privacy_policy_accepted=form.privacy_policy_accepted.data,
                     accepted_terms_date=datetime.utcnow(),
-                    created_on=datetime.utcnow(),
-                    updated_on=datetime.utcnow(),
+                    created_at=datetime.utcnow(),
+                    updated_at=datetime.utcnow(),
                     user_2fa_secret=pyotp.random_base32()  # Generate the 2FA secret
                 )
 
@@ -2930,7 +2824,7 @@ def terms_of_use():
     # Dynamic content replacements
     rendered_content = render_template_string(
         terms_of_use_content.content_body,
-        updated_on=datetime.utcnow().strftime('%Y-%m-%d'),
+        updated_at=datetime.utcnow().strftime('%Y-%m-%d'),
         app_name="Your Application",
         website_url="https://yourwebsite.com",
         company_name="Your Company Name",
@@ -2968,7 +2862,7 @@ def privacy_policy():
     else:
         rendered_content = render_template_string(
             privacy_policy_content.content_body,
-            updated_on=datetime.utcnow().strftime('%Y-%m-%d'),
+            updated_at=datetime.utcnow().strftime('%Y-%m-%d'),
             website_url="https://yourwebsite.com",
             company_name="Your Company Name",
             country="Your Country/State",
@@ -4037,6 +3931,7 @@ def manage_base_data_workflow_step():
     return render_template('manage_base_data_workflow_step.html', form=form, message=message)
 
 
+
 @login_required
 @app.route('/submit_confirmed', methods=['POST'])
 def submit_confirmed():
@@ -4326,6 +4221,7 @@ def show_survey(questionnaire_id):
             'answer_width': question.answer_width,
             'answer_fields': form_data[str(question.id)]
         })
+        # TODO check why questionnaire ex area 3 does not show up
     dynamic_html = create_dynamic_form(form, {'questions': questions, 'form_data': form_data}, company_id, horizontal)  # Adjust this function to accept horizontal flag
     return render_template('survey.html', form=form, headers=headers, dynamic_html=dynamic_html, questionnaire_name=selected_questionnaire.name, today=datetime.now().date())
 
@@ -5980,32 +5876,34 @@ def calendar():
     return render_template('calendar.html')
 
 
+
 @app.route('/set_cookies', methods=['POST'])
 def set_cookies():
     """
     Handles the initial cookie consent choice from the banner.
     """
+    print('Handling cookie consent submission')
     consent = request.form.get('consent')
     response = make_response(redirect(url_for('index')))
 
     if consent not in ['allow_all', 'reject_all', 'customize']:
-        current_app.logger.warning(f"Invalid consent value received: {consent}")
+        print(f"Invalid consent value received: {consent}")
         return jsonify({'status': 'error', 'message': 'Invalid consent value'}), 400
 
     if consent == 'allow_all':
         response.set_cookie('analytics', 'true', max_age=60 * 60 * 24 * 30, secure=True, httponly=True)
         response.set_cookie('marketing', 'true', max_age=60 * 60 * 24 * 30, secure=True, httponly=True)
-        current_app.logger.debug("Allowing all cookies: Analytics and Marketing set to true.")
+        print("Allowing all cookies: Analytics and Marketing set to true.")
     elif consent == 'reject_all':
         response.set_cookie('analytics', 'false', max_age=60 * 60 * 24 * 30, secure=True, httponly=True)
         response.set_cookie('marketing', 'false', max_age=60 * 60 * 24 * 30, secure=True, httponly=True)
-        current_app.logger.debug("Rejecting all cookies: Analytics and Marketing set to false.")
+        print("Rejecting all cookies: Analytics and Marketing set to false.")
     elif consent == 'customize':
         analytics = request.form.get('analytics', 'false')
         marketing = request.form.get('marketing', 'false')
         response.set_cookie('analytics', analytics, max_age=60 * 60 * 24 * 30, secure=True, httponly=True)
         response.set_cookie('marketing', marketing, max_age=60 * 60 * 24 * 30, secure=True, httponly=True)
-        current_app.logger.debug(f"Customized cookies: Analytics-{analytics}, Marketing-{marketing}.")
+        print(f"Customized cookies: Analytics-{analytics}, Marketing-{marketing}.")
 
     secure_flag = not app.debug  # Secure cookies in production only
     response.set_cookie('cookies_accepted', 'true', max_age=60 * 60 * 24 * 30, secure=secure_flag, httponly=True)
@@ -6013,7 +5911,7 @@ def set_cookies():
     if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
         Users.query.filter_by(id=current_user.id).update({'cookies_accepted': True})
         db.session.commit()
-        current_app.logger.debug(f"User {current_user.id} set cookies accepted to True")
+        print(f"User {current_user.id} set cookies accepted to True")
 
     return response
 
@@ -6021,8 +5919,53 @@ def set_cookies():
 @app.route('/update_cookies', methods=['GET', 'POST'])
 def update_cookies():
     """
+    Updates cookie preferences from the settings page and reloads settings.
+    """
+    print('Updating cookie preferences via form submission')
+    analytics = 'true' if request.form.get('analytics') == 'true' else 'false'
+    marketing = 'true' if request.form.get('marketing') == 'true' else 'false'
+
+    print(f"Form data received: analytics={analytics}, marketing={marketing}")
+
+    response = make_response(redirect(url_for('cookie_settings')))
+    response.set_cookie('analytics', analytics, max_age=60 * 60 * 24 * 30, secure=False, httponly=True)
+    response.set_cookie('marketing', marketing, max_age=60 * 60 * 24 * 30, secure=False, httponly=True)
+    response.set_cookie('cookies_accepted', 'true', max_age=60 * 60 * 24 * 30, secure=False, httponly=True)
+    print(f"Cookies set: analytics={analytics}, marketing={marketing}")
+
+    if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
+        user = Users.query.filter_by(id=current_user.id).first()
+        if user:
+            print(f"User {user.id} found. Updating database preferences.")
+            user.analytics = analytics == 'true'
+            user.marketing = marketing == 'true'
+            db.session.commit()
+            print(f"Database updated for user {user.id}: analytics={user.analytics}, marketing={user.marketing}")
+        else:
+            print(f"No user found with ID: {current_user.id}")
+
+    return response
+
+#
+
+@app.route('/cookie-settings')
+def cookie_settings():
+    """
+    Renders the cookie settings page.
+    """
+    print('Rendering cookie settings page')
+    print(f"Analytics cookie from request: {request.cookies.get('analytics')}")
+    print(f"Marketing cookie from request: {request.cookies.get('marketing')}")
+
+    return render_template('cookie_settings.html')
+
+
+@app.route('/update_cookies_222', methods=['GET', 'POST'])
+def update_cookies222():
+    """
     Updates cookie preferences from the settings page and exits gracefully.
     """
+    print('Cookies 2')
     analytics = 'true' if request.form.get('analytics') == 'true' else 'false'
     marketing = 'true' if request.form.get('marketing') == 'true' else 'false'
 
@@ -6031,23 +5974,33 @@ def update_cookies():
     response.set_cookie('marketing', marketing, max_age=60 * 60 * 24 * 30, secure=True, httponly=True)
     response.set_cookie('cookies_accepted', 'true', max_age=60 * 60 * 24 * 30, secure=True, httponly=True)
 
-    if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
-        Users.query.filter_by(id=current_user.id).update({
-            'analytics': analytics == 'true',
-            'marketing': marketing == 'true'
-        })
-        db.session.commit()
-        current_app.logger.debug(f"User {current_user.id} updated preferences: Analytics-{analytics}, Marketing-{marketing}")
+    current_app.logger.debug(f"Current user authenticated: {current_user.is_authenticated}")
+    current_app.logger.debug(f"Current user ID: {getattr(current_user, 'id', 'Unknown')}")
+
+    try:
+        # Check authentication
+        if hasattr(current_user, 'is_authenticated') and current_user.is_authenticated:
+            user = Users.query.filter_by(id=current_user.id).first()
+            if not user:
+                current_app.logger.warning(f"No user found with ID: {current_user.id}")
+            else:
+                current_app.logger.debug(f"User found: {user.id}")
+
+                current_app.logger.debug(f"Before Update: Analytics-{user.analytics}, Marketing-{user.marketing}")
+
+                user.analytics = analytics == 'true'
+                user.marketing = marketing == 'true'
+                db.session.commit()
+                current_app.logger.debug("Cookie preferences updated successfully-.")
+        else:
+            current_app.logger.warning("User not authenticated.")
+    except Exception as e:
+        current_app.logger.error(f"Error updating database: {str(e)}")
+        return jsonify({'status': 'error', 'message': 'Failed to update preferences'}), 500
+
+    current_app.logger.debug(f"Set cookies in response: Analytics-{analytics}, Marketing-{marketing}")
 
     return response
-
-
-@app.route('/cookie-settings')
-def cookie_settings():
-    """
-    Renders the cookie settings page.
-    """
-    return render_template('cookie_settings.html')
 
 
 @app.route('/products_page')

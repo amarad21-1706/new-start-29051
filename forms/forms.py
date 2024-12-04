@@ -23,6 +23,7 @@ from wtforms.fields import ColorField  # Correct import
 from wtforms import FieldList
 from wtforms.widgets import ListWidget, CheckboxInput  # <-- Import this
 
+from wtforms.validators import InputRequired, Email, Optional
 from flask_wtf import FlaskForm
 from wtforms import StringField, DateTimeField, BooleanField, SubmitField, SelectField, TextAreaField, FieldList, IntegerField
 from wtforms.validators import DataRequired
@@ -560,8 +561,6 @@ class CustomBaseDataForm(FlaskForm):
     legal_document_id = QuerySelectField('Legal Document', query_factory=lambda: LegalDocument.query.all(), get_label='name', allow_blank=True, validators=[Optional()])
     record_type = StringField('Record Type', validators=[Optional()])
     data_type = StringField('Data Type', validators=[Optional()])
-    created_on = DateTimeField('Created On', validators=[Optional()])
-    updated_on = DateTimeField('Updated On', validators=[Optional()])
     deadline = DateTimeField('Deadline', validators=[Optional()])
     created_by = StringField('Created By', validators=[Optional()])
     area_id = QuerySelectField('Area', query_factory=lambda: Area.query.all(), get_label='name', allow_blank=True, validators=[Optional()])
@@ -903,15 +902,18 @@ class QuestionnaireQuestionForm(FlaskForm):
 
 
 class CompanyForm(FlaskForm):
-    existing_company = SelectField('Select Existing Company', coerce=int)
-    company_id = HiddenField('Company ID')
-    name = StringField('Name', validators=[DataRequired()])
-    description = StringField('Description')
+    name = StringField('Name', validators=[InputRequired()])
+    description = TextAreaField('Description')
     address = StringField('Address')
     phone_number = StringField('Phone Number')
-    email = StringField('Email')
+    email = EmailField('Email')
     website = StringField('Website')
     tax_code = StringField('Tax Code')
+    company_type = SelectField(
+        'Company Type',
+        choices=[('gas', 'Gas'), ('electric', 'Elettricità'), ('water', 'Acqua')],
+        validators=[InputRequired()]
+    )
     add = SubmitField('Add', render_kw={'class': 'btn btn-primary'})
     edit = SubmitField('Edit', render_kw={'class': 'btn btn-warning'})
     cancel = SubmitField('Cancel', render_kw={'class': 'btn btn-secondary'})
@@ -1175,7 +1177,6 @@ def generate_question_html(question, existing_answers, base_path, horizontal=Fal
     return html
 
 
-
 def generate_input_html(input_type, field_name, existing_value, base_path, horizontal=False, order_number=None, width=None):
     css_class = "form-control"
     horizontal_class = "horizontal" if horizontal else "vertical"
@@ -1359,7 +1360,6 @@ def generate_input_html222(input_type, field_name, existing_value, base_path, ho
 
     html += "</div><br>"
     return html
-
 
 
 

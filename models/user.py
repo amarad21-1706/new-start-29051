@@ -41,7 +41,28 @@ from db import db  # Your SQLAlchemy instance
 from serializers import serialize_step, serialize_workflow
 from datetime import timedelta
 
-# Add an event listener to set 'article_id' before inserting
+class TimestampMixin:
+    """
+    Mixin to add automatic timestamp fields for models.
+    Includes `created_at` (set on creation) and `updated_at` (updated on modifications).
+    """
+    created_at = db.Column(db.DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = db.Column(db.DateTime, onupdate=datetime.utcnow, nullable=True)
+
+    @classmethod
+    def __declare_last__(cls):
+        """
+        Ensure the model includes `created_at` and `updated_at` fields.
+        Raise an exception if a model using this mixin does not have these fields in the database schema.
+        """
+        if 'created_at' not in cls.__table__.columns:
+            raise AttributeError(
+                f"The model '{cls.__name__}' is missing the required column 'created_at'."
+            )
+        if 'updated_at' not in cls.__table__.columns:
+            raise AttributeError(
+                f"The model '{cls.__name__}' is missing the required column 'updated_at'."
+            )
 
 class CheckboxField(BooleanField):
     def process_formdata(self, valuelist):
@@ -54,7 +75,7 @@ class CheckboxField(BooleanField):
 
 
 # TODO create ContainerCompanies and ContainerRoles?
-class Container(db.Model):
+class Container(TimestampMixin, db.Model):
     __tablename__ = 'container'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -66,9 +87,6 @@ class Container(db.Model):
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'), nullable=False)
     area_id = db.Column(db.Integer, db.ForeignKey('area.id'), nullable=False)
-
-    created_at = db.Column(db.DateTime, default=db.func.current_timestamp())
-    updated_at = db.Column(db.DateTime, default=db.func.current_timestamp(), onupdate=db.func.current_timestamp())
 
     image = db.Column(db.String(255), nullable=True)
     description = db.Column(db.String(255))
@@ -95,7 +113,7 @@ class Container(db.Model):
         return f"Container: {self.page} ({self.position}, {self.content_type}, {self.description}, {self.action_type}, {self.action_url})"
 
 
-class Users(db.Model, UserMixin):
+class Users(TimestampMixin, db.Model, UserMixin):
     __tablename__ = 'users'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     username = db.Column(db.String(80), unique=True, nullable=False)
@@ -120,12 +138,13 @@ class Users(db.Model, UserMixin):
     mobile_phone = db.Column(db.String(15), nullable=False)
     work_phone = db.Column(db.String(15), nullable=True)
     street = db.Column(db.String(128), nullable=True)
-    created_on = db.Column(db.DateTime, nullable=False)
-    updated_on = db.Column(db.DateTime, nullable=True, onupdate=db.func.now())
+
     end_of_registration = db.Column(db.Date)
-    cookies_accepted = db.Column(db.Boolean, default=False)
-    analytics = db.Column(db.Boolean, default=False)
-    marketing = db.Column(db.Boolean, default=False)
+
+    analytics = db.Column(db.Boolean, nullable=True, default=False)
+    marketing = db.Column(db.Boolean, nullable=True, default=False)
+    cookies_accepted = db.Column(db.Boolean, nullable=True, default=False)
+
     terms_accepted = db.Column(db.Boolean, nullable=False, default=False)
     privacy_policy_accepted = db.Column(db.Boolean, nullable=False, default=False)
     accepted_terms_date = db.Column(db.DateTime, nullable=True)
@@ -216,13 +235,12 @@ class Role(db.Model, RoleMixin):
     def __repr__(self):
         return (f"{self.name} ({self.description})")
 
-class UserRoles(db.Model):
+
+class UserRoles(TimestampMixin, db.Model):
     __tablename__ = 'user_roles'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
-    created_on = Column(DateTime, nullable=False)
-    updated_on = Column(DateTime, nullable=True, onupdate=datetime.now)
     end_of_registration = Column(DateTime, nullable=True)
     #user = relationship('Users', backref='user_roles')
     #role = relationship('Role', backref='user_roles')
@@ -231,13 +249,11 @@ class UserRoles(db.Model):
         return f"<User: {self.user_id}, Role: {self.role_id}>"
 
 
-class CompanyUsers(db.Model):
+class CompanyUsers(TimestampMixin, db.Model):
     __tablename__ = 'company_users'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'))
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'))
-    created_on = Column(DateTime, nullable=False)
-    updated_on = Column(DateTime, nullable=True, onupdate=datetime.now)
     end_of_registration = db.Column(db.DateTime, nullable=True)
 
     company = relationship('Company', back_populates='company_users')
@@ -264,19 +280,19 @@ class CompanyUsers(db.Model):
     def __str__(self):
         return self.readable_format()
 
-class Company(db.Model):
+class Company(TimestampMixin, db.Model):
     __tablename__ = 'company'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(String(100), unique=True)
     description = db.Column(String)
+    company_type = db.Column(db.String(50), nullable=False)  # Ensure this column exists
+    company_type = db.Column(db.String(24), nullable=True)  # New column
     address = db.Column(String(255))
     phone_number = db.Column(String(20))
     email = db.Column(String(100))
     website = db.Column(String(100))
     tax_code = db.Column(String(24), nullable=True)
     employees = db.relationship('Employee', backref='company', lazy=True)
-    created_on = db.Column(db.DateTime)
-    updated_on = db.Column(db.DateTime, default=datetime.utcnow)
     end_of_registration = db.Column(db.DateTime, nullable=True)
 
     # Relationship to company_users
@@ -305,7 +321,7 @@ class PossibleAnswer(db.Model):
     next_question_id = db.Column(db.Integer, db.ForeignKey('question.id'))
 
 
-class Questionnaire(db.Model):
+class Questionnaire(TimestampMixin, db.Model):
     __tablename__ = 'questionnaire'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -315,8 +331,6 @@ class Questionnaire(db.Model):
     interval = db.Column(db.String(12))  # If this represents a numeric interval, consider using Integer
     deadline_date = db.Column(db.DateTime)
     status_id = db.Column(db.Integer, db.ForeignKey('status.id'))
-    created_on = Column(DateTime, nullable=False)
-    updated_on = Column(DateTime, nullable=True, onupdate=datetime.now)
     headers = db.Column(db.JSON)
 
     steps_questionnaires_relationship = db.relationship("StepQuestionnaire", back_populates="questionnaire")
@@ -424,7 +438,7 @@ class QuestionnaireQuestions(db.Model):
         return self.readable_format()
 
 
-class Table(db.Model):
+class Table(TimestampMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     name = db.Column(String(100), nullable=False)
     description = db.Column(String)
@@ -433,7 +447,6 @@ class Table(db.Model):
 
     column1 = db.Column(String(100))
     column2 = db.Column(String(100))
-    created_on = Column(DateTime, nullable=False)
 
     # Define relationships if needed
     user = db.relationship('Users', backref=db.backref('tables', lazy=True))
@@ -671,7 +684,7 @@ document_dossier = db.Table('document_dossier',
 )
 
 
-class BaseData(db.Model):
+class BaseData(TimestampMixin, db.Model):
     __tablename__ = 'base_data'
 
     # id = db.Column(db.Integer, primary_key=True, autoincrement=True, unique=True)
@@ -686,8 +699,6 @@ class BaseData(db.Model):
     legal_document_id = db.Column(db.Integer, db.ForeignKey('legal_document.id'), nullable=True)
     record_type = db.Column(db.String(64))
     data_type = db.Column(db.String(128))
-    created_on = db.Column(DateTime, nullable=False)
-    updated_on = db.Column(DateTime, nullable=True, onupdate=datetime.now)
     deadline = db.Column(DATE)
     created_by = db.Column(db.String(128))
     area_id = db.Column(db.Integer, db.ForeignKey('area.id'))
@@ -1100,14 +1111,12 @@ class Step(db.Model):
         return f"{self.name} ({self.description})"
 
 
-class WorkflowBaseData(db.Model):
+class WorkflowBaseData(TimestampMixin, db.Model):
     __tablename__ = 'workflow_base_data'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     workflow_id = db.Column(db.Integer, db.ForeignKey('workflow.id'))
     base_data_id = db.Column(db.Integer, db.ForeignKey('base_data.id'))
-    created_on = Column(DateTime, nullable=False)
-    updated_on = Column(DateTime, nullable=True, onupdate=datetime.now)
     end_of_registration = db.Column(db.DateTime)
 
     workflow = db.relationship("Workflow", backref="workflow_base_data")
@@ -1124,7 +1133,6 @@ class WorkflowBaseData(db.Model):
 
     def __repr__(self):
         return f"Docs workflow: doc {self.base_data_id}, wf {self.workflow_id}"
-
 
 
 class Config(db.Model):
@@ -1220,7 +1228,7 @@ class AuditLog(db.Model):
                 f"action {self.action}, details ...")
 
 
-class Post(db.Model):
+class Post(TimestampMixin, db.Model):
     __tablename__ = 'post'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -1230,7 +1238,6 @@ class Post(db.Model):
     message_type = db.Column(Enum('noticeboard', 'email', 'service_message', name='message_types'))
     subject = db.Column(db.String(255))
     body = db.Column(db.String)
-    created_at =  db.Column(db.DateTime)
     marked_as_read = db.Column(db.Boolean, default=False)
     lifespan = db.Column(Enum('one-off', 'persistent', name='lifespan_types'), default='one-off')
 
@@ -1242,13 +1249,12 @@ class Post(db.Model):
         return f"{self.message_type}, {self.subject}"
 
 
-class Ticket(db.Model):
+class Ticket(TimestampMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     subject_id = db.Column(db.Integer, db.ForeignKey('subject.id'), nullable=False)
     description = db.Column(db.Text, nullable=False)
     status_id = db.Column(db.Integer, db.ForeignKey('status.id'), nullable=False, default=2)  # Default status "Open"
-    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     marked_as_read = db.Column(db.Boolean, default=False)
     lifespan = db.Column(Enum('one-off', 'persistent', name='lifespan_types'), default='one-off')
 
@@ -1263,7 +1269,7 @@ class Questionnaire_psf(db.Model):
     name = db.Column(db.String(255), nullable=False)
     structure = db.Column(db.JSON, nullable=False)
 
-class Response_psf(db.Model):
+class Response_psf(TimestampMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     questionnaire_id = db.Column(db.Integer, db.ForeignKey('questionnaire.id'), nullable=False)
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)
@@ -1274,8 +1280,6 @@ class Response_psf(db.Model):
     subject_id = db.Column(db.Integer, db.ForeignKey('subject.id'))
     status_id = db.Column(db.Integer, db.ForeignKey('status.id'))
     record_type = db.Column(db.String(64))
-    created_on = Column(DateTime, nullable=False)
-    updated_on = Column(DateTime, nullable=True, onupdate=datetime.now)
     deadline = db.Column(DATE)
     area_id = db.Column(db.Integer, db.ForeignKey('area.id'))
     subarea_id = db.Column(db.Integer, db.ForeignKey('subarea.id'))
@@ -1284,7 +1288,7 @@ class Response_psf(db.Model):
     file_path = db.Column(db.String(255))
 
 
-class Plan(db.Model):
+class Plan(TimestampMixin, db.Model):
     __tablename__ = 'plan'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True, nullable=False)
@@ -1314,7 +1318,7 @@ class Plan(db.Model):
         return f"<Plan {self.id} ({self.name})>"
 
 
-class Product(db.Model):
+class Product(TimestampMixin, db.Model):
     __tablename__ = 'product'
     id = db.Column(db.Integer, primary_key=True)
     type = db.Column(db.String(64), unique=False, nullable=False, default='application')
@@ -1336,22 +1340,13 @@ class Product(db.Model):
     def __repr__(self):
         return f"<Product {self.id} ({self.name})>"
 
-class PlanProducts(db.Model):
+class PlanProducts(TimestampMixin, db.Model):
     __tablename__ = 'plan_products'
     plan_id = db.Column(db.Integer, db.ForeignKey('plan.id'), primary_key=True)
     product_id = db.Column(db.Integer, db.ForeignKey('product.id'), primary_key=True)
-    created_on = Column(DateTime, nullable=True)
-    updated_on = Column(DateTime, nullable=True, onupdate=datetime.now)
     end_of_registration = Column(DateTime, nullable=True)
     plan = db.relationship('Plan', back_populates='plan_products')
     product = db.relationship('Product', back_populates='plan_products')
-
-    def __init__(self, plan_id, product_id, created_on=None, updated_on=None, end_of_registration=None):
-        self.plan_id = plan_id
-        self.product_id = product_id
-        self.created_on = created_on or datetime.utcnow()
-        self.updated_on = updated_on
-        self.end_of_registration = end_of_registration
 
     def __repr__(self):
         return f"<PlanProducts(plan_id={self.plan_id}, product_id={self.product_id})>"
@@ -1370,7 +1365,7 @@ class UserPlans(db.Model):
     plan = db.relationship('Plan', back_populates='user_plans')
 
 
-class Event(db.Model):
+class Event(TimestampMixin, db.Model):
     __tablename__ = 'event'
 
     id = db.Column(Integer, primary_key=True, autoincrement=True)
@@ -1385,8 +1380,6 @@ class Event(db.Model):
     color = db.Column(String(7))
     recurrence = db.Column(String(255), nullable=True)
     recurrence_end = db.Column(db.Date, nullable=True)
-    created_at = db.Column(DateTime, default=datetime.utcnow, nullable=True)
-    updated_at = db.Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=True)
 
     user = relationship('Users', backref='events')
     company = relationship('Company', backref='events')
@@ -1408,10 +1401,7 @@ class Event(db.Model):
             'color': self.color,
             'recurrence': self.recurrence,
             'recurrence_end': self.recurrence_end.isoformat() if self.recurrence_end else None,
-            'created_at': self.created_at.isoformat(),
-            'updated_at': self.updated_at.isoformat()
         }
-
 
 
 class Cart(db.Model):
@@ -1470,7 +1460,7 @@ class DataMapping(db.Model):
 
 
 # CONTRACTS
-class Contract(db.Model):
+class Contract(TimestampMixin, db.Model):
     __tablename__ = 'contract'
 
     STATUS_CHOICES = ('Draft', 'Signed', 'Active', 'Expired', 'Terminated')
@@ -1483,8 +1473,6 @@ class Contract(db.Model):
     end_date = db.Column(db.Date)
     description = db.Column(db.Text)
     created_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
-    created_at = db.Column(db.TIMESTAMP, default=func.now())
-    updated_at = db.Column(db.TIMESTAMP, default=func.now(), onupdate=func.now())
 
     created_by_user = db.relationship("Users", back_populates="created_contracts")
 
@@ -1506,21 +1494,19 @@ class Contract(db.Model):
             return Markup('No Articles')
 
 # 4. Party Table
-class Party(db.Model):
+class Party(TimestampMixin, db.Model):
     __tablename__ = 'party'
 
     party_id = db.Column(db.Integer, primary_key=True)
     party_name = db.Column(db.String(255), nullable=False)
     party_type = db.Column(db.String(50), nullable=False)  # e.g., Individual, Organization
     contact_information = db.Column(db.JSON)
-    created_at = db.Column(db.TIMESTAMP, default=func.now())
-    updated_at = db.Column(db.TIMESTAMP, default=func.now(), onupdate=func.now())
 
     contract_parties = db.relationship("ContractParty", back_populates="party")
 
 
 # 5. ContractParty Table
-class ContractParty(db.Model):
+class ContractParty(TimestampMixin, db.Model):
     __tablename__ = 'contract_party'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -1528,8 +1514,6 @@ class ContractParty(db.Model):
     party_id = db.Column(db.Integer, db.ForeignKey('party.party_id', ondelete='CASCADE'))
     company_id = db.Column(db.Integer, db.ForeignKey('company.id', ondelete='CASCADE'))
     role = db.Column(db.String(100))  # e.g., Client, Vendor, Signatory
-    created_at = db.Column(db.TIMESTAMP, default=func.now())
-    updated_at = db.Column(db.TIMESTAMP, default=func.now(), onupdate=func.now())
 
     contract = db.relationship("Contract", back_populates="contract_parties")
     party = db.relationship("Party", back_populates="contract_parties")
@@ -1537,7 +1521,7 @@ class ContractParty(db.Model):
 
 
 # 6. ContractTerm Table
-class ContractTerm(db.Model):
+class ContractTerm(TimestampMixin, db.Model):
     __tablename__ = 'contract_term'
 
     term_id = db.Column(db.Integer, primary_key=True)
@@ -1546,8 +1530,6 @@ class ContractTerm(db.Model):
     term_description = db.Column(db.Text)
     term_start_date = db.Column(db.Date)
     term_end_date = db.Column(db.Date)
-    created_at = db.Column(db.TIMESTAMP, default=func.now())
-    updated_at = db.Column(db.TIMESTAMP, default=func.now(), onupdate=func.now())
 
     contract = db.relationship("Contract", back_populates="contract_terms")
 
@@ -1583,7 +1565,7 @@ class ContractStatusHistory(db.Model):
     changed_by_user = db.relationship("Users", back_populates="status_changes")
 
 
-class ContractArticle(db.Model):
+class ContractArticle(TimestampMixin, db.Model):
     __tablename__ = 'contract_article'
 
     # Add 'id' as the primary key
@@ -1596,8 +1578,6 @@ class ContractArticle(db.Model):
     article_title = db.Column(db.String(255), nullable=False)
     article_body = db.Column(db.Text)
     article_order = db.Column(db.Integer)
-    created_at = db.Column(db.TIMESTAMP, default=func.now())
-    updated_at = db.Column(db.TIMESTAMP, default=func.now(), onupdate=func.now())
 
     contract = db.relationship("Contract", back_populates="contract_articles")
 
@@ -1616,13 +1596,12 @@ event.listen(ContractArticle, 'before_insert', ContractArticle.before_insert)
 
 
 # Team model
-class Team(db.Model):
+class Team(TimestampMixin, db.Model):
     __tablename__ = 'team'
 
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(100), nullable=False)
     description = db.Column(db.String(255))
-    updated_at = db.Column(db.DateTime, default=func.now(), onupdate=func.now())  # Auto-updates timestamp
 
     def __repr__(self):
         return f"<Team {self.name}>"
@@ -1641,7 +1620,6 @@ class TeamMembership(db.Model):
     team_id = db.Column(db.Integer, db.ForeignKey('team.id', ondelete='CASCADE'), primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='CASCADE'),
                         primary_key=True)  # Assuming 'users' is your user table
-
     role = db.Column(db.String(50), nullable=True)  # Role within the team
     access_level = db.Column(db.String(50), nullable=True)  # Access level for the member
 
@@ -1655,16 +1633,13 @@ class TeamMembership(db.Model):
 # Update the Users model
 
 # Define the ContractTeam model class for many-to-many relationship between Contract and Team
-class ContractTeam(db.Model):
+class ContractTeam(TimestampMixin, db.Model):
     __tablename__ = 'contract_team'
 
     # Define the columns for the association table
     contract_id = db.Column(db.Integer, db.ForeignKey('contract.contract_id', ondelete='CASCADE'), primary_key=True)
     team_id = db.Column(db.Integer, db.ForeignKey('team.id', ondelete='CASCADE'), primary_key=True)
 
-    # Optional additional fields
-    created_at = db.Column(db.DateTime, default=func.now())
-    updated_at = db.Column(db.DateTime, default=func.now(), onupdate=func.now())
     role = db.Column(db.String(50), nullable=True)  # Example field: role of the team in the contract
 
     # Define relationships
@@ -1722,29 +1697,6 @@ class DocumentWorkflow(db.Model):
         return f"Document Workflow for {self.base_data_id} in Workflow {self.workflow_id} at Step {self.step_id}"
 
 
-'''
-
-class Workflow(db.Model):
-    __tablename__ = 'workflow'
-
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    name = db.Column(db.String(50), unique=True)
-    description = db.Column(db.String(200))
-    status = db.Column(db.String(20))
-    restricted = db.Column(db.Boolean, default=True)
-    deadline_date = db.Column(db.DateTime, nullable=True)
-
-    # Define the relationship with WorkflowBaseData
-    # workflow_base_data = db.relationship("WorkflowBaseData", back_populates="workflow")
-
-    def to_dict(self):
-        return {'id': self.id, 'name': self.name}
-
-    def __repr__(self):
-        return f"{self.name} ({self.description})"
-
-'''
-
 class Workflow(db.Model):
     __tablename__ = 'workflow'
 
@@ -1768,25 +1720,6 @@ class Workflow(db.Model):
     def __repr__(self):
         return f'<Workflow {self.id} ({self.name})>'
 
-
-'''
-class Step(db.Model):
-    __tablename__ = 'step'
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    name = db.Column(db.String(50), unique=True)
-    description = db.Column(db.String(200))
-    action = db.Column(db.String(50))
-    order = db.Column(db.Integer)
-    next_step_id = db.Column(db.Integer, db.ForeignKey('step.id'))
-
-    next_step = db.relationship('Step', remote_side=[id])  # Self-referential relationship for next step
-
-    # Relationship with WorkflowSteps
-    workflow_steps = db.relationship('WorkflowSteps', back_populates='step')
-
-    def __repr__(self):
-        return f"{self.name} ({self.description})"
-'''
 
 class WorkflowSteps(db.Model):
     __tablename__ = 'workflow_steps'
@@ -1864,15 +1797,13 @@ class ChartMetric(db.Model):
         return f"<ChartMetric {self.metric_name} ({self.display_label}) linked to Chart {self.config_chart_id}>"
 
 
-class Dossier(db.Model):
+class Dossier(TimestampMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     code = db.Column(db.String(100), unique=True, nullable=False)
     status = db.Column(db.Enum('pending', 'in_progress', 'completed', 'archived', name='dossier_status'), nullable=False)
     type = db.Column(db.Enum('audit', 'remediation', 'survey', 'other', name='dossier_type'), nullable=False)
     company_id = db.Column(db.Integer, db.ForeignKey('company.id'), nullable=False)
     initiator_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, onupdate=datetime.utcnow)
     archived = db.Column(db.Boolean, default=False)
     # Set default to 30 days from the current date
     deadline_date = db.Column(db.DateTime, default=lambda: datetime.utcnow() + timedelta(days=30),
@@ -1911,7 +1842,7 @@ class Action(db.Model):
 
 # GAS MARKET DATA
 # Modello del database
-class PhysicalContract(db.Model):
+class PhysicalContract(TimestampMixin, db.Model):
     __tablename__ = 'physical_contract'
     id = db.Column(db.Integer, primary_key=True)
     contract_id = db.Column(db.String(50), unique=True, nullable=False)
@@ -1923,7 +1854,6 @@ class PhysicalContract(db.Model):
     economic_factors = db.Column(db.String(255), nullable=True)
     terms = db.Column(db.Integer, nullable=False)
     contract_date = db.Column(db.Date, nullable=False)
-    created_at = db.Column(db.Date, default=datetime.utcnow, nullable=False)  # Default to current date
     expiration_date = db.Column(db.Date, nullable=False)
 
 class FuturesPrice(db.Model):
@@ -1960,7 +1890,7 @@ class BenchmarkData(db.Model):
     benchmark_conditions = db.Column(db.Text)
 
 
-class TextContent(db.Model):
+class TextContent(TimestampMixin, db.Model):
     __tablename__ = 'text_content'
 
     id = db.Column(db.Integer, primary_key=True)
@@ -1969,5 +1899,3 @@ class TextContent(db.Model):
     content_version = db.Column(db.Integer, nullable=False, default=1)  # Useful for version control
     title = db.Column(db.String(100))  # Optional, for sections that have titles
     content_body = db.Column(db.Text, nullable=False)  # Main content
-    created_on = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_on = db.Column(db.DateTime, server_default=func.now(), onupdate=func.now())

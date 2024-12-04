@@ -28,44 +28,44 @@
             </div>
         </div>
 
-        <!-- Block 2: Audit & Remediation -->
+        <!-- Block 2: Audit -->
         <div class="col-md-4">
             <div class="card mb-4">
                 <div class="card-header">
-                    <h3>Audit & Remediation</h3>
+                    <h3>Audit</h3>
                 </div>
                 <div class="card-body">
                     <div class="row text-center">
-                        <!-- Audit Pending -->
+                        <!-- Open Sub-block -->
                         <div class="col-md-6 mb-2">
-                            <button type="button" class="btn btn-primary btn-block" onclick="window.location.href='{{ url_for('argon.audit_open') }}'">Audit Pending</button>
+                            <button type="button" class="btn btn-primary btn-block" onclick="window.location.href='{{ url_for('argon.audit_open') }}'">Pending</button>
                         </div>
-                        <!-- Audit Archive -->
+                        <!-- Archive Sub-block -->
                         <div class="col-md-6 mb-2">
-                            <button type="button" class="btn btn-info btn-block" onclick="window.location.href='{{ url_for('argon.audit_archive') }}'">Audit Archive</button>
-                        </div>
-                        <!-- Remediation Pending -->
-                        <div class="col-md-6 mb-2">
-                            <button type="button" class="btn btn-primary btn-block" onclick="window.location.href='{{ url_for('argon.remediation_open') }}'">Rem. Pending</button>
-                        </div>
-                        <!-- Remediation Archive -->
-                        <div class="col-md-6 mb-2">
-                            <button type="button" class="btn btn-info btn-block" onclick="window.location.href='{{ url_for('argon.remediation_archive') }}'">Rem. Archive</button>
+                            <button type="button" class="btn btn-info btn-block" onclick="window.location.href='{{ url_for('argon.audit_archive') }}'">Archive</button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Block 3: Fascicolo Elettronico -->
+        <!-- Block 3: Remediation -->
         <div class="col-md-4">
             <div class="card mb-4">
                 <div class="card-header">
-                    <h3>Fascicolo Elettronico</h3>
+                    <h3>Remediation</h3>
                 </div>
-                <div class="card-body text-center">
-                    <!-- Fascicolo Elettronico Button -->
-                    <button type="button" class="btn btn-warning btn-block" onclick="window.location.href='/fascicolo_elettronico'">Open</button>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <!-- Open Sub-block -->
+                        <div class="col-md-6 mb-2">
+                            <button type="button" class="btn btn-primary btn-block" onclick="window.location.href='{{ url_for('argon.remediation_open') }}'">Pending</button>
+                        </div>
+                        <!-- Archive Sub-block -->
+                        <div class="col-md-6 mb-2">
+                            <button type="button" class="btn btn-info btn-block" onclick="window.location.href='{{ url_for('argon.remediation_archive') }}'">Archive</button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>

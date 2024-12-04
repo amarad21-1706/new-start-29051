@@ -3,7 +3,7 @@ from forms.forms import MainForm
 import requests
 from models.user import (Users, UserRoles, Event, Role,
         Plan, Product, PlanProducts, UserPlans,
-        Question, QuestionnaireQuestions, Questionnaire,
+        Question, QuestionnaireQuestions, Questionnaire, QuestionnaireCompanies,
         Workflow, WorkflowSteps, WorkflowBaseData, DocumentWorkflow, Step,
         Company, CompanyUsers,
         Area, Subarea, AreaSubareas
