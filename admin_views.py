@@ -20,7 +20,7 @@ from flask_admin.model import typefmt
 from flask_admin.model.fields import InlineFormField, InlineFieldList
 from wtforms.fields import StringField, TextAreaField, DateTimeField, SelectField, BooleanField, SubmitField
 #from wtforms.ext.sqlalchemy.fields import QuerySelectField
-from wtforms.validators import InputRequired, DataRequired, Length, Email, EqualTo
+from wtforms.validators import InputRequired, DataRequired, Length, Email, EqualTo, Optional
 from flask_admin.form import Select2Widget, rules
 from flask_admin.contrib.sqla import ModelView
 from flask import has_request_context
@@ -68,7 +68,7 @@ from config.custom_fields import CustomFileUploadField  # Import the custom fiel
 from models.user import (Users, UserRoles, Role, Table, Questionnaire, Question,
                                 QuestionnaireQuestions, BaseData, Product, Plan, PlanProducts,
                                 Answer, Company, CompanyUsers, Area, Subarea, AreaSubareas,
-                                QuestionnaireCompanies, Status, Lexic,
+                                QuestionnaireCompanies, Status, Lexic, LexicSubcategory, LexicItem,
                                 Interval, Subject, Cart, AuditLog, Post, Ticket, StepQuestionnaire,
                                 Workflow, Step, BaseData, BaseDataInline, WorkflowSteps, WorkflowBaseData,
                                 DocumentWorkflow, DocumentWorkflowHistory,
@@ -5328,7 +5328,7 @@ def create_admin_views(app, intervals):
     with app.app_context():
         # Custom admin view
 
-        class CustomFlussiDataView(ModelView):
+        class CustomFlussiDataView_old(ModelView):
             create_template = 'admin/area_1/create_base_data_1.html'
             area_id = 1
             subarea_id = 1
@@ -5599,6 +5599,288 @@ def create_admin_views(app, intervals):
 
                 return model
 
+
+        class CustomFlussiDataView(ModelView):
+            create_template = 'admin/area_1/create_base_data_1.html'
+            area_id = 1
+            subarea_id = 1
+            inline_models = (BaseDataInlineModelForm(BaseDataInline),)
+
+            def __init__(self, *args, **kwargs):
+                self.intervals = kwargs.pop('intervals', None)
+                super().__init__(*args, **kwargs)
+                self.area_id = CustomFlussiDataView.area_id  # Initialize area_id in __init__
+                self.subarea_id = CustomFlussiDataView.subarea_id  # Initialize subarea_id in __init__
+                self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
+
+                print('area, subarea, name', self.area_id, self.subarea_id, self.subarea_name)
+            form_extra_fields = {
+                'file_path': CustomFileUploadField('File', base_path=config.UPLOAD_FOLDER)
+            }
+
+            column_editable_list = ['fc1']
+            form_widget_args = {
+                'fc1': {'widget': XEditableWidget()},
+            }
+
+            form_columns = ['interval_ord', 'fi0', 'fi1', 'fi2', 'fi3', 'fc1']
+            column_list = ['company_id', 'interval_ord', 'fi0', 'lexic', 'subject', 'fi1', 'fi2', 'fi3', 'fc1']
+
+            column_labels = {
+                'company_id': 'Comp.',
+                'interval_ord': 'Periodo',
+                'fi0': 'Anno',
+                'fi1': 'Totale',
+                'fi2': 'IVI',
+                'fi3': 'Altri',
+                'fc1': 'Notes'
+            }
+
+            # Define column formatters to display the first 5 letters of the company name
+            column_formatters = {
+                'company_id': lambda view, context, model, name: (
+                    model.company.name[:5] if model.company and model.company.name else 'N/A')
+            }
+
+            def scaffold_form(self):
+                form_class = super(CustomFlussiDataView, self).scaffold_form()
+                current_year = datetime.now().year
+                year_choices = [(str(year), str(year)) for year in range(current_year - 5, current_year + 2)]
+                default_year = str(current_year)
+
+                # Lexic Dropdown
+                form_class.lexic_id = QuerySelectField(
+                    'Tipo pre-complaint',
+                    query_factory=lambda: Lexic.query.filter_by(category="Precomplaint"),
+                    allow_blank=True,
+                    get_label='name',
+                    validators=[InputRequired()],
+                    widget=Select2Widget()
+                )
+
+                # Subcategories Dropdown
+                form_class.subcategory_id = QuerySelectField(
+                    'Subcategory',
+                    query_factory=lambda: LexicSubcategory.query,  # Fetch all initially
+                    allow_blank=True,
+                    get_label='name',
+                    validators=[Optional()],
+                    widget=Select2Widget()
+                )
+
+                # Items Dropdown
+                form_class.item_id = QuerySelectField(
+                    'Item',
+                    query_factory=lambda: LexicItem.query,  # Fetch all initially
+                    allow_blank=True,
+                    get_label='name',
+                    validators=[Optional()],
+                    widget=Select2Widget()
+                )
+
+                form_class.fi0 = SelectField(
+                    'Anno',
+                    coerce=int,
+                    choices=year_choices,
+                    default=default_year
+                )
+
+                config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
+                                                  subarea_id=None)
+                nr_intervals = config_values[0]
+                current_interval = [t[2] for t in self.intervals if t[0] == nr_intervals]
+                first_element = current_interval[0] if current_interval else None
+                interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
+
+                form_class.interval_ord = SelectField(
+                    'Periodo',
+                    coerce=int,
+                    choices=interval_choices,
+                    default=first_element
+                )
+                return form_class
+
+            def get_query(self):
+                query = self.session.query(self.model)
+
+                # Filter by area_id and subarea_id
+                query = query.filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
+
+                # Filter by company_id based on user role (optional):
+                if current_user.is_authenticated:
+                    if current_user.has_role('Admin') or current_user.has_role('Authority'):
+                        # No additional filtering needed for Admin or Authority roles
+                        pass
+                    elif current_user.has_role('Manager'):
+                        # Filter for Manager's companies
+                        subquery = db.session.query(CompanyUsers.company_id).filter(
+                            CompanyUsers.user_id == current_user.id).subquery()
+                        query = query.filter(self.model.company_id.in_(subquery))
+                    elif current_user.has_role('Employee'):
+                        # Filter for Employee's records
+                        query = query.filter(self.model.user_id == current_user.id)
+
+                # Additional filtering based on other criteria (optional):
+                # You can add further filtering logic here based on other fields
+                # in your model, like specific dates, statuses, etc.
+
+                return query
+
+            def create_model(self, form):
+                try:
+                    model = self.model()
+                    form.populate_obj(model)
+
+                    # Link selected subcategory and item
+                    subcategory_id = form.subcategory_id.data
+                    item_id = form.item_id.data
+
+                    if subcategory_id:
+                        subcategory = LexicSubcategory.query.get(subcategory_id)
+                        if not subcategory:
+                            raise ValidationError("Invalid Subcategory selected.")
+
+                    if item_id:
+                        item = LexicItem.query.get(item_id)
+                        if not item:
+                            raise ValidationError("Invalid Item selected.")
+
+                    model.subcategory_id = subcategory_id
+                    model.item_id = item_id
+
+                    # Other logic...
+                    self.session.add(model)
+                    self.session.commit()
+                    return model
+
+                except Exception as ex:
+                    if not self.handle_view_exception(ex):
+                        raise
+                    flash(f'Failed to create record. {str(ex)}', 'error')
+                    self.session.rollback()
+                    return False
+
+            def on_model_change(self, form, model, is_created):
+                super().on_model_change(form, model, is_created)
+                form.populate_obj(model)
+
+                user_id = current_user.id
+                try:
+                    company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
+                except:
+                    company_id = None
+
+                # Dynamically validate and assign Lexic, Subcategory, and Item to the model
+                if form.lexic_id.data:
+                    selected_lexic = form.lexic_id.data
+
+                    # Fetch subcategories linked to the selected lexic
+                    subcategories = LexicSubcategory.query.filter_by(parent_id=selected_lexic.id).all()
+
+                    if form.subcategory_id.data:
+                        selected_subcategory = form.subcategory_id.data
+
+                        # Ensure the selected subcategory belongs to the lexic
+                        if selected_subcategory not in subcategories:
+                            raise ValidationError("Invalid subcategory selected for the given Lexic.")
+
+                        # Fetch items linked to the selected subcategory
+                        items = LexicItem.query.filter_by(subcategory_id=selected_subcategory.id).all()
+
+                        if form.item_id.data:
+                            selected_item = form.item_id.data
+
+                            # Ensure the selected item belongs to the subcategory
+                            if selected_item not in items:
+                                raise ValidationError("Invalid item selected for the given Subcategory.")
+
+                            # Assign the selected item to the model
+                            model.item_id = selected_item.id
+
+                        model.subcategory_id = selected_subcategory.id
+
+                    model.lexic_id = selected_lexic.id
+
+                # Existing logic for other fields
+                area_id = self.area_id
+                subarea_id = self.subarea_id
+                subarea_name = self.subarea_name
+                status_id = 1
+
+                config_values = get_config_values(config_type='area_interval', company_id=company_id,
+                                                  area_id=self.area_id, subarea_id=self.subarea_id)
+                interval_id = config_values[0]
+                interval_ord = form.interval_ord.data
+                year_id = form.fi0.data
+
+                record_type = 'control_area'
+                data_type = self.subarea_name
+                legal_document_id = None
+
+                document_year = form.fi0.data
+                document_interval = form.interval_ord.data
+                if not is_extratime(company_id, self.area_id, self.subarea_id, document_year, document_interval):
+                    raise ValidationError("You do not have permission to create this record (close period?).")
+
+                if form.fi2.data is None or form.fi3.data is None:
+                    raise ValidationError("Please enter all required data.")
+
+                if (form.fi1.data + form.fi2.data + form.fi3.data == 0) or (
+                        form.fi1.data < 0 or form.fi2.data < 0 or form.fi3.data < 0) or (
+                        form.fi1.data != form.fi2.data + form.fi3.data):
+                    raise ValidationError("Please check the values you entered.")
+
+                # Check if at least one inline record exists
+                if model.fi3 != 0 and not model.base_data_inlines:
+                    raise ValidationError("At least one Vendor record is required.")
+
+                if form.fi0.data is None or form.interval_ord.data is None:
+                    raise ValidationError(f"Time interval reference fields cannot be null.")
+
+                if form.interval_ord.data > 3 or form.interval_ord.data < 0:
+                    raise ValidationError(
+                        "Period must be less than or equal to the number of fractions (e.g., 4 for quarters, 12 for months).")
+
+                if form.fi0.data < 2000 or form.fi0.data > 2099:
+                    raise ValidationError("Please check the year.")
+
+                with current_app.app_context():
+                    result, message = check_status_extended(is_created, company_id, form.lexic_id.data,
+                                                            form.subject_id.data,
+                                                            legal_document_id, interval_ord, interval_id, year_id,
+                                                            area_id, subarea_id, form.fi1.data, None, None, None, None,
+                                                            None, None, None, None, datetime.today(), db.session)
+
+                if not result:
+                    raise ValidationError(message)
+
+                model.lexic_id = form.lexic_id.data.id if form.lexic_id.data else None
+                model.subcategory_id = form.subcategory_id.data.id if form.subcategory_id.data else None
+                model.item_id = form.item_id.data.id if form.item_id.data else None
+                model.user_id = user_id
+                model.company_id = company_id
+                model.data_type = data_type
+                model.record_type = record_type
+                model.area_id = area_id
+                model.subarea_id = subarea_id
+                model.fi0 = year_id
+                model.interval_id = interval_id
+                model.interval_ord = interval_ord
+                model.status_id = status_id
+                model.legal_document_id = legal_document_id
+
+                # Update record_type for each inline model
+                for inline in model.base_data_inlines:
+                    print('set precomplaint for', inline)
+                    inline.record_type = 'pre-complaint'
+
+                if is_created:
+                    self.session.add(model)
+                else:
+                    self.session.merge(model)
+                self.session.commit()
+
+                return model
 
         # =================================================================================================================
         # Define custom form for CustomAdminIndexView2
@@ -5971,7 +6253,7 @@ def create_admin_views(app, intervals):
 
         # First Flask-Admin instance with the first custom index view
         admin_app1 = Admin(app,
-                       name='Area di controllo 1 - Documenti e atti',
+                       name="Area di controllo 1 - Verifica dell'assenza di gestione discriminatoria del servizio",
                        url='/open_admin_1',
                        template_mode='bootstrap3',
                        endpoint='open_admin_1',

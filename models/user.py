@@ -579,6 +579,33 @@ class Lexic(db.Model):
     def __repr__(self):
         return f"{self.name}"
 
+
+class LexicSubcategory(db.Model):
+    __tablename__ = 'lexic_subcategories'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    parent_id = db.Column(db.Integer, db.ForeignKey('lexic.id'), nullable=False)
+    name = db.Column(db.String(128), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+
+    parent = db.relationship('Lexic', back_populates='subcategories')
+
+Lexic.subcategories = db.relationship('LexicSubcategory', back_populates='parent', cascade='all, delete-orphan')
+
+
+class LexicItem(db.Model):
+    __tablename__ = 'lexic_items'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    subcategory_id = db.Column(db.Integer, db.ForeignKey('lexic_subcategories.id'), nullable=False)
+    name = db.Column(db.String(128), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+
+    subcategory = db.relationship('LexicSubcategory', back_populates='items')
+
+LexicSubcategory.items = db.relationship('LexicItem', back_populates='subcategory', cascade='all, delete-orphan')
+
+
 class Area(db.Model):
     __tablename__ = 'area'
 

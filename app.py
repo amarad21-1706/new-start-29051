@@ -6516,6 +6516,22 @@ def get_document_details_and_workflows(doc_id):
    })
 
 
+@app.route('/api/get_subcategories/<int:category_id>', methods=['GET'])
+def get_subcategories(category_id):
+    subcategories = LexicSubcategory.query.filter_by(parent_id=category_id).all()
+    return jsonify({
+        'subcategories': [{'id': sub.id, 'name': sub.name} for sub in subcategories]
+    })
+
+
+@app.route('/api/get_items/<int:subcategory_id>', methods=['GET'])
+def get_items(subcategory_id):
+    items = LexicItem.query.filter_by(subcategory_id=subcategory_id).all()
+    return jsonify({
+        'items': [{'id': item.id, 'name': item.name} for item in items]
+    })
+
+
 @app.route('/show_message_modal/<ids>', methods=['GET', 'POST'])
 def show_message_modal(ids):
     # Convert the comma-separated string of IDs back into a list
