@@ -160,13 +160,10 @@
                         <input class="input" type="password" id="confirm_password" name="confirm_password" required>
                     </div>
 
+                    <!-- Title -->
                     <div class="form-group">
-                        <label for="title">Title:</label>
-                        <select class="form-control" id="title" name="title">
-                            <option value="">Select Title</option>
-                            <option value="Mr">Mr</option>
-                            <option value="Mrs">Mrs</option>
-                        </select>
+                        <label class="form-label" for="title">Title:</label>
+                        {{ form.title(class="input") }}
                     </div>
 
                     <!-- First Name -->

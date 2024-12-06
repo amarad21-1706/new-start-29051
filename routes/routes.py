@@ -26,8 +26,6 @@ def increment():
    return jsonify({"message": "Incremented successfully"})
 '''
 
-# Function to fetch phone prefixes
-# @cached(cache)
 def fetch_phone_prefixes():
     prefixes = []
     for country in pycountry.countries:
@@ -47,7 +45,6 @@ def get_phone_prefixes():
 
 # Function to fetch regions
 @geonames_bp.route('/regions')
-# @cached(cache)
 def get_regions():
     country_code = request.args.get('country_code')
     if not country_code:
@@ -73,6 +70,7 @@ def get_regions():
 
     regions = [{'code': region.get('geonameId', 'No geonameId'), 'name': region.get('name', 'No name')} for region in data.get('geonames', [])]
     return jsonify(regions)
+
 
 
 @geonames_bp.route('/provinces')
@@ -114,6 +112,7 @@ def get_cities():
               data.get('geonames', [])]
     return jsonify(cities)
 
+
 @geonames_bp.route('/streets')
 def get_streets():
     city_name = request.args.get('city_name')
@@ -121,32 +120,46 @@ def get_streets():
         return jsonify({'error': 'City name is required'}), 400
 
     # Use Nominatim to get the bounding box of the city
-    nominatim_url = f'https://nominatim.openstreetmap.org/search?q={city_name}&format=json&addressdetails=1&limit=1'
-    response = requests.get(nominatim_url)
-    if response.status_code != 200:
-        return jsonify({'error': 'Nominatim API request failed'}), 500
-
     try:
+        nominatim_url = f'https://nominatim.openstreetmap.org/search?q={city_name}&format=json&addressdetails=1&limit=1'
+        response = requests.get(nominatim_url)
+        response.raise_for_status()
         city_data = response.json()
         if not city_data:
             return jsonify({'error': 'City not found in Nominatim data'}), 404
-        bbox = city_data[0]['boundingbox']  # Get the city's bounding box
+        bbox = city_data[0]['boundingbox']
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Nominatim API request failed: {e}")
+        return jsonify({'error': 'Nominatim API request failed'}), 500
     except requests.exceptions.JSONDecodeError:
+        logging.error("Invalid response from Nominatim API")
         return jsonify({'error': 'Invalid response from Nominatim API'}), 500
 
     # Use the Overpass API to fetch streets within the bounding box
-    overpass_url = f'http://overpass-api.de/api/interpreter?data=[out:json];way["highway"]({bbox[0]},{bbox[2]},{bbox[1]},{bbox[3]});out;'
-    overpass_response = requests.get(overpass_url)
-    if overpass_response.status_code != 200:
-        return jsonify({'error': 'Overpass API request failed'}), 500
-
     try:
+        overpass_url = f'http://overpass-api.de/api/interpreter?data=[out:json];way["highway"]({bbox[0]},{bbox[2]},{bbox[1]},{bbox[3]});out;'
+        overpass_response = requests.get(overpass_url)
+        overpass_response.raise_for_status()
         overpass_data = overpass_response.json()
-        streets = [{'name': element['tags'].get('name', 'Unnamed Street')} for element in overpass_data['elements'] if 'tags' in element and 'name' in element['tags']]
+        streets = [
+            {'name': element['tags'].get('name', 'Unnamed Street')}
+            for element in overpass_data.get('elements', [])
+            if 'tags' in element and 'name' in element['tags']
+        ]
+    except requests.exceptions.RequestException as e:
+        logging.error(f"Overpass API request failed: {e}")
+        return jsonify({'error': 'Overpass API request failed'}), 500
     except requests.exceptions.JSONDecodeError:
+        logging.error("Invalid response from Overpass API")
         return jsonify({'error': 'Invalid response from Overpass API'}), 500
 
-    return jsonify(streets)
+    # Return the list of streets or an empty array if none found
+    if not streets:
+        logging.warning(f"No streets found for city: {city_name}")
+        return jsonify([]), 200
+
+    return jsonify(streets), 200
+
 
 @geonames_bp.route('/zip_codes')
 def get_zip_codes():

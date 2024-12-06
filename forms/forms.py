@@ -15,7 +15,9 @@ from wtforms import (DecimalField, StringField, BooleanField, FloatField, FileFi
                      )
 from flask_wtf import FlaskForm
 from wtforms import StringField, BooleanField, SelectField, FieldList, FormField
-from wtforms.validators import DataRequired
+
+from wtforms.validators import DataRequired, AnyOf
+
 from wtforms_components import DateTimeField
 from wtforms.widgets import DateTimeInput
 # Import ColorField
@@ -482,7 +484,11 @@ class SignupForm(FlaskForm):
     password = PasswordField('Password', validators=[DataRequired()])
     confirm_password = PasswordField('Repeat Password', validators=[
         DataRequired(), EqualTo('password', message='Passwords must match')])
-    title = SelectField('Title', choices=[('', ''), ('Mr.', 'Mr.'), ('Mrs.', 'Mrs.')], validators=[DataRequired()])
+    title = SelectField(
+        'Title',
+        choices=[('Mr', 'Mr'), ('Mrs', 'Mrs')],
+        validators=[DataRequired(), AnyOf(values=['Mr', 'Mrs'])]
+    )
     first_name = StringField('First Name', validators=[DataRequired()])
     mid_name = StringField('Middle Name')
     last_name = StringField('Last Name', validators=[DataRequired()])
