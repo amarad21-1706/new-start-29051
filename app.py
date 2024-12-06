@@ -2599,9 +2599,73 @@ def invalidate_cache():
 #             for country_code in phonenumbers.SUPPORTED_REGIONS]
 
 
-
 @app.route('/access/signup', methods=['GET', 'POST'])
 def signup():
+    form = SignupForm()
+
+    if form.validate_on_submit():
+        # Check if the user has accepted the terms of use
+        if not form.terms_accepted.data:
+            flash(_('You must agree with the Terms and Conditions to sign up.'), 'error')
+            return render_template('access/signup.html', title='Sign Up', form=form)
+
+        # Check if the user has accepted the privacy policy
+        if not form.privacy_policy_accepted.data:
+            flash(_('You must agree with the Privacy Policy to sign up.'), 'error')
+            return render_template('access/signup.html', title='Sign Up', form=form)
+
+        try:
+            new_user = Users(
+                username=form.username.data,
+                email=form.email.data,
+                title=form.title.data,
+                first_name=form.first_name.data,
+                mid_name=form.mid_name.data,
+                last_name=form.last_name.data,
+                country=form.country.data,
+                region=form.region.data,
+                province=form.province.data,
+                zip_code=form.zip_code.data,
+                city=form.city.data,
+                street=form.street.data,
+                address=form.address.data,
+                address1=form.address1.data,
+                phone_prefix=form.phone_prefix.data,
+                mobile_phone=form.mobile_phone.data,
+                work_phone=form.work_phone.data,
+                tax_code=form.tax_code.data,
+                terms_accepted=form.terms_accepted.data,
+                privacy_policy_accepted=form.privacy_policy_accepted.data,
+                accepted_terms_date=datetime.utcnow(),
+                created_at=datetime.utcnow(),
+                updated_at=datetime.utcnow(),
+                user_2fa_secret=pyotp.random_base32()  # Generate the 2FA secret
+            )
+
+            new_user.set_password(form.password.data)
+
+            db.session.add(new_user)
+            db.session.commit()
+
+            flash(_('Your account has been created! You can now log in.'), 'success')
+            return redirect(url_for('login'))
+
+        except Exception as e:
+            db.session.rollback()
+            logging.error(f"Error committing to the database: {e}")
+            logging.error(traceback.format_exc())
+            flash(_('An error occurred during signup.'), 'error')
+
+    elif request.method == 'POST':
+        flash(_('Form validation failed. Please check your input.'), 'error')
+
+    # Pass form with existing data to template
+    return render_template('access/signup.html', title='Sign Up', form=form)
+
+
+
+@app.route('/access/signup_222', methods=['GET', 'POST'])
+def signup_222():
     form = SignupForm()
 
     if request.method == 'POST':

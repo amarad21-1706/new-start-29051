@@ -124,8 +124,6 @@
         {% endwith %}
 
         <form method="post" action="{{ url_for('signup') }}">
-            {{ form.hidden_tag() }}
-
             {% if form.errors %}
                 <ul class="errors">
                     {% for field, errors in form.errors.items() %}
@@ -141,25 +139,25 @@
                     <!-- Username -->
                     <div class="form-group">
                         <label class="form-label" for="username">Username:</label>
-                        {{ form.username(class="input") }}
+                        <input class="input" type="text" id="username" name="username" required>
                     </div>
 
                     <!-- Email -->
                     <div class="form-group">
                         <label class="form-label" for="email">Email:</label>
-                        {{ form.email(class="input") }}
+                        <input class="input" type="email" id="email" name="email" required>
                     </div>
 
                     <!-- Password -->
                     <div class="form-group">
                         <label class="form-label" for="password">Password:</label>
-                        {{ form.password(class="input") }}
+                        <input class="input" type="password" id="password" name="password" required>
                     </div>
 
                     <!-- Repeat Password -->
                     <div class="form-group">
                         <label class="form-label" for="confirm_password">Repeat Password:</label>
-                        {{ form.confirm_password(class="input") }}
+                        <input class="input" type="password" id="confirm_password" name="confirm_password" required>
                     </div>
 
                     <!-- Title -->
@@ -171,90 +169,83 @@
                     <!-- First Name -->
                     <div class="form-group">
                         <label class="form-label" for="first_name">First Name:</label>
-                        {{ form.first_name(class="input") }}
+                        <input class="input" type="text" id="first_name" name="first_name" required>
                     </div>
 
                     <!-- Middle Name -->
                     <div class="form-group">
                         <label class="form-label" for="mid_name">Middle Name:</label>
-                        {{ form.mid_name(class="input") }}
+                        <input class="input" type="text" id="mid_name" name="mid_name">
                     </div>
 
                     <!-- Last Name -->
                     <div class="form-group">
                         <label class="form-label" for="last_name">Last Name:</label>
-                        {{ form.last_name(class="input") }}
+                        <input class="input" type="text" id="last_name" name="last_name" required>
                     </div>
                 </div>
-
 
                 <div class="col-md-6">
                     <!-- Country -->
                     <div class="form-group">
                         <label class="form-label" for="country">Country:</label>
-                        <select id="country" name="country" class="input">
-                            <option value="">Select Country</option>
-                        </select>
+                        <select class="input" id="country" name="country" required></select>
                     </div>
 
                     <!-- Region -->
                     <div class="form-group">
                         <label class="form-label" for="region">Region:</label>
-                        <select id="region" name="region" class="input">
-                            <option value="">Select Region</option>
-                        </select>
+                        <select class="input" id="region" name="region" required></select>
                     </div>
 
                     <!-- Province -->
                     <div class="form-group">
                         <label class="form-label" for="province">Province:</label>
-                        <select id="province" name="province" class="input">
-                            <option value="">Select Province</option>
-                        </select>
+                        <select class="input" id="province" name="province" required></select>
                     </div>
 
                     <!-- City -->
                     <div class="form-group">
                         <label class="form-label" for="city">City:</label>
-                        <select id="city" name="city" class="input">
-                            <option value="">Select City</option>
-                        </select>
+                        <select class="input" id="city" name="city" required></select>
                     </div>
 
                     <!-- Street -->
+                    <!-- Street -->
                     <div class="form-group">
                         <label class="form-label" for="street">Street:</label>
-                        {{ form.street(class="input") }}
+                        <input class="input" type="text" id="street" name="street" placeholder="Enter street" required>
                     </div>
 
                     <!-- Zip Code -->
                     <div class="form-group">
                         <label class="form-label" for="zip_code">Zip Code:</label>
-                        {{ form.zip_code(class="input") }}
+                        <input class="input" type="text" id="zip_code" name="zip_code" placeholder="Enter zip code" required>
                     </div>
+
 
                     <!-- Phone Prefix -->
                     <div class="form-group">
                         <label class="form-label" for="phone_prefix">Phone Prefix:</label>
-                        {{ form.phone_prefix(class="input") }}
+                        <select class="input" id="phone_prefix" name="phone_prefix" required></select>
                     </div>
 
                     <!-- Mobile Phone -->
                     <div class="form-group">
                         <label class="form-label" for="mobile_phone">Mobile Phone:</label>
-                        {{ form.mobile_phone(class="input") }}
+                        <input class="input" type="text" id="mobile_phone" name="mobile_phone" required>
                     </div>
 
                     <!-- Work Phone -->
                     <div class="form-group">
                         <label class="form-label" for="work_phone">Work Phone:</label>
-                        {{ form.work_phone(class="input") }}
+                        <input class="input" type="text" id="work_phone" name="work_phone">
                     </div>
 
                     <!-- Tax Code -->
                     <div class="form-group">
                         <label class="form-label" for="tax_code">Tax Code:</label>
-                        {{ form.tax_code(class="input") }}
+                        <input class="input" type="text" id="tax_code" name="tax_code">
                     </div>
                 </div>
             </div>
@@ -263,7 +254,7 @@
 
             <!-- Terms of Use -->
             <div class="form-group terms full-width text-center">
-                {{ form.terms_accepted }}
+                <input type="checkbox" id="terms_accepted" name="terms_accepted" required>
                 <label class="form-label" for="terms_accepted">
                     I accept the <a href="{{ url_for('terms_of_use') }}" target="_blank">Terms of Use</a>
                 </label>
@@ -271,7 +262,7 @@
 
             <!-- Privacy Policy -->
             <div class="form-group terms full-width text-center">
-                {{ form.privacy_policy_accepted }}
+                <input type="checkbox" id="privacy_policy_accepted" name="privacy_policy_accepted" required>
                 <label class="form-label" for="privacy_policy_accepted">
                     I agree with the <a href="{{ url_for('privacy_policy') }}" target="_blank">Privacy Policy</a>
                 </label>
@@ -282,7 +273,6 @@
                 <button type="submit">Sign Up</button>
             </div>
         </form>
-
     </div>
 
     <script>

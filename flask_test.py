@@ -7,67 +7,43 @@ app = create_app()
 
 with app.app_context():
     # Step 1: Create the top-level category
-    category_name = "Oggetti ricorrenti pre-complaint"
+    category_name = "Oggetti ricorrenti contenziosi"
     category = Lexic.query.filter_by(name=category_name).first()
     if not category:
-        category = Lexic(category="Pre-complaint", name=category_name)
+        category = Lexic(category="Contenziosi", name=category_name)
         db.session.add(category)
         db.session.commit()
 
     # Step 2: Define subcategories and items
     subcategories_data = [
         {
-            "name": "Da Utente su erogazione del servizio di distribuzione",
+            "name": "Atti di impulso del procedimento",
             "items": [
-                "Esiti procedure di settlement fisico",
-                "Gestione procedure di switching",
-                "Bonus sociale",
-                "Gestione partite commerciali contratto di distribuzione",
+                "Citazione",
+                "Ricorso amministrativo",
                 "Altro",
             ],
         },
         {
-            "name": "Da Utente su questioni di interesse del proprio cliente finale",
+            "name": "Atti prodotti nell'ambito del procedimento giurisdizionale",
             "items": [
-                "Switching – doppia fatturazione",
-                "Misura",
-                "Fatturazione",
-                "Bonus sociale",
-                "Mercato",
-                "Morosità e sospensione del servizio",
-                "Allacciamento",
-                "Interventi su impianto",
-                "Qualità commerciale",
+                "Memorie",
+                "Decreti",
+                "Decisioni",
                 "Altro",
             ],
         },
         {
-            "name": "Da cliente finale su questioni relative al contratto di vendita o al contratto di settlement fisico",
+            "name": "Atti della procedura arbitrale",
             "items": [
-                "Switching – doppia fatturazione",
-                "Misura",
-                "Fatturazione",
-                "Bonus sociale",
-                "Mercato",
-                "Morosità e sospensione del servizio",
-                "Allacciamento",
-                "Interventi su impianto",
-                "Qualità commerciale",
+                "Atti della procedura arbitrale",
                 "Altro",
             ],
         },
         {
-            "name": "Da cliente finale tramite sportello del consumatore",
+            "name": "Atti della procedura di conciliazione",
             "items": [
-                "Switching – doppia fatturazione",
-                "Misura",
-                "Fatturazione",
-                "Bonus sociale",
-                "Mercato",
-                "Morosità e sospensione del servizio",
-                "Allacciamento",
-                "Interventi su impianto",
-                "Qualità commerciale",
+                "Atti della procedura di conciliazione",
                 "Altro",
             ],
         },
@@ -83,7 +59,6 @@ with app.app_context():
         if not subcategory:
             subcategory = LexicSubcategory(parent_id=category.id, name=subcategory_name)
             db.session.add(subcategory)
-            db.session.commit()
 
         # Insert items for the subcategory
         for item_name in items:
