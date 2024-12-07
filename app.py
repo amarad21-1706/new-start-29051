@@ -6,6 +6,10 @@ print(f"FLASK_DEBUG: {os.getenv('FLASK_DEBUG')}")
 # DEBUG LOGGING LOGGER TOOLBAR: see app_factory.py 
 '''
 # app.py (or run.py)
+
+from sqlalchemy import event
+from sqlalchemy.engine import Engine
+
 import traceback
 import re
 import requests
@@ -309,6 +313,14 @@ def get_version_from_file():
             return file.read().strip()
     except Exception as e:
         return "Version information not available"
+
+@event.listens_for(Engine, "before_cursor_execute")
+def before_cursor_execute(conn, cursor, statement, parameters, context, executemany):
+    print("\nExecuting SQL Query:")
+    print(statement)
+    print("With Parameters:")
+    print(parameters)
+    print("\n")
 
 
 # Serve the React app
@@ -5689,6 +5701,9 @@ def update_account():
         form.mobile_phone.data = current_user.mobile_phone
         form.work_phone.data = current_user.work_phone
 
+        print(
+            f"Preloaded Values: {form.country_id.data}, {form.region_id.data}, {form.province_id.data}, {form.city_id.data}, {form.phone_prefix.data}")
+
     # Pass preloaded values to the template
     return render_template(
         'update_account.html',
@@ -6503,6 +6518,31 @@ def request_company():
 
     return redirect(url_for('checklist'))
 
+
+@app.route('/api/lexic/<int:lexic_id>/subcategories', methods=['GET'])
+def get_subcategories(lexic_id):
+    subcategories = LexicSubcategory.query.filter_by(lexic_id=lexic_id).all()
+    return jsonify([
+        {
+            'id': sub.id,
+            'name': sub.name,
+            'description': sub.description,
+            'type': sub.type
+        }
+        for sub in subcategories
+    ])
+
+@app.route('/api/subcategory/<int:subcategory_id>/items', methods=['GET'])
+def get_items(subcategory_id):
+    items = LexicItem.query.filter_by(subcategory_id=subcategory_id).all()
+    return jsonify([
+        {
+            'id': item.id,
+            'name': item.name,
+            'description': item.description
+        }
+        for item in items
+    ])
 
 @app.route('/subscribe_service', methods=['POST'])
 @login_required

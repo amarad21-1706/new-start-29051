@@ -569,12 +569,18 @@ class Deadline(db.Model):
     interval = relationship("Interval", back_populates="deadline")
     status = relationship("Status", back_populates="deadline")'''
 
+
 class Lexic(db.Model):
     __tablename__ = 'lexic'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     category = db.Column(db.String(64), nullable=False)
     name = db.Column(db.String(64), unique=True, nullable=False)
+    subcategories = db.relationship(
+        "LexicSubcategory",
+        back_populates="lexic",
+        cascade="all, delete-orphan"
+    )  # Relationship to LexicSubcategory
 
     def __init__(self, category=None, name=None):
         self.category = category
@@ -582,6 +588,29 @@ class Lexic(db.Model):
 
     def __repr__(self):
         return f"{self.name}"
+
+class LexicSubcategory(db.Model):
+    __tablename__ = 'lexic_subcategories'
+
+    id = db.Column(db.Integer, primary_key=True)
+    lexic_id = db.Column(db.Integer, db.ForeignKey('lexic.id'), nullable=False)
+    name = db.Column(db.String(128), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+    type = db.Column(db.String(16), nullable=False)
+
+    lexic = db.relationship("Lexic", back_populates="subcategories")
+    items = db.relationship("LexicItem", back_populates="subcategory")
+
+
+class LexicItem(db.Model):
+    __tablename__ = 'lexic_items'
+
+    id = db.Column(db.Integer, primary_key=True)
+    subcategory_id = db.Column(db.Integer, db.ForeignKey('lexic_subcategories.id'), nullable=False)
+    name = db.Column(db.String(255), nullable=False)
+    description = db.Column(db.Text, nullable=True)
+
+    subcategory = db.relationship("LexicSubcategory", back_populates="items")
 
 class Area(db.Model):
     __tablename__ = 'area'

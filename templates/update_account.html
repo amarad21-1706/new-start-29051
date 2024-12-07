@@ -144,18 +144,27 @@
     <div class="row">
         <!-- Phone Prefix -->
         <div class="col-md-6">
+
             <div class="form-group">
                 {{ form.phone_prefix.label(class="form-control-label") }}
                 <select id="phone_prefix_dropdown" class="form-control form-control-sm">
-                    <option value="">Select Prefix</option>
+                    <option value="">Select Phone Prefix</option>
                     {% for prefix in phone_prefixes %}
-                    <option value="{{ prefix.id }}" {% if form.phone_prefix.data == prefix.id %}selected{% endif %}>
+                    <option value="{{ prefix.prefix }}" {% if form.phone_prefix.data == prefix.prefix %}selected{% endif %}>
                         +{{ prefix.prefix }} - {{ prefix.country }}
                     </option>
                     {% endfor %}
                 </select>
                 <input type="hidden" id="phone_prefix" name="phone_prefix" value="{{ form.phone_prefix.data|default('') }}">
+                {% if form.phone_prefix.errors %}
+                <div class="text-danger">
+                    {% for error in form.phone_prefix.errors %}
+                    {{ error }}
+                    {% endfor %}
+                </div>
+                {% endif %}
             </div>
+
         </div>
 
         <!-- Mobile Phone -->
@@ -180,33 +189,39 @@
 </form>
 
 <script>
+    // Function to populate a dropdown with data
     function populateDropdown(dropdownId, data, valueKey, textKey, selectedValue = '') {
         const dropdown = document.getElementById(dropdownId);
         if (!dropdown) return;
 
+        // Clear the dropdown and add default option
         dropdown.innerHTML = `<option value="">Select ${dropdownId.replace('_id_dropdown', '')}</option>`;
+
+        // Populate options dynamically
         data.forEach(item => {
             const isSelected = selectedValue === item[valueKey] ? 'selected' : '';
             dropdown.innerHTML += `<option value="${item[valueKey]}" ${isSelected}>${item[textKey]}</option>`;
         });
     }
 
-    function updateHiddenField(dropdownId, hiddenFieldId, hiddenTextId = null) {
+    // Function to update hidden fields when dropdown values change
+    function updateHiddenField(dropdownId, hiddenFieldId, hiddenTextFieldId = null) {
         const dropdown = document.getElementById(dropdownId);
         const hiddenField = document.getElementById(hiddenFieldId);
-        const hiddenTextField = hiddenTextId ? document.getElementById(hiddenTextId) : null;
+        const hiddenTextField = hiddenTextFieldId ? document.getElementById(hiddenTextFieldId) : null;
 
         if (dropdown && hiddenField) {
             dropdown.addEventListener('change', function () {
-                hiddenField.value = dropdown.value; // Set the selected value to the hidden field
+                hiddenField.value = dropdown.value; // Update the hidden field with the selected value
                 if (hiddenTextField) {
-                    hiddenTextField.value = dropdown.options[dropdown.selectedIndex].text; // Set text if text field exists
+                    hiddenTextField.value = dropdown.options[dropdown.selectedIndex]?.text || ''; // Update text field, if applicable
                 }
             });
         }
     }
 
     document.addEventListener('DOMContentLoaded', function () {
+        // Preloaded values from the backend
         const preloadedValues = {
             country_id: "{{ form.country_id.data|default('') }}",
             region_id: "{{ form.region_id.data|default('') }}",
@@ -215,59 +230,69 @@
             phone_prefix: "{{ form.phone_prefix.data|default('') }}"
         };
 
-        // Update hidden fields when dropdown values change
-        updateHiddenField('country_id_dropdown', 'country_id', 'country');
-        updateHiddenField('region_id_dropdown', 'region_id', 'region');
-        updateHiddenField('province_id_dropdown', 'province_id', 'province');
-        updateHiddenField('city_id_dropdown', 'city_id', 'city');
-
-        // Populate countries
+        // Populate the country dropdown
         fetch('/geonames-api/countries')
             .then(response => response.json())
             .then(data => {
                 populateDropdown('country_id_dropdown', data, 'alpha2Code', 'name', preloadedValues.country_id);
             });
 
-        // Country change
-        document.getElementById('country_id_dropdown').addEventListener('change', function () {
-            const countryCode = this.value;
-            fetch(`/geonames-api/regions?country_code=${countryCode}`)
+        // Fetch and populate regions when a country is selected or preloaded
+        if (preloadedValues.country_id) {
+            fetch(`/geonames-api/regions?country_code=${preloadedValues.country_id}`)
                 .then(response => response.json())
                 .then(data => {
                     populateDropdown('region_id_dropdown', data, 'code', 'name', preloadedValues.region_id);
                 });
-        });
+        }
 
-        // Region change
-        document.getElementById('region_id_dropdown').addEventListener('change', function () {
-            const regionCode = this.value;
-            fetch(`/geonames-api/provinces?region_code=${regionCode}`)
+        // Fetch and populate provinces when a region is selected or preloaded
+        if (preloadedValues.region_id) {
+            fetch(`/geonames-api/provinces?region_code=${preloadedValues.region_id}`)
                 .then(response => response.json())
                 .then(data => {
                     populateDropdown('province_id_dropdown', data, 'code', 'name', preloadedValues.province_id);
                 });
-        });
+        }
 
-        // Province change
-        document.getElementById('province_id_dropdown').addEventListener('change', function () {
-            const provinceCode = this.value;
-            fetch(`/geonames-api/cities?province_code=${provinceCode}`)
+        // Fetch and populate cities when a province is selected or preloaded
+        if (preloadedValues.province_id) {
+            fetch(`/geonames-api/cities?province_code=${preloadedValues.province_id}`)
                 .then(response => response.json())
                 .then(data => {
                     populateDropdown('city_id_dropdown', data, 'geonameId', 'name', preloadedValues.city_id);
                 });
-        });
+        }
 
-        document.getElementById('phone_prefix_dropdown').addEventListener('change', function () {
-            const selectedValue = this.value;
-            const hiddenField = document.getElementById('phone_prefix');
-            if (hiddenField) {
-                hiddenField.value = selectedValue;
-            }
-        });
+        // Populate phone prefix dropdown
+        fetch('/geonames-api/phone_prefixes')
+            .then(response => response.json())
+            .then(data => {
+                // Populate the dropdown with prefixes
+                populateDropdown(
+                    'phone_prefix_dropdown',  // Dropdown ID
+                    data,                     // Data from the API
+                    'prefix',                 // Key for the value attribute in options
+                    'country',                // Key for the displayed text in options
+                    preloadedValues.phone_prefix // Preloaded value to set as selected
+                );
+            })
+            .catch(error => {
+                console.error('Error fetching phone prefixes:', error);
+            });
 
+// Update hidden field for phone prefix when dropdown changes
+updateHiddenField('phone_prefix_dropdown', 'phone_prefix');
+
+
+        // Link dropdown changes to hidden fields for form submission
+        updateHiddenField('country_id_dropdown', 'country_id', 'country');
+        updateHiddenField('region_id_dropdown', 'region_id', 'region');
+        updateHiddenField('province_id_dropdown', 'province_id', 'province');
+        updateHiddenField('city_id_dropdown', 'city_id', 'city');
+        updateHiddenField('phone_prefix_dropdown', 'phone_prefix');
     });
-
 </script>
+
 
 {% endblock %}

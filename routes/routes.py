@@ -40,38 +40,73 @@ def fetch_phone_prefixes():
             continue  # Skip countries that cause exceptions
     return prefixes
 
+
 @geonames_bp.route('/phone_prefixes', methods=['GET'])
 def get_phone_prefixes():
-    return jsonify(fetch_phone_prefixes())
+    """
+    Fetch phone prefixes dynamically using GeoNames or another reliable source.
+    """
+    try:
+        # Use GeoNames or another external service to fetch phone prefixes
+        url = "http://api.geonames.org/countryInfoJSON?username=your_geonames_username"
+        response = requests.get(url)
+        data = response.json()
 
-# Function to fetch regions
+        if 'geonames' not in data:
+            return jsonify({'error': 'Invalid response from GeoNames API'}), 500
+
+        # Map prefixes to countries
+        phone_prefixes = [
+            {'prefix': country.get('phone', ''), 'country': country.get('countryName', '')}
+            for country in data['geonames']
+            if country.get('phone')  # Include only countries with a phone prefix
+        ]
+
+        return jsonify(phone_prefixes)
+
+    except Exception as e:
+        app.logger.error(f"Error fetching phone prefixes: {e}")
+        return jsonify({'error': 'Failed to fetch phone prefixes'}), 500
+
+
+
 @geonames_bp.route('/regions')
 def get_regions():
     country_code = request.args.get('country_code')
     if not country_code:
         return jsonify({'error': 'Country code is required'}), 400
 
-    url = f'http://api.geonames.org/countryInfoJSON?country={country_code}&username=amarad21'
-    response = requests.get(url)
-    data = response.json()
+    # Step 1: Get country info and extract geonameId
+    url_country_info = f'http://api.geonames.org/countryInfoJSON?country={country_code}&username=amarad21'
+    response_country_info = requests.get(url_country_info)
 
-    if 'geonames' not in data:
-        return jsonify({'error': 'Invalid response from GeoNames API'}), 500
+    if response_country_info.status_code != 200:
+        return jsonify({'error': 'Failed to fetch country info from GeoNames API'}), 500
 
-    country_geoname_id = data['geonames'][0].get('geonameId', None)
+    data_country_info = response_country_info.json()
+
+    if 'geonames' not in data_country_info or not data_country_info['geonames']:
+        return jsonify({'error': 'No geonames data found for the country'}), 404
+
+    country_geoname_id = data_country_info['geonames'][0].get('geonameId', None)
     if not country_geoname_id:
-        return jsonify({'error': 'Could not find geonameId for the country'}), 500
+        return jsonify({'error': 'Country geonameId not available in the API response'}), 404
 
-    url = f'http://api.geonames.org/childrenJSON?geonameId={country_geoname_id}&username=amarad21'
-    response = requests.get(url)
-    data = response.json()
+    # Step 2: Fetch regions using the country's geonameId
+    url_regions = f'http://api.geonames.org/childrenJSON?geonameId={country_geoname_id}&username=amarad21'
+    response_regions = requests.get(url_regions)
 
-    if 'geonames' not in data:
-        return jsonify({'error': 'Invalid response from GeoNames API'}), 500
+    if response_regions.status_code != 200:
+        return jsonify({'error': 'Failed to fetch regions from GeoNames API'}), 500
 
-    regions = [{'code': region.get('geonameId', 'No geonameId'), 'name': region.get('name', 'No name')} for region in data.get('geonames', [])]
+    data_regions = response_regions.json()
+
+    if 'geonames' not in data_regions or not data_regions['geonames']:
+        return jsonify({'error': 'No regions found for the specified country'}), 404
+
+    # Step 3: Format and return regions
+    regions = [{'code': region.get('geonameId', ''), 'name': region.get('name', '')} for region in data_regions['geonames']]
     return jsonify(regions)
-
 
 
 @geonames_bp.route('/provinces')
