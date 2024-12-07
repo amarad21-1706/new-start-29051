@@ -274,56 +274,31 @@ class SubscriptionForm(FlaskForm):
     additional_products = HiddenField('Additional Products')
     submit = SubmitField('Subscribe')
 
-
 class UpdateAccountForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(min=2, max=80)])
     email = StringField('Email', validators=[DataRequired(), Email()])
-    title = StringField('Title', validators=[DataRequired(), Length(max=12)])
+    title = StringField('Title', validators=[DataRequired(), Length(min=1, max=24)])
     first_name = StringField('First Name', validators=[DataRequired(), Length(min=1, max=128)])
     mid_name = StringField('Middle Name', validators=[Optional(), Length(max=128)])
     last_name = StringField('Last Name', validators=[DataRequired(), Length(min=1, max=128)])
-
-    # Dropdown fields with hidden inputs for names
-    country_id = StringField('Country ID', validators=[DataRequired()])
-    country = StringField('Country', validators=[DataRequired()])
-
-    region_id = StringField('Region ID', validators=[Optional()])
-    region = StringField('Region', validators=[Optional()])
-
-    province_id = StringField('Province ID', validators=[DataRequired()])
-    province = StringField('Province', validators=[DataRequired()])
-
-    zip_code = StringField('Zip Code', validators=[Optional(), Length(max=24)])
-
-    city_id = StringField('City ID', validators=[DataRequired()])
-    city = StringField('City', validators=[DataRequired()])
-
-    street = StringField('Street', validators=[DataRequired(), Length(max=128)])
-
-    address = StringField('Address', validators=[Optional(), Length(max=128)])
+    title = StringField('Title', validators=[DataRequired(), Length(max=12)])
+    address = StringField('Address', validators=[DataRequired(), Length(max=128)])
     address1 = StringField('Address 1', validators=[Optional(), Length(max=128)])
-
+    city = StringField('City', validators=[DataRequired(), Length(max=128)])
+    province = StringField('Province', validators=[DataRequired(), Length(max=64)])
+    region = StringField('Region', validators=[DataRequired(), Length(max=64)])
+    zip_code = StringField('Zip Code', validators=[Optional(), Length(max=24)])
+    country = StringField('Country', validators=[DataRequired(), Length(max=64)])
     tax_code = StringField('Tax Code', validators=[Optional(), Length(max=128)])
-
-    phone_prefix = StringField('Phone Prefix', validators=[DataRequired()])
-    mobile_phone = StringField('Mobile Phone', validators=[DataRequired(), Length(max=15)])
-    work_phone = StringField('Work Phone', validators=[Optional(), Length(max=15)])
-
+    mobile_phone = StringField('Mobile Phone', validators=[
+        DataRequired(),
+        Regexp(r'^\+?1?\d{9,15}$', message="Phone number must be entered in the format: '+999999999'. Up to 15 digits allowed.")
+    ])
+    work_phone = StringField('Work Phone', validators=[
+        Optional(),
+        Regexp(r'^\+?1?\d{9,15}$', message="Phone number must be entered in the format: '+999999999'. Up to 15 digits allowed.")
+    ])
     submit = SubmitField('Update')
-
-    def validate_mobile_phone(self, field):
-        if not self.phone_prefix.data:
-            raise ValidationError("Phone prefix is required for a valid mobile phone number.")
-        if not field.data.isdigit():
-            raise ValidationError("Mobile phone must contain only digits.")
-        if len(field.data) < 9 or len(field.data) > 15:
-            raise ValidationError("Mobile phone must be between 9 and 15 digits.")
-
-    def validate_work_phone(self, field):
-        if field.data and not field.data.isdigit():
-            raise ValidationError("Work phone must contain only digits.")
-        if field.data and (len(field.data) < 9 or len(field.data) > 15):
-            raise ValidationError("Work phone must be between 9 and 15 digits.")
 
 
 class ColorField(StringField):
@@ -511,22 +486,19 @@ class SignupForm(FlaskForm):
         DataRequired(), EqualTo('password', message='Passwords must match')])
     title = SelectField(
         'Title',
-        choices=[('Mr', 'Mr'), ('Mrs', 'Mrs')]
+        choices=[('Mr', 'Mr'), ('Mrs', 'Mrs')],
+        validators=[DataRequired(), AnyOf(values=['Mr', 'Mrs'])]
     )
     first_name = StringField('First Name', validators=[DataRequired()])
     mid_name = StringField('Middle Name')
     last_name = StringField('Last Name', validators=[DataRequired()])
-    country_id = StringField('Country ID', validators=[DataRequired()])
-    country = StringField('Country')  # Hidden field for Name
-    region_id = StringField('Region ID', validators=[DataRequired()])
-    region = StringField('Region')    # Hidden field for Name
-    province_id = StringField('Province ID')
-    province = StringField('Province')  # Hidden field for Name
-    zip_code = StringField('Zip Code', validators=[DataRequired(), Length(max=24)])
-    city_id = StringField('City ID')
-    city = StringField('City')          # Hidden field for Name
+    country = StringField('Country', validators=[DataRequired()])
+    region = StringField('Region', validators=[DataRequired()])
+    province = StringField('Province')
+    zip_code = StringField('Zip Code')
+    city = StringField('City')
     street = StringField('Street')
-    address = StringField('Address 1')
+    address = StringField('Address 1', validators=[DataRequired()])
     address1 = StringField('Address 2')
     phone_prefix = StringField('Phone Prefix', validators=[DataRequired()])
     mobile_phone = StringField('Mobile Phone', validators=[DataRequired()])

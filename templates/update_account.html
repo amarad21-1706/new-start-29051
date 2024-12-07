@@ -1,0 +1,273 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1 class="mb-3">Update Account</h1>
+<form method="POST" action="{{ url_for('update_account') }}">
+    {{ form.hidden_tag() }}
+
+    {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="alert-container">
+        {% for category, message in messages %}
+        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+            {{ message }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+    {% endwith %}
+
+    <div class="row">
+        <!-- Username -->
+        <div class="col-md-6">
+            <div class="form-group">
+                {{ form.username.label(class="form-control-label") }}
+                {{ form.username(class="form-control form-control-sm") }}
+            </div>
+        </div>
+
+        <!-- Email -->
+        <div class="col-md-6">
+            <div class="form-group">
+                {{ form.email.label(class="form-control-label") }}
+                {{ form.email(class="form-control form-control-sm") }}
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+
+        <!-- Title -->
+        <div class="col-md-6">
+            <div class="form-group">
+                {{ form.title.label(class="form-control-label") }}
+                {{ form.title(class="form-control form-control-sm") }}
+            </div>
+        </div>
+
+        <!-- First Name -->
+        <div class="col-md-6">
+            <div class="form-group">
+                {{ form.first_name.label(class="form-control-label") }}
+                {{ form.first_name(class="form-control form-control-sm") }}
+            </div>
+        </div>
+
+        <!-- Middle Name -->
+        <div class="col-md-6">
+            <div class="form-group">
+                {{ form.mid_name.label(class="form-control-label") }}
+                {{ form.mid_name(class="form-control form-control-sm") }}
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Last Name -->
+        <div class="col-md-6">
+            <div class="form-group">
+                {{ form.last_name.label(class="form-control-label") }}
+                {{ form.last_name(class="form-control form-control-sm") }}
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Country -->
+    <div class="form-group">
+        {{ form.country.label(class="form-control-label") }}
+        <select id="country_id_dropdown" class="form-control form-control-sm">
+            <option value="">Select Country</option>
+        </select>
+        <input type="hidden" id="country_id" name="country_id" value="{{ form.country_id.data|default('') }}">
+        <input type="hidden" id="country" name="country" value="{{ form.country.data|default('') }}">
+    </div>
+
+    <!-- Region -->
+    <div class="form-group">
+        {{ form.region.label(class="form-control-label") }}
+        <select id="region_id_dropdown" class="form-control form-control-sm">
+            <option value="">Select Region</option>
+        </select>
+        <input type="hidden" id="region_id" name="region_id" value="{{ form.region_id.data|default('') }}">
+        <input type="hidden" id="region" name="region" value="{{ form.region.data|default('') }}">
+    </div>
+
+    <!-- Province -->
+    <div class="form-group">
+        {{ form.province.label(class="form-control-label") }}
+        <select id="province_id_dropdown" class="form-control form-control-sm">
+            <option value="">Select Province</option>
+        </select>
+        <input type="hidden" id="province_id" name="province_id" value="{{ form.province_id.data|default('') }}">
+        <input type="hidden" id="province" name="province" value="{{ form.province.data|default('') }}">
+    </div>
+
+    <!-- City -->
+    <div class="form-group">
+        {{ form.city.label(class="form-control-label") }}
+        <select id="city_id_dropdown" class="form-control form-control-sm">
+            <option value="">Select City</option>
+        </select>
+        <input type="hidden" id="city_id" name="city_id" value="{{ form.city_id.data|default('') }}">
+        <input type="hidden" id="city" name="city" value="{{ form.city.data|default('') }}">
+    </div>
+
+
+    <div class="row">
+        <!-- Zip Code -->
+        <div class="col-md-6">
+            <div class="form-group">
+                {{ form.zip_code.label(class="form-control-label") }}
+                {{ form.zip_code(class="form-control form-control-sm") }}
+            </div>
+        </div>
+
+        <!-- Street -->
+        <div class="col-md-6">
+            <div class="form-group">
+                {{ form.street.label(class="form-control-label") }}
+                {{ form.street(class="form-control form-control-sm") }}
+            </div>
+        </div>
+
+        <!-- Address -->
+        <div class="col-md-6">
+            <div class="form-group">
+                {{ form.address.label(class="form-control-label") }}
+                {{ form.address(class="form-control form-control-sm") }}
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Phone Prefix -->
+        <div class="col-md-6">
+            <div class="form-group">
+                {{ form.phone_prefix.label(class="form-control-label") }}
+                <select id="phone_prefix_dropdown" class="form-control form-control-sm">
+                    <option value="">Select Prefix</option>
+                    {% for prefix in phone_prefixes %}
+                    <option value="{{ prefix.id }}" {% if form.phone_prefix.data == prefix.id %}selected{% endif %}>
+                        +{{ prefix.prefix }} - {{ prefix.country }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <input type="hidden" id="phone_prefix" name="phone_prefix" value="{{ form.phone_prefix.data|default('') }}">
+            </div>
+        </div>
+
+        <!-- Mobile Phone -->
+        <div class="col-md-6">
+            <div class="form-group">
+                {{ form.mobile_phone.label(class="form-control-label") }}
+                {{ form.mobile_phone(class="form-control form-control-sm") }}
+                {% if form.mobile_phone.errors %}
+                <div class="text-danger">
+                    {% for error in form.mobile_phone.errors %}
+                    {{ error }}
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="form-group">
+        {{ form.submit(class="btn btn-primary btn-sm") }}
+    </div>
+</form>
+
+<script>
+    function populateDropdown(dropdownId, data, valueKey, textKey, selectedValue = '') {
+        const dropdown = document.getElementById(dropdownId);
+        if (!dropdown) return;
+
+        dropdown.innerHTML = `<option value="">Select ${dropdownId.replace('_id_dropdown', '')}</option>`;
+        data.forEach(item => {
+            const isSelected = selectedValue === item[valueKey] ? 'selected' : '';
+            dropdown.innerHTML += `<option value="${item[valueKey]}" ${isSelected}>${item[textKey]}</option>`;
+        });
+    }
+
+    function updateHiddenField(dropdownId, hiddenFieldId, hiddenTextId = null) {
+        const dropdown = document.getElementById(dropdownId);
+        const hiddenField = document.getElementById(hiddenFieldId);
+        const hiddenTextField = hiddenTextId ? document.getElementById(hiddenTextId) : null;
+
+        if (dropdown && hiddenField) {
+            dropdown.addEventListener('change', function () {
+                hiddenField.value = dropdown.value; // Set the selected value to the hidden field
+                if (hiddenTextField) {
+                    hiddenTextField.value = dropdown.options[dropdown.selectedIndex].text; // Set text if text field exists
+                }
+            });
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+        const preloadedValues = {
+            country_id: "{{ form.country_id.data|default('') }}",
+            region_id: "{{ form.region_id.data|default('') }}",
+            province_id: "{{ form.province_id.data|default('') }}",
+            city_id: "{{ form.city_id.data|default('') }}",
+            phone_prefix: "{{ form.phone_prefix.data|default('') }}"
+        };
+
+        // Update hidden fields when dropdown values change
+        updateHiddenField('country_id_dropdown', 'country_id', 'country');
+        updateHiddenField('region_id_dropdown', 'region_id', 'region');
+        updateHiddenField('province_id_dropdown', 'province_id', 'province');
+        updateHiddenField('city_id_dropdown', 'city_id', 'city');
+
+        // Populate countries
+        fetch('/geonames-api/countries')
+            .then(response => response.json())
+            .then(data => {
+                populateDropdown('country_id_dropdown', data, 'alpha2Code', 'name', preloadedValues.country_id);
+            });
+
+        // Country change
+        document.getElementById('country_id_dropdown').addEventListener('change', function () {
+            const countryCode = this.value;
+            fetch(`/geonames-api/regions?country_code=${countryCode}`)
+                .then(response => response.json())
+                .then(data => {
+                    populateDropdown('region_id_dropdown', data, 'code', 'name', preloadedValues.region_id);
+                });
+        });
+
+        // Region change
+        document.getElementById('region_id_dropdown').addEventListener('change', function () {
+            const regionCode = this.value;
+            fetch(`/geonames-api/provinces?region_code=${regionCode}`)
+                .then(response => response.json())
+                .then(data => {
+                    populateDropdown('province_id_dropdown', data, 'code', 'name', preloadedValues.province_id);
+                });
+        });
+
+        // Province change
+        document.getElementById('province_id_dropdown').addEventListener('change', function () {
+            const provinceCode = this.value;
+            fetch(`/geonames-api/cities?province_code=${provinceCode}`)
+                .then(response => response.json())
+                .then(data => {
+                    populateDropdown('city_id_dropdown', data, 'geonameId', 'name', preloadedValues.city_id);
+                });
+        });
+
+        document.getElementById('phone_prefix_dropdown').addEventListener('change', function () {
+            const selectedValue = this.value;
+            const hiddenField = document.getElementById('phone_prefix');
+            if (hiddenField) {
+                hiddenField.value = selectedValue;
+            }
+        });
+
+    });
+
+</script>
+
+{% endblock %}

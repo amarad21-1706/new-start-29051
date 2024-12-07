@@ -189,26 +189,22 @@
                 </div>
 
                 <div class="col-md-6">
-
                     <!-- Country -->
                     <div class="form-group">
-                        <label class="form-label" for="country_id">Country:</label>
-                        <select class="input" id="country_id" name="country_id" required></select> <!-- Dropdown for ID -->
-                        <input type="hidden" id="country" name="country"> <!-- Hidden input for Name -->
+                        <label class="form-label" for="country">Country:</label>
+                        <select class="input" id="country" name="country" required></select>
                     </div>
 
                     <!-- Region -->
                     <div class="form-group">
-                        <label class="form-label" for="region_id">Region:</label>
-                        <select class="input" id="region_id" name="region_id" required></select> <!-- Dropdown for ID -->
-                        <input type="hidden" id="region" name="region"> <!-- Hidden input for Name -->
+                        <label class="form-label" for="region">Region:</label>
+                        <select class="input" id="region" name="region" required></select>
                     </div>
 
                     <!-- Province -->
                     <div class="form-group">
-                        <label class="form-label" for="province_id">Province:</label>
-                        <select class="input" id="province_id" name="province_id"></select> <!-- Dropdown for ID -->
-                        <input type="hidden" id="province" name="province"> <!-- Hidden input for Name -->
+                        <label class="form-label" for="province">Province:</label>
+                        <select class="input" id="province" name="province" required></select>
                     </div>
 
                     <!-- Zip Code -->
@@ -219,9 +215,8 @@
 
                     <!-- City -->
                     <div class="form-group">
-                        <label class="form-label" for="city_id">City:</label>
-                        <select class="input" id="city_id" name="city_id"></select> <!-- Dropdown for ID -->
-                        <input type="hidden" id="city" name="city"> <!-- Hidden input for Name -->
+                        <label class="form-label" for="city">City:</label>
+                        <select class="input" id="city" name="city" required></select>
                     </div>
 
                     <!-- Street -->
@@ -303,145 +298,115 @@
             window.location.href = "{{ url_for('index') }}";
         }
 
-
-        function populateDropdown(id, data, valueKey, textKey, selectedValue = '') {
-            const dropdown = document.getElementById(id);
-            dropdown.innerHTML = `<option value="">Select ${id.replace('_id', '').replace(/_/g, ' ')}</option>`;
-            data.forEach(item => {
-                dropdown.innerHTML += `<option value="${item[valueKey]}" data-name="${item[textKey]}" ${
-                    selectedValue === item[valueKey] ? 'selected' : ''
-                }>${item[textKey]}</option>`;
-            });
-
-            if (selectedValue) {
-                dropdown.value = selectedValue;
-            }
-
-            // Update hidden field with selected option's name
-            dropdown.addEventListener('change', function () {
-                const selectedOption = this.options[this.selectedIndex];
-                const hiddenNameField = document.getElementById(id.replace('_id', ''));
-                if (hiddenNameField) {
-                    hiddenNameField.value = selectedOption.getAttribute('data-name') || '';
-                }
-            });
-        }
-
-        function resetDependentFields(fields) {
-            fields.forEach(id => {
-                const dropdown = document.getElementById(id);
-                dropdown.innerHTML = `<option value="">Select ${id.replace('_id', '').replace(/_/g, ' ')}</option>`;
-                const hiddenNameField = document.getElementById(id.replace('_id', ''));
-                if (hiddenNameField) {
-                    hiddenNameField.value = '';
-                }
-            });
-        }
-
-        document.addEventListener('DOMContentLoaded', function () {
-            const preloadedValues = {
-                country_id: "{{ form.country_id.data|default('') }}",
-                country: "{{ form.country.data|default('') }}",
-                region_id: "{{ form.region_id.data|default('') }}",
-                region: "{{ form.region.data|default('') }}",
-                province_id: "{{ form.province_id.data|default('') }}",
-                province: "{{ form.province.data|default('') }}",
-                city_id: "{{ form.city_id.data|default('') }}",
-                city: "{{ form.city.data|default('') }}"
-            };
-
-            console.log('Preloaded values:', preloadedValues);
-
-            // Fetch and populate country dropdown
+        document.addEventListener('DOMContentLoaded', function() {
             fetch('/geonames-api/countries')
                 .then(response => response.json())
                 .then(data => {
-                    console.log('Fetched countries:', data);
-                    populateDropdown('country_id', data, 'alpha2Code', 'name', preloadedValues.country_id);
-                })
-                .catch(error => console.error('Error fetching countries:', error));
+                    const countrySelect = document.getElementById('country');
+                    countrySelect.innerHTML = '<option value="">Select Country</option>';
+                    data.forEach(country => {
+                        countrySelect.innerHTML += `<option value="${country.alpha2Code}">${country.name}</option>`;
+                    });
+                });
 
-            // Country change event
-            document.getElementById('country_id').addEventListener('change', function () {
+            document.getElementById('country').addEventListener('change', function() {
                 const countryCode = this.value;
-                console.log(`Selected country: ${countryCode}`);
-                resetDependentFields(['region_id', 'province_id', 'city_id', 'zip_code']);
+                resetDependentFields(['region', 'province', 'city', 'street', 'zip_code']);
 
                 fetch(`/geonames-api/regions?country_code=${countryCode}`)
                     .then(response => response.json())
                     .then(data => {
-                        console.log('Fetched regions:', data);
-                        populateDropdown('region_id', data, 'code', 'name', preloadedValues.region_id);
-                    })
-                    .catch(error => console.error('Error fetching regions:', error));
+                        const regionSelect = document.getElementById('region');
+                        regionSelect.innerHTML = '<option value="">Select Region</option>';
+                        data.forEach(region => {
+                            regionSelect.innerHTML += `<option value="${region.code}">${region.name}</option>`;
+                        });
+                    });
             });
 
-            // Region change event
-            document.getElementById('region_id').addEventListener('change', function () {
+            document.getElementById('region').addEventListener('change', function() {
                 const regionCode = this.value;
-                console.log(`Selected region: ${regionCode}`);
-                resetDependentFields(['province_id', 'city_id', 'zip_code']);
+                resetDependentFields(['province', 'city', 'street', 'zip_code']);
 
                 fetch(`/geonames-api/provinces?region_code=${regionCode}`)
                     .then(response => response.json())
                     .then(data => {
-                        console.log('Fetched provinces:', data);
-                        populateDropdown('province_id', data, 'code', 'name', preloadedValues.province_id);
-                    })
-                    .catch(error => console.error('Error fetching provinces:', error));
+                        const provinceSelect = document.getElementById('province');
+                        provinceSelect.innerHTML = '<option value="">Select Province</option>';
+                        data.forEach(province => {
+                            provinceSelect.innerHTML += `<option value="${province.code}">${province.name}</option>`;
+                        });
+                    });
             });
 
-            // Province change event
-            document.getElementById('province_id').addEventListener('change', function () {
+            document.getElementById('province').addEventListener('change', function() {
                 const provinceCode = this.value;
-                console.log(`Selected province: ${provinceCode}`);
-                resetDependentFields(['city_id', 'zip_code']);
+                resetDependentFields(['city', 'street', 'zip_code']);
 
                 fetch(`/geonames-api/cities?province_code=${provinceCode}`)
                     .then(response => response.json())
                     .then(data => {
-                        console.log('Fetched cities:', data);
-                        populateDropdown('city_id', data, 'geonameId', 'name', preloadedValues.city_id);
-                    })
-                    .catch(error => console.error('Error fetching cities:', error));
+                        const citySelect = document.getElementById('city');
+                        citySelect.innerHTML = '<option value="">Select City</option>';
+                        data.forEach(city => {
+                            citySelect.innerHTML += `<option value="${city.geonameId}">${city.name}</option>`;
+                        });
+                    });
             });
-
-            // City change event
-            document.getElementById('city_id').addEventListener('change', function () {
-                const cityName = this.options[this.selectedIndex].text;
+            document.getElementById('city').addEventListener('change', function() {
+                const cityName = this.options[this.selectedIndex].text;  // Use city name instead of ID
                 console.log(`Selected city: ${cityName}`);
+
+                // Reset dependent dropdowns
+                document.getElementById('street').innerHTML = '<option value="">Select Street</option>';
+                document.getElementById('zip_code').innerHTML = '<option value="">Select ZIP Code</option>';
+                document.getElementById('address').value = '';
+                document.getElementById('address1').value = '';
+
+                fetch(`/geonames-api/streets?city_name=${cityName}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        const streetSelect = document.getElementById('street');
+                        streetSelect.innerHTML = '<option value="">Select Street</option>';
+                        data.forEach(street => {
+                            streetSelect.innerHTML += `<option value="${street.name}">${street.name}</option>`;
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error fetching streets:', error);
+                    });
 
                 fetch(`/geonames-api/zip_codes?city_name=${cityName}`)
                     .then(response => response.json())
                     .then(data => {
-                        console.log('Fetched ZIP codes:', data);
-                        populateDropdown('zip_code', data, 'postalCode', 'postalCode');
+                        const zipSelect = document.getElementById('zip_code');
+                        zipSelect.innerHTML = '<option value="">Select ZIP Code</option>';
+                        data.forEach(zip => {
+                            zipSelect.innerHTML += `<option value="${zip.postalCode}">${zip.postalCode}</option>`;
+                        });
                     })
-                    .catch(error => console.error('Error fetching ZIP codes:', error));
+                    .catch(error => {
+                        console.error('Error fetching zip codes:', error);
+                    });
             });
 
-        // Fetch and populate phone prefixes
-        fetch('/geonames-api/phone_prefixes')
-            .then(response => response.json())
-            .then(data => {
-                console.log('Fetched phone prefixes:', data);
-                // Adjust to display the prefix with the country
-                const dropdown = document.getElementById('phone_prefix');
-                dropdown.innerHTML = '<option value="">Select Phone Prefix</option>';
-                data.forEach(item => {
-                    dropdown.innerHTML += `<option value="${item.prefix}">${item.prefix} (${item.country})</option>`;
+            fetch('/geonames-api/phone_prefixes')
+                .then(response => response.json())
+                .then(data => {
+                    const phonePrefixSelect = document.getElementById('phone_prefix');
+                    phonePrefixSelect.innerHTML = '<option value="">Select Phone Prefix</option>';
+                    data.forEach(prefix => {
+                        phonePrefixSelect.innerHTML += `<option value="${prefix.prefix}">${prefix.prefix} (${prefix.country})</option>`;
+                    });
                 });
-
-                // Ensure the preloaded value persists
-                const preloadedValue = "{{ form.phone_prefix.data|default('') }}";
-                if (preloadedValue) {
-                    dropdown.value = preloadedValue;
-                }
-            })
-            .catch(error => console.error('Error fetching phone prefixes:', error));
         });
 
+        function resetDependentFields(fields) {
+            fields.forEach(field => {
+                const selectElement = document.getElementById(field);
+                selectElement.innerHTML = `<option value="">Select ${field.charAt(0).toUpperCase() + field.slice(1)}</option>`;
+            });
+        }
     </script>
-
 </body>
 </html>

@@ -3,6 +3,7 @@ from flask import Flask, jsonify
 from forms.forms import MainForm
 import requests
 
+import logging
 from flask import Blueprint, render_template, jsonify, request
 
 import geocoder

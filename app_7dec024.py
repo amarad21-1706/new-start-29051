@@ -2617,7 +2617,6 @@ def signup():
                 return render_template('access/signup.html', title='Sign Up', form=form)
 
             try:
-
                 new_user = Users(
                     username=form.username.data,
                     email=form.email.data,
@@ -2625,11 +2624,11 @@ def signup():
                     first_name=form.first_name.data,
                     mid_name=form.mid_name.data,
                     last_name=form.last_name.data,
-                    country=form.country.data,  # Use the name
-                    region=form.region.data,  # Use the name
-                    province=form.province.data,  # Use the name
+                    country=form.country.data,
+                    region=form.region.data,
+                    province=form.province.data,
                     zip_code=form.zip_code.data,
-                    city=form.city.data,  # Use the name
+                    city=form.city.data,
                     street=form.street.data,
                     address=form.address.data,
                     address1=form.address1.data,
@@ -5546,18 +5545,11 @@ def respond_ticket(ticket_id):
     return render_template('respond_ticket.html', form=form, ticket=ticket)
 
 
-@app.route('/update_account_222', methods=['GET', 'POST'])
+@app.route('/update_account', methods=['GET', 'POST'])
 @login_required
-def update_account_222():
+def update_account():
     form = UpdateAccountForm()
-
-    if request.method == 'POST':
-        print(f"Form data submitted: {request.form}")
-        print(f"Form data mapped: {form.data}")
-
     if form.validate_on_submit():
-        app.logger.info("Form validated successfully.")
-        print("Form validated successfully.")
         current_user.username = form.username.data
         current_user.email = form.email.data
         current_user.first_name = form.first_name.data
@@ -5567,32 +5559,17 @@ def update_account_222():
         current_user.address = form.address.data
         current_user.address1 = form.address1.data
         current_user.city = form.city.data
-        current_user.city_id = form.city_id.data
         current_user.province = form.province.data
-        current_user.province_id = form.province_id.data
         current_user.region = form.region.data
-        current_user.region_id = form.region_id.data
         current_user.zip_code = form.zip_code.data
         current_user.country = form.country.data
-        current_user.country_id = form.country_id.data
         current_user.tax_code = form.tax_code.data
         current_user.mobile_phone = form.mobile_phone.data
         current_user.work_phone = form.work_phone.data
-
-        try:
-            db.session.commit()
-            flash('Your account has been updated!', 'success')
-            return redirect(url_for('home'))
-        except Exception as e:
-            db.session.rollback()
-            app.logger.error(f"Error updating account: {e}")
-            flash('Failed to update your account.', 'error')
-    else:
-        app.logger.info("Form validation failed.")
-        print("Form validation failed.", f"Errors: {form.errors}")
-        app.logger.info(f"Errors: {form.errors}")
-
-    if request.method == 'GET':
+        db.session.commit()
+        flash(_('Your account has been updated!'), 'success')
+        return redirect(url_for('home'))  # Redirect to home page or another page
+    elif request.method == 'GET':
         form.username.data = current_user.username
         form.email.data = current_user.email
         form.first_name.data = current_user.first_name
@@ -5601,107 +5578,15 @@ def update_account_222():
         form.title.data = current_user.title
         form.address.data = current_user.address
         form.address1.data = current_user.address1
-        form.city_id.data = current_user.city_id  # Ensure ID fields are preloaded
         form.city.data = current_user.city
-        form.province_id.data = current_user.province_id
         form.province.data = current_user.province
-        form.region_id.data = current_user.region_id
         form.region.data = current_user.region
-        form.country_id.data = current_user.country_id
-        form.country.data = current_user.country
         form.zip_code.data = current_user.zip_code
+        form.country.data = current_user.country
         form.tax_code.data = current_user.tax_code
         form.mobile_phone.data = current_user.mobile_phone
         form.work_phone.data = current_user.work_phone
-
-    return render_template('update_account.html', title='Account', form=form)
-
-
-@app.route('/update_account', methods=['GET', 'POST'])
-@login_required
-def update_account():
-    form = UpdateAccountForm()
-
-    if request.method == 'POST':
-
-        print(f"Form data submitted: {request.form}")
-        print(f"Form data mapped: {form.data}")
-
-        if form.validate_on_submit():
-            app.logger.info("Form validated successfully.")
-            current_user.username = form.username.data
-            current_user.email = form.email.data
-            current_user.title = form.title.data
-            current_user.first_name = form.first_name.data
-            current_user.mid_name = form.mid_name.data
-            current_user.last_name = form.last_name.data
-            current_user.country_id = form.country_id.data
-            current_user.country = form.country.data
-            current_user.region_id = form.region_id.data
-            current_user.region = form.region.data
-            current_user.province_id = form.province_id.data
-            current_user.province = form.province.data
-            current_user.zip_code = form.zip_code.data
-            current_user.city_id = form.city_id.data
-            current_user.city = form.city.data
-            current_user.street = form.street.data
-            current_user.address = form.address.data
-            current_user.address1 = form.address1.data
-            current_user.tax_code = form.tax_code.data
-            current_user.phone_prefix = form.phone_prefix.data
-            current_user.mobile_phone = form.mobile_phone.data
-            current_user.work_phone = form.work_phone.data
-
-            try:
-                db.session.commit()
-                flash('Your account has been updated!', 'success')
-                return redirect(url_for('home'))
-            except Exception as e:
-                db.session.rollback()
-                app.logger.error(f"Error updating account: {e}")
-                flash('Failed to update your account.', 'error')
-        else:
-            app.logger.info("Form validation failed.")
-            app.logger.info(f"Errors: {form.errors}")
-
-    # Populate form with existing user data
-    if request.method == 'GET':
-        form.username.data = current_user.username
-        form.email.data = current_user.email
-        form.first_name.data = current_user.first_name
-        form.mid_name.data = current_user.mid_name
-        form.last_name.data = current_user.last_name
-        form.title.data = current_user.title
-        form.country_id.data = current_user.country_id
-        form.country.data = current_user.country
-        form.region_id.data = current_user.region_id
-        form.region.data = current_user.region
-        form.province_id.data = current_user.province_id
-        form.province.data = current_user.province
-        form.zip_code.data = current_user.zip_code
-        form.city_id.data = current_user.city_id
-        form.city.data = current_user.city
-        form.street.data = current_user.street
-        form.address.data = current_user.address
-        form.address1.data = current_user.address1
-        form.tax_code.data = current_user.tax_code
-        form.phone_prefix.data = current_user.phone_prefix
-        form.mobile_phone.data = current_user.mobile_phone
-        form.work_phone.data = current_user.work_phone
-
-    # Pass preloaded values to the template
-    return render_template(
-        'update_account.html',
-        title='Account',
-        form=form,
-        preloadedValues={
-            'country_id': current_user.country_id,
-            'region_id': current_user.region_id,
-            'province_id': current_user.province_id,
-            'city_id': current_user.city_id,
-            'phone_prefix': current_user.phone_prefix
-        }
-    )
+    return render_template('account.html', title='Account', form=form)
 
 
 def generate_event_instances(event):
