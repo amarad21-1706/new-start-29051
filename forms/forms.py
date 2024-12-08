@@ -272,7 +272,33 @@ class SubscriptionForm(FlaskForm):
     additional_products = HiddenField('Additional Products')
     submit = SubmitField('Subscribe')
 
+
+
+
 class UpdateAccountForm(FlaskForm):
+    username = StringField('Username', render_kw={"readonly": True})
+    email = StringField('Email', render_kw={"readonly": True})
+    title = StringField('Title', render_kw={"readonly": True})
+    first_name = StringField('First Name', render_kw={"readonly": True})
+    mid_name = StringField('Middle Name', render_kw={"readonly": True})
+    last_name = StringField('Last Name', render_kw={"readonly": True})
+
+    country = StringField('Country', render_kw={"readonly": True})
+    region = StringField('Region', render_kw={"readonly": True})
+    province = StringField('Province', render_kw={"readonly": True})
+    zip_code = StringField('Zip Code', render_kw={"readonly": True})
+    city = StringField('City', render_kw={"readonly": True})
+    street = StringField('Street')
+    address = StringField('Address', validators=[Optional(), Length(max=128)])
+    address1 = StringField('Address 1', validators=[Optional(), Length(max=128)])
+    tax_code = StringField('Tax Code')
+    mobile_phone = StringField('Mobile Phone')
+    work_phone = StringField('Work Phone')
+
+    submit = SubmitField('Update')
+
+
+class UpdateAccountForm_222(FlaskForm):
     username = StringField('Username', validators=[DataRequired(), Length(min=2, max=80)])
     email = StringField('Email', validators=[DataRequired(), Email()])
     title = StringField('Title', validators=[DataRequired(), Length(min=1, max=24)])

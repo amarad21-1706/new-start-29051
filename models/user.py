@@ -284,6 +284,7 @@ class CompanyUsers(TimestampMixin, db.Model):
     def __str__(self):
         return self.readable_format()
 
+
 class Company(TimestampMixin, db.Model):
     __tablename__ = 'company'
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -299,6 +300,11 @@ class Company(TimestampMixin, db.Model):
     employees = db.relationship('Employee', backref='company', lazy=True)
     end_of_registration = db.Column(db.DateTime, nullable=True)
 
+    industry_id = db.Column(db.Integer, db.ForeignKey('industry.id'), nullable=True)
+    sector_id = db.Column(db.Integer, db.ForeignKey('sector.id'), nullable=True)
+    industry = db.relationship('Industry', backref='companies')
+    sector = db.relationship('Sector', backref='companies')
+
     # Relationship to company_users
     company_users = relationship('CompanyUsers', back_populates='company')  # Explicitly set the relationship
     contract_parties = db.relationship("ContractParty", back_populates="company")
@@ -308,6 +314,8 @@ class Company(TimestampMixin, db.Model):
 
     def __repr__(self):
         return (f"{self.name}")
+
+
 
 class Employee(db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
@@ -1930,3 +1938,22 @@ class TextContent(TimestampMixin, db.Model):
     content_version = db.Column(db.Integer, nullable=False, default=1)  # Useful for version control
     title = db.Column(db.String(100))  # Optional, for sections that have titles
     content_body = db.Column(db.Text, nullable=False)  # Main content
+
+
+
+
+class Industry(db.Model):
+    __tablename__ = 'industry'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)
+    sectors = db.relationship('Sector', back_populates='industry')
+
+class Sector(db.Model):
+    __tablename__ = 'sector'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)
+    industry_id = db.Column(db.Integer, db.ForeignKey('industry.id'), nullable=False)
+    industry = db.relationship('Industry', back_populates='sectors')
+
+
+

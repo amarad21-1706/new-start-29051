@@ -5685,9 +5685,47 @@ def respond_ticket(ticket_id):
     return render_template('respond_ticket.html', form=form, ticket=ticket)
 
 
-@app.route('/update_account', methods=['GET', 'POST'])
+
+@app.route('/update_account', methods=['POST', 'GET'])
 @login_required
 def update_account():
+    # Fetch the current user's record
+    user = Users.query.filter_by(id=current_user.id).first()
+    if not user:
+        flash("User not found.", "danger")
+        return redirect(url_for('update_account'))
+
+    # Initialize the form and populate with existing user data
+    form = UpdateAccountForm(obj=user)
+
+    if form.validate_on_submit():
+        # Update only the allowed fields
+        user.street = form.street.data
+        user.address = form.address.data
+        user.zip_code = form.zip_code.data
+        user.tax_code = form.tax_code.data
+        user.mobile_phone = form.mobile_phone.data
+        user.work_phone = form.work_phone.data
+
+        try:
+            db.session.commit()
+            flash("Account updated successfully.", "success")
+        except Exception as e:
+            print(f"Database commit error: {e}")
+            flash("Failed to update account. Please try again later.", "danger")
+
+        return redirect(url_for('update_account'))
+    else:
+        # Debugging: Print form errors, if any
+        print("Form errors:", form.errors)
+
+    return render_template('update_account.html', form=form)
+
+
+
+@app.route('/update_account_223', methods=['GET', 'POST'])
+@login_required
+def update_account_223():
     form = UpdateAccountForm()
     if form.validate_on_submit():
         current_user.username = form.username.data
