@@ -2672,6 +2672,24 @@ def signup():
     # Handle form submission
     if form.validate_on_submit():
         try:
+            '''
+            country_name = dict(form.country_id.choices).get(form.country_id.data, '')
+            region_name = dict(form.region_id.choices).get(form.region_id.data, '')
+            province_name = dict(form.province_id.choices).get(form.province_id.data, '')
+            city_name = dict(form.city_id.choices).get(form.city_id.data, '')
+            '''
+            # Map IDs to names
+            country_name = dict(form.country_id.choices).get(form.country_id.data, '')
+            region_name = dict((str(k), v) for k, v in form.region_id.choices).get(str(form.region_id.data), '')
+            province_name = dict((str(k), v) for k, v in form.province_id.choices).get(str(form.province_id.data), '')
+            city_name = dict((str(k), v) for k, v in form.city_id.choices).get(str(form.city_id.data), '')
+
+            # Debugging mapped names
+            logging.info(f"Country Name: {country_name}")
+            logging.info(f"Region Name: {region_name}")
+            logging.info(f"Province Name: {province_name}")
+            logging.info(f"City Name: {city_name}")
+
             new_user = Users(
                 username=form.username.data,
                 email=form.email.data,
@@ -2683,10 +2701,10 @@ def signup():
                 region_id=form.region_id.data,  # Region ID
                 province_id=form.province_id.data,
                 city_id=form.city_id.data,
-                country=dict(form.country_id.choices).get(form.country_id.data, ''),  # Country name
-                region=dict(form.region_id.choices).get(form.region_id.data, ''),  # Region name
-                province=dict(form.province_id.choices).get(form.province_id.data, ''),  # Province name
-                city=dict(form.city_id.choices).get(form.city_id.data, ''),  # City name
+                country=country_name,
+                region=region_name,
+                province=province_name,
+                city=city_name,
                 street=form.street.data,
                 address=form.address.data,
                 address1=form.address1.data,
