@@ -95,7 +95,7 @@ from config.config import (get_current_intervals,
         generate_workflow_document_report_data, generate_document_step_report_data, get_cet_time)
 
 #from contract_routes import user_has_access_to_contract
-from routes.routes import geonames_bp, fetch_phone_prefixes
+from routes.routes import geonames_bp, fetch_phone_prefixes, get_phone_prefix_choices
 from routes.argon_routes import argon_bp
 from routes.plan_routes import plan_bp
 from routes.chart_routes import chart_bp
@@ -2598,22 +2598,79 @@ def invalidate_cache():
 # prefixes = [{'country': region_code_for_country_code(country_code), 'prefix': f'+{country_code}'}
 #             for country_code in phonenumbers.SUPPORTED_REGIONS]
 
+from flask import url_for
+
+# Function to fetch countries
+def fetch_countries():
+    url = url_for('geonames.get_countries', _external=True)
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return []
+
+# Function to fetch regions
+def fetch_regions(country_code):
+    url = url_for('geonames.get_regions', _external=True, country_code=country_code)
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return []
+
+# Function to fetch provinces
+def fetch_provinces(region_code):
+    url = url_for('geonames.get_provinces', _external=True, region_code=region_code)
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return []
+
+# Function to fetch cities
+def fetch_cities(province_code):
+    url = url_for('geonames.get_cities', _external=True, province_code=province_code)
+    response = requests.get(url)
+    if response.status_code == 200:
+        return response.json()
+    else:
+        return []
+
+# Function to fetch phone prefixes
+
 
 @app.route('/access/signup', methods=['GET', 'POST'])
 def signup():
     form = SignupForm()
 
+    # Populate phone prefix dropdown
+    # form.phone_prefix.choices = [('', 'Select Phone Prefix')] + get_phone_prefix_choices()
+
+    # Repopulate choices dynamically
+    form.country_id.choices = [('', 'Select Country')] + [
+        (c['alpha2Code'], c['name']) for c in fetch_countries()
+    ]
+
+    form.region_id.choices = [('', 'Select Region')]
+    if form.country_id.data:
+        form.region_id.choices += [
+            (r['code'], r['name']) for r in fetch_regions(form.country_id.data)
+        ]
+
+    form.province_id.choices = [('', 'Select Province')]
+    if form.region_id.data:
+        form.province_id.choices += [
+            (p['code'], p['name']) for p in fetch_provinces(form.region_id.data)
+        ]
+
+    form.city_id.choices = [('', 'Select City')]
+    if form.province_id.data:
+        form.city_id.choices += [
+            (c['geonameId'], c['name']) for c in fetch_cities(form.province_id.data)
+        ]
+
+    # Handle form submission
     if form.validate_on_submit():
-        # Check if the user has accepted the terms of use
-        if not form.terms_accepted.data:
-            flash(_('You must agree with the Terms and Conditions to sign up.'), 'error')
-            return render_template('access/signup.html', title='Sign Up', form=form)
-
-        # Check if the user has accepted the privacy policy
-        if not form.privacy_policy_accepted.data:
-            flash(_('You must agree with the Privacy Policy to sign up.'), 'error')
-            return render_template('access/signup.html', title='Sign Up', form=form)
-
         try:
             new_user = Users(
                 username=form.username.data,
@@ -2622,15 +2679,18 @@ def signup():
                 first_name=form.first_name.data,
                 mid_name=form.mid_name.data,
                 last_name=form.last_name.data,
-                country=form.country.data,
-                region=form.region.data,
-                province=form.province.data,
-                zip_code=form.zip_code.data,
-                city=form.city.data,
+                country_id=form.country_id.data,  # Country ID
+                region_id=form.region_id.data,  # Region ID
+                province_id=form.province_id.data,
+                city_id=form.city_id.data,
+                country=dict(form.country_id.choices).get(form.country_id.data, ''),  # Country name
+                region=dict(form.region_id.choices).get(form.region_id.data, ''),  # Region name
+                province=dict(form.province_id.choices).get(form.province_id.data, ''),  # Province name
+                city=dict(form.city_id.choices).get(form.city_id.data, ''),  # City name
                 street=form.street.data,
                 address=form.address.data,
                 address1=form.address1.data,
-                phone_prefix=form.phone_prefix.data,
+                # phone_prefix=form.phone_prefix.data,
                 mobile_phone=form.mobile_phone.data,
                 work_phone=form.work_phone.data,
                 tax_code=form.tax_code.data,
@@ -2653,14 +2713,12 @@ def signup():
         except Exception as e:
             db.session.rollback()
             logging.error(f"Error committing to the database: {e}")
-            logging.error(traceback.format_exc())
             flash(_('An error occurred during signup.'), 'error')
 
-    elif request.method == 'POST':
-        flash(_('Form validation failed. Please check your input.'), 'error')
+    else:
+        print(f"Form errors: {form.errors}")
 
-    # Pass form with existing data to template
-    return render_template('access/signup.html', title='Sign Up', form=form)
+    return render_template('access/signup.html', form=form)
 
 
 

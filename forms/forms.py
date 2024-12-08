@@ -476,6 +476,7 @@ class DocumentWorkflowInlineForm(InlineFormAdmin):
         'auto_move': 'Automatic transition to next Step'
     }
 
+
 class SignupForm(FlaskForm):
     username = StringField('Username', validators=[DataRequired()])
     email = EmailField('Email', validators=[DataRequired(), Email()])
@@ -486,15 +487,24 @@ class SignupForm(FlaskForm):
     first_name = StringField('First Name', validators=[DataRequired()])
     mid_name = StringField('Middle Name')
     last_name = StringField('Last Name', validators=[DataRequired()])
-    country = StringField('Country', validators=[DataRequired()])
-    region = StringField('Region', validators=[DataRequired()])
-    province = StringField('Province')
+
+    country_id = SelectField('Country', choices=[('', 'Select Country')], validators=[DataRequired()])
+    country = StringField('Country Name', validators=[DataRequired()])
+    region_id = SelectField('Region', choices=[('', 'Select Region')], validators=[Optional()])
+    region = StringField('Region Name', validators=[Optional()])
+    province_id = SelectField('Province', choices=[('', 'Select Province')], validators=[Optional()])
+    province = StringField('Province Name', validators=[Optional()])
+    city_id = SelectField('City', choices=[('', 'Select City')], validators=[DataRequired()])
+    city = StringField('City Name', validators=[DataRequired()])
+    zip_code = StringField('Zip Code', validators=[Optional()])
+
     zip_code = StringField('Zip Code')
-    city = StringField('City')
+
     street = StringField('Street')
     address = StringField('Address 1', validators=[DataRequired()])
     address1 = StringField('Address 2')
-    phone_prefix = StringField('Phone Prefix', validators=[DataRequired()])
+    # phone_prefix = SelectField('Phone Prefix', choices=[], validators=[DataRequired()])
+
     mobile_phone = StringField('Mobile Phone', validators=[DataRequired()])
     work_phone = StringField('Work Phone')
     tax_code = StringField('Tax Code')

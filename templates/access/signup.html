@@ -189,36 +189,43 @@
 
 
                 <div class="col-md-6">
-                    <!-- Country -->
+
                     <div class="form-group">
-                        <label class="form-label" for="country">Country:</label>
-                        <select id="country" name="country" class="input">
+                        <label for="country">Country:</label>
+                        <select id="country" name="country_id" class="form-control">
                             <option value="">Select Country</option>
                         </select>
+                        <input type="hidden" id="country_name" name="country">
                     </div>
 
-                    <!-- Region -->
                     <div class="form-group">
-                        <label class="form-label" for="region">Region:</label>
-                        <select id="region" name="region" class="input">
+                        <label for="region">Region:</label>
+                        <select id="region" name="region_id" class="form-control">
                             <option value="">Select Region</option>
                         </select>
+                        <input type="hidden" id="region_name" name="region">
                     </div>
 
-                    <!-- Province -->
                     <div class="form-group">
-                        <label class="form-label" for="province">Province:</label>
-                        <select id="province" name="province" class="input">
+                        <label for="province">Province:</label>
+                        <select id="province" name="province_id" class="form-control">
                             <option value="">Select Province</option>
                         </select>
+                        <input type="hidden" id="province_name" name="province">
                     </div>
 
-                    <!-- City -->
+                    <!-- Zip Code -->
                     <div class="form-group">
-                        <label class="form-label" for="city">City:</label>
-                        <select id="city" name="city" class="input">
+                        <label class="form-label" for="zip_code">Zip Code:</label>
+                        {{ form.zip_code(class="input") }}
+                    </div>
+
+                    <div class="form-group">
+                        <label for="city">City:</label>
+                        <select id="city" name="city_id" class="form-control">
                             <option value="">Select City</option>
                         </select>
+                        <input type="hidden" id="city_name" name="city">
                     </div>
 
                     <!-- Street -->
@@ -238,22 +245,6 @@
                         <label class="form-label" for="address1">Address 2:</label>
                         {{ form.address1(class="input") }}
                     </div>
-
-                    <!-- Zip Code -->
-                    <div class="form-group">
-                        <label class="form-label" for="zip_code">Zip Code:</label>
-                        {{ form.zip_code(class="input") }}
-                    </div>
-
-                    <!-- Phone Prefix -->
-                    <!-- Phone Prefix Dropdown -->
-                    <div class="form-group">
-                        <label class="form-label" for="phone_prefix">Phone Prefix:</label>
-                        <select class="input" id="phone_prefix" name="phone_prefix" required>
-                            <option value="">Select Phone Prefix</option>
-                        </select>
-                    </div>
-
 
                     <!-- Mobile Phone -->
                     <div class="form-group">
@@ -312,7 +303,8 @@
             window.location.href = "{{ url_for('index') }}";
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
+            // Populate countries dropdown
             fetch('/geonames-api/countries')
                 .then(response => response.json())
                 .then(data => {
@@ -323,11 +315,13 @@
                     });
                 });
 
-            document.getElementById('country').addEventListener('change', function() {
-                const countryCode = this.value;
-                resetDependentFields(['region', 'province', 'city', 'street', 'zip_code']);
+            // Handle country change
+            document.getElementById('country').addEventListener('change', function () {
+                const selectedOption = this.options[this.selectedIndex];
+                document.getElementById('country_name').value = selectedOption.text; // Update hidden input
+                resetDependentFields(['region', 'province', 'city']);
 
-                fetch(`/geonames-api/regions?country_code=${countryCode}`)
+                fetch(`/geonames-api/regions?country_code=${this.value}`)
                     .then(response => response.json())
                     .then(data => {
                         const regionSelect = document.getElementById('region');
@@ -338,11 +332,13 @@
                     });
             });
 
-            document.getElementById('region').addEventListener('change', function() {
-                const regionCode = this.value;
-                resetDependentFields(['province', 'city', 'street', 'zip_code']);
+            // Handle region change
+            document.getElementById('region').addEventListener('change', function () {
+                const selectedOption = this.options[this.selectedIndex];
+                document.getElementById('region_name').value = selectedOption.text; // Update hidden input
+                resetDependentFields(['province', 'city']);
 
-                fetch(`/geonames-api/provinces?region_code=${regionCode}`)
+                fetch(`/geonames-api/provinces?region_code=${this.value}`)
                     .then(response => response.json())
                     .then(data => {
                         const provinceSelect = document.getElementById('province');
@@ -353,11 +349,13 @@
                     });
             });
 
-            document.getElementById('province').addEventListener('change', function() {
-                const provinceCode = this.value;
-                resetDependentFields(['city', 'street', 'zip_code']);
+            // Handle province change
+            document.getElementById('province').addEventListener('change', function () {
+                const selectedOption = this.options[this.selectedIndex];
+                document.getElementById('province_name').value = selectedOption.text; // Update hidden input
+                resetDependentFields(['city']);
 
-                fetch(`/geonames-api/cities?province_code=${provinceCode}`)
+                fetch(`/geonames-api/cities?province_code=${this.value}`)
                     .then(response => response.json())
                     .then(data => {
                         const citySelect = document.getElementById('city');
@@ -367,44 +365,26 @@
                         });
                     });
             });
-            document.getElementById('city').addEventListener('change', function() {
-                const cityName = this.options[this.selectedIndex].text;  // Use city name instead of ID
-                console.log(`Selected city: ${cityName}`);
 
-                // Reset dependent dropdowns
-                document.getElementById('street').innerHTML = '<option value="">Select Street</option>';
-                document.getElementById('zip_code').innerHTML = '<option value="">Select ZIP Code</option>';
-                document.getElementById('address').value = '';
-                document.getElementById('address1').value = '';
-
-                fetch(`/geonames-api/streets?city_name=${cityName}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        const streetSelect = document.getElementById('street');
-                        streetSelect.innerHTML = '<option value="">Select Street</option>';
-                        data.forEach(street => {
-                            streetSelect.innerHTML += `<option value="${street.name}">${street.name}</option>`;
-                        });
-                    })
-                    .catch(error => {
-                        console.error('Error fetching streets:', error);
-                    });
-
-                fetch(`/geonames-api/zip_codes?city_name=${cityName}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        const zipSelect = document.getElementById('zip_code');
-                        zipSelect.innerHTML = '<option value="">Select ZIP Code</option>';
-                        data.forEach(zip => {
-                            zipSelect.innerHTML += `<option value="${zip.postalCode}">${zip.postalCode}</option>`;
-                        });
-                    })
-                    .catch(error => {
-                        console.error('Error fetching zip codes:', error);
-                    });
+            // Handle city change
+            document.getElementById('city').addEventListener('change', function () {
+                const selectedOption = this.options[this.selectedIndex];
+                document.getElementById('city_name').value = selectedOption.text; // Update hidden input
             });
 
-            fetch('/geonames-api/phone_prefixes')
+            // Reset dependent fields
+            function resetDependentFields(fields) {
+                fields.forEach(field => {
+                    const selectElement = document.getElementById(field);
+                    if (selectElement) {
+                        selectElement.innerHTML = `<option value="">Select ${field.charAt(0).toUpperCase() + field.slice(1)}</option>`;
+                    }
+                });
+            }
+        });
+
+        document.addEventListener('DOMContentLoaded', function () {
+            fetch('/geonames/phone_prefixes')
                 .then(response => response.json())
                 .then(data => {
                     const phonePrefixSelect = document.getElementById('phone_prefix');
@@ -412,15 +392,11 @@
                     data.forEach(prefix => {
                         phonePrefixSelect.innerHTML += `<option value="${prefix.prefix}">${prefix.prefix} (${prefix.country})</option>`;
                     });
-                });
+                })
+                .catch(error => console.error('Error fetching phone prefixes:', error));
         });
 
-        function resetDependentFields(fields) {
-            fields.forEach(field => {
-                const selectElement = document.getElementById(field);
-                selectElement.innerHTML = `<option value="">Select ${field.charAt(0).toUpperCase() + field.slice(1)}</option>`;
-            });
-        }
+
     </script>
 </body>
 </html>
