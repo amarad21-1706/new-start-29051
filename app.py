@@ -78,7 +78,7 @@ from forms.forms import (AddPlanToCartForm, SignupForm, UpdateAccountForm, Ticke
         create_dynamic_form, CustomFileLoaderForm,
         CustomSubjectAjaxLoader, BaseSurveyForm, AuditLogForm,
         UpdateCartItemForm, AddProductToCartForm, SubscriptionForm,
-        MainForm)
+        MainForm, CircularMessageForm)
 
 # from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as _
 
@@ -6922,6 +6922,131 @@ def get_items(subcategory_id):
     """Fetch Items for a specific Subcategory."""
     items = LexicItem.query.filter_by(subcategory_id=subcategory_id).all()
     return jsonify([{'id': i.id, 'name': i.name} for i in items])
+
+@app.route('/admin/send_circular_222', methods=['GET', 'POST'])
+def send_circular_222():
+    form = CircularMessageForm()
+    if form.validate_on_submit():
+        message_type = form.message_type.data
+        subject = form.subject.data
+        body = form.body.data
+        target_type = form.target_type.data
+        target_id = form.target_id.data
+        lifetime = form.lifetime.data
+
+        try:
+            if target_type == 'all':
+                # Send to all users
+                users = Users.query.all()
+                for user in users:
+                    new_post = Post(
+                        sender_id=current_user.id,  # Assuming current_user is the admin
+                        receiver_id=user.id,
+                        message_type=message_type,
+                        subject=subject,
+                        body=body,
+                        lifetime=lifetime
+                    )
+                    db.session.add(new_post)
+            elif target_type == 'company':
+                # Send to all users in a company
+                company = Company.query.get(target_id)
+                if not company:
+                    flash('Invalid Company ID', 'danger')
+                    return render_template('admin/send_circular.html', form=form)
+
+                for user in company.users:
+                    new_post = Post(
+                        sender_id=current_user.id,
+                        receiver_id=user.id,
+                        company_id=company.id,
+                        message_type=message_type,
+                        subject=subject,
+                        body=body,
+                        lifetime=lifetime
+                    )
+                    db.session.add(new_post)
+            elif target_type == 'user':
+                # Send to a specific user
+                user = Users.query.get(target_id)
+                if not user:
+                    flash('Invalid User ID', 'danger')
+                    return render_template('admin/send_circular.html', form=form)
+
+                new_post = Post(
+                    sender_id=current_user.id,
+                    receiver_id=user.id,
+                    message_type=message_type,
+                    subject=subject,
+                    body=body,
+                    lifetime=lifetime
+                )
+                db.session.add(new_post)
+
+            db.session.commit()
+            flash('Circular sent successfully!', 'success')
+            return redirect(url_for('send_circular'))
+        except Exception as e:
+            db.session.rollback()
+            flash(f'Error sending circular: {e}', 'danger')
+
+    return render_template('admin/send_circular.html', form=form)
+
+@app.route('/admin/send_circular', methods=['GET', 'POST'])
+def send_circular():
+    form = CircularMessageForm()
+    if form.validate_on_submit():
+        recipients = request.form.get('recipients')
+        recipients = json.loads(recipients)  # Parse JSON string
+
+        for recipient in recipients:
+            if recipient.startswith('company-'):
+                # Send to all users in the company
+                company_id = int(recipient.split('-')[1])
+                company = Company.query.get(company_id)
+                for user in company.users:
+                    send_message_to_user(user, form)  # Custom function to send the message
+            elif recipient.startswith('user-'):
+                # Send to a specific user
+                user_id = int(recipient.split('-')[1])
+                user = Users.query.get(user_id)
+                send_message_to_user(user, form)
+
+        flash('Message sent successfully!', 'success')
+        return redirect(url_for('send_circular'))
+
+    return render_template('admin/send_circular.html', form=form)
+
+def send_message_to_user(user, form):
+    new_post = Post(
+        sender_id=current_user.id,
+        receiver_id=user.id,
+        message_type=form.message_type.data,
+        subject=form.subject.data,
+        body=form.body.data,
+        lifetime=form.lifetime.data
+    )
+    db.session.add(new_post)
+    db.session.commit()
+
+
+@app.route('/api/companies_and_users', methods=['GET'])
+def companies_and_users():
+    companies = Company.query.all()
+    data = []
+    for company in companies:
+        # Fetch users through CompanyUsers relationship
+        users = CompanyUsers.query.filter_by(company_id=company.id).all()
+        user_data = [{'id': user.user.id, 'username': user.user.username} for user in users]
+
+        company_data = {
+            'id': company.id,
+            'name': company.name,
+            'users': user_data
+        }
+        data.append(company_data)
+    return jsonify(data)
+
 
 
 if __name__ == '__main__':

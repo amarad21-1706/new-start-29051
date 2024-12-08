@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-5">
+    <h1>Send Message</h1>
+    <form method="POST">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+            {{ form.message_type.label }}
+            {{ form.message_type(class="form-control") }}
+        </div>
+
+        <div class="form-group">
+            {{ form.subject.label }}
+            {{ form.subject(class="form-control") }}
+        </div>
+
+        <div class="form-group">
+            {{ form.body.label }}
+            {{ form.body(class="form-control") }}
+        </div>
+
+        <div class="form-group">
+            <label for="recipients">Select Recipients</label>
+            <div id="recipients-tree">
+                <!-- Tree structure for companies and their users -->
+            </div>
+        </div>
+
+        <div class="form-group">
+            {{ form.lifetime.label }}
+            {{ form.lifetime(class="form-control") }}
+        </div>
+
+        <button type="submit" class="btn btn-primary">Send Message</button>
+    </form>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const recipientsTree = document.getElementById('recipients-tree');
+
+        // Fetch companies and users dynamically
+        fetch('/api/companies_and_users')
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(company => {
+                    // Create company-level checkbox
+                    const companyDiv = document.createElement('div');
+                    companyDiv.className = 'form-check';
+
+                    const companyCheckbox = document.createElement('input');
+                    companyCheckbox.type = 'checkbox';
+                    companyCheckbox.className = 'form-check-input';
+                    companyCheckbox.id = `company-${company.id}`;
+                    companyCheckbox.value = `company-${company.id}`;
+                    companyDiv.appendChild(companyCheckbox);
+
+                    const companyLabel = document.createElement('label');
+                    companyLabel.className = 'form-check-label';
+                    companyLabel.htmlFor = `company-${company.id}`;
+                    companyLabel.textContent = company.name;
+                    companyDiv.appendChild(companyLabel);
+
+                    recipientsTree.appendChild(companyDiv);
+
+                    // Create user-level checkboxes under the company
+                    company.users.forEach(user => {
+                        const userDiv = document.createElement('div');
+                        userDiv.className = 'form-check ml-3';
+
+                        const userCheckbox = document.createElement('input');
+                        userCheckbox.type = 'checkbox';
+                        userCheckbox.className = 'form-check-input';
+                        userCheckbox.id = `user-${user.id}`;
+                        userCheckbox.value = `user-${user.id}`;
+                        userDiv.appendChild(userCheckbox);
+
+                        const userLabel = document.createElement('label');
+                        userLabel.className = 'form-check-label';
+                        userLabel.htmlFor = `user-${user.id}`;
+                        userLabel.textContent = user.username;
+                        userDiv.appendChild(userLabel);
+
+                        recipientsTree.appendChild(userDiv);
+                    });
+                });
+            })
+            .catch(error => console.error('Error fetching companies and users:', error));
+    });
+</script>
+{% endblock %}

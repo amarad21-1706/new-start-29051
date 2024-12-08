@@ -91,7 +91,8 @@ from forms.forms import (LoginForm, ForgotPasswordForm, ResetPasswordForm101, Re
                 BaseDataWorkflowStepForm, BaseDataInlineModelForm, ContractArticleInlineModelForm,
                 UserRoleForm, CompanyUserForm, UserDocumentsForm, DocumentWorkflowInlineForm,
                 create_dynamic_form, CustomFileLoaderForm,
-                CustomSubjectAjaxLoader, BaseSurveyForm)
+                CustomSubjectAjaxLoader, BaseSurveyForm,
+                CircularMessageForm)
 
 from flask_admin.form import FileUploadField
 from wtforms import (SelectField, BooleanField, ValidationError, EmailField, HiddenField)
@@ -154,6 +155,16 @@ class ExtraTimeManagementView(ModelView):
         # Ensure that extra time is set properly
         if is_created or model.extra_time_end:
             model.extra_time_end = form.extra_time_end.data
+
+
+class CircularAdminView(BaseView):
+    def __init__(self, session, **kwargs):
+        super().__init__(**kwargs)
+        self.session = session
+
+    @expose('/')
+    def index(self):
+        return redirect(url_for('send_circular'))
 
 
 class DocumentsView(ModelView):
@@ -6404,6 +6415,9 @@ def create_admin_views(app, intervals):
         admin_app4.add_view(ContainerView(Container, db.session, name='Container', endpoint='container_view'))
         admin_app4.add_view(PlanView(Plan, db.session, name='Plans', endpoint='plan_view'))
         admin_app4.add_view(ProductView(Product, db.session, name='Products', endpoint='product_view'))
+
+        admin_app4.add_view(
+            CircularAdminView(session=db.session, name='Send Circulars', endpoint='send_circular_admin'))
 
         # TODO Associazione di 1->m da non consentire qui (can_create = False) , in quanto già fatta (con controllo IF EXISTS) altrove
         # TODO ***** le risposte ai questionnari *** - answer - sono da STORE non in Answer, ma in BaseData (cu data_type='answer')!

@@ -51,6 +51,29 @@ from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as
 # from werkzeug.security import generate_password_hash, check_password_hash
 
 
+# admin messages to all
+class CircularMessageForm(FlaskForm):
+    message_type = SelectField(
+        'Message Type',
+        choices=[('Notice', 'Notice'), ('Alert', 'Alert')],
+        validators=[DataRequired()]
+    )
+    subject = StringField('Subject', validators=[DataRequired()])
+    body = TextAreaField('Message Body', validators=[DataRequired()])
+    target_type = SelectField(
+        'Target Type',
+        choices=[('user', 'User'), ('company', 'Company'), ('all', 'All')],
+        validators=[DataRequired()]
+    )
+    target_id = StringField('Target ID (User or Company ID, leave blank for all)', validators=[])
+    lifetime = SelectField(
+        'Message Lifetime',
+        choices=[('persistent', 'Persistent'), ('one_off', 'One-Off')],
+        validators=[DataRequired()]
+    )
+    submit = SubmitField('Send Message')
+
+
 class PhysicalContractForm(FlaskForm):
     contract_id = StringField('ID Contratto', validators=[DataRequired()])
     price = FloatField('Prezzo Contrattuale', validators=[DataRequired()])
