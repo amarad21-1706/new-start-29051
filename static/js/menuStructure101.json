@@ -613,17 +613,6 @@
                                     "display": false
                                 }
                             },
-                            "Admin Password Reset": {
-                                "label": "Reset User Password",
-                                "url": "/admin_reset_password",
-                                "protected": true,
-                                "allowed_roles": [
-                                    "Admin"
-                                ],
-                                "widget": {
-                                    "display": false
-                                }
-                            },
                             "Admin Tickets": {
                                 "label": "Manage Tickets",
                                 "url": "/admin_tickets",
@@ -656,7 +645,7 @@
                         }
                     },
                     "Admin Relational": {
-                        "label": "Complex Settings",
+                        "label": "Entities Relationships",
                         "url": "/dashboard/ILM/settings_relational",
                         "protected": true,
                         "allowed_roles": ["Admin"],
@@ -831,6 +820,17 @@
                             "Admin UserRoles": {
                                 "label": "Users and Roles",
                                 "url": "/dashboard_setup_user_roles",
+                                "protected": true,
+                                "allowed_roles": [
+                                    "Admin"
+                                ],
+                                "widget": {
+                                    "display": false
+                                }
+                            },
+                            "Admin Password Reset": {
+                                "label": "Reset User Password",
+                                "url": "/admin_reset_password",
                                 "protected": true,
                                 "allowed_roles": [
                                     "Admin"
@@ -1070,22 +1070,6 @@
                     "display": false
                 }
             },
-            "Logout": {
-                "label": "Logout",
-                "url": "/access/logout",
-                "protected": false,
-                "allowed_roles": [
-                    "Admin",
-                    "Employee",
-                    "Manager",
-                    "Authority",
-                    "Provider",
-                    "Guest"
-                ],
-                "widget": {
-                    "display": false
-                }
-            },
             "myAccount": {
                 "label": "My Account",
                 "url": "/access/account",
@@ -1255,6 +1239,22 @@
                             }
                         }
                     }
+                }
+            },
+            "Logout": {
+                "label": "Logout",
+                "url": "/access/logout",
+                "protected": false,
+                "allowed_roles": [
+                    "Admin",
+                    "Employee",
+                    "Manager",
+                    "Authority",
+                    "Provider",
+                    "Guest"
+                ],
+                "widget": {
+                    "display": false
                 }
             }
         }

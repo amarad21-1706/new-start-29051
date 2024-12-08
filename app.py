@@ -56,7 +56,7 @@ from admin_views import create_admin_views, admin_all
 from models.user import (Users, UserRoles, Event, Role, Questionnaire, Question,
         QuestionnaireQuestions,
         Answer, Company, Area, Subarea, AreaSubareas,
-        QuestionnaireCompanies, CompanyUsers, Status, Lexic,
+        QuestionnaireCompanies, CompanyUsers, Status, Lexic, LexicSubcategory, LexicItem,
         Interval, Subject,
         Container, AuditLog, Post, Ticket, StepQuestionnaire,
         Workflow, Step, BaseData, DataMapping, Container, WorkflowSteps, WorkflowBaseData,
@@ -6694,22 +6694,6 @@ def get_document_details_and_workflows(doc_id):
    })
 
 
-@app.route('/api/get_subcategories/<int:category_id>', methods=['GET'])
-def get_subcategories(category_id):
-    subcategories = LexicSubcategory.query.filter_by(parent_id=category_id).all()
-    return jsonify({
-        'subcategories': [{'id': sub.id, 'name': sub.name} for sub in subcategories]
-    })
-
-
-@app.route('/api/get_items/<int:subcategory_id>', methods=['GET'])
-def get_items(subcategory_id):
-    items = LexicItem.query.filter_by(subcategory_id=subcategory_id).all()
-    return jsonify({
-        'items': [{'id': item.id, 'name': item.name} for item in items]
-    })
-
-
 @app.route('/show_message_modal/<ids>', methods=['GET', 'POST'])
 def show_message_modal(ids):
     # Convert the comma-separated string of IDs back into a list
@@ -6724,8 +6708,7 @@ def show_message_modal(ids):
 
         # Create a Post for each selected user
         for company_user in CompanyUsers.query.filter(CompanyUsers.id.in_(ids_list)).all():
-            post = Post(
-                user_id=company_user.user.id,
+            post = Post(user_id=company_user.user.id,
                 company_id=company_user.company.id,
                 sender=current_user.username,  # Assuming current_user is the sender
                 message_type=message_type,
@@ -6918,6 +6901,28 @@ def debug_locale():
     print(f"Session language: {session.get('lang')}")
     print(f"Current locale: {get_locale()}")
     return f"Session language: {session.get('lang')}, Current locale: {get_locale()}"
+
+
+@app.route('/api/lexics', methods=['GET'])
+def get_lexics():
+    """Fetch all Lexics in the 'Pre-complaint' category."""
+    lexics = Lexic.query.filter_by(category='Precomplaint').all()
+    return jsonify([{'id': l.id, 'name': l.name} for l in lexics])
+
+
+@app.route('/api/subcategories/<int:lexic_id>', methods=['GET'])
+def get_subcategories(lexic_id):
+    """Fetch Subcategories for a specific Lexic."""
+    subcategories = LexicSubcategory.query.filter_by(lexic_id=lexic_id).all()
+    return jsonify([{'id': sc.id, 'name': sc.name} for sc in subcategories])
+
+
+@app.route('/api/items/<int:subcategory_id>', methods=['GET'])
+def get_items(subcategory_id):
+    """Fetch Items for a specific Subcategory."""
+    items = LexicItem.query.filter_by(subcategory_id=subcategory_id).all()
+    return jsonify([{'id': i.id, 'name': i.name} for i in items])
+
 
 if __name__ == '__main__':
     # Load menu items from JSON file

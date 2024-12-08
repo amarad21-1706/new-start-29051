@@ -550,8 +550,8 @@ class Interval(db.Model):
     __tablename__ = 'interval'
 
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    name = db.Column(db.Text, unique=True, nullable=False)
-    description = db.Column(db.Text)
+    name = db.Column(db.String(256), unique=True, nullable=False)
+    description = db.Column(db.String(256))
     interval_id = db.Column(db.Integer)
 
     def __repr__(self):
@@ -580,42 +580,52 @@ class Deadline(db.Model):
 class Lexic(db.Model):
     __tablename__ = 'lexic'
 
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    category = db.Column(db.String(64), nullable=False)
-    name = db.Column(db.String(64), unique=True, nullable=False)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    category = Column(String(64), nullable=False)
+    name = Column(String(64), unique=True, nullable=False)
+
+    # Relationship to subcategories
+    subcategories = relationship('LexicSubcategory', back_populates='parent', cascade='all, delete-orphan')
 
     def __init__(self, category=None, name=None):
         self.category = category
         self.name = name
 
     def __repr__(self):
-        return f"{self.name}"
+        return f"Lexic(name={self.name}, category={self.category})"
 
 
 class LexicSubcategory(db.Model):
     __tablename__ = 'lexic_subcategories'
 
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    parent_id = db.Column(db.Integer, db.ForeignKey('lexic.id'), nullable=False)
-    name = db.Column(db.String(128), nullable=False)
-    description = db.Column(db.Text, nullable=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    lexic_id = Column(Integer, ForeignKey('lexic.id'), nullable=False)
+    name = Column(db.String(128), nullable=False)
+    description = Column(db.String(500), nullable=True)
 
-    parent = db.relationship('Lexic', back_populates='subcategories')
+    # Relationship to parent Lexic
+    parent = relationship('Lexic', back_populates='subcategories')
 
-Lexic.subcategories = db.relationship('LexicSubcategory', back_populates='parent', cascade='all, delete-orphan')
+    # Relationship to items
+    items = relationship('LexicItem', back_populates='subcategory', cascade='all, delete-orphan')
+
+    def __repr__(self):
+        return f"LexicSubcategory(name={self.name}, lexic_id={self.lexic_id})"
 
 
 class LexicItem(db.Model):
     __tablename__ = 'lexic_items'
 
-    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
-    subcategory_id = db.Column(db.Integer, db.ForeignKey('lexic_subcategories.id'), nullable=False)
-    name = db.Column(db.String(128), nullable=False)
-    description = db.Column(db.Text, nullable=True)
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    subcategory_id = Column(Integer, ForeignKey('lexic_subcategories.id'), nullable=False)
+    name = Column(String(128), nullable=False)
+    description = Column(String(256), nullable=True)
 
-    subcategory = db.relationship('LexicSubcategory', back_populates='items')
+    # Relationship to parent Subcategory
+    subcategory = relationship('LexicSubcategory', back_populates='items')
 
-LexicSubcategory.items = db.relationship('LexicItem', back_populates='subcategory', cascade='all, delete-orphan')
+    def __repr__(self):
+        return f"LexicItem(name={self.name}, subcategory_id={self.subcategory_id})"
 
 
 class Area(db.Model):
@@ -662,7 +672,7 @@ class AreaSubareas(db.Model):
     subarea_id = db.Column(db.Integer, db.ForeignKey('subarea.id'), nullable=False)
     status_id = db.Column(db.Integer, db.ForeignKey('status.id'))
     interval_id = db.Column(db.Integer, db.ForeignKey('interval.id'))
-    caption = db.Column(db.Text(255))
+    caption = db.Column(db.String(255))
 
     # Add a composite unique constraint to ensure uniqueness of area-subarea combination
     __table_args__ = (
@@ -1239,7 +1249,7 @@ class AuditLog(db.Model):
     workflow_id = db.Column(db.Integer, db.ForeignKey('workflow.id'))
     step_id = db.Column(db.Integer, db.ForeignKey('step.id'), nullable=True)
     action = db.Column(db.String(256))
-    details = db.Column(db.Text)
+    details = db.Column(db.String(256))
 
     # Relationships (optional, define as needed)
     base_data = relationship('BaseData', backref='audit_log')
@@ -1292,7 +1302,7 @@ class Ticket(TimestampMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     subject_id = db.Column(db.Integer, db.ForeignKey('subject.id'), nullable=False)
-    description = db.Column(db.Text, nullable=False)
+    description = db.Column(db.String(256), nullable=False)
     status_id = db.Column(db.Integer, db.ForeignKey('status.id'), nullable=False, default=2)  # Default status "Open"
     marked_as_read = db.Column(db.Boolean, default=False)
     lifespan = db.Column(Enum('one-off', 'persistent', name='lifespan_types'), default='one-off')
@@ -1331,7 +1341,7 @@ class Plan(TimestampMixin, db.Model):
     __tablename__ = 'plan'
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(64), unique=True, nullable=False)
-    description = db.Column(db.Text, nullable=True)
+    description = db.Column(db.String(256), nullable=True)
     stripe_plan_id = db.Column(db.String(128), nullable=False)
     stripe_price_id = db.Column(db.String(128), nullable=False)
     price = db.Column(db.Integer, nullable=False)
@@ -1362,7 +1372,7 @@ class Product(TimestampMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     type = db.Column(db.String(64), unique=False, nullable=False, default='application')
     name = db.Column(db.String(64), unique=True, nullable=False)
-    description = db.Column(db.Text, nullable=True)
+    description = db.Column(db.String(256), nullable=True)
     stripe_product_id = db.Column(db.String(128), nullable=False)
     stripe_price_id = db.Column(db.String(128), nullable=False)
     price = db.Column(db.Integer, nullable=False)
@@ -1510,7 +1520,7 @@ class Contract(TimestampMixin, db.Model):
     contract_status = db.Column(Enum(*STATUS_CHOICES, name='contract_status'), nullable=False)
     start_date = db.Column(db.Date)
     end_date = db.Column(db.Date)
-    description = db.Column(db.Text)
+    description = db.Column(db.String(256))
     created_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='SET NULL'))
 
     created_by_user = db.relationship("Users", back_populates="created_contracts")
@@ -1566,7 +1576,7 @@ class ContractTerm(TimestampMixin, db.Model):
     term_id = db.Column(db.Integer, primary_key=True)
     contract_id = db.Column(db.Integer, db.ForeignKey('contract.contract_id', ondelete='CASCADE'))
     term_title = db.Column(db.String(255))
-    term_description = db.Column(db.Text)
+    term_description = db.Column(db.String(500))
     term_start_date = db.Column(db.Date)
     term_end_date = db.Column(db.Date)
 
@@ -1583,7 +1593,7 @@ class ContractDocument(db.Model):
     document_type = db.Column(db.String(50))  # e.g., PDF, DOCX
     document_url = db.Column(db.String(255))  # Assuming the document is stored in a file system or cloud storage
     uploaded_at = db.Column(db.TIMESTAMP, default=func.now())
-    description = db.Column(db.Text)
+    description = db.Column(db.String(500))
 
     contract = db.relationship("Contract", back_populates="contract_documents")
 
@@ -1615,7 +1625,7 @@ class ContractArticle(TimestampMixin, db.Model):
 
     contract_id = db.Column(db.Integer, db.ForeignKey('contract.contract_id', ondelete='CASCADE'))
     article_title = db.Column(db.String(255), nullable=False)
-    article_body = db.Column(db.Text)
+    article_body = db.Column(db.String(4000))
     article_order = db.Column(db.Integer)
 
     contract = db.relationship("Contract", back_populates="contract_articles")
@@ -1704,7 +1714,7 @@ class DocumentWorkflow(db.Model):
     recall_unit = db.Column(db.String(24), default='day')
     recall_value = db.Column(db.Integer, default=1)
     open_action = db.Column(db.Boolean, default=False)
-    comments = db.Column(db.Text, nullable=True)  # Add the comments field
+    comments = db.Column(db.String(256), nullable=True)  # Add the comments field
 
     # Foreign key with "ON DELETE CASCADE"
     base_data_id = db.Column(db.Integer, ForeignKey('base_data.id', ondelete="CASCADE"))
@@ -1926,7 +1936,7 @@ class BenchmarkData(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     contract_type = db.Column(db.String(50))
     benchmark_price = db.Column(db.Numeric(10, 2))
-    benchmark_conditions = db.Column(db.Text)
+    benchmark_conditions = db.Column(db.String(256))
 
 
 class TextContent(TimestampMixin, db.Model):
@@ -1937,7 +1947,7 @@ class TextContent(TimestampMixin, db.Model):
     content_type = db.Column(db.String(50), nullable=False)  # E.g., "disclaimer", "terms_of_use", "about_us"
     content_version = db.Column(db.Integer, nullable=False, default=1)  # Useful for version control
     title = db.Column(db.String(100))  # Optional, for sections that have titles
-    content_body = db.Column(db.Text, nullable=False)  # Main content
+    content_body = db.Column(db.String(500), nullable=False)  # Main content
 
 
 

@@ -5846,10 +5846,10 @@ def create_admin_views(app, intervals):
 
                 with current_app.app_context():
                     result, message = check_status_extended(is_created, company_id, form.lexic_id.data,
-                                                            form.subject_id.data,
-                                                            legal_document_id, interval_ord, interval_id, year_id,
-                                                            area_id, subarea_id, form.fi1.data, None, None, None, None,
-                                                            None, None, None, None, datetime.today(), db.session)
+                            form.subject_id.data,
+                            legal_document_id, interval_ord, interval_id, year_id,
+                            area_id, subarea_id, form.fi1.data, None, None, None, None,
+                            None, None, None, None, datetime.today(), db.session)
 
                 if not result:
                     raise ValidationError(message)
