@@ -188,6 +188,9 @@ from flask_babel import _
 
 import smtplib
 
+from google.cloud import storage
+
+
 # import flask_dance
 # from jose import jwt
 
@@ -7011,6 +7014,8 @@ def send_circular_222():
     return render_template('admin/send_circular.html', form=form)
 
 
+import os
+
 @app.route('/admin/send_circular', methods=['GET', 'POST'])
 def send_circular():
     form = CircularMessageForm()
@@ -7039,25 +7044,38 @@ def send_circular():
 
             print(f"Target Type: {target_type}, Message Type: {message_type}, Subject: {subject}")
 
+            # Handle file uploads
+            uploaded_files = request.files.getlist('attachments')
+            saved_files = []
+
+            for file in uploaded_files:
+                if file.filename:
+                    # Save the file locally or to cloud storage
+                    upload_path = os.path.join("uploads", file.filename)
+                    file.save(upload_path)
+                    saved_files.append(upload_path)
+
+            print(f"Saved files: {saved_files}")
+
             # Process recipients based on type
             if target_type == 'all':
                 # Send message to all users
                 users = Users.query.all()
                 for user in users:
-                    send_message_to_user(user, message_type, subject, body, lifetime)
+                    send_message_to_user(user, message_type, subject, body, lifetime, saved_files)
             else:
                 for recipient in recipients:
                     if recipient.startswith('user-'):
                         user_id = int(recipient.split('-')[1])
                         user = Users.query.get(user_id)
                         if user:
-                            send_message_to_user(user, message_type, subject, body, lifetime)
+                            send_message_to_user(user, message_type, subject, body, lifetime, saved_files)
                     elif recipient.startswith('company-'):
                         company_id = int(recipient.split('-')[1])
                         company = Company.query.get(company_id)
                         if company and company.company_users:
                             for company_user in company.company_users:
-                                send_message_to_user(company_user.user, message_type, subject, body, lifetime)
+                                send_message_to_user(company_user.user, message_type, subject, body, lifetime, saved_files)
 
             flash('Message sent successfully!', 'success')
             return redirect(url_for('send_circular'))
@@ -7193,39 +7211,45 @@ def send_circular_234():
     return render_template('admin/send_circular.html', form=form)
 
 
-def send_message_to_user(user, form, message_type, subject, body, lifetime):
+def send_message_to_user(user, message_type, subject, body, lifetime, attachments=None):
     """
-    Helper function to send a message to a single user.
+    Sends a message to a user with optional attachments.
+
+    :param user: User object
+    :param message_type: Type of the message
+    :param subject: Subject of the message
+    :param body: Body of the message
+    :param lifetime: Lifetime of the message
+    :param attachments: List of file paths for attachments
     """
     try:
-        # Create a new Post record
-
-        print(f"Creating Post: {subject}, {body}, for recipient {recipient}")
-
+        # Create a new Post record in the database
         new_post = Post(
-            sender_id=current_user.id,  # Assuming the current user is the sender
+            sender_id=current_user.id,  # Assuming current_user is available
             recipient_id=user.id,
+            message_type=message_type,
             subject=subject,
             body=body,
             lifetime=lifetime,
-            message_type=message_type,
-            created_at=datetime.utcnow(),
         )
-
-        print(f"Inserting Post: {new_post}")
-
         db.session.add(new_post)
+
+        # Add logic to handle attachments (if storing attachment info in the DB)
+        # For example, you might create a PostAttachment model:
+        if attachments:
+            for file_path in attachments:
+                attachment = PostAttachment(post_id=new_post.id, file_path=file_path)
+                db.session.add(attachment)
+
         db.session.commit()
 
-        # Send email notification
-        send_notification_email(
-            to_email=user.email,
-            subject=subject,
-            body=body
-        )
+        # Send email notifications with attachments
+        send_email_with_attachments(user.email, subject, body, attachments)
+
     except Exception as e:
         db.session.rollback()
         app.logger.error(f"Error sending message to user {user.id}: {e}")
+
 
 
 @app.route('/send_message', methods=['GET', 'POST'])
@@ -7332,7 +7356,19 @@ def send_message_222():
     return render_template("send_message.html", form=form)
 
 
-def send_emails_to_recipients(recipients, subject, body):
+import smtplib
+from flask_mail import Message
+from werkzeug.utils import secure_filename
+
+def send_emails_to_recipients(recipients, subject, body, attachments=None):
+    """
+    Sends emails to the specified recipients with optional attachments.
+
+    :param recipients: List of recipient identifiers (e.g., 'user-<id>' or 'company-<id>')
+    :param subject: Subject of the email
+    :param body: Body of the email
+    :param attachments: List of file paths for attachments
+    """
     try:
         with smtplib.SMTP('smtp.office365.com', 587) as server:
             server.starttls()
@@ -7345,30 +7381,43 @@ def send_emails_to_recipients(recipients, subject, body):
                     company_users = CompanyUsers.query.filter_by(company_id=company_id).all()
                     for company_user in company_users:
                         user = Users.query.get(company_user.user_id)
-                        send_notification_email(user.email, subject, body)
+                        if user:
+                            send_notification_email(user.email, subject, body, attachments)
                 elif recipient.startswith('user-'):
                     user_id = int(recipient.split('-')[1])
                     user = Users.query.get(user_id)
-                    send_notification_email(user.email, subject, body)
+                    if user:
+                        send_notification_email(user.email, subject, body, attachments)
 
     except Exception as e:
         print(f"Failed to send emails. Error: {e}")
 
 
-def send_notification_email(to_email, subject, body):
+def send_notification_email(to_email, subject, body, attachments=None):
     """
-    Sends a notification email to the specified recipient.
+    Sends a notification email to the specified recipient with optional attachments.
 
     :param to_email: The recipient's email address
     :param subject: The subject of the email
     :param body: The body of the email
+    :param attachments: List of file paths for attachments
     """
-    msg = Message(
-        subject,
-        recipients=[to_email],
-        body=body
-    )
-    mail.send(msg)
+    try:
+        msg = Message(subject, recipients=[to_email], body=body)
+
+        # Attach files if provided
+        if attachments:
+            for file_path in attachments:
+                with open(file_path, "rb") as f:
+                    msg.attach(
+                        filename=secure_filename(file_path.split("/")[-1]),
+                        content_type="application/octet-stream",
+                        data=f.read(),
+                    )
+
+        mail.send(msg)
+    except Exception as e:
+        print(f"Failed to send email to {to_email}. Error: {e}")
 
 
 @app.route("/message_board", methods=["GET"])
@@ -7417,6 +7466,42 @@ def companies_and_users():
     except Exception as e:
         print(f"Error fetching companies and users: {e}")
         return jsonify({'error': str(e)}), 500
+
+
+def upload_to_bucket(bucket_name, source_file_name, destination_blob_name):
+    """Uploads a file to the specified bucket."""
+    client = setup_google_client()
+    bucket = client.bucket(bucket_name)
+    blob = bucket.blob(destination_blob_name)
+
+    blob.upload_from_filename(source_file_name)
+    print(f"File {source_file_name} uploaded to {destination_blob_name}.")
+
+def generate_signed_url(bucket_name, blob_name, expiration_minutes=15):
+    """Generates a signed URL for a blob."""
+    client = setup_google_client()
+    bucket = client.bucket(bucket_name)
+    blob = bucket.blob(blob_name)
+
+    url = blob.generate_signed_url(
+        expiration=datetime.timedelta(minutes=expiration_minutes),
+        method="GET"
+    )
+    print(f"Generated signed URL: {url}")
+    return url
+
+import os
+from google.cloud import storage
+import json
+
+
+def setup_google_client():
+    """Setup Google Cloud Storage client."""
+    # The key file should be stored locally in a safe directory
+    key_file_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS", "~/.config/google/key.json")
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.expanduser(key_file_path)
+    return storage.Client()
+
 
 
 

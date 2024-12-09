@@ -204,6 +204,16 @@ def create_app(conf=None):
     login_manager.init_app(app)
     login_manager.login_view = "login"
 
+    # Set up Google Cloud credentials
+    key_content = os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+    if key_content:
+        key_file_path = "/tmp/service-account-key.json"
+        with open(key_file_path, "w") as key_file:
+            key_file.write(key_content)
+        os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = key_file_path
+    else:
+        raise EnvironmentError("GOOGLE_APPLICATION_CREDENTIALS_JSON is not set in the environment")
+
     with app.app_context():
         from models import user
         from routes import routes  # Ensure your routes are imported here
