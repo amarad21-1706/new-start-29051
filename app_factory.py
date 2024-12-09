@@ -85,6 +85,7 @@ def create_app(conf=None):
     # Configuration
     app.config['BABEL_DEFAULT_LOCALE'] = 'en'
     app.config['BABEL_DEFAULT_TIMEZONE'] = 'UTC'
+    app.config['PREFERRED_URL_SCHEME'] = 'https'
 
     babel = Babel(app)
 
