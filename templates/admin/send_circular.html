@@ -85,7 +85,6 @@
                     const checkbox = document.createElement('input');
                     checkbox.type = 'checkbox';
                     checkbox.className = 'form-check-input';
-                    checkbox.name = 'recipients'; // Add to the form submission
                     checkbox.value = `${targetType}-${item.id}`;
                     div.appendChild(checkbox);
 
@@ -121,26 +120,22 @@
             radio.addEventListener('change', toggleRecipients);
         });
 
-        // Initial toggle based on the pre-selected target type
-        toggleRecipients();
-
-        // Add event listener to the form to serialize selected recipients on submit
+        // Add hidden recipients field before form submission
         document.querySelector('form').addEventListener('submit', () => {
-            const selectedRecipients = Array.from(
-                document.querySelectorAll('#recipients-tree input:checked')
-            ).map(input => input.value);
-
-            // Create a hidden input to store the recipients as a JSON string
+            const selectedRecipients = Array.from(document.querySelectorAll('#recipients-tree input:checked'))
+                .map(input => input.value);
             const recipientsInput = document.createElement('input');
             recipientsInput.type = 'hidden';
             recipientsInput.name = 'recipients';
-            recipientsInput.value = JSON.stringify(selectedRecipients);
-
-            // Append the hidden input to the form
+            recipientsInput.value = JSON.stringify(selectedRecipients); // Serialize as JSON string
             document.querySelector('form').appendChild(recipientsInput);
         });
+
+        // Initial toggle based on the pre-selected target type
+        toggleRecipients();
     });
 </script>
+
 
 
 {% endblock %}
