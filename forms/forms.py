@@ -52,7 +52,7 @@ from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as
 
 
 # admin messages to all
-class CircularMessageForm(FlaskForm):
+class CircularMessageForm_222(FlaskForm):
     message_type = SelectField(
         'Message Type',
         choices=[('Notice', 'Notice'), ('Alert', 'Alert')],
@@ -71,8 +71,41 @@ class CircularMessageForm(FlaskForm):
         choices=[('persistent', 'Persistent'), ('one_off', 'One-Off')],
         validators=[DataRequired()]
     )
+    recipients = FieldList(StringField('Recipients'), validators=[DataRequired()])
+
     submit = SubmitField('Send Message')
 
+
+class CircularMessageForm(FlaskForm):
+    target_type = RadioField(
+        'Target Type',
+        choices=[('all', 'All'), ('company', 'Company'), ('user', 'User')],
+        validators=[DataRequired()],
+        default='all'
+    )
+    message_type = SelectField('Message Type',
+                               choices=[('noticeboard', 'Noticeboard'),
+                                        ('email', 'Email'),
+                                        ('service_message', 'Service Message')],
+                               validators=[DataRequired()])
+    subject = StringField('Subject', validators=[DataRequired()])
+    body = TextAreaField('Body', validators=[DataRequired()])
+    lifetime = SelectField('Lifetime',
+                           choices=[('one-off', 'One-off'),
+                                    ('persistent', 'Persistent')],
+                           validators=[DataRequired()])
+    recipients = HiddenField('Recipients')  # Recipients JSON string
+    submit = SubmitField('Send')
+
+    '''
+    def validate(self):
+        if not super().validate():
+            return False
+        if self.target_type.data != 'All' and not self.recipients.data:
+            self.recipients.errors.append("Recipients are required unless Target Type is 'All'.")
+            return False
+        return True
+    '''
 
 class PhysicalContractForm(FlaskForm):
     contract_id = StringField('ID Contratto', validators=[DataRequired()])

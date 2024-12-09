@@ -14,12 +14,6 @@
                         <!-- Sub-block for Area 1 -->
                         <div class="col-md-4 mb-2 position-relative">
                             <button type="button" class="btn btn-primary btn-block" onclick="window.location.href='/open_admin_1'">Area 1</button>
-                            <!-- Child Button -->
-                            <button type="button" class="btn btn-sm btn-outline-secondary"
-                                style="position: absolute; top: 40px; right: -10px;"
-                                onclick="window.location.href='/show_survey/8'">
-                                Contingencies
-                            </button>
                         </div>
                         <!-- Sub-block for Area 2 -->
                         <div class="col-md-4 mb-2">
@@ -85,19 +79,24 @@
                     <h3>Message Board</h3>
                 </div>
                 <div class="card-body">
-                    <ul class="list-group">
-                        {% for post in posts %}
-                            <li class="list-group-item">
-                                <h5>{{ post.subject }}</h5>
-                                <p>{{ post.body }}</p>
-                                <small>Posted on: {{ post.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</small>
-                            </li>
-                        {% endfor %}
-                    </ul>
+                    {% if posts %}
+                        <ul class="list-group">
+                            {% for post in posts %}
+                                <li class="list-group-item">
+                                    <h5>{{ post.subject }}</h5>
+                                    <p>{{ post.body }}</p>
+                                    <small>Posted on: {{ post.created_at.strftime('%Y-%m-%d %H:%M:%S') }}</small>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% else %}
+                        <p>No messages available.</p>
+                    {% endif %}
                 </div>
             </div>
         </div>
     </div>
+
 </div>
 
 <style>

@@ -178,6 +178,8 @@ class Users(TimestampMixin, db.Model, UserMixin):
     created_contracts = db.relationship("Contract", back_populates="created_by_user")
     status_changes = db.relationship("ContractStatusHistory", back_populates="changed_by_user")
     company_users = relationship('CompanyUsers', back_populates='user')  # Explicitly set the relationship
+    # Add the relationship
+    received_posts = db.relationship('PostRecipient', back_populates='user')
 
     # Add constructor to set the primary key
     def __init__(self, **kwargs):
@@ -1285,6 +1287,8 @@ class Post(TimestampMixin, db.Model):
     user_id = db.Column(db.Integer, ForeignKey('users.id'))  # If messages are targeted at specific users
     sender = db.Column(db.String(255))  # Information about the sender
     message_type = db.Column(Enum('noticeboard', 'email', 'service_message', name='message_types'))
+    target_type = db.Column(Enum('All', 'Company', 'User', name='target_types'))  # New field
+
     subject = db.Column(db.String(255))
     body = db.Column(db.String)
     marked_as_read = db.Column(db.Boolean, default=False)
@@ -1293,10 +1297,26 @@ class Post(TimestampMixin, db.Model):
     # Define relationships
     company = relationship("Company")  # If using company_id
     user = relationship("Users")  # If using user_id
+    # Add the relationship
+    recipients = db.relationship('PostRecipient', back_populates='post', cascade='all, delete-orphan')
 
     def __repr__(self):
         return f"{self.message_type}, {self.subject}"
 
+
+
+class PostRecipient(db.Model):
+    __tablename__ = 'post_recipients'
+
+    id = db.Column(db.Integer, primary_key=True, autoincrement=True)
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    is_read = db.Column(db.Boolean, default=False)  # Whether the recipient has read the post
+    delivered_at = db.Column(db.DateTime, default=datetime.utcnow)  # When the post was delivered
+
+    # Relationships
+    post = db.relationship('Post', back_populates='recipients')
+    user = db.relationship('Users', back_populates='received_posts')
 
 class Ticket(TimestampMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True, autoincrement=True)

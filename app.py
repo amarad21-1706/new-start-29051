@@ -901,6 +901,24 @@ def get_company_data():
 
     return response
 
+@app.route('/api/companies', methods=['GET'])
+def get_companies():
+    try:
+        companies = Company.query.all()
+        return jsonify([{'id': c.id, 'name': c.name} for c in companies])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/users', methods=['GET'])
+def get_users():
+    try:
+        users = Users.query.all()
+        return jsonify([{'id': u.id, 'username': u.username} for u in users])
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
 
 @app.route('/document/edit/<int:document_id>')
 @login_required
@@ -1910,7 +1928,7 @@ def index():
                        )
 
 
-@app.route('/access/logout', methods=['GET'])
+@app.route('/access/logout', methods=['GET', 'POST'])
 @login_required
 def logout():
     # Log out the user
@@ -6992,60 +7010,413 @@ def send_circular_222():
 
     return render_template('admin/send_circular.html', form=form)
 
+
 @app.route('/admin/send_circular', methods=['GET', 'POST'])
 def send_circular():
     form = CircularMessageForm()
+    print('Send circular triggered 0')
+
     if form.validate_on_submit():
-        recipients = request.form.get('recipients')
-        recipients = json.loads(recipients)  # Parse JSON string
+        try:
+            print('Try triggered 1')
 
-        for recipient in recipients:
-            if recipient.startswith('company-'):
-                # Send to all users in the company
-                company_id = int(recipient.split('-')[1])
-                company = Company.query.get(company_id)
-                for user in company.users:
-                    send_message_to_user(user, form)  # Custom function to send the message
-            elif recipient.startswith('user-'):
-                # Send to a specific user
-                user_id = int(recipient.split('-')[1])
-                user = Users.query.get(user_id)
-                send_message_to_user(user, form)
+            # Get recipients from form data
+            recipients_json = request.form.get('recipients')  # Expecting JSON
+            recipients = json.loads(recipients_json) if recipients_json else []
+            print(f"Recipients: {recipients}")
 
-        flash('Message sent successfully!', 'success')
-        return redirect(url_for('send_circular'))
+            # If target type is not 'all', ensure recipients are provided
+            if not recipients and form.target_type.data != 'all':
+                flash('Please select at least one recipient.', 'danger')
+                return render_template('admin/send_circular.html', form=form)
+
+            # Get form fields
+            target_type = form.target_type.data
+            message_type = form.message_type.data
+            subject = form.subject.data
+            body = form.body.data
+            lifetime = form.lifetime.data
+
+            print(f"Target Type: {target_type}, Message Type: {message_type}, Subject: {subject}")
+
+            # Process recipients based on type
+            if target_type == 'all':
+                # Send message to all users
+                users = Users.query.all()
+                for user in users:
+                    send_message_to_user(user, message_type, subject, body, lifetime)
+            else:
+                for recipient in recipients:
+                    if recipient.startswith('user-'):
+                        user_id = int(recipient.split('-')[1])
+                        user = Users.query.get(user_id)
+                        if user:
+                            send_message_to_user(user, message_type, subject, body, lifetime)
+                    elif recipient.startswith('company-'):
+                        company_id = int(recipient.split('-')[1])
+                        company = Company.query.get(company_id)
+                        if company and company.company_users:
+                            for company_user in company.company_users:
+                                send_message_to_user(company_user.user, message_type, subject, body, lifetime)
+
+            flash('Message sent successfully!', 'success')
+            return redirect(url_for('send_circular'))
+
+        except Exception as e:
+            app.logger.error(f"Error processing circular form: {e}")
+            flash('An error occurred while sending the circular.', 'danger')
+    else:
+        print('Form validation failed:', form.errors)
 
     return render_template('admin/send_circular.html', form=form)
 
-def send_message_to_user(user, form):
-    new_post = Post(
-        sender_id=current_user.id,
-        receiver_id=user.id,
-        message_type=form.message_type.data,
-        subject=form.subject.data,
-        body=form.body.data,
-        lifetime=form.lifetime.data
+
+@app.route('/admin/send_circular_345', methods=['GET', 'POST'])
+def send_circular_345():
+    form = CircularMessageForm()
+    print('Send circular triggered 0')
+
+    if request.method == 'POST':
+        # Log raw POST data
+        print(f"Raw form data: {request.form}")
+
+    if not form.validate_on_submit():
+        print((f"Error validating circular form: {form.errors}"))
+
+    if form.validate_on_submit():
+        try:
+            print('Try triggered 1')
+            # Debug the raw form data
+            print(f"Raw form data: {request.form}")
+
+            recipients_json = request.form.get('recipients', '[]')
+            recipients = json.loads(recipients_json) if recipients_json else []
+
+            # Get form data
+            target_type = form.target_type.data
+            message_type = form.message_type.data
+            subject = form.subject.data
+            body = form.body.data
+            lifetime = form.lifetime.data
+            recipients_json = request.form.get('recipients')  # Expecting JSON
+            recipients = json.loads(recipients_json) if recipients_json else []
+
+            print(f"Target Type: {target_type}, Recipients: {recipients}")
+
+            if target_type == 'all':
+                # Send to all users
+                users = Users.query.all()
+                for user in users:
+                    create_post(user.id, message_type, subject, body, lifetime)
+
+            elif target_type == 'company':
+                # Send to all users in selected companies
+                for recipient in recipients:
+                    if recipient.startswith('company-'):
+                        company_id = int(recipient.split('-')[1])
+                        company = Company.query.get(company_id)
+                        if not company:
+                            continue
+                        for company_user in company.company_users:
+                            create_post(company_user.user_id, message_type, subject, body, lifetime)
+
+            elif target_type == 'user':
+                # Send to specific users
+                for recipient in recipients:
+                    if recipient.startswith('user-'):
+                        user_id = int(recipient.split('-')[1])
+                        create_post(user_id, message_type, subject, body, lifetime)
+
+            flash('Circular sent successfully!', 'success')
+            return redirect(url_for('send_circular'))
+
+        except Exception as e:
+            db.session.rollback()
+            app.logger.error(f"Error sending circular: {e}")
+            flash('Failed to send circular.', 'danger')
+
+    else:
+        print('Form validation failed:', form.errors)
+
+    return render_template('admin/send_circular.html', form=form)
+
+
+@app.route('/admin/send_circular_234', methods=['GET', 'POST'])
+def send_circular_234():
+    form = CircularMessageForm()  # Replace with your circular message form class
+    print('Send circular triggered 0')
+
+    if not form.validate_on_submit():
+        print("Form validation failed:")
+        print(form.errors)  # Log all validation errors
+
+    if form.validate_on_submit():
+        try:
+            print('Try triggered 1')
+            # Get data from the form
+            message_type = form.message_type.data
+            subject = form.subject.data
+            body = form.body.data
+            lifetime = form.lifetime.data
+            recipients_json = request.form.get('recipients')
+            recipients = json.loads(recipients_json)  # Parse recipients from JSON string
+
+            # Log the recipients for debugging
+            print(f"Recipients: {recipients}")
+
+            # Iterate over recipients and process messages
+            for recipient in recipients:
+                print('recipient', recipient)
+                if recipient.startswith('company-'):
+                    # Send to all users in the company
+                    company_id = int(recipient.split('-')[1])
+                    company = Company.query.get(company_id)
+                    if not company:
+                        continue  # Skip if company does not exist
+                    for company_user in company.company_users:
+                        send_message_to_user(company_user.user, form, message_type, subject, body, lifetime)
+                elif recipient.startswith('user-'):
+                    # Send to a specific user
+                    user_id = int(recipient.split('-')[1])
+                    user = Users.query.get(user_id)
+                    if user:
+                        send_message_to_user(user, form, message_type, subject, body, lifetime)
+
+            flash('Circular sent successfully!', 'success')
+            return redirect(url_for('send_circular'))
+
+        except Exception as e:
+            db.session.rollback()
+            app.logger.error(f"Error sending circular: {e}")
+            flash('Failed to send circular.', 'danger')
+
+    return render_template('admin/send_circular.html', form=form)
+
+
+def send_message_to_user(user, form, message_type, subject, body, lifetime):
+    """
+    Helper function to send a message to a single user.
+    """
+    try:
+        # Create a new Post record
+
+        print(f"Creating Post: {subject}, {body}, for recipient {recipient}")
+
+        new_post = Post(
+            sender_id=current_user.id,  # Assuming the current user is the sender
+            recipient_id=user.id,
+            subject=subject,
+            body=body,
+            lifetime=lifetime,
+            message_type=message_type,
+            created_at=datetime.utcnow(),
+        )
+
+        print(f"Inserting Post: {new_post}")
+
+        db.session.add(new_post)
+        db.session.commit()
+
+        # Send email notification
+        send_notification_email(
+            to_email=user.email,
+            subject=subject,
+            body=body
+        )
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f"Error sending message to user {user.id}: {e}")
+
+
+@app.route('/send_message', methods=['GET', 'POST'])
+def send_message():
+    form = MessageForm()  # Replace with your form class
+
+    if form.validate_on_submit():
+        try:
+            # Get data from the form
+            message_type = form.message_type.data
+            subject = form.subject.data
+            body = form.body.data
+            lifetime = form.lifetime.data
+            recipients = request.form.getlist('recipients')  # Get recipients from form data
+
+            # Debugging: Log the values
+            print(f"Message Type: {message_type}, Subject: {subject}, Body: {body}, Lifetime: {lifetime}, Recipients: {recipients}")
+
+            # Record the message in the Post model
+            for recipient in recipients:
+                new_post = Post(
+                    sender_id=current_user.id,  # Assuming the current user is the sender
+                    recipient_id=recipient.split('-')[-1],  # Extract user ID
+                    subject=subject,
+                    body=body,
+                    lifetime=lifetime,
+                    message_type=message_type,
+                    created_at=datetime.utcnow(),
+                )
+                db.session.add(new_post)
+
+            db.session.commit()
+
+            # Send emails to recipients
+            for recipient in recipients:
+                recipient_user = Users.query.get(recipient.split('-')[-1])
+                if recipient_user:
+                    send_notification_email(
+                        to_email=recipient_user.email,
+                        subject=subject,
+                        body=body
+                    )
+
+            flash('Message sent successfully!', 'success')
+            return redirect(url_for('home'))  # Redirect to the appropriate page
+
+        except Exception as e:
+            db.session.rollback()
+            app.logger.error(f"Error sending message: {e}")
+            flash('Failed to send message.', 'danger')
+
+    return render_template('send_message.html', form=form)
+
+
+#submit message from admin
+@app.route("/send_message_222", methods=["POST"])
+@login_required
+def send_message_222():
+    form = SendMessageForm()  # Assuming you have a form class defined
+    if form.validate_on_submit():
+        try:
+            # Parse recipients from the submitted data
+            recipients = request.form.getlist('recipients')  # Expecting a list of recipient IDs
+
+            # Create and save the Post object
+            post = Post(
+                sender_id=current_user.id,
+                message_type=form.message_type.data,
+                subject=form.subject.data,
+                body=form.body.data,
+                lifetime=form.lifetime.data
+            )
+            db.session.add(post)
+            db.session.flush()  # Flush to generate post.id for relationships
+
+            # Debugging: Log the values
+            print(f"Message Type: {message_type}, Subject: {subject}, Body: {body}, Lifetime: {lifetime}, Recipients: {recipients}")
+
+            # Save PostRecipient relationships
+            for recipient in recipients:
+                if recipient.startswith('company-'):
+                    company_id = int(recipient.split('-')[1])
+                    company_users = CompanyUsers.query.filter_by(company_id=company_id).all()
+                    for company_user in company_users:
+                        post_recipient = PostRecipient(post_id=post.id, user_id=company_user.user_id)
+                        db.session.add(post_recipient)
+                elif recipient.startswith('user-'):
+                    user_id = int(recipient.split('-')[1])
+                    post_recipient = PostRecipient(post_id=post.id, user_id=user_id)
+                    db.session.add(post_recipient)
+
+            db.session.commit()
+
+            # Send emails to recipients
+            send_emails_to_recipients(recipients, form.subject.data, form.body.data)
+
+            flash("Message sent successfully!", "success")
+            return redirect(url_for("index"))  # Adjust as needed
+
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Failed to send the message. Error: {str(e)}", "danger")
+            return redirect(url_for("send_message"))
+    return render_template("send_message.html", form=form)
+
+
+def send_emails_to_recipients(recipients, subject, body):
+    try:
+        with smtplib.SMTP('smtp.office365.com', 587) as server:
+            server.starttls()
+            mail_pwd = app.config['MAIL_PASSWORD']
+            server.login('admin@dere-platform.com', mail_pwd)
+
+            for recipient in recipients:
+                if recipient.startswith('company-'):
+                    company_id = int(recipient.split('-')[1])
+                    company_users = CompanyUsers.query.filter_by(company_id=company_id).all()
+                    for company_user in company_users:
+                        user = Users.query.get(company_user.user_id)
+                        send_notification_email(user.email, subject, body)
+                elif recipient.startswith('user-'):
+                    user_id = int(recipient.split('-')[1])
+                    user = Users.query.get(user_id)
+                    send_notification_email(user.email, subject, body)
+
+    except Exception as e:
+        print(f"Failed to send emails. Error: {e}")
+
+
+def send_notification_email(to_email, subject, body):
+    """
+    Sends a notification email to the specified recipient.
+
+    :param to_email: The recipient's email address
+    :param subject: The subject of the email
+    :param body: The body of the email
+    """
+    msg = Message(
+        subject,
+        recipients=[to_email],
+        body=body
     )
-    db.session.add(new_post)
-    db.session.commit()
+    mail.send(msg)
+
+
+@app.route("/message_board", methods=["GET"])
+@login_required
+def message_board():
+    try:
+        # Fetch all posts for the current user's company or globally if `lifetime` is persistent
+        company_id = current_user.company_id
+        posts = (
+            Post.query
+            .filter(
+                (Post.target_type == 'All') |
+                (Post.target_type == 'Company' and Post.target_id == company_id) |
+                (Post.target_type == 'User' and Post.target_id == current_user.id)
+            )
+            .order_by(Post.created_at.desc())
+            .all()
+        )
+
+        print('posts', posts)
+        return render_template("argon-dashboard/message_board.html", posts=posts)
+
+    except Exception as e:
+        flash(f"Error loading messages: {e}", "danger")
+        return render_template("argon-dashboard/message_board.html", posts=[])
+
 
 
 @app.route('/api/companies_and_users', methods=['GET'])
 def companies_and_users():
-    companies = Company.query.all()
-    data = []
-    for company in companies:
-        # Fetch users through CompanyUsers relationship
-        users = CompanyUsers.query.filter_by(company_id=company.id).all()
-        user_data = [{'id': user.user.id, 'username': user.user.username} for user in users]
-
-        company_data = {
-            'id': company.id,
-            'name': company.name,
-            'users': user_data
-        }
-        data.append(company_data)
-    return jsonify(data)
+    try:
+        print('Try triggered 2')
+        companies = Company.query.all()
+        data = []
+        for company in companies:
+            # Access users through the company_users relationship
+            users = [{'id': cu.user.id, 'username': cu.user.username} for cu in company.company_users]
+            # print('Users', users)
+            data.append({
+                'id': company.id,
+                'name': company.name,
+                'users': users
+            })
+            # print('Data', data)
+        return jsonify(data)
+    except Exception as e:
+        print(f"Error fetching companies and users: {e}")
+        return jsonify({'error': str(e)}), 500
 
 
 

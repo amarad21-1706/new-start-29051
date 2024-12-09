@@ -568,12 +568,19 @@
 
         <!-- Icons container -->
         <div class="d-flex align-items-center ml-auto icons-container">
+
+            <!-- Log Off Button -->
+            <form action="{{ url_for('logout') }}" method="POST" class="ml-2">
+                <button type="submit" class="btn btn-danger btn-sm">Log Off</button>
+            </form>
+
             <!-- Calendar Icon -->
             <div class="calendar-icon mr-2">
                 <a href="/calendar">
                     <img src="{{ url_for('static', filename='icons/calendar-icon-2.png') }}" alt="Calendar Icon" class="{{ 'colored' if has_events else 'grayed' }}">
                 </a>
             </div>
+
             <!-- Logo Icon -->
             <div class="navbar-logo">
                 <img src="{{ url_for('static', filename='icons/globe_icon.png') }}" alt="My Logo">

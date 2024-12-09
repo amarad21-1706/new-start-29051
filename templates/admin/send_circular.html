@@ -2,9 +2,29 @@
 
 {% block content %}
 <div class="container mt-5">
-    <h1>Send Message</h1>
+    <h1>Send Circular</h1>
+
+    <!-- Flash Messages -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            <div class="alert-container mb-4">
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                        {{ message }}
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
+    {% endwith %}
+
     <form method="POST">
         {{ form.hidden_tag() }}
+
+        <div class="form-group">
+            {{ form.target_type.label }}
+            {{ form.target_type(class="form-control") }}
+        </div>
 
         <div class="form-group">
             {{ form.message_type.label }}
@@ -21,11 +41,9 @@
             {{ form.body(class="form-control") }}
         </div>
 
-        <div class="form-group">
-            <label for="recipients">Select Recipients</label>
-            <div id="recipients-tree">
-                <!-- Tree structure for companies and their users -->
-            </div>
+        <div class="form-group" id="recipients-container">
+            <label for="recipients-tree">Select Recipients</label>
+            <div id="recipients-tree"></div>
         </div>
 
         <div class="form-group">
@@ -33,61 +51,96 @@
             {{ form.lifetime(class="form-control") }}
         </div>
 
-        <button type="submit" class="btn btn-primary">Send Message</button>
+        <button type="submit" class="btn btn-primary">Send Circular</button>
     </form>
 </div>
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+        const targetTypeRadios = document.querySelectorAll('input[name="target_type"]');
+        const recipientsContainer = document.getElementById('recipients-container');
         const recipientsTree = document.getElementById('recipients-tree');
 
-        // Fetch companies and users dynamically
-        fetch('/api/companies_and_users')
-            .then(response => response.json())
-            .then(data => {
-                data.forEach(company => {
-                    // Create company-level checkbox
-                    const companyDiv = document.createElement('div');
-                    companyDiv.className = 'form-check';
+        /**
+         * Fetch and populate recipients based on the selected target type.
+         * @param {string} targetType - The selected target type ('company' or 'user').
+         */
+        const fetchRecipients = async (targetType) => {
+            const apiUrl = targetType === 'company' ? '/api/companies' : '/api/users';
 
-                    const companyCheckbox = document.createElement('input');
-                    companyCheckbox.type = 'checkbox';
-                    companyCheckbox.className = 'form-check-input';
-                    companyCheckbox.id = `company-${company.id}`;
-                    companyCheckbox.value = `company-${company.id}`;
-                    companyDiv.appendChild(companyCheckbox);
+            try {
+                const response = await fetch(apiUrl);
+                if (!response.ok) throw new Error(`HTTP error! Status: ${response.status}`);
 
-                    const companyLabel = document.createElement('label');
-                    companyLabel.className = 'form-check-label';
-                    companyLabel.htmlFor = `company-${company.id}`;
-                    companyLabel.textContent = company.name;
-                    companyDiv.appendChild(companyLabel);
+                const data = await response.json();
 
-                    recipientsTree.appendChild(companyDiv);
+                // Clear the recipients tree
+                recipientsTree.innerHTML = '';
 
-                    // Create user-level checkboxes under the company
-                    company.users.forEach(user => {
-                        const userDiv = document.createElement('div');
-                        userDiv.className = 'form-check ml-3';
+                // Populate the recipients
+                data.forEach(item => {
+                    const div = document.createElement('div');
+                    div.className = 'form-check';
 
-                        const userCheckbox = document.createElement('input');
-                        userCheckbox.type = 'checkbox';
-                        userCheckbox.className = 'form-check-input';
-                        userCheckbox.id = `user-${user.id}`;
-                        userCheckbox.value = `user-${user.id}`;
-                        userDiv.appendChild(userCheckbox);
+                    const checkbox = document.createElement('input');
+                    checkbox.type = 'checkbox';
+                    checkbox.className = 'form-check-input';
+                    checkbox.name = 'recipients'; // Add to the form submission
+                    checkbox.value = `${targetType}-${item.id}`;
+                    div.appendChild(checkbox);
 
-                        const userLabel = document.createElement('label');
-                        userLabel.className = 'form-check-label';
-                        userLabel.htmlFor = `user-${user.id}`;
-                        userLabel.textContent = user.username;
-                        userDiv.appendChild(userLabel);
+                    const label = document.createElement('label');
+                    label.className = 'form-check-label';
+                    label.textContent = item.name || item.username;
+                    div.appendChild(label);
 
-                        recipientsTree.appendChild(userDiv);
-                    });
+                    recipientsTree.appendChild(div);
                 });
-            })
-            .catch(error => console.error('Error fetching companies and users:', error));
+            } catch (error) {
+                console.error('Error fetching recipients:', error);
+            }
+        };
+
+        /**
+         * Toggle the recipients container visibility and fetch data based on the target type.
+         */
+        const toggleRecipients = () => {
+            const selectedTargetType = document.querySelector('input[name="target_type"]:checked').value;
+
+            if (selectedTargetType === 'all') {
+                recipientsContainer.style.display = 'none';
+                recipientsTree.innerHTML = ''; // Clear the tree as it's not needed for 'all'
+            } else {
+                recipientsContainer.style.display = 'block';
+                fetchRecipients(selectedTargetType); // Fetch and populate recipients dynamically
+            }
+        };
+
+        // Add event listener to update recipients on target type change
+        targetTypeRadios.forEach(radio => {
+            radio.addEventListener('change', toggleRecipients);
+        });
+
+        // Initial toggle based on the pre-selected target type
+        toggleRecipients();
+
+        // Add event listener to the form to serialize selected recipients on submit
+        document.querySelector('form').addEventListener('submit', () => {
+            const selectedRecipients = Array.from(
+                document.querySelectorAll('#recipients-tree input:checked')
+            ).map(input => input.value);
+
+            // Create a hidden input to store the recipients as a JSON string
+            const recipientsInput = document.createElement('input');
+            recipientsInput.type = 'hidden';
+            recipientsInput.name = 'recipients';
+            recipientsInput.value = JSON.stringify(selectedRecipients);
+
+            // Append the hidden input to the form
+            document.querySelector('form').appendChild(recipientsInput);
+        });
     });
 </script>
+
+
 {% endblock %}

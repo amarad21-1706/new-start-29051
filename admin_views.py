@@ -157,6 +157,17 @@ class ExtraTimeManagementView(ModelView):
             model.extra_time_end = form.extra_time_end.data
 
 
+class ContingenciesAdminView(BaseView):
+    def __init__(self, session, **kwargs):
+        super().__init__(**kwargs)
+        self.session = session
+
+    @expose('/')
+    def index(self):
+        return redirect(url_for('show_survey', questionnaire_id=8))
+
+
+
 class CircularAdminView(BaseView):
     def __init__(self, session, **kwargs):
         super().__init__(**kwargs)
@@ -6281,6 +6292,9 @@ def create_admin_views(app, intervals):
         admin_app1.add_view(
             ContenziosiDataView(model=BaseData, session=db.session, name='Contenziosi', intervals=intervals, area_id=1,
                                 subarea_id=3, endpoint='contenziosi_data_view'))
+
+        admin_app1.add_view(
+            ContingenciesAdminView(session=db.session, name='Contingencies', endpoint='contingencies_within_admin'))
 
         # admin_app1.add_view(
         #     ContingenciesDataView(model=BaseData, session=db.session, name='Contingencies', intervals=intervals, area_id=1,
