@@ -5,7 +5,7 @@ from fredapi import Fred
 
 import requests
 from models.user import (
-        FuturesPrice, ExchangeRate, InflationData, HistoricalPrice, BenchmarkData
+        FuturesPrice, ExchangeRate, InflationData, HistoricalPrice, BenchmarkData, Lexic, LexicSubcategory, LexicItem
         )
 
 import os
@@ -32,13 +32,21 @@ from flask_login import login_required
 
 from finvizfinance.quote import finvizfinance
 
-from saxo_openapi import openapi
-from saxo_openapi.contrib.auth import AuthorizationCodeAuth
+
+import saxo_openapi
+print(saxo_openapi.__file__)
+
+# import saxo_openapi.auth
+# print(dir(saxo_openapi.auth))
+
+
+# from saxo_openapi import openapi
+
+# from saxo_openapi.contrib.auth import AuthorizationCodeAuth
 import json
 
 # ai_bp = Blueprint('ai', __name__, url_prefix='/ai-dashboard')
 market_api_bp = Blueprint('market_api', __name__)
-
 
 
 @market_api_bp.route('/api-dashboard')
@@ -50,7 +58,7 @@ def dashboard():
 def fetch_financial_data(ticker):
     # Fetch stock data using Finviz
     stock = finvizfinance(ticker)
-    data = stock.TickerFundament()
+    data = stock.ticker_fundament()
     return jsonify(data)
 
 @market_api_bp.route('/api-dashboard/fetch_fx_data')
@@ -66,7 +74,7 @@ def fetch_fx_data():
 
 # Example: Fetching financial data for a specific stock (e.g., Apple)
 stock = finvizfinance('AAPL')
-financial_data = stock.TickerFundament()  # Fetching fundamental data
+financial_data = stock.ticker_fundament()  # Fetching fundamental data
 print(financial_data)
 
 
@@ -88,4 +96,3 @@ params = {
 response = client.reference_data.instruments.get(params=params)
 instrument_data = json.loads(response.text)
 print(instrument_data)
-

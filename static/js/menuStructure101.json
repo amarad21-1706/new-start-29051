@@ -178,6 +178,17 @@
                     "display": true
                 }
             },
+            "Surveys Dashboard": {
+                "label": "Surveys & Questionnaires",
+                "url": "/open_admin_10/open_questionnaires",
+                "protected": true,
+                "allowed_roles": [
+                    "Admin", "Manager", "Employee", "Authority"
+                ],
+                "widget": {
+                    "display": true
+                }
+            },
             "Reserved Open Actions": {
                 "label": "Open Actions",
                 "url": "/company_overview_current",

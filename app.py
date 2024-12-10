@@ -102,6 +102,7 @@ from routes.chart_routes import chart_bp
 from routes.association_routes import association_bp
 from routes.ai_routes import ai_bp
 from routes.phy_routes import phy_bp
+from routes.routes import api_bp
 
 from mail_service import send_simple_message, send_simple_message333
 from wtforms import Form
@@ -244,6 +245,11 @@ print('plan blueprint registered')
 # Register the chart blueprint
 app.register_blueprint(chart_bp, url_prefix='/charts', name='charts')
 print('chart blueprint registered')
+
+# Register the chart blueprint
+app.register_blueprint(api_bp, url_prefix='/api')
+print('api blueprint registered')
+
 
 # Load API key from environment variable
 openai.api_key = os.getenv("OPENAI_API_KEY")

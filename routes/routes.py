@@ -13,10 +13,14 @@ from phonenumbers.phonenumberutil import region_code_for_country_code
 from phonenumbers.phonenumberutil import NumberParseException, PhoneNumberType
 # from app_factory import create_app
 
+from models.user import (Lexic, LexicSubcategory, LexicItem)
+
 # app = create_app() #Flask(__name__)
 
 # Create the blueprint object
 geonames_bp = Blueprint('geonames', __name__)
+
+api_bp = Blueprint('api', __name__)
 
 
 '''
@@ -227,3 +231,20 @@ def get_zip_codes():
 def get_countries():
     countries = [{'alpha2Code': country.alpha_2, 'name': country.name} for country in pycountry.countries]
     return jsonify(countries)
+
+
+#user in Area 1 Subarea 1 (pre-complaint)
+
+@api_bp.route('/get_subcategories/<int:lexic_id>')
+def get_subcategories(lexic_id):
+    print(f"Received request for subcategories with lexic_id: {lexic_id}")
+    subcategories = LexicSubcategory.query.filter_by(lexic_id=lexic_id).all()
+    print("Subcategories returned:", subcategories)
+    return jsonify([{'id': s.id, 'name': s.name} for s in subcategories])
+
+@api_bp.route('/get_items/<int:subcategory_id>')
+def get_items(subcategory_id):
+    print(f"Received request for items with subcategory_id: {subcategory_id}")
+    items = LexicItem.query.filter_by(subcategory_id=subcategory_id).all()
+    print("Items returned:", items)
+    return jsonify([{'id': i.id, 'name': i.name} for i in items])

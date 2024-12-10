@@ -167,6 +167,15 @@ class ContingenciesAdminView(BaseView):
         return redirect(url_for('show_survey', questionnaire_id=8))
 
 
+class PhysicalSettlementAdminView(BaseView):
+    def __init__(self, session, **kwargs):
+        super().__init__(**kwargs)
+        self.session = session
+
+    @expose('/')
+    def index(self):
+        return redirect(url_for('show_survey', questionnaire_id=1))
+
 
 class CircularAdminView(BaseView):
     def __init__(self, session, **kwargs):
@@ -4195,202 +4204,8 @@ class DocumentUploadViewExisting(BaseDataViewCommon):
             form.no_action.data = False
 
 
-class AttiDataView(BaseDataView):
-    create_template = 'admin/area_1/create_base_data_1.html'
-    area_id = 1
-    subarea_id = 1
-    record_type = 'control_area'
-
-    # Adjusted order of fields
-    column_list = ('company_id', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
-    form_columns = ('number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
-
-    column_labels = {
-        'company_id': 'Comp.',
-        'number_of_doc': 'Codice Documento',
-        'date_of_doc': 'Data documento',
-        'file_path': 'Allegato',
-        'no_action': 'Conferma assenza doc.',
-        'subject_id': 'Oggetto',
-        'fi0': 'Anno di rif.',
-        'interval_ord': 'Periodo di rif.',
-        'fc2': 'Note'
-    }
-
-    column_descriptions = {
-        'company_id': 'Comp.',
-        'number_of_doc': 'Numero, protocollo, codice interno documento, numero registro o fascicolo ecc.',
-        'date_of_doc': 'Data documento allegato',
-        'file_path': 'Allegato',
-        'no_action': 'Dichiarazione di assenza di documenti da allegare (1)',
-        'subject_id': 'Seleziona oggetto',
-        'fi0': 'Inserire anno di riferimento (in formato YYYY)',
-        'interval_ord': '(inserire il periodo; es. 1: primo quadrimestre; 2: secondo ecc.)',
-        'fc2': 'Note',
-    }
-
-    column_filters = ('company_id', 'number_of_doc', 'date_of_doc', 'subject_id', 'fi0', 'interval_ord', 'fc2')
-    form_excluded_columns = ('company_id', 'user_id', 'status_id', 'data_type')
-
-    column_formatters = {
-        'company_id': lambda view, context, model, name: (
-            model.company.name[:5] if model.company and model.company.name else 'N/A')
-    }
-
-    def __init__(self, model, session, **kwargs):
-        self.intervals = kwargs.pop('intervals', [])
-        self.area_id = kwargs.pop('area_id', None)
-        self.subarea_id = kwargs.pop('subarea_id', None)
-        super().__init__(model, session, **kwargs)
-        self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
-
-    def scaffold_form(self):
-        form_class = super().scaffold_form()
-
-        current_year = datetime.now().year
-        year_choices = [(year, year) for year in range(current_year - 11, current_year + 1)]
-        default_year = current_year
-
-        form_class.fi0 = SelectField(
-            'Anno di rif.',
-            coerce=int,
-            choices=year_choices,
-            default=default_year,
-            widget=Select2Widget()
-        )
-
-        config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
-                                          subarea_id=None)
-        nr_intervals = config_values[0]
-
-        if self.intervals:
-            current_interval = [t[2] for t in self.intervals if t[0] == nr_intervals]
-            first_element = current_interval[0] if current_interval else None
-            interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
-        else:
-            first_element = None
-            interval_choices = []
-
-        form_class.interval_ord = SelectField(
-            'Periodo di rif.',
-            coerce=int,
-            choices=interval_choices,
-            default=first_element,
-            widget=Select2Widget()
-        )
-
-        form_class.subject_id = SelectField(
-            'Tipo di documento',
-            validators=[InputRequired()],
-            coerce=int,
-            choices=[(subject.id, subject.name) for subject in Subject.query.filter_by(tier_1='Legale').all()],
-            widget=Select2Widget()
-        )
-
-        form_class.no_action = BooleanField('Dichiarazione di assenza di documenti')  # Use BooleanField
-        form_class.fc2 = StringField('Note')
-
-        # Ensure base_path is set for FileUploadField
-        upload_folder = current_app.config.get('UPLOAD_FOLDER', 'uploads')
-        form_class.file_path = FileUploadField('Allegati',
-                                               base_path=upload_folder)  # Correctly display file upload button
-
-        return form_class
-
-    def on_model_change(self, form, model, is_created):
-
-        # Custom validation logic
-        if not form.fi0.data or not form.interval_ord.data:
-            raise ValidationError("Time interval reference fields cannot be null")
-
-        if not form.date_of_doc.data or not form.number_of_doc.data:
-            raise ValidationError("Document data is missing.")
-
-        if form.date_of_doc.data.year != form.fi0.data:
-            raise ValidationError("Date of document must be consistent with the reporting year.")
-
-        if not form.file_path.data and not form.no_action.data:
-            raise ValidationError(
-                'If no file exists, then this absence must be acknowledged by checking the "no documents" box.')
-
-        if form.file_path.data and form.no_action.data:
-            raise ValidationError(
-                'The no-document box is checked but a document was uploaded - please confirm either of the two.')
-
-        # Populate the necessary fields
-        model.user_id = current_user.id
-        model.company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-        model.area_id = self.area_id
-        model.subarea_id = self.subarea_id
-        model.record_type = 'control_area'
-        model.interval_id = form.interval_ord.data  # Assuming interval_id is same as interval_ord
-        model.created_by = current_user.id
-        # Check for duplicate documents
-        existing_document = self.session.query(self.model).filter_by(
-            number_of_doc=form.number_of_doc.data,
-            date_of_doc=form.date_of_doc.data,
-            company_id=model.company_id,
-            subarea_id=model.subarea_id,
-            area_id=model.area_id,
-            subject_id=form.subject_id.data,
-        ).first()
-        if existing_document and existing_document.id != model.id:
-            raise ValidationError('A document with the same number, date, subarea, area, and subject already exists.')
-
-        document_year = form.fi0.data
-        document_interval = form.interval_ord.data
-        if not is_extratime(model.company_id, self.area_id, self.subarea_id, document_year,
-                            document_interval):
-            raise ValidationError("You do not have permission to create this record (close period?).")
-
-        if is_created:
-            model.status_id = 1
-        else:
-            model.status_id = 14 # Updated
-
-        super().on_model_change(form, model, is_created)
-
-    def get_query(self):
-        query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
-        if current_user.is_authenticated:
-            if current_user.has_role('Admin') or current_user.has_role('Authority'):
-                return query
-            elif current_user.has_role('Manager'):
-                subquery = db.session.query(CompanyUsers.company_id).filter(
-                    CompanyUsers.user_id == current_user.id).subquery()
-                query = query.filter(self.model.company_id.in_(subquery))
-            elif current_user.has_role('Employee'):
-                return query.filter(self.model.user_id == current_user.id)
-        return query.filter(self.model.id < 0)
-
-    def create_form(self, obj=None):
-        form = super(AttiDataView, self).create_form(obj)
-        form.subject_id = form.subject_id
-        form.number_of_doc = form.number_of_doc
-        form.date_of_doc = form.date_of_doc
-        form.file_path = form.file_path
-        form.no_action = form.no_action
-        form.fi0 = form.fi0
-        form.interval_ord = form.interval_ord
-        form.fc2 = form.fc2
-        return form
-
-    def edit_form(self, obj=None):
-        form = super(AttiDataView, self).edit_form(obj)
-        form.subject_id = form.subject_id
-        form.number_of_doc = form.number_of_doc
-        form.date_of_doc = form.date_of_doc
-        form.file_path = form.file_path
-        form.no_action = form.no_action
-        form.fi0 = form.fi0
-        form.interval_ord = form.interval_ord
-        form.fc2 = form.fc2
-        return form
-
-
-
 class ContenziosiDataView(BaseDataView):
-    create_template = 'admin/area_1/create_base_data_4.html'
+    create_template = 'admin/area_1/create_base_data_3.html'
     area_id = 1
     subarea_id = 3
 
@@ -4773,7 +4588,7 @@ class ContingenciesDataView(BaseDataView):
 
 
 class IniziativeDsoAsDataView(BaseDataView):
-    create_template = 'admin/area_1/create_base_data_8.html'
+    create_template = 'admin/area_1/create_base_data_6.html'
     area_id = 1
     subarea_id = 6
 
@@ -5350,277 +5165,6 @@ def create_admin_views(app, intervals):
     with app.app_context():
         # Custom admin view
 
-        class CustomFlussiDataView_old(ModelView):
-            create_template = 'admin/area_1/create_base_data_1.html'
-            area_id = 1
-            subarea_id = 1
-            inline_models = (BaseDataInlineModelForm(BaseDataInline),)
-
-            def __init__(self, *args, **kwargs):
-                self.intervals = kwargs.pop('intervals', None)
-                super().__init__(*args, **kwargs)
-                self.area_id = CustomFlussiDataView.area_id  # Initialize area_id in __init__
-                self.subarea_id = CustomFlussiDataView.subarea_id  # Initialize subarea_id in __init__
-                self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
-
-                print('area, subarea, name', self.area_id, self.subarea_id, self.subarea_name)
-            form_extra_fields = {
-                'file_path': CustomFileUploadField('File', base_path=config.UPLOAD_FOLDER)
-            }
-
-            column_editable_list = ['fc1']
-            form_widget_args = {
-                'fc1': {'widget': XEditableWidget()},
-            }
-
-            form_columns = ['interval_ord', 'fi0', 'fi1', 'fi2', 'fi3', 'fc1']
-            column_list = ['company_id', 'interval_ord', 'fi0', 'lexic', 'subject', 'fi1', 'fi2', 'fi3', 'fc1']
-
-            column_labels = {
-                'company_id': 'Comp.',
-                'interval_ord': 'Periodo',
-                'fi0': 'Anno',
-                'fi1': 'Totale',
-                'fi2': 'IVI',
-                'fi3': 'Altri',
-                'fc1': 'Notes'
-            }
-
-            # Define column formatters to display the first 5 letters of the company name
-            column_formatters = {
-                'company_id': lambda view, context, model, name: (
-                    model.company.name[:5] if model.company and model.company.name else 'N/A')
-            }
-
-            def scaffold_form(self):
-                form_class = super(CustomFlussiDataView, self).scaffold_form()
-                current_year = datetime.now().year
-                year_choices = [(str(year), str(year)) for year in range(current_year - 5, current_year + 2)]
-                default_year = str(current_year)
-
-                form_class.lexic_id = SelectField(
-                    'Tipo pre-complaint',
-                    validators=[InputRequired()],
-                    coerce=int,
-                    choices=[(lexic.id, lexic.name) for lexic in Lexic.query.filter_by(category="Precomplaint").all()]
-                )
-
-                form_class.subject_id = SelectField(
-                    'Oggetto',
-                    validators=[InputRequired()],
-                    coerce=int,
-                    choices=[(subject.id, subject.name) for subject in Subject.query.filter_by(tier_1="Utenti").all()]
-                )
-
-                form_class.fi0 = SelectField(
-                    'Anno',
-                    coerce=int,
-                    choices=year_choices,
-                    default=default_year
-                )
-
-                config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
-                                                  subarea_id=None)
-                nr_intervals = config_values[0]
-                current_interval = [t[2] for t in self.intervals if t[0] == nr_intervals]
-                first_element = current_interval[0] if current_interval else None
-                interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
-
-                form_class.interval_ord = SelectField(
-                    'Periodo',
-                    coerce=int,
-                    choices=interval_choices,
-                    default=first_element
-                )
-
-                return form_class
-
-            def get_query(self):
-                query = self.session.query(self.model)
-
-                # Filter by area_id and subarea_id
-                query = query.filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
-
-                # Filter by company_id based on user role (optional):
-                if current_user.is_authenticated:
-                    if current_user.has_role('Admin') or current_user.has_role('Authority'):
-                        # No additional filtering needed for Admin or Authority roles
-                        pass
-                    elif current_user.has_role('Manager'):
-                        # Filter for Manager's companies
-                        subquery = db.session.query(CompanyUsers.company_id).filter(
-                            CompanyUsers.user_id == current_user.id).subquery()
-                        query = query.filter(self.model.company_id.in_(subquery))
-                    elif current_user.has_role('Employee'):
-                        # Filter for Employee's records
-                        query = query.filter(self.model.user_id == current_user.id)
-
-                # Additional filtering based on other criteria (optional):
-                # You can add further filtering logic here based on other fields
-                # in your model, like specific dates, statuses, etc.
-
-                return query
-
-            def create_model(self, form):
-
-                try:
-                    model = self.model()
-                    form.populate_obj(model)
-
-                    # Ensure required fields are not null
-                    # Ensure required fields are not null
-                    if model.fi1 is None or model.fi2 is None or model.fi3 is None:
-                        raise ValidationError("Fields 'Total', 'IVI', and 'A' cannot be null.")
-
-                    # Check if at least one inline record exists
-                    if model.fi3 != 0 and not model.base_data_inlines:
-                        raise ValidationError("At least one Vendor record is required.")
-
-                    # Ensure that the sum of fi2 and fi3 equals fi1
-                    if model.fi1 != model.fi2 + model.fi3:
-                        raise ValidationError("The sum of 'IVI' and 'A' must equal 'Total'.")
-
-                    # ... other logic ...
-
-                    # Ensure the relationship is correctly defined
-                    if not hasattr(model, 'base_data_inlines'):
-                        raise Exception('base_data_inlines relationship is not defined on the model')
-
-                    # Set area_id and subarea_id from your class attributes
-                    model.area_id = self.area_id
-                    model.subarea_id = self.subarea_id
-
-                    # Determine company_id based on user role or logic (handle None case)
-                    try:
-                        company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-                    except:
-                        company_id = None  # Consider handling this case differently if necessary
-                    model.company_id = company_id
-
-                    # Set user_id from current user
-                    model.user_id = current_user.id
-                    document_year = form.fi0.data
-                    document_interval = form.interval_ord.data
-                    if not is_extratime(company_id, self.area_id, self.subarea_id, document_year,
-                                                  document_interval):
-                        raise ValidationError("You do not have permission to create this record (close period?).")
-
-                    self.session.add(model)
-                    self.session.commit()
-
-                    # Update record_type for each inline model
-                    for inline in model.base_data_inlines:
-                        inline.record_type = 'pre-complaint'
-                        self.session.add(inline)
-
-                    self.session.commit()
-
-                    # ... remaining code ...
-
-                    return model
-
-                except Exception as ex:
-                    if not self.handle_view_exception(ex):
-                        raise
-                    flash(f'Failed to create record. {str(ex)}', 'error')
-                    self.session.rollback()
-                    return False
-
-            def on_model_change(self, form, model, is_created):
-                super().on_model_change(form, model, is_created)
-                form.populate_obj(model)
-
-                user_id = current_user.id
-                try:
-                    company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
-                except:
-                    company_id = None
-                    pass
-
-                area_id = self.area_id
-                subarea_id = self.subarea_id
-                subarea_name = self.subarea_name
-                status_id = 1
-
-                config_values = get_config_values(config_type='area_interval', company_id=company_id,
-                                                  area_id=self.area_id, subarea_id=self.subarea_id)
-                interval_id = config_values[0]
-                interval_ord = form.interval_ord.data
-                year_id = form.fi0.data
-                lexic_id = form.lexic_id.data
-                subject_id = form.subject_id.data
-
-                record_type = 'control_area'
-                data_type = self.subarea_name
-                legal_document_id = None
-
-                document_year = form.fi0.data
-                document_interval = form.interval_ord.data
-                if not is_extratime(company_id, self.area_id, self.subarea_id, document_year,
-                                    document_interval):
-                    raise ValidationError("You do not have permission to create this record (close period?).")
-
-                if form.fi2.data is None or form.fi3.data is None:
-                    raise ValidationError("Please enter all required data.")
-
-                if (form.fi1.data + form.fi2.data + form.fi3.data == 0) or (
-                        form.fi1.data < 0 or form.fi2.data < 0 or form.fi3.data < 0) or (
-                        form.fi1.data != form.fi2.data + form.fi3.data):
-                    raise ValidationError("Please check the values you entered.")
-
-                # Check if at least one inline record exists
-                if model.fi3 != 0 and not model.base_data_inlines:
-                    raise ValidationError("At least one Vendor record is required.")
-
-                if form.fi0.data == None or form.interval_ord.data == None:
-                    raise ValidationError(f"Time interval reference fields cannot be null")
-
-                if form.interval_ord.data > 3 or form.interval_ord.data < 0:
-                    raise ValidationError(
-                        "Period must be less than or equal to the number of fractions (e.g. 4 for quarters, 12 for months)")
-                    pass
-
-                if form.fi0.data < 2000 or form.fi0.data > 2099:
-                    raise ValidationError("Please check the year")
-                    pass
-
-                with current_app.app_context():
-                    result, message = check_status_extended(is_created, company_id, lexic_id, subject_id,
-                                                            legal_document_id, interval_ord, interval_id, year_id,
-                                                            area_id, subarea_id, form.fi1.data, None, None, None, None,
-                                                            None, None, None, None, datetime.today(), db.session)
-
-                if result == False:
-                    raise ValidationError(message)
-                    pass
-
-                model.lexic_id = lexic_id
-                model.user_id = user_id
-                model.company_id = company_id
-                model.data_type = data_type
-                model.record_type = record_type
-                model.area_id = area_id
-                model.subarea_id = subarea_id
-                model.fi0 = year_id
-                model.interval_id = interval_id
-                model.interval_ord = interval_ord
-                model.status_id = status_id
-                model.subject_id = subject_id
-                model.legal_document_id = legal_document_id
-
-                # Update record_type for each inline model
-                for inline in model.base_data_inlines:
-                    print('set precomplaint for', inline)
-                    inline.record_type = 'pre-complaint'
-
-                if is_created:
-                    self.session.add(model)
-                else:
-                    self.session.merge(model)
-                self.session.commit()
-
-                return model
-
 
         class CustomFlussiDataView(ModelView):
             create_template = 'admin/area_1/create_base_data_1.html'
@@ -5645,8 +5189,10 @@ def create_admin_views(app, intervals):
                 'fc1': {'widget': XEditableWidget()},
             }
 
-            form_columns = ['interval_ord', 'fi0', 'fi1', 'fi2', 'fi3', 'fc1']
-            column_list = ['company_id', 'interval_ord', 'fi0', 'lexic', 'subject', 'fi1', 'fi2', 'fi3', 'fc1']
+            # form_columns = ['interval_ord', 'fi0', 'fi1', 'fi2', 'fi3', 'fc1']
+            form_columns = ['lexic_id', 'subcategory_id', 'item_id', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fc1']
+
+            column_list = ['company_id', 'interval_ord', 'fi0', 'fi1', 'fi2', 'fi3', 'fc1']
 
             column_labels = {
                 'company_id': 'Comp.',
@@ -5666,24 +5212,21 @@ def create_admin_views(app, intervals):
 
             def scaffold_form(self):
                 form_class = super(CustomFlussiDataView, self).scaffold_form()
-                current_year = datetime.now().year
-                year_choices = [(str(year), str(year)) for year in range(current_year - 5, current_year + 2)]
-                default_year = str(current_year)
 
                 # Lexic Dropdown
                 form_class.lexic_id = QuerySelectField(
                     'Tipo pre-complaint',
-                    query_factory=lambda: Lexic.query.filter_by(category="Precomplaint"),
+                    query_factory=lambda: Lexic.query.filter_by(category="Pre-complaint"),
                     allow_blank=True,
                     get_label='name',
-                    validators=[InputRequired()],
+                    validators=[Optional()],
                     widget=Select2Widget()
                 )
 
                 # Subcategories Dropdown
                 form_class.subcategory_id = QuerySelectField(
-                    'Subcategory',
-                    query_factory=lambda: LexicSubcategory.query,  # Fetch all initially
+                    'Categoria',
+                    query_factory=self.get_filtered_subcategories,
                     allow_blank=True,
                     get_label='name',
                     validators=[Optional()],
@@ -5692,13 +5235,18 @@ def create_admin_views(app, intervals):
 
                 # Items Dropdown
                 form_class.item_id = QuerySelectField(
-                    'Item',
-                    query_factory=lambda: LexicItem.query,  # Fetch all initially
+                    'Articolo',
+                    query_factory=self.get_filtered_items,
                     allow_blank=True,
                     get_label='name',
                     validators=[Optional()],
                     widget=Select2Widget()
                 )
+
+
+                current_year = datetime.now().year
+                year_choices = [(str(year), str(year)) for year in range(current_year - 5, current_year + 2)]
+                default_year = str(current_year)
 
                 form_class.fi0 = SelectField(
                     'Anno',
@@ -5720,7 +5268,65 @@ def create_admin_views(app, intervals):
                     choices=interval_choices,
                     default=first_element
                 )
+
                 return form_class
+
+            def get_filtered_subcategories(self):
+                lexic_id = self._current_form_data.get('lexic_id')
+                print("Filtering subcategories with lexic_id:", lexic_id)  # Debug
+                if lexic_id:
+                    subcategories = LexicSubcategory.query.filter_by(lexic_id=lexic_id).all()
+                    print("Subcategories found:", subcategories)  # Debug
+                    return subcategories
+                return []
+
+            def get_filtered_items(self):
+                subcategory_id = self._current_form_data.get('subcategory_id') if self._current_form_data else None
+                print("Filtering items with subcategory_id:", subcategory_id)  # Debug
+                if subcategory_id:
+                    items = LexicItem.query.filter_by(subcategory_id=subcategory_id).all()
+                    print("Items found:", items)  # Debug
+                    return items
+                return []
+
+            def create_form(self, obj=None):
+                """Ensure form data is cached for filtering."""
+                self._current_form_data = {}  # Reset cache
+                form = super().create_form(obj)
+                # Cache form data after form initialization
+
+                self._current_form_data = form.data
+
+                # Debug form data
+                print("Create form data cached:", self._current_form_data)
+
+                # Set default values for the dropdowns if needed
+                form.lexic_id.data = form.lexic_id.data or None
+                form.subcategory_id.data = form.subcategory_id.data or None
+                form.item_id.data = form.item_id.data or None
+                # Debugging form data
+                print("Create form data cached:", self._current_form_data)
+                print("Lexic ID in form:", form.lexic_id.data)
+                print("Subcategory ID in form:", form.subcategory_id.data)
+                print("Item ID in form:", form.item_id.data)
+                self._current_form_data = form.data
+                print("Create form data cached:", self._current_form_data)  # Debug
+                return form
+
+            def edit_form(self, obj=None):
+                """Ensure form data is cached for filtering."""
+                self._current_form_data = {}  # Reset cache
+                form = super().edit_form(obj)
+
+                # Cache form data after form initialization
+                self._current_form_data = form.data
+
+                # Debug form data
+                print("Edit form data cached:", self._current_form_data)
+
+                self._current_form_data = form.data
+                print("Edit form data cached:", self._current_form_data)  # Debug
+                return form
 
             def get_query(self):
                 query = self.session.query(self.model)
@@ -5792,36 +5398,13 @@ def create_admin_views(app, intervals):
                 except:
                     company_id = None
 
-                # Dynamically validate and assign Lexic, Subcategory, and Item to the model
-                if form.lexic_id.data:
-                    selected_lexic = form.lexic_id.data
-
-                    # Fetch subcategories linked to the selected lexic
-                    subcategories = LexicSubcategory.query.filter_by(parent_id=selected_lexic.id).all()
-
-                    if form.subcategory_id.data:
-                        selected_subcategory = form.subcategory_id.data
-
-                        # Ensure the selected subcategory belongs to the lexic
-                        if selected_subcategory not in subcategories:
-                            raise ValidationError("Invalid subcategory selected for the given Lexic.")
-
-                        # Fetch items linked to the selected subcategory
-                        items = LexicItem.query.filter_by(subcategory_id=selected_subcategory.id).all()
-
-                        if form.item_id.data:
-                            selected_item = form.item_id.data
-
-                            # Ensure the selected item belongs to the subcategory
-                            if selected_item not in items:
-                                raise ValidationError("Invalid item selected for the given Subcategory.")
-
-                            # Assign the selected item to the model
-                            model.item_id = selected_item.id
-
-                        model.subcategory_id = selected_subcategory.id
-
-                    model.lexic_id = selected_lexic.id
+                """Custom logic for handling changes."""
+                if not form.lexic_id.data:
+                    raise ValidationError('Tipo pre-complaint is required.')
+                if form.subcategory_id.data and form.subcategory_id.data.lexic_id != form.lexic_id.data.id:
+                    raise ValidationError('Selected Categoria does not belong to the selected Tipo pre-complaint.')
+                if form.item_id.data and form.item_id.data.subcategory_id != form.subcategory_id.data.id:
+                    raise ValidationError('Selected Articolo does not belong to the selected Categoria.')
 
                 # Existing logic for other fields
                 area_id = self.area_id
@@ -5903,6 +5486,202 @@ def create_admin_views(app, intervals):
                 self.session.commit()
 
                 return model
+
+        class AttiDataView(BaseDataView):
+            create_template = 'admin/area_1/create_base_data_2.html'
+            area_id = 1
+            subarea_id = 1
+            record_type = 'control_area'
+
+            # Adjusted order of fields
+            column_list = (
+            'company_id', 'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord',
+            'fc2')
+            form_columns = (
+            'number_of_doc', 'date_of_doc', 'file_path', 'no_action', 'subject_id', 'fi0', 'interval_ord', 'fc2')
+
+            column_labels = {
+                'company_id': 'Comp.',
+                'number_of_doc': 'Codice Documento',
+                'date_of_doc': 'Data documento',
+                'file_path': 'Allegato',
+                'no_action': 'Conferma assenza doc.',
+                'subject_id': 'Oggetto',
+                'fi0': 'Anno di rif.',
+                'interval_ord': 'Periodo di rif.',
+                'fc2': 'Note'
+            }
+
+            column_descriptions = {
+                'company_id': 'Comp.',
+                'number_of_doc': 'Numero, protocollo, codice interno documento, numero registro o fascicolo ecc.',
+                'date_of_doc': 'Data documento allegato',
+                'file_path': 'Allegato',
+                'no_action': 'Dichiarazione di assenza di documenti da allegare (1)',
+                'subject_id': 'Seleziona oggetto',
+                'fi0': 'Inserire anno di riferimento (in formato YYYY)',
+                'interval_ord': '(inserire il periodo; es. 1: primo quadrimestre; 2: secondo ecc.)',
+                'fc2': 'Note',
+            }
+
+            column_filters = ('company_id', 'number_of_doc', 'date_of_doc', 'subject_id', 'fi0', 'interval_ord', 'fc2')
+            form_excluded_columns = ('company_id', 'user_id', 'status_id', 'data_type')
+
+            column_formatters = {
+                'company_id': lambda view, context, model, name: (
+                    model.company.name[:5] if model.company and model.company.name else 'N/A')
+            }
+
+            def __init__(self, model, session, **kwargs):
+                self.intervals = kwargs.pop('intervals', [])
+                self.area_id = kwargs.pop('area_id', None)
+                self.subarea_id = kwargs.pop('subarea_id', None)
+                super().__init__(model, session, **kwargs)
+                self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
+
+            def scaffold_form(self):
+                form_class = super().scaffold_form()
+
+                current_year = datetime.now().year
+                year_choices = [(year, year) for year in range(current_year - 11, current_year + 1)]
+                default_year = current_year
+
+                form_class.fi0 = SelectField(
+                    'Anno di rif.',
+                    coerce=int,
+                    choices=year_choices,
+                    default=default_year,
+                    widget=Select2Widget()
+                )
+
+                config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
+                                                  subarea_id=None)
+                nr_intervals = config_values[0]
+
+                if self.intervals:
+                    current_interval = [t[2] for t in self.intervals if t[0] == nr_intervals]
+                    first_element = current_interval[0] if current_interval else None
+                    interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
+                else:
+                    first_element = None
+                    interval_choices = []
+
+                form_class.interval_ord = SelectField(
+                    'Periodo di rif.',
+                    coerce=int,
+                    choices=interval_choices,
+                    default=first_element,
+                    widget=Select2Widget()
+                )
+
+                form_class.subject_id = SelectField(
+                    'Tipo di documento',
+                    validators=[InputRequired()],
+                    coerce=int,
+                    choices=[(subject.id, subject.name) for subject in Subject.query.filter_by(tier_1='Legale').all()],
+                    widget=Select2Widget()
+                )
+
+                form_class.no_action = BooleanField('Dichiarazione di assenza di documenti')  # Use BooleanField
+                form_class.fc2 = StringField('Note')
+
+                # Ensure base_path is set for FileUploadField
+                upload_folder = current_app.config.get('UPLOAD_FOLDER', 'uploads')
+                form_class.file_path = FileUploadField('Allegati',
+                                                       base_path=upload_folder)  # Correctly display file upload button
+
+                return form_class
+
+            def on_model_change(self, form, model, is_created):
+
+                # Custom validation logic
+                if not form.fi0.data or not form.interval_ord.data:
+                    raise ValidationError("Time interval reference fields cannot be null")
+
+                if not form.date_of_doc.data or not form.number_of_doc.data:
+                    raise ValidationError("Document data is missing.")
+
+                if form.date_of_doc.data.year != form.fi0.data:
+                    raise ValidationError("Date of document must be consistent with the reporting year.")
+
+                if not form.file_path.data and not form.no_action.data:
+                    raise ValidationError(
+                        'If no file exists, then this absence must be acknowledged by checking the "no documents" box.')
+
+                if form.file_path.data and form.no_action.data:
+                    raise ValidationError(
+                        'The no-document box is checked but a document was uploaded - please confirm either of the two.')
+
+                # Populate the necessary fields
+                model.user_id = current_user.id
+                model.company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
+                model.area_id = self.area_id
+                model.subarea_id = self.subarea_id
+                model.record_type = 'control_area'
+                model.interval_id = form.interval_ord.data  # Assuming interval_id is same as interval_ord
+                model.created_by = current_user.id
+                # Check for duplicate documents
+                existing_document = self.session.query(self.model).filter_by(
+                    number_of_doc=form.number_of_doc.data,
+                    date_of_doc=form.date_of_doc.data,
+                    company_id=model.company_id,
+                    subarea_id=model.subarea_id,
+                    area_id=model.area_id,
+                    subject_id=form.subject_id.data,
+                ).first()
+                if existing_document and existing_document.id != model.id:
+                    raise ValidationError(
+                        'A document with the same number, date, subarea, area, and subject already exists.')
+
+                document_year = form.fi0.data
+                document_interval = form.interval_ord.data
+                if not is_extratime(model.company_id, self.area_id, self.subarea_id, document_year,
+                                    document_interval):
+                    raise ValidationError("You do not have permission to create this record (close period?).")
+
+                if is_created:
+                    model.status_id = 1
+                else:
+                    model.status_id = 14  # Updated
+
+                super().on_model_change(form, model, is_created)
+
+            def get_query(self):
+                query = self.session.query(self.model).filter_by(area_id=self.area_id, subarea_id=self.subarea_id)
+                if current_user.is_authenticated:
+                    if current_user.has_role('Admin') or current_user.has_role('Authority'):
+                        return query
+                    elif current_user.has_role('Manager'):
+                        subquery = db.session.query(CompanyUsers.company_id).filter(
+                            CompanyUsers.user_id == current_user.id).subquery()
+                        query = query.filter(self.model.company_id.in_(subquery))
+                    elif current_user.has_role('Employee'):
+                        return query.filter(self.model.user_id == current_user.id)
+                return query.filter(self.model.id < 0)
+
+            def create_form(self, obj=None):
+                form = super(AttiDataView, self).create_form(obj)
+                form.subject_id = form.subject_id
+                form.number_of_doc = form.number_of_doc
+                form.date_of_doc = form.date_of_doc
+                form.file_path = form.file_path
+                form.no_action = form.no_action
+                form.fi0 = form.fi0
+                form.interval_ord = form.interval_ord
+                form.fc2 = form.fc2
+                return form
+
+            def edit_form(self, obj=None):
+                form = super(AttiDataView, self).edit_form(obj)
+                form.subject_id = form.subject_id
+                form.number_of_doc = form.number_of_doc
+                form.date_of_doc = form.date_of_doc
+                form.file_path = form.file_path
+                form.no_action = form.no_action
+                form.fi0 = form.fi0
+                form.interval_ord = form.interval_ord
+                form.fc2 = form.fc2
+                return form
 
         # =================================================================================================================
         # Define custom form for CustomAdminIndexView2
@@ -6281,7 +6060,8 @@ def create_admin_views(app, intervals):
                        endpoint='open_admin_1',
         )
 
-        admin_app1.add_view(CustomFlussiDataView(model=BaseData, session=db.session, name='Pre-complaint flows',
+        admin_app1.add_view(
+            CustomFlussiDataView(model=BaseData, session=db.session, name='Pre-complaint flows',
                                                  intervals=intervals,
                                                  endpoint='flussi_data_view'))
 
@@ -6295,6 +6075,9 @@ def create_admin_views(app, intervals):
 
         admin_app1.add_view(
             ContingenciesAdminView(session=db.session, name='Contingencies', endpoint='contingencies_within_admin'))
+
+        admin_app1.add_view(
+            PhysicalSettlementAdminView(session=db.session, name='Settlement fisico', endpoint='physical_settlement_within_admin'))
 
         # admin_app1.add_view(
         #     ContingenciesDataView(model=BaseData, session=db.session, name='Contingencies', intervals=intervals, area_id=1,

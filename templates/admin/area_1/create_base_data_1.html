@@ -1,130 +1,77 @@
-<!-- File: templates/admin/area_1/create_base_data_1.html -->
-
 {% extends 'admin/model/create.html' %}
 
-<head>
-  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
-  <title>Create Base Data</title>
-</head>
-
 {% block javascript %}
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
     <script>
-        $(document).ready(function() {
-            const lexicSelect = $('#lexic_id');
-            const subcategorySelect = $('#subcategory_id');
-            const itemSelect = $('#item_id');
-
-            // Fetch Lexics
-            $.get('/api/lexics', function(data) {
-                data.forEach(lexic => {
-                    lexicSelect.append(new Option(lexic.name, lexic.id));
-                });
-            });
-
-            // Handle Lexic change
-            lexicSelect.on('change', function() {
-                const lexicId = $(this).val();
-
-                // Clear subcategories and items
-                subcategorySelect.empty().append(new Option("Select a Subcategory", ""));
-                itemSelect.empty().append(new Option("Select an Item", ""));
-
+        $(document).ready(function () {
+            $('#lexic_id').change(function () {
+                let lexicId = $(this).val();
+                console.log("Selected lexic_id:", lexicId); // Debug
                 if (lexicId) {
-                    // Fetch Subcategories
-                    $.get(`/api/subcategories/${lexicId}`, function(data) {
-                        data.forEach(subcategory => {
-                            subcategorySelect.append(new Option(subcategory.name, subcategory.id));
+                    $.getJSON(`/api/get_subcategories/${lexicId}`, function (data) {
+                        console.log("Subcategories received:", data); // Debug
+                        let options = '<option value="">Select Subcategory</option>';
+                        $.each(data, function (index, item) {
+                            options += `<option value="${item.id}">${item.name}</option>`;
                         });
+                        $('#subcategory_id').html(options);
+                        $('#item_id').html('<option value="">Select Item</option>'); // Reset items
                     });
                 }
             });
 
-            // Handle Subcategory change
-            subcategorySelect.on('change', function() {
-                const subcategoryId = $(this).val();
-
-                // Clear items
-                itemSelect.empty().append(new Option("Select an Item", ""));
-
+            $('#subcategory_id').change(function () {
+                let subcategoryId = $(this).val();
+                console.log("Selected subcategory_id:", subcategoryId); // Debug
                 if (subcategoryId) {
-                    // Fetch Items
-                    $.get(`/api/items/${subcategoryId}`, function(data) {
-                        data.forEach(item => {
-                            itemSelect.append(new Option(item.name, item.id));
+                    $.getJSON(`/api/get_items/${subcategoryId}`, function (data) {
+                        console.log("Items received:", data); // Debug
+                        let options = '<option value="">Select Item</option>';
+                        $.each(data, function (index, item) {
+                            options += `<option value="${item.id}">${item.name}</option>`;
                         });
+                        $('#item_id').html(options);
                     });
                 }
             });
+        });
 
-            // Handle click on fields with class .form-control.fc2
-            $('.form-control.fc2').click(function() {
-                $(this).select();
-            });
+        $(document).on('click', '.form-control.fc2', function() {
+            $(this).select();
         });
     </script>
 {% endblock javascript %}
 
 {% block body %}
   {{ super() }}
+
   <style>
-    /* Add your custom CSS here */
-    .form-horizontal .form-group {
-        margin-bottom: 0;
-    }
+      .form-horizontal .form-group {
+          margin-bottom: 0;
+      }
 
-    .form-horizontal .control-label {
-        float: left;
-        width: 150px; /* Adjust the width as needed */
-        text-align: right;
-        margin-right: 10px; /* Adjust the margin as needed */
-    }
+      .form-horizontal .control-label {
+          float: left;
+          width: 150px; /* Adjust the width as needed */
+          text-align: right;
+          margin-right: 10px; /* Adjust the margin as needed */
+      }
 
-    .form-horizontal .controls {
-        overflow: hidden;
-    }
+      .form-horizontal .controls {
+          overflow: hidden;
+      }
 
-    .form-horizontal .controls input,
-    .form-horizontal .controls select,
-    .form-horizontal .controls textarea {
-        width: auto;
-        float: left;
-        margin-right: 10px; /* Adjust the margin as needed */
-    }
+      .form-horizontal .controls input,
+      .form-horizontal .controls select,
+      .form-horizontal .controls textarea {
+          width: auto;
+          float: left;
+          margin-right: 10px; /* Adjust the margin as needed */
+      }
 
-    .form-control.fc2 {
-      opacity: 0.5; /* Sets initial opacity to 50% */
-      transition: opacity 0.5s ease-in-out; /* Smooth fade-in on focus */
-    }
+      .form-control.fc2 {
+          opacity: 1; /* Sets initial opacity to 50% */
+          transition: opacity 0.5s ease-in-out; /* Smooth fade-in on focus */
+      }
   </style>
-
-  <div class="container mt-4">
-      <form method="POST" action="{{ url_for('flussi_data_view.create_view') }}">
-          <!-- Lexic Dropdown -->
-          <div class="form-group">
-              <label for="lexic_id">Tipo Pre-complaint</label>
-              <select id="lexic_id" name="lexic_id" class="form-control" required>
-                  <option value="">Select a Lexic</option>
-              </select>
-          </div>
-
-          <!-- Subcategory Dropdown -->
-          <div class="form-group">
-              <label for="subcategory_id">Subcategory</label>
-              <select id="subcategory_id" name="subcategory_id" class="form-control" required>
-                  <option value="">Select a Subcategory</option>
-              </select>
-          </div>
-
-          <!-- Item Dropdown -->
-          <div class="form-group">
-              <label for="item_id">Item</label>
-              <select id="item_id" name="item_id" class="form-control" required>
-                  <option value="">Select an Item</option>
-              </select>
-          </div>
-
-          <!-- Submit Button -->
-          <button type="submit" class="btn btn-primary">Submit</button>
-      </form>
-  </div>
 {% endblock %}

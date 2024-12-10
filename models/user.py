@@ -755,6 +755,8 @@ class BaseData(TimestampMixin, db.Model):
     area_id = db.Column(db.Integer, db.ForeignKey('area.id'))
     subarea_id = db.Column(db.Integer, db.ForeignKey('subarea.id'))
     lexic_id = db.Column(db.Integer, db.ForeignKey('lexic.id'))
+    subcategory_id = db.Column(db.Integer, db.ForeignKey('lexic_subcategories.id'))
+    item_id = db.Column(db.Integer, db.ForeignKey('lexic_items.id'))
     number_of_doc = db.Column(db.String(64))
     date_of_doc = db.Column(DATE)
     fc1 = db.Column(db.String)
@@ -814,6 +816,9 @@ class BaseData(TimestampMixin, db.Model):
 
     # Add a back-reference to Dossier
     dossiers = db.relationship('Dossier', secondary=document_dossier, back_populates='documents')
+
+    subcategory = db.relationship('LexicSubcategory', backref='base_data')
+    item = db.relationship('LexicItem', backref='base_data')
 
     def __repr__(self):
         return f"{self.id}-{self.ft1}"
