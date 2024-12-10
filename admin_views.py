@@ -1935,13 +1935,19 @@ class Tabella22_dataView(ModelView):
     subarea_id = 10  # Define subarea_id as a class attribute
 
     # Specify the fields to be edited inline using XEditableWidget
-    column_editable_list = ['fi1', 'fi2', 'fc1']
+    column_editable_list = ['fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fi6', 'fn1', 'fn2', 'fc1']
     # Customize the widget for inline editing
     form_widget_args = {
         # 'fi0': {'widget': XEditableWidget()},
         # 'interval_ord': {'widget': XEditableWidget()},
         'fi1': {'widget': XEditableWidget()},
         'fi2': {'widget': XEditableWidget()},
+        'fi3': {'widget': XEditableWidget()},
+        'fi4': {'widget': XEditableWidget()},
+        'fi5': {'widget': XEditableWidget()},
+        'fi6': {'widget': XEditableWidget()},
+        'fn1': {'widget': XEditableWidget()},
+        'fn2': {'widget': XEditableWidget()},
         'fc1': {'widget': XEditableWidget()},
     }
 
@@ -1954,21 +1960,27 @@ class Tabella22_dataView(ModelView):
         self.area_id = Tabella22_dataView.area_id  # Initialize area_id in __init__
         self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
 
-    column_list = ('company_id', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fc1')
-    form_columns = ('fi0', 'interval_ord', 'fi1', 'fi2', 'fc1')  # Specify form columns with dropdowns
+    column_list = ('company_id', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fi6', 'fn1', 'fn2', 'fc1')
+    form_columns = ('fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fi6', 'fn1', 'fn2', 'fc1')  # Specify form columns with dropdowns
 
     column_labels = {'company_id': 'Comp.', 'interval_ord': 'Periodo', 'fi0': 'Anno',
-                     'fi1': 'UDD', 'fi2': 'PdR',
+                     'fi1': 'UDD *', 'fi2': 'PdR total *',
+                     'fi3': 'PdR domestic *', 'fi4': 'PdR non domestic *',
+                     'fi5': 'PdR domestic switch *', 'fi6': 'PdR non domestic switch *',
+                     'fn1': '% PdR domestic switch', 'fn2': '% PdR non domestic switch',
                      'fc1': 'Note'}
     column_descriptions = {'company_id': 'Company', 'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
                            'fi0': 'Inserire anno (in formato YYYY)',
                            'fi1': 'Numero UDD', 'fi2': 'Numero PdR',
+                           'fi3': 'PdR domestic', 'fi4': 'PdR non domestic',
+                           'fi5': 'PdR domestic switch', 'fi6': 'PdR non domestic switch',
+                           'fn1': '% PdR domestic switch', 'fn2': '% PdR non domestic switch',
                            'fc1': 'Note (opzionale)'}
 
     # Customize inlist for the View class
     column_default_sort = ('company_id', 'fi0')
-    column_searchable_list = ('company_id', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fc1')  # Adjust based on your model structure
-    column_filters = ('company_id', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fc1')  # Adjust based on your model structure
+    column_searchable_list = ('company_id', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fi6', 'fc1')  # Adjust based on your model structure
+    column_filters = ('company_id', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fi6', 'fc1')  # Adjust based on your model structure
 
     # Specify fields to be excluded from the form
     form_excluded_columns = ('user_id', 'status_id', 'created_by')
@@ -2146,7 +2158,7 @@ class Tabella22_dataView(ModelView):
         # - Validate data
         # - Save the model
         fields_to_check = ['fi0',
-                           'fi1', 'fi2', 'interval_ord']
+                           'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fi6', 'interval_ord']
 
         for field_name in fields_to_check:
             if form[field_name].data is None:
@@ -2162,6 +2174,23 @@ class Tabella22_dataView(ModelView):
 
         if form.fi1.data * form.fi2.data == 0:
             raise ValidationError("Please enter non-zero values for the fields.")
+
+        # TODO here
+
+        if form.fi3.data and form.fi4.data and form.fi3.data + form.fi4.data != 0:
+            model.fi2 = form.fi3.data + form.fi4.data
+        else:
+            model.fi2 = 0
+
+        if form.fi5.data and form.fi2.data and form.fi2.data  != 0:
+            model.fn1 = round(100 * form.fi5.data / form.fi2.data, 2)
+        else:
+            model.fn1 = round(0, 2)
+
+        if form.fi6.data and form.fi2.data and form.fi2.data != 0:
+            model.fn2 = round(100 * form.fi6.data / form.fi2.data, 2)
+        else:
+            model.fn2 = round(0, 2)
 
         model.user_id = user_id
         model.data_type = data_type
@@ -5165,7 +5194,6 @@ def create_admin_views(app, intervals):
     with app.app_context():
         # Custom admin view
 
-
         class CustomFlussiDataView(ModelView):
             create_template = 'admin/area_1/create_base_data_1.html'
             area_id = 1
@@ -5707,6 +5735,7 @@ def create_admin_views(app, intervals):
 
             fc1 = StringField('fc1')
 
+        '''
         class CustomTabella23DataView(ModelView):
 
             create_template = 'admin/create_base_data.html'
@@ -5970,6 +5999,7 @@ def create_admin_views(app, intervals):
                     f"Model after commit: fi0={model.fi0}, interval_ord={model.interval_ord}, fi2={model.fi2}, fi3={model.fi3}, fi1={model.fi1}, fn1={model.fn1}, fn2={model.fn2}")
 
                 return model
+        '''
 
         class CustomForm24(FlaskForm):
             fi0 = IntegerField('fi0', validators=[InputRequired(), NumberRange(min=2000, max=2099)])
@@ -6113,10 +6143,10 @@ def create_admin_views(app, intervals):
         admin_app2.add_view(CustomTabella21DataView(BaseData, db.session, name="Struttura offerta",
                                                     endpoint='view_struttura_offerta', intervals=intervals))
 
-        admin_app2.add_view(CustomTabella22DataView(BaseData, db.session, name="Area di contendibilità",
+        admin_app2.add_view(CustomTabella22DataView(BaseData, db.session, name="Struttura del mercato e contendibilità",
                                                     endpoint="view_area_contendibilita", intervals=intervals))
-        admin_app2.add_view(CustomTabella23DataView(BaseData, db.session, name="Grado di contendibilità",
-                                                    endpoint = 'view_grado_contendibilita', intervals = intervals))
+        # admin_app2.add_view(CustomTabella23DataView(BaseData, db.session, name="Grado di contendibilità",
+        #                                             endpoint = 'view_grado_contendibilita', intervals = intervals))
         admin_app2.add_view(CustomTabella24DataView(BaseData, db.session, name='Accesso venditori a DSO',
                                                     endpoint='view_accesso_venditori', intervals=intervals))
         admin_app2.add_view(CustomTabella25DataView(BaseData, db.session, name='Quote mercato IVI',
