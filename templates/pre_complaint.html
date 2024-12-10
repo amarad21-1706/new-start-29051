@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container">
+    <h1>Pre-complaint Form</h1>
+    <form method="POST" action="{{ url_for('pre_complaint.submit') }}">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+            {{ form.lexic_id.label }}: {{ form.lexic_id(class_="form-control", id="lexic_id") }}
+        </div>
+        <div class="form-group">
+            {{ form.subcategory_id.label }}: {{ form.subcategory_id(class_="form-control", id="subcategory_id") }}
+        </div>
+        <div class="form-group">
+            {{ form.item_id.label }}: {{ form.item_id(class_="form-control", id="item_id") }}
+        </div>
+        <div class="form-group">
+            {{ form.fi0.label }}: {{ form.fi0(class_="form-control") }}
+        </div>
+        <div class="form-group">
+            {{ form.interval_ord.label }}: {{ form.interval_ord(class_="form-control") }}
+        </div>
+        <div class="form-group">
+            {{ form.fi1.label }}: {{ form.fi1(class_="form-control") }}
+        </div>
+        <div class="form-group">
+            {{ form.fi2.label }}: {{ form.fi2(class_="form-control") }}
+        </div>
+        <div class="form-group">
+            {{ form.fi3.label }}: {{ form.fi3(class_="form-control") }}
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+</div>
+
+<script>
+    $(document).ready(function () {
+        // Dynamic Subcategories
+        $('#lexic_id').change(function () {
+            let lexicId = $(this).val();
+            console.log("Lexic ID Changed:", lexicId);  // Debug
+            if (lexicId) {
+                $.getJSON(`/api/get_subcategories/${lexicId}`, function (data) {
+                    console.log("Subcategories Response:", data);  // Debug
+                    let options = '<option value="0">Select Categoria</option>';
+                    $.each(data, function (index, subcategory) {
+                        options += `<option value="${subcategory.id}">${subcategory.name}</option>`;
+                    });
+                    $('#subcategory_id').html(options);
+                }).fail(function () {
+                    console.error("Error fetching subcategories.");
+                });
+            }
+        });
+
+        // Dynamic Items
+        $('#subcategory_id').change(function () {
+            let subcategoryId = $(this).val();
+            console.log("Subcategory ID Changed:", subcategoryId);  // Debug
+            if (subcategoryId) {
+                $.getJSON(`/api/get_items/${subcategoryId}`, function (data) {
+                    console.log("Items Response:", data);  // Debug
+                    let options = '<option value="0">Select Articolo</option>';
+                    $.each(data, function (index, item) {
+                        options += `<option value="${item.id}">${item.name}</option>`;
+                    });
+                    $('#item_id').html(options);
+                }).fail(function () {
+                    console.error("Error fetching items.");
+                });
+            }
+        });
+    });
+</script>
+{% endblock %}

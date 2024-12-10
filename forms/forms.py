@@ -51,6 +51,18 @@ from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as
 # from werkzeug.security import generate_password_hash, check_password_hash
 
 
+class PreComplaintForm(FlaskForm):
+    lexic_id = SelectField('Tipo pre-complaint', coerce=int, validators=[DataRequired()])
+    subcategory_id = SelectField('Categoria', coerce=int, validators=[Optional()])
+    item_id = SelectField('Articolo', coerce=int, validators=[Optional()])
+    fi0 = IntegerField('Anno', validators=[DataRequired()])
+    interval_ord = IntegerField('Periodo', validators=[DataRequired()])
+    fi1 = IntegerField('Totale', validators=[Optional()])
+    fi2 = IntegerField('IVI', validators=[Optional()])
+    fi3 = IntegerField('Altri', validators=[Optional()])
+    submit = SubmitField('Submit')
+
+
 # admin messages to all
 class CircularMessageForm_222(FlaskForm):
     message_type = SelectField(

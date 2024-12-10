@@ -92,7 +92,7 @@ from forms.forms import (LoginForm, ForgotPasswordForm, ResetPasswordForm101, Re
                 UserRoleForm, CompanyUserForm, UserDocumentsForm, DocumentWorkflowInlineForm,
                 create_dynamic_form, CustomFileLoaderForm,
                 CustomSubjectAjaxLoader, BaseSurveyForm,
-                CircularMessageForm)
+                CircularMessageForm, PreComplaintForm)
 
 from flask_admin.form import FileUploadField
 from wtforms import (SelectField, BooleanField, ValidationError, EmailField, HiddenField)
@@ -129,8 +129,84 @@ class MyAdminIndexView(AdminIndexView):
 index_view = MyAdminIndexView(name='contracts_admin_index')  # Add a unique name for the index view
 '''
 
-# Define the Blueprint
-admin_all = Blueprint('admin_all', __name__)
+# Create the blueprint
+admin_all = Blueprint('admin_all', __name__, template_folder='templates')
+
+class PreComplaintView(BaseView):
+    def __init__(self, intervals, area_id, subarea_id, **kwargs):
+        super().__init__(**kwargs)
+        self.intervals = intervals
+        self.area_id = area_id
+        self.subarea_id = subarea_id
+
+    @expose('/')
+    def index(self):
+        # Create the form instance
+        form = PreComplaintForm()
+
+        # Populate Lexic dropdown
+        form.lexic_id.choices = [(l.id, l.name) for l in Lexic.query.filter_by(category="Pre-complaint").all()]
+        form.lexic_id.choices.insert(0, (0, "Select Tipo"))
+
+        # Initialize empty Subcategory and Item dropdowns
+        form.subcategory_id.choices = [(0, "Select Categoria")]
+        form.item_id.choices = [(0, "Select Articolo")]
+
+        # Populate year dropdown
+        current_year = datetime.now().year
+        form.fi0.choices = [(year, str(year)) for year in range(current_year - 5, current_year + 2)]
+        form.fi0.data = current_year  # Set default to the current year
+
+        # Populate interval dropdown
+        if self.intervals:
+            form.interval_ord.choices = [(str(t[0]), f"Interval {t[0]}") for t in self.intervals]
+        else:
+            form.interval_ord.choices = [(0, "No Intervals Available")]
+
+        # Debugging output
+        print("Form data before rendering:", form.data)
+
+        # Render the template
+        return render_template(
+            'pre_complaint.html',
+            form=form,
+            area_id=self.area_id,
+            subarea_id=self.subarea_id
+        )
+
+    @expose('/submit', methods=['POST'])
+    def submit(self):
+        form = PreComplaintForm(request.form)
+        if form.validate_on_submit():
+            # Save the form data to the database
+            lexic_id = form.lexic_id.data
+            subcategory_id = form.subcategory_id.data if form.subcategory_id.data != 0 else None
+            item_id = form.item_id.data if form.item_id.data != 0 else None
+            fi0 = form.fi0.data
+            interval_ord = form.interval_ord.data
+            fi1 = form.fi1.data
+            fi2 = form.fi2.data
+            fi3 = form.fi3.data
+
+            # Create a new record
+            new_record = BaseData(
+                lexic_id=lexic_id,
+                subcategory_id=subcategory_id,
+                item_id=item_id,
+                fi0=fi0,
+                interval_ord=interval_ord,
+                fi1=fi1,
+                fi2=fi2,
+                fi3=fi3
+            )
+            db.session.add(new_record)
+            db.session.commit()
+
+            flash('Pre-complaint record successfully created.', 'success')
+            return redirect(url_for('.index'))
+
+        flash('There was an error submitting the form. Please try again.', 'danger')
+        return redirect(url_for('.index'))
 
 
 def check_record_exists(form, company_id):
@@ -6084,16 +6160,22 @@ def create_admin_views(app, intervals):
 
         # First Flask-Admin instance with the first custom index view
         admin_app1 = Admin(app,
-                       name="Area di controllo 1 - Verifica dell'assenza di gestione discriminatoria del servizio",
-                       url='/open_admin_1',
-                       template_mode='bootstrap3',
-                       endpoint='open_admin_1',
+               name="Area di controllo 1 - Verifica dell'assenza di gestione discriminatoria del servizio",
+               url='/open_admin_1',
+               template_mode='bootstrap3',
+               endpoint='open_admin_1',
         )
 
-        admin_app1.add_view(
-            CustomFlussiDataView(model=BaseData, session=db.session, name='Pre-complaint flows',
-                                                 intervals=intervals,
-                                                 endpoint='flussi_data_view'))
+        admin_app1.add_view(PreComplaintView(name='Pre-complaint',
+                 intervals=intervals,
+                 area_id=1,
+                 subarea_id=2,
+                 endpoint='pre_complaint'))
+
+        # admin_app1.add_view(
+        #     CustomFlussiDataView(model=BaseData, session=db.session, name='Pre-complaint flows',
+        #                                          intervals=intervals,
+        #                                          endpoint='flussi_data_view'))
 
         admin_app1.add_view(
             AttiDataView(model=BaseData, session=db.session, name='Atti complaint', intervals=intervals, area_id=1,
@@ -6117,8 +6199,8 @@ def create_admin_views(app, intervals):
         if 'gas' in company_type.lower():
             admin_app1.add_view(
                 SettlementFisicoDataView(model=BaseData, session=db.session, name='Procedura di settlement fisico',
-                                         intervals=intervals, area_id=1, subarea_id=9,
-                                         endpoint='settlement_fisico_data_view'))
+                                 intervals=intervals, area_id=1, subarea_id=9,
+                                 endpoint='settlement_fisico_data_view'))
         admin_app1.add_view(
             IniziativeDsoAsDataView(model=BaseData, session=db.session, name='Initiative DSO-Amministrazioni', intervals=intervals, area_id=1,
                                 subarea_id=6, endpoint='iniziative_dso_as_data_view'))
@@ -6159,41 +6241,41 @@ def create_admin_views(app, intervals):
         # Third Flask-Admin instance with the third Area index view
         # ===========================================================
         admin_app3 = Admin(app,
-                           name='Documents Workflow',
-                           url='/open_admin_3',
-                           template_mode='bootstrap4',
-                           endpoint='open_admin_3',
-                           )
+               name='Documents Workflow',
+               url='/open_admin_3',
+               template_mode='bootstrap4',
+               endpoint='open_admin_3',
+               )
 
         admin_app3.add_view(DocumentsBaseDataView(
-                                                name='Documents',
-                                                model=BaseData,  # Replacing Step Base Data with the correct model
-                                                session=db.session,
-                                                endpoint='document_manager_view'  # Make sure the endpoint is unique
+                    name='Documents',
+                    model=BaseData,  # Replacing Step Base Data with the correct model
+                    session=db.session,
+                    endpoint='document_manager_view'  # Make sure the endpoint is unique
         ))
         admin_app3.add_view(DocumentsBaseDataDetails(
-                                                name='Document Workflows',
-                                                model=DocumentWorkflow,  # Replacing Step Base Data with the correct model
-                                                session=db.session,
-                                                endpoint='document_workflow'  # Make sure the endpoint is unique
+                    name='Document Workflows',
+                    model=DocumentWorkflow,  # Replacing Step Base Data with the correct model
+                    session=db.session,
+                    endpoint='document_workflow'  # Make sure the endpoint is unique
         ))
 
         admin_app3.add_view(UnassignedDocumentsBaseDataView(name='Documents Unassigned To Workflows',
-                                                     model=BaseData,
-                                                     session=db.session,
-                                                     endpoint='new_documents'))
+                     model=BaseData,
+                     session=db.session,
+                     endpoint='new_documents'))
 
         # Add views to admin_app2
 
         admin_app3.add_view(
             CombinedDocumentAdminView(model=BaseData, session=db.session, name='Document Workflow Actions',
-                                       intervals=intervals, area_id=3,
-                                subarea_id=1, endpoint='combined_document_view'))
+                    intervals=intervals, area_id=3,
+                    subarea_id=1, endpoint='combined_document_view'))
 
         admin_app3.add_view(
             DocumentUploadViewExisting(model=BaseData, session=db.session, name='Attach Existing Document(s) to Workflow(s)',
-                                       intervals=intervals, area_id=3,
-                                subarea_id=1, endpoint='upload_documenti_view_existing'))
+                       intervals=intervals, area_id=3,
+                        subarea_id=1, endpoint='upload_documenti_view_existing'))
         # Add views to admin_app2
         #admin_app3.add_view(
         #    DocumentUploadView(model=BaseData, session=db.session, name='List of Document Workflow',
@@ -6254,20 +6336,20 @@ def create_admin_views(app, intervals):
 
         # === = ==================================== === ====================================
         admin_app5 = Admin(app,
-                           name='Workflow Documenti',
-                           url='/open_admin_5',
-                           template_mode='bootstrap4',
-                           endpoint='open_admin_5',
-                           )
+               name='Workflow Documenti',
+               url='/open_admin_5',
+               template_mode='bootstrap4',
+               endpoint='open_admin_5',
+               )
 
         # Add views to admin_app2
         admin_app5.add_view(
             DocumentUploadViewExisting(model=BaseData, session=db.session, name='Attach Existing Document(s) to Workflow(s) 5', intervals=intervals, area_id=3,
-                                subarea_id=1, endpoint='upload_documenti_view_existing5'))
+                    subarea_id=1, endpoint='upload_documenti_view_existing5'))
         # Add views to admin_app2
         admin_app5.add_view(
             DocumentUploadView(model=BaseData, session=db.session, name='List of Document Workflow 5', intervals=intervals, area_id=3,
-                                subarea_id=1, endpoint='upload_documenti_view5'))
+                    subarea_id=1, endpoint='upload_documenti_view5'))
 
 
         # EOF app5
@@ -6277,10 +6359,10 @@ def create_admin_views(app, intervals):
 
         # Initialize Flask-Admin
         admin_app6 = Admin(app,
-                           name='Contracts Management',
-                           url='/open_admin_6',
-                           template_mode='bootstrap4',
-                           endpoint='open_admin_6')
+               name='Contracts Management',
+               url='/open_admin_6',
+               template_mode='bootstrap4',
+               endpoint='open_admin_6')
 
         # Add views for each model
         # (Use the custom view for contracts)
@@ -6306,46 +6388,46 @@ def create_admin_views(app, intervals):
 
         # Initialize Flask-Admin
         admin_app7 = Admin(app,
-                           name='Messaging System',
-                           url='/open_admin_7',
-                           template_mode='bootstrap4',
-                           endpoint='open_admin_7')
+               name='Messaging System',
+               url='/open_admin_7',
+               template_mode='bootstrap4',
+               endpoint='open_admin_7')
 
         # admin_app7.add_view(PostAdminView(Post, db.session, name="Messaging System", endpoint="messaging_system"))
         admin_app7.add_view((CompanyUsersAdminView(CompanyUsers, db.session, name="Messaging System", endpoint="messaging_system")))
         # 10-th Flask-Admin instance
         # ===========================================================
         admin_app10 = Admin(app, name='Surveys & Questionnaires Workflow',
-                            url='/open_admin_10',
-                            template_mode='bootstrap4',
-                            endpoint='open_admin_10')
+                        url='/open_admin_10',
+                        template_mode='bootstrap4',
+                        endpoint='open_admin_10')
 
         # Add your ModelViews to Flask-Admin
         admin_app10.add_view(OpenQuestionnairesView(name='Open Questionnaires', endpoint='open_questionnaires'))
 
         admin_app10.add_view(StepQuestionnaireView(StepQuestionnaire, db.session,
-                                                   name='A. Questionnaires & Surveys (Q&S) Workflow',
-                                                   endpoint='stepquestionnaire_questionnaire_view'))
+                       name='A. Questionnaires & Surveys (Q&S) Workflow',
+                       endpoint='stepquestionnaire_questionnaire_view'))
         admin_app10.add_view(QuestionnaireModelView(Questionnaire, db.session, name='B.1 Q&S Repository',
-                                               endpoint='questionnaire_questionnaire_view'))
+                       endpoint='questionnaire_questionnaire_view'))
         admin_app10.add_view(QuestionView(Question, db.session, name='B.2 Questions Repository',
-                                          endpoint='question_questionnaire_view'))
+                      endpoint='question_questionnaire_view'))
         admin_app10.add_view(QuestionnaireQuestionsView(QuestionnaireQuestions, db.session,
-                                                        name='B.3 Association of Questions to Q&S',
-                                                        endpoint='questionnaire_questions_questionnaire_view'))
+                        name='B.3 Association of Questions to Q&S',
+                        endpoint='questionnaire_questions_questionnaire_view'))
         admin_app10.add_view(CompanyView(Company, db.session, name='C.1 Company List',
-                                         endpoint='company_questionnaire_view'))
+                         endpoint='company_questionnaire_view'))
         # TODO decode/dropdown lists here
         admin_app10.add_view(QuestionnaireCompaniesView(QuestionnaireCompanies, db.session,
-                                                        name='C.2 Association of Questionnaires to Companies',
-                                                        endpoint='questionnaire_companies_questionnaire_view'))
+                        name='C.2 Association of Questionnaires to Companies',
+                        endpoint='questionnaire_companies_questionnaire_view'))
         admin_app10.add_view(WorkflowView(Workflow, db.session, name='D.1 List of Workflows',
-                                          endpoint='workflow_questionnaire_view'))
+                      endpoint='workflow_questionnaire_view'))
         admin_app10.add_view(StepView(Step, db.session, name='D.2 List of Steps',
-                                      endpoint='step_questionnaire_view'))
+                      endpoint='step_questionnaire_view'))
         admin_app10.add_view(WorkflowStepsView(WorkflowSteps, db.session,
-                                               name='C.3 Association of Steps to Workflows',
-                                               endpoint='workflow_steps_questionnaire_view'))
+                       name='C.3 Association of Steps to Workflows',
+                       endpoint='workflow_steps_questionnaire_view'))
 
         admin_app10.add_view(ContainerAdmin(Container, db.session, name='Containers data'))
         # admin_app10.add_view(StatusView(Status, db.session, name='E. Dictionary of Status',
