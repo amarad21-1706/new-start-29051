@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>Create Base Data</h2>
+    <form method="POST" enctype="multipart/form-data">
+        {{ form.hidden_tag() }}
+
+        <!-- Lexic Dropdown -->
+        <div class="form-group">
+            {{ form.lexic_id.label }}
+            {{ form.lexic_id(class="form-control") }}
+        </div>
+
+        <!-- Subcategory Dropdown -->
+        <div class="form-group">
+            {{ form.subcategory_id.label }}
+            {{ form.subcategory_id(class="form-control") }}
+        </div>
+
+        <!-- Item Dropdown -->
+        <div class="form-group">
+            {{ form.item_id.label }}
+            {{ form.item_id(class="form-control") }}
+        </div>
+
+        <!-- Other Fields -->
+        <div class="form-group">
+            {{ form.fi0.label }}
+            {{ form.fi0(class="form-control") }}
+        </div>
+        <div class="form-group">
+            {{ form.interval_ord.label }}
+            {{ form.interval_ord(class="form-control") }}
+        </div>
+        <div class="form-group">
+            {{ form.fi1.label }}
+            {{ form.fi1(class="form-control") }}
+        </div>
+        <div class="form-group">
+            {{ form.fi2.label }}
+            {{ form.fi2(class="form-control") }}
+        </div>
+        <div class="form-group">
+            {{ form.fi3.label }}
+            {{ form.fi3(class="form-control") }}
+        </div>
+        <div class="form-group">
+            {{ form.fc1.label }}
+            {{ form.fc1(class="form-control") }}
+        </div>
+        <div class="form-group">
+            {{ form.file_path.label }}
+            {{ form.file_path(class="form-control") }}
+        </div>
+
+        {{ form.submit(class="btn btn-primary") }}
+    </form>
+</div>
+{% endblock %}
+
+{% block javascript %}
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Dynamic subcategory dropdown based on lexic_id
+            $("#lexic_id").change(function () {
+                let lexicId = $(this).val();
+                if (lexicId) {
+                    $.getJSON(`/api/get_subcategories/${lexicId}`, function (data) {
+                        let options = '<option value="0">Select Subcategory</option>';
+                        $.each(data, function (index, subcategory) {
+                            options += `<option value="${subcategory.id}">${subcategory.name}</option>`;
+                        });
+                        $("#subcategory_id").html(options);
+                        $("#item_id").html('<option value="0">Select Item</option>'); // Reset items
+                    });
+                } else {
+                    $("#subcategory_id").html('<option value="0">Select Subcategory</option>');
+                    $("#item_id").html('<option value="0">Select Item</option>');
+                }
+            });
+
+            // Dynamic item dropdown based on subcategory_id
+            $("#subcategory_id").change(function () {
+                let subcategoryId = $(this).val();
+                if (subcategoryId) {
+                    $.getJSON(`/api/get_items/${subcategoryId}`, function (data) {
+                        let options = '<option value="0">Select Item</option>';
+                        $.each(data, function (index, item) {
+                            options += `<option value="${item.id}">${item.name}</option>`;
+                        });
+                        $("#item_id").html(options);
+                    });
+                } else {
+                    $("#item_id").html('<option value="0">Select Item</option>');
+                }
+            });
+        });
+    </script>
+{% endblock %}

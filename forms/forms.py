@@ -76,6 +76,27 @@ class CircularMessageForm_222(FlaskForm):
     submit = SubmitField('Send Message')
 
 
+# Use this to implement Pre-comlaint Create using flask-WTF instead of Admin
+class CreateBaseDataForm(FlaskForm):
+    lexic_id = SelectField("Tipo pre-complaint", coerce=int, validators=[DataRequired()])
+    subcategory_id = SelectField("Categoria", coerce=int, validators=[Optional()])
+    item_id = SelectField("Articolo", coerce=int, validators=[Optional()])
+    fi0 = SelectField("Anno", coerce=int, validators=[DataRequired()])
+    interval_ord = SelectField("Periodo", coerce=int, validators=[DataRequired()])
+    fi1 = IntegerField("Totale", validators=[DataRequired()])
+    fi2 = IntegerField("IVI", validators=[DataRequired()])
+    fi3 = IntegerField("Altri", validators=[DataRequired()])
+    fc1 = StringField("Notes", validators=[Optional()])
+    file_path = FileField("File", validators=[Optional()])
+    submit = SubmitField("Create")
+
+    def validate_fi_values(form, field):
+        if form.fi1.data + form.fi2.data + form.fi3.data == 0:
+            raise ValidationError("The sum of Totale, IVI, and Altri must be greater than 0.")
+        if form.fi1.data != form.fi2.data + form.fi3.data:
+            raise ValidationError("Totale must equal the sum of IVI and Altri.")
+
+
 class CircularMessageForm(FlaskForm):
     target_type = RadioField(
         'Target Type',

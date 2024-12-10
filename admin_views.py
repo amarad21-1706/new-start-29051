@@ -111,6 +111,7 @@ from flask import session
 
 config = Config()
 
+
 '''
 class MyAdminIndexView(AdminIndexView):
     @expose('/')
@@ -5195,7 +5196,25 @@ def create_admin_views(app, intervals):
         # Custom admin view
 
         class CustomFlussiDataView(ModelView):
+            endpoint = 'flussi_data_view'
+            can_create = True  # Enable the Create button
+            create_template = 'admin/area_1/create_base_data_1.html'  # Custom create template
+
+            def create_view(self):
+                print("Accessing create_view for flussi_data_view")
+                try:
+                    url = url_for('flussi_data_view.create_view')
+                    print("Generated create_view URL:", url)
+                except Exception as e:
+                    print("Error generating create_view URL:", e)
+                return super().create_view()
+
+
+            def is_accessible(self):
+                return current_user.is_authenticated and (current_user.has_role('Admin') or current_user.has_role('Employee') or current_user.has_role('Manager'))
+
             create_template = 'admin/area_1/create_base_data_1.html'
+
             area_id = 1
             subarea_id = 1
             inline_models = (BaseDataInlineModelForm(BaseDataInline),)
@@ -6091,9 +6110,14 @@ def create_admin_views(app, intervals):
         )
 
         admin_app1.add_view(
-            CustomFlussiDataView(model=BaseData, session=db.session, name='Pre-complaint flows',
-                                                 intervals=intervals,
-                                                 endpoint='flussi_data_view'))
+            CustomFlussiDataView(
+                model=BaseData,
+                session=db.session,
+                name='Pre-complaint flows',
+                intervals=intervals,
+                endpoint='flussi_data_view'
+            )
+        )
 
         admin_app1.add_view(
             AttiDataView(model=BaseData, session=db.session, name='Atti complaint', intervals=intervals, area_id=1,

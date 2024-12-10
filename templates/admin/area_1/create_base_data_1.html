@@ -1,77 +1,81 @@
 {% extends 'admin/model/create.html' %}
 
+{% block model_menu_bar %}
+<a href="{{ url_for('flussi_data_view.create_view') }}" class="btn btn-primary">Create New Record</a>
+{{ super() }}
+{% endblock %}
+
 {% block javascript %}
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
-    <script>
-        $(document).ready(function () {
-            $('#lexic_id').change(function () {
-                let lexicId = $(this).val();
-                console.log("Selected lexic_id:", lexicId); // Debug
-                if (lexicId) {
-                    $.getJSON(`/api/get_subcategories/${lexicId}`, function (data) {
-                        console.log("Subcategories received:", data); // Debug
-                        let options = '<option value="">Select Subcategory</option>';
-                        $.each(data, function (index, item) {
-                            options += `<option value="${item.id}">${item.name}</option>`;
-                        });
-                        $('#subcategory_id').html(options);
-                        $('#item_id').html('<option value="">Select Item</option>'); // Reset items
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.3/jquery.min.js"></script>
+<script>
+    $(document).ready(function () {
+        $('#lexic_id').change(function () {
+            let lexicId = $(this).val();
+            console.log("Selected lexic_id:", lexicId); // Debug
+            if (lexicId) {
+                $.getJSON(`/api/get_subcategories/${lexicId}`, function (data) {
+                    console.log("Subcategories received:", data); // Debug
+                    let options = '<option value="">Select Subcategory</option>';
+                    $.each(data, function (index, item) {
+                        options += `<option value="${item.id}">${item.name}</option>`;
                     });
-                }
-            });
-
-            $('#subcategory_id').change(function () {
-                let subcategoryId = $(this).val();
-                console.log("Selected subcategory_id:", subcategoryId); // Debug
-                if (subcategoryId) {
-                    $.getJSON(`/api/get_items/${subcategoryId}`, function (data) {
-                        console.log("Items received:", data); // Debug
-                        let options = '<option value="">Select Item</option>';
-                        $.each(data, function (index, item) {
-                            options += `<option value="${item.id}">${item.name}</option>`;
-                        });
-                        $('#item_id').html(options);
-                    });
-                }
-            });
+                    $('#subcategory_id').html(options);
+                    $('#item_id').html('<option value="">Select Item</option>'); // Reset items
+                });
+            }
         });
 
-        $(document).on('click', '.form-control.fc2', function() {
-            $(this).select();
+        $('#subcategory_id').change(function () {
+            let subcategoryId = $(this).val();
+            console.log("Selected subcategory_id:", subcategoryId); // Debug
+            if (subcategoryId) {
+                $.getJSON(`/api/get_items/${subcategoryId}`, function (data) {
+                    console.log("Items received:", data); // Debug
+                    let options = '<option value="">Select Item</option>';
+                    $.each(data, function (index, item) {
+                        options += `<option value="${item.id}">${item.name}</option>`;
+                    });
+                    $('#item_id').html(options);
+                });
+            }
         });
-    </script>
+    });
+
+    $(document).on('click', '.form-control.fc2', function() {
+        $(this).select();
+    });
+</script>
 {% endblock javascript %}
 
 {% block body %}
-  {{ super() }}
+{{ super() }}
+<style>
+    .form-horizontal .form-group {
+        margin-bottom: 0;
+    }
 
-  <style>
-      .form-horizontal .form-group {
-          margin-bottom: 0;
-      }
+    .form-horizontal .control-label {
+        float: left;
+        width: 150px;
+        text-align: right;
+        margin-right: 10px;
+    }
 
-      .form-horizontal .control-label {
-          float: left;
-          width: 150px; /* Adjust the width as needed */
-          text-align: right;
-          margin-right: 10px; /* Adjust the margin as needed */
-      }
+    .form-horizontal .controls {
+        overflow: hidden;
+    }
 
-      .form-horizontal .controls {
-          overflow: hidden;
-      }
+    .form-horizontal .controls input,
+    .form-horizontal .controls select,
+    .form-horizontal .controls textarea {
+        width: auto;
+        float: left;
+        margin-right: 10px;
+    }
 
-      .form-horizontal .controls input,
-      .form-horizontal .controls select,
-      .form-horizontal .controls textarea {
-          width: auto;
-          float: left;
-          margin-right: 10px; /* Adjust the margin as needed */
-      }
-
-      .form-control.fc2 {
-          opacity: 1; /* Sets initial opacity to 50% */
-          transition: opacity 0.5s ease-in-out; /* Smooth fade-in on focus */
-      }
-  </style>
+    .form-control.fc2 {
+        opacity: 1;
+        transition: opacity 0.5s ease-in-out;
+    }
+</style>
 {% endblock %}

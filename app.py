@@ -78,7 +78,7 @@ from forms.forms import (AddPlanToCartForm, SignupForm, UpdateAccountForm, Ticke
         create_dynamic_form, CustomFileLoaderForm,
         CustomSubjectAjaxLoader, BaseSurveyForm, AuditLogForm,
         UpdateCartItemForm, AddProductToCartForm, SubscriptionForm,
-        MainForm, CircularMessageForm)
+        MainForm, CircularMessageForm, CreateBaseDataForm)
 
 # from flask_babel import lazy_gettext as _  # Import lazy_gettext and alias it as _
 
@@ -7508,6 +7508,51 @@ def setup_google_client():
     os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.expanduser(key_file_path)
     return storage.Client()
 
+
+# Use this to implement Pre-comlaint Create using flask-WTF instead of Admin
+@app.route("/create_base_data", methods=["GET", "POST"])
+def create_base_data():
+    form = CreateBaseDataForm()
+
+    # Populate dropdowns
+    form.lexic_id.choices = [(lexic.id, lexic.name) for lexic in Lexic.query.filter_by(category="Pre-complaint").all()]
+    form.subcategory_id.choices = [(0, "Select Subcategory")]
+    form.item_id.choices = [(0, "Select Item")]
+    current_year = datetime.now().year
+    form.fi0.choices = [(year, str(year)) for year in range(current_year - 5, current_year + 2)]
+    form.interval_ord.choices = [(i, str(i)) for i in range(1, 5)]  # Example interval options
+
+    if form.validate_on_submit():
+        try:
+            # Create a new BaseData record
+            base_data = BaseData(
+                lexic_id=form.lexic_id.data,
+                subcategory_id=form.subcategory_id.data if form.subcategory_id.data != 0 else None,
+                item_id=form.item_id.data if form.item_id.data != 0 else None,
+                fi0=form.fi0.data,
+                interval_ord=form.interval_ord.data,
+                fi1=form.fi1.data,
+                fi2=form.fi2.data,
+                fi3=form.fi3.data,
+                fc1=form.fc1.data,
+                file_path=form.file_path.data.filename if form.file_path.data else None,
+                area_id=1,  # Static value for area_id
+                subarea_id=1,  # Static value for subarea_id
+                user_id=current_user.id,
+                company_id=get_user_company_id(current_user.id),  # Define `get_user_company_id`
+                record_type="control_area",
+                data_type="Pre-complaint",
+                status_id=1
+            )
+            db.session.add(base_data)
+            db.session.commit()
+            flash("Base Data created successfully!", "success")
+            return redirect(url_for("base_data_list"))  # Redirect to the RUD view
+        except Exception as e:
+            db.session.rollback()
+            flash(f"Error creating Base Data: {str(e)}", "danger")
+
+    return render_template("create_base_data.html", form=form)
 
 
 

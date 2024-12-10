@@ -248,3 +248,4 @@ def get_items(subcategory_id):
     items = LexicItem.query.filter_by(subcategory_id=subcategory_id).all()
     print("Items returned:", items)
     return jsonify([{'id': i.id, 'name': i.name} for i in items])
+
