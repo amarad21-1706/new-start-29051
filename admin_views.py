@@ -111,118 +111,10 @@ from flask import session
 
 config = Config()
 
-'''
-class MyAdminIndexView(AdminIndexView):
-    @expose('/')
-    def index(self):
-        # Refresh session or set necessary variables
-        if current_user.is_authenticated:
-            session['roles'] = [role.name for role in current_user.roles] if current_user.roles else ['Guest']
-            session['is_authenticated'] = True
-        else:
-            session['roles'] = ['Guest']
-            session['is_authenticated'] = False
-        session.modified = True
-        return super(MyAdminIndexView, self).index()
-
-# Ensure the AdminIndexView has a unique name and endpoint
-index_view = MyAdminIndexView(name='contracts_admin_index')  # Add a unique name for the index view
-'''
-
 # Create the blueprint
 
 admin_all = Blueprint('admin_all', __name__, template_folder='templates')
 
-'''
-class PreComplaintView(BaseView):
-    def __init__(self, intervals, area_id, subarea_id, **kwargs):
-        super().__init__(**kwargs)
-        self.intervals = intervals
-        self.area_id = area_id
-        self.subarea_id = subarea_id
-
-    @expose('/')
-    def index(self):
-        # Create the form instance
-        form = PreComplaintForm()
-
-        # Populate Lexic dropdown
-        form.lexic_id.choices = [(l.id, l.name) for l in Lexic.query.filter_by(category="Pre-complaint").all()]
-        form.lexic_id.choices.insert(0, (0, "Select Tipo"))
-
-        # Initialize empty Subcategory and Item dropdowns
-        form.subcategory_id.choices = [(0, "Select Categoria")]
-        form.item_id.choices = [(0, "Select Articolo")]
-
-        # Populate year dropdown
-        current_year = datetime.now().year
-        form.fi0.choices = [(year, str(year)) for year in range(current_year - 5, current_year + 2)]
-        form.fi0.data = current_year  # Set default to the current year
-
-        # Populate interval dropdown
-        if self.intervals:
-            form.interval_ord.choices = [(str(t[0]), f"Interval {t[0]}") for t in self.intervals]
-        else:
-            form.interval_ord.choices = [(0, "No Intervals Available")]
-
-        # Debugging output
-        print("Form data before rendering:", form.data)
-
-        # Render the template
-        return render_template(
-            'pre_complaint.html',
-            form=form,
-            area_id=self.area_id,
-            subarea_id=self.subarea_id
-        )
-
-    @expose('/submit', methods=['POST'])
-    def submit(self):
-        form = PreComplaintForm(request.form)
-        if form.validate_on_submit():
-            # Save the form data to the database
-            lexic_id = form.lexic_id.data
-            subcategory_id = form.subcategory_id.data if form.subcategory_id.data != 0 else None
-            item_id = form.item_id.data if form.item_id.data != 0 else None
-            fi0 = form.fi0.data
-            interval_ord = form.interval_ord.data
-            fi1 = form.fi1.data
-            fi2 = form.fi2.data
-            fi3 = form.fi3.data
-
-            # Create a new record
-            new_record = BaseData(
-                lexic_id=lexic_id,
-                subcategory_id=subcategory_id,
-                item_id=item_id,
-                fi0=fi0,
-                interval_ord=interval_ord,
-                fi1=fi1,
-                fi2=fi2,
-                fi3=fi3
-            )
-            db.session.add(new_record)
-            db.session.commit()
-
-            flash('Pre-complaint record successfully created.', 'success')
-            return redirect(url_for('.index'))
-
-        flash('There was an error submitting the form. Please try again.', 'danger')
-        return redirect(url_for('.index'))
-
-
-def check_record_exists(form, company_id):
-    # Assuming form fields map to model fields
-    query = BaseData.query.filter_by(
-        date_of_doc=form.date_of_doc.data,
-        number_of_doc=form.number_of_doc.data,
-        fi0=form.fi0.data,
-        interval_ord=form.interval_ord.data,
-        subject_id=form.subject_id.data,
-        company_id=company_id,
-    )
-    return query.first() is not None
-'''
 
 class ExtraTimeManagementView(ModelView):
     # Admin view for managing extra time
@@ -431,23 +323,6 @@ class BaseDataView(ModelView):
         if not self.is_accessible():
             return redirect(url_for('login', next=request.url))
 
-    '''
-    def can_edit(self):
-        return current_user.is_authenticated and (current_user.has_role('Admin') or current_user.has_role('Manager')
-                                                  or current_user.has_role('Employee'))
-
-    def can_delete(self):
-        return current_user.is_authenticated and current_user.has_role('Admin')
-
-    def can_create(self):
-        return current_user.is_authenticated and (current_user.has_role('Admin') or current_user.has_role('Manager')
-                                                  or current_user.has_role('Employee'))
-
-    def can_view_details(self):
-        return current_user.is_authenticated and (current_user.has_role('Admin') or current_user.has_role('Manager')
-                                                  or current_user.has_role('Employee'))
-    '''
-
     def inaccessible_callback(self, name, **kwargs):
         # Redirect to the login page if the user doesn't have access
         return redirect(url_for('login', next=request.url))
@@ -533,7 +408,6 @@ class CompanyUsersAdminView(ModelView):
         'company_name': lambda v, c, m, p: m.company.name if m.company else '',
         'user_roles': lambda v, c, m, p: ', '.join([role.name for role in m.user.roles]) if m.user.roles else 'N/A'
     }
-
 
 class SignedContractsView(ModelView):
     column_list = ['contract_name', 'contract_status', 'created_by_user',
@@ -2013,7 +1887,7 @@ class Tabella22_dataView(ModelView):
     subarea_id = 10  # Define subarea_id as a class attribute
 
     # Specify the fields to be edited inline using XEditableWidget
-    column_editable_list = ['fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fi6', 'fn1', 'fn2', 'fc1']
+    column_editable_list = ['subject_id', 'interval_ord', 'fi0', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fn1', 'fn2', 'fc1']
     # Customize the widget for inline editing
     form_widget_args = {
         # 'fi0': {'widget': XEditableWidget()},
@@ -2023,7 +1897,6 @@ class Tabella22_dataView(ModelView):
         'fi3': {'widget': XEditableWidget()},
         'fi4': {'widget': XEditableWidget()},
         'fi5': {'widget': XEditableWidget()},
-        'fi6': {'widget': XEditableWidget()},
         'fn1': {'widget': XEditableWidget()},
         'fn2': {'widget': XEditableWidget()},
         'fc1': {'widget': XEditableWidget()},
@@ -2038,39 +1911,63 @@ class Tabella22_dataView(ModelView):
         self.area_id = Tabella22_dataView.area_id  # Initialize area_id in __init__
         self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
 
-    column_list = ('company_id', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fi6', 'fn1', 'fn2', 'fc1')
-    form_columns = ('fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fi6', 'fn1', 'fn2', 'fc1')  # Specify form columns with dropdowns
+    column_list = ('subject_id', 'company_id', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fn1', 'fn2', 'fc1')
+    form_columns = ('subject_id', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fn1', 'fn2', 'fc1')  # Specify form columns with dropdowns
 
-    column_labels = {'company_id': 'Comp.', 'interval_ord': 'Periodo', 'fi0': 'Anno',
+    column_labels = {'subject_id': 'Fascia di domanda',
+                     'company_id': 'Comp.',
+                     'interval_ord': 'Periodo', 'fi0': 'Anno',
                      'fi1': 'UDD *', 'fi2': 'PdR total *',
-                     'fi3': 'PdR domestic *', 'fi4': 'PdR non domestic *',
-                     'fi5': 'PdR domestic switch *', 'fi6': 'PdR non domestic switch *',
-                     'fn1': '% PdR domestic switch', 'fn2': '% PdR non domestic switch',
+                     'fi3': 'PdR Switch *',
+                     'fi4': 'Quantità (Smc/KWh) *',
+                     'fi5': 'Quantità Switch (Smc/KWh) *',
+                     'fn1': '% PdR Switch', 'fn2': '% Smc/KWh switch',
                      'fc1': 'Note'}
-    column_descriptions = {'company_id': 'Company', 'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
-                           'fi0': 'Inserire anno (in formato YYYY)',
-                           'fi1': 'Numero UDD (a)', 'fi2': 'Numero PdR (b=c+d)',
-                           'fi3': 'PdR domestic (c)', 'fi4': 'PdR non domestic (d)',
-                           'fi5': 'PdR domestic switch (e)', 'fi6': 'PdR non domestic switch (f)',
-                           'fn1': '% PdR domestic switch (g=e/b)', 'fn2': '% PdR non domestic switch (h=f/b)',
+    column_descriptions = {'subject_id': 'Fascia di domanda',
+                           'company_id': 'Comp',
+                            'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
+                            'fi0': 'Inserire anno (in formato YYYY)',
+                           'fi1': 'Numero UDD (a)',
+                           'fi2': 'Numero PdR (b)',
+                           'fi3': 'PdR Switch (c)',
+                           'fi4': 'Quantità (Smc/KWh) (d)',
+                           'fi5': 'Quantità Switch (Smc/KWh) (e)',
+                           'fn1': '% PdR Switch (f=c/b)',
+                           'fn2': '% Quantità switch (g=e/d)',
                            'fc1': 'Note (opzionale)'}
 
     # Customize inlist for the View class
-    column_default_sort = ('company_id', 'fi0')
-    column_searchable_list = ('company_id', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fi6', 'fc1')  # Adjust based on your model structure
-    column_filters = ('company_id', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fi6', 'fc1')  # Adjust based on your model structure
+    column_searchable_list = ('fi0', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fc1')  # Adjust based on your model structure
+    column_filters = ('fi0', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fc1')  # Adjust based on your model structure
 
     # Specify fields to be excluded from the form
-    form_excluded_columns = ('user_id', 'status_id', 'created_by')
+    form_excluded_columns = ('company_id', 'user_id', 'status_id', 'created_by')
+
+    def _subject_formatter(view, context, model, name):
+        if model.subject_id:
+            if isinstance(model.subject, Subject):
+                return model.subject.name
+            else:
+                return Subject.query.get(model.subject_id).name
+        return ''
 
     column_formatters = {
+        'subject_id': _subject_formatter,
         'company_id': lambda view, context, model, name: (
-            model.company.name[:5] if model.company and model.company.name else 'N/A')
+            model.company.name[:5] if model.company and model.company.name else 'N/A'),
+        'fn1': lambda view, context, model, name: "%.2f" % model.fn1 if model.fn1 is not None else None,
+        'fn2': lambda view, context, model, name: "%.2f" % model.fn2 if model.fn2 is not None else None,
     }
 
     def scaffold_form(self):
         form_class = super(Tabella22_dataView, self).scaffold_form()
 
+        form_class.subject_id = SelectField(
+            'Fascia di domanda',
+            validators=[InputRequired()],
+            coerce=int,
+            choices=[(subject.id, subject.name) for subject in Subject.query.filter_by(tier_1="Utenti").all()]
+        )
         # Use the custom form class instead of the default form class
         # Define a custom form class with the desired date format
 
@@ -2176,6 +2073,289 @@ class Tabella22_dataView(ModelView):
 
     def on_model_change(self, form, model, is_created):
         super(Tabella22_dataView, self).on_model_change(form, model, is_created)
+        # Reset form data
+        form.populate_obj(model)  # This resets the form data to its default values
+
+        fi0_value = model.fi0
+
+        now = datetime.now()
+        current_year = now.year
+        if fi0_value > current_year:
+            raise ValidationError(
+                f"Year in fi0 field cannot be in the future. Please enter a year less than or equal to {current_year}.")
+
+        if is_created:
+            # Handle new model creation:
+            # - Set default values
+            # - Send notification
+            # Apply your custom logic to set data_type
+            pass
+        else:
+            # Handle existing model edit:
+            # - Compare previous and updated values
+            # - Trigger specific actions based on changes
+            pass
+
+        # Perform actions relevant to both creation and edit:
+        user_id = current_user.id  # Get the current user's ID or any other criteria
+        try:
+            company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
+        except:
+            company_id = None
+            pass
+
+        area_id = self.area_id
+        subarea_id = self.subarea_id
+        status_id = 1
+        config_values = get_config_values(config_type='area_interval', company_id=company_id, area_id=self.area_id,
+                                          subarea_id=self.subarea_id)
+        interval_id = config_values[0]
+
+        # Set user_id from current user
+        document_year = form.fi0.data
+        document_interval = form.interval_ord.data
+        if not is_extratime(company_id, self.area_id, self.subarea_id, document_year,
+                            document_interval):
+            raise ValidationError("You do not have permission to create this record (close period?).")
+
+
+        subject_id = None
+        lexic_id = None
+        legal_document_id = None
+        record_type = 'control_area'
+        data_type = self.subarea_name
+
+        result, message = check_status(is_created, company_id,
+                                       None, None, form.fi0.data, form.interval_ord.data,
+                                       interval_id, area_id, subarea_id, datetime.today(), db.session)
+
+        # - Validate data
+        # - Save the model
+        fields_to_check = ['fi0', 'interval_ord',
+                           'fi1', 'fi2', 'fi3', 'fi4', 'fi5']
+
+        for field_name in fields_to_check:
+            if form[field_name].data is None:
+                raise ValidationError(f"Field {field_name} cannot be null")
+
+        if form.interval_ord.data > 52 or form.interval_ord.data < 0:
+            raise ValidationError(
+                "Period must be less than or equal to the number of fractions (e.g. 4 for quarters, 12 for months)")
+
+        if form.fi0.data < 2000 or form.fi0.data > 2199:
+            raise ValidationError(
+                "Please check the year")
+
+        if form.fi1.data * form.fi2.data == 0:
+            raise ValidationError("Please enter non-zero values for the fields.")
+
+        if form.fi2.data and form.fi3.data and form.fi2.data  != 0:
+            model.fn1 = round(100 * form.fi3.data / form.fi2.data, 2)
+        else:
+            model.fn1 = round(0, 2)
+
+        if form.fi5.data and form.fi4.data and form.fi4.data != 0:
+            model.fn2 = round(100 * form.fi5.data / form.fi4.data, 2)
+        else:
+            model.fn2 = round(0, 2)
+
+        model.user_id = user_id
+        model.data_type = data_type
+        model.record_type = record_type
+        model.area_id = area_id
+        model.subarea_id = subarea_id
+        model.interval_id = interval_id
+        model.status_id = status_id
+
+        model.legal_document_id = legal_document_id
+        model.subject_id = subject_id
+        model.interval_ord = form.interval_ord.data
+        model.fi0 = form.fi0.data
+        model.company_id = company_id
+
+        if result == False:
+            raise ValidationError(message)
+        else:
+            pass
+
+        if is_created:
+            self.session.add(model)
+        else:
+            self.session.merge(model)
+        self.session.commit()
+
+        return model
+
+
+class Tabella22_dataView_OLD(ModelView):
+    create_template = 'admin/create_base_data.html'
+    area_id = 2
+    subarea_id = 10  # Define subarea_id as a class attribute
+
+    # Specify the fields to be edited inline using XEditableWidget
+    column_editable_list = ['fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fi6', 'fn1', 'fn2', 'fc1']
+    # Customize the widget for inline editing
+    form_widget_args = {
+        # 'fi0': {'widget': XEditableWidget()},
+        # 'interval_ord': {'widget': XEditableWidget()},
+        'fi1': {'widget': XEditableWidget()},
+        'fi2': {'widget': XEditableWidget()},
+        'fi3': {'widget': XEditableWidget()},
+        'fi4': {'widget': XEditableWidget()},
+        'fi5': {'widget': XEditableWidget()},
+        'fi6': {'widget': XEditableWidget()},
+        'fn1': {'widget': XEditableWidget()},
+        'fn2': {'widget': XEditableWidget()},
+        'fc1': {'widget': XEditableWidget()},
+    }
+
+    def __init__(self, *args, **kwargs):
+
+        self.intervals=kwargs.pop('intervals', None)
+        super().__init__(*args, **kwargs)
+        # self.class_name = self.__class__.__name__  # Store the class name
+        self.subarea_id = Tabella22_dataView_OLD.subarea_id  # Initialize subarea_id in __init__
+        self.area_id = Tabella22_dataView_OLD.area_id  # Initialize area_id in __init__
+        self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
+
+    column_list = ('company_id', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fi6', 'fn1', 'fn2', 'fc1')
+    form_columns = ('fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fi6', 'fn1', 'fn2', 'fc1')  # Specify form columns with dropdowns
+
+    column_labels = {'company_id': 'Comp.', 'interval_ord': 'Periodo', 'fi0': 'Anno',
+                     'fi1': 'UDD *', 'fi2': 'PdR total *',
+                     'fi3': 'PdR domestic *', 'fi4': 'PdR non domestic *',
+                     'fi5': 'PdR domestic switch *', 'fi6': 'PdR non domestic switch *',
+                     'fn1': '% PdR domestic switch', 'fn2': '% PdR non domestic switch',
+                     'fc1': 'Note'}
+    column_descriptions = {'company_id': 'Company', 'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
+                           'fi0': 'Inserire anno (in formato YYYY)',
+                           'fi1': 'Numero UDD (a)', 'fi2': 'Numero PdR (b=c+d)',
+                           'fi3': 'PdR domestic (c)', 'fi4': 'PdR non domestic (d)',
+                           'fi5': 'PdR domestic switch (e)', 'fi6': 'PdR non domestic switch (f)',
+                           'fn1': '% PdR domestic switch (g=e/b)', 'fn2': '% PdR non domestic switch (h=f/b)',
+                           'fc1': 'Note (opzionale)'}
+
+    # Customize inlist for the View class
+    column_default_sort = ('company_id', 'fi0')
+    column_searchable_list = ('company_id', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fi6', 'fc1')  # Adjust based on your model structure
+    column_filters = ('company_id', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fi6', 'fc1')  # Adjust based on your model structure
+
+    # Specify fields to be excluded from the form
+    form_excluded_columns = ('user_id', 'status_id', 'created_by')
+
+    column_formatters = {
+        'company_id': lambda view, context, model, name: (
+            model.company.name[:5] if model.company and model.company.name else 'N/A')
+    }
+
+    def scaffold_form(self):
+        form_class = super(Tabella22_dataView_OLD, self).scaffold_form()
+
+        # Use the custom form class instead of the default form class
+        # Define a custom form class with the desired date format
+
+        # form_class.fi0 = MyIntegerField('Anno', validators=[InputRequired()])
+        # Get the current year
+        current_year = datetime.now().year
+        year_choices = [(str(year), str(year)) for year in range(current_year - 5, current_year + 2)]
+        default_year = str(current_year)
+        form_class.fi0 = SelectField(
+            'Anno di rif.',
+            coerce=int,
+            choices=year_choices,
+            default=default_year
+        )
+
+        # NEW
+        config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
+                                          subarea_id=None)
+        nr_intervals = config_values[0]
+
+        # OLD
+        # nr_intervals = get_subarea_interval_type(self.area_id, self.subarea_id)
+
+        current_interval = [t[2] for t in self.intervals if
+                            t[0] == nr_intervals]  # int(get_current_interval(3))  # quadriester
+        first_element = current_interval[0] if current_interval else None
+        interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
+
+        form_class.interval_ord = SelectField(
+            'Periodo di rif.',
+            coerce=int,
+            choices=interval_choices,  # Example choices, replace with your logic
+            default=first_element
+        )
+
+        return form_class
+
+    # Use the custom loader with 'Servizi' as a filter criteria
+    filter_criteria = None
+    form_ajax_refs = {
+        'name': CustomSubjectAjaxLoader(
+            name='Interval',
+            session=db.session,
+            model=Interval,
+            fields=['name'],
+            filter_criteria=filter_criteria,
+        ),
+    }
+
+    def create_model(self, form):
+        model = super(Tabella22_dataView_OLD, self).create_model(form)
+        if current_user.is_authenticated:
+            try:
+                model.user_id = current_user.id  # Set the user_id
+                model.company_id = session['company_id']  # Set the company_id
+                model.data_type = self.subarea_name
+                created_by = current_user.username  # Set the created_by
+                user_id = current_user.id
+                model.user_id = user_id
+                try:
+                    company_id = CompanyUsers.query.filter_by(user_id=current_user.id).first().company_id
+                except:
+                    company_id = None
+                    pass
+                model.company_id = company_id  # Set the company_id
+            except AttributeError:
+                pass
+            return model
+        else:
+            # Handle the case where the user is not authenticated
+            raise ValidationError('User not authenticated.')
+
+    def get_query(self):
+        query = super(Tabella22_dataView_OLD, self).get_query().filter_by(data_type=self.subarea_name)
+
+        if current_user.is_authenticated:
+            if current_user.has_role('Admin') or current_user.has_role('Authority'):
+                return query
+            elif current_user.has_role('Manager'):
+                # Manager can only see records related to their company_users
+                # Assuming you have a relationship named 'user_companies' between User and CompanyUsers models
+                subquery = db.session.query(CompanyUsers.company_id).filter(
+                    CompanyUsers.user_id == current_user.id
+                ).subquery()
+
+                query = query.filter(self.model.company_id.in_(subquery))
+            elif current_user.has_role('Employee'):
+                # Employee can only see their own records
+                query = query.filter(self.model.user_id == current_user.id)
+                return query
+
+        # For other roles or anonymous users, return an empty query
+        return query.filter(self.model.id < 0)
+
+    def is_accessible(self):
+        if current_user.is_authenticated:
+            if (current_user.has_role('Admin') or current_user.has_role('Authority')
+                    or current_user.has_role('Manager') or current_user.has_role('Employee')):
+                # Allow access for Admin, Manager, and Employee
+                return True
+
+        return False
+
+    def on_model_change(self, form, model, is_created):
+        super(Tabella22_dataView_OLD, self).on_model_change(form, model, is_created)
         # Reset form data
         form.populate_obj(model)  # This resets the form data to its default values
 

@@ -634,7 +634,6 @@ def check_status(is_created, company_id, subject_id, legal_document_id,
         # Filter based on non-None parameters (adjust based on your needs):
         if company_id is not None:
             query = query.filter(BaseData.company_id == company_id)
-
         if subject_id is not None:
             query = query.filter(BaseData.subject_id == subject_id)  # Exact match (can be adjusted)
         if legal_document_id is not None:
@@ -689,7 +688,6 @@ def check_status(is_created, company_id, subject_id, legal_document_id,
             return False, "Data for this period already exists and cannot be modified."
         else:
             return True, "Data can be added or edited."
-
 
 
 # interval_id: 1 year, 2 'semester', 3 quadrimenter, 4 quarter, 12 month, 26 fortnight, 52 week
