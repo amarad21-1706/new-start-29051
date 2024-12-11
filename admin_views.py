@@ -5597,7 +5597,6 @@ def create_admin_views(app, intervals):
             create_template = 'admin/simple_flussi_data_create.html'
             area_id = 1
             subarea_id = 1
-            inline_models = (BaseDataInlineModelForm(BaseDataInline),)
 
             def __init__(self, *args, **kwargs):
                 self.intervals = kwargs.pop('intervals', None)
@@ -5606,14 +5605,12 @@ def create_admin_views(app, intervals):
                 self.subarea_id = CustomFlussiDataView.subarea_id  # Initialize subarea_id in __init__
                 self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
 
-                print('area, subarea, name', self.area_id, self.subarea_id, self.subarea_name)
-
-            form_extra_fields = {
-                'file_path': CustomFileUploadField('File', base_path=config.UPLOAD_FOLDER)
-            }
+                # print('area, subarea, name', self.area_id, self.subarea_id, self.subarea_name)
 
             column_editable_list = ['fc1']
             form_widget_args = {
+                'fi1': {'widget': XEditableWidget()},
+                'fi2': {'widget': XEditableWidget()},
                 'fc1': {'widget': XEditableWidget()},
             }
 
@@ -5635,7 +5632,13 @@ def create_admin_views(app, intervals):
             # Define column formatters to display the first 5 letters of the company name
             column_formatters = {
                 'company_id': lambda view, context, model, name: (
-                    model.company.name[:5] if model.company and model.company.name else 'N/A')
+                    model.company.name[:5] if model.company and model.company.name else 'N/A'),
+                'lexic_id': lambda view, context, model, name: (
+                    model.lexic.name if model.lexic and model.lexic.name else 'N/A'),
+                'subcategory_id': lambda view, context, model, name: (
+                    model.subcategory.name if model.subcategory and model.subcategory.name else 'N/A'),
+                'item_id': lambda view, context, model, name: (
+                    model.item.name if model.item and model.item.name else 'N/A'),
             }
 
             def scaffold_form(self):
@@ -5665,10 +5668,57 @@ def create_admin_views(app, intervals):
                     get_label='name'
                 )
 
+                current_year = datetime.now().year
+                year_choices = [(str(year), str(year)) for year in range(current_year - 5, current_year + 2)]
+                default_year = str(current_year)
+
+                form_class.fi0 = SelectField(
+                    'Anno',
+                    coerce=int,
+                    choices=year_choices,
+                    default=default_year
+                )
+
+                config_values = get_config_values(config_type='area_interval', company_id=None, area_id=self.area_id,
+                                                  subarea_id=None)
+                nr_intervals = config_values[0]
+                current_interval = [t[2] for t in self.intervals if t[0] == nr_intervals]
+                first_element = current_interval[0] if current_interval else None
+                interval_choices = [(str(interv), str(interv)) for interv in range(1, nr_intervals + 1)]
+
+                form_class.interval_ord = SelectField(
+                    'Periodo',
+                    coerce=int,
+                    choices=interval_choices,
+                    default=first_element
+                )
+
                 return form_class
 
+            def create_model(self, form):
+                try:
+                    print("Form data received:", form.data)  # Debug form data
 
+                    model = self.model()
+                    form.populate_obj(model)
 
+                    # Assign relationships or foreign key values
+                    model.lexic_id = form.lexic_id.data.id if form.lexic_id.data else None
+                    model.subcategory_id = form.subcategory_id.data.id if form.subcategory_id.data else None
+                    model.item_id = form.item_id.data.id if form.item_id.data else None
+
+                    # Add additional logic if required
+                    print("Model before saving:", model)  # Debug model data
+
+                    self.session.add(model)
+                    self.session.commit()
+                    print("Record saved successfully.")
+                    return model
+                except Exception as ex:
+                    print("Error saving record:", ex)
+                    flash(f"Failed to create record: {str(ex)}", "error")
+                    self.session.rollback()
+                    return False
 
         class AttiDataView(BaseDataView):
             create_template = 'admin/area_1/create_base_data_2.html'
@@ -6264,6 +6314,7 @@ def create_admin_views(app, intervals):
                 model=BaseData,
                 session=db.session,
                 name="Pre-complaint Simple",
+                intervals=intervals,
                 endpoint="simple_flussi_data"
             ))
 
