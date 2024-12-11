@@ -5720,6 +5720,38 @@ def create_admin_views(app, intervals):
                     self.session.rollback()
                     return False
 
+            def edit_form_223(self, obj=None):
+                form = super(SimpleFlussiDataView, self).edit_form(obj)
+
+                if not obj:
+                    return form
+
+                # Populate Lexic dropdown
+                form.lexic_id.choices = [(0, "Select Tipo")] + [(l.id, l.name) for l in Lexic.query.all()]
+                form.lexic_id.data = obj.lexic_id  # Assign ID directly
+
+                # Populate Subcategory dropdown
+                if obj.lexic_id:
+                    subcategories = LexicSubcategory.query.filter_by(lexic_id=obj.lexic_id).all()
+                    form.subcategory_id.choices = [(0, "Select Categoria")] + [(s.id, s.name) for s in subcategories]
+                    form.subcategory_id.data = obj.subcategory_id  # Assign ID directly
+
+                # Populate Item dropdown
+                if obj.subcategory_id:
+                    items = LexicItem.query.filter_by(subcategory_id=obj.subcategory_id).all()
+                    form.item_id.choices = [(0, "Select Articolo")] + [(i.id, i.name) for i in items]
+                    form.item_id.data = obj.item_id  # Assign ID directly
+
+                # Debugging output
+                print("Editing object:", obj)
+                print("Lexic dropdown choices:", form.lexic_id.choices, "Selected:", form.lexic_id.data)
+                print("Subcategory dropdown choices:", form.subcategory_id.choices, "Selected:",
+                      form.subcategory_id.data)
+                print("Item dropdown choices:", form.item_id.choices, "Selected:", form.item_id.data)
+
+                return form
+
+
             def edit_form(self, obj=None):
                 # Call the parent edit_form method to initialize the form
                 form = super(SimpleFlussiDataView, self).edit_form(obj)
@@ -5758,6 +5790,28 @@ def create_admin_views(app, intervals):
                 print("Item dropdown choices:", form.item_id.choices, "Selected:", form.item_id.data)
 
                 return form
+
+            def update_model(self, form, model):
+                try:
+                    # Populate model with form data
+                    form.populate_obj(model)
+
+                    # Validate references
+                    if not Lexic.query.get(model.lexic_id):
+                        raise ValueError(f"Invalid Lexic ID: {model.lexic_id}")
+                    if model.subcategory_id and not LexicSubcategory.query.get(model.subcategory_id):
+                        raise ValueError(f"Invalid Subcategory ID: {model.subcategory_id}")
+                    if model.item_id and not LexicItem.query.get(model.item_id):
+                        raise ValueError(f"Invalid Item ID: {model.item_id}")
+
+                    # Commit the changes
+                    self.session.add(model)
+                    self.session.commit()
+                    return True
+                except Exception as e:
+                    self.session.rollback()
+                    print(f"Update failed: {e}")
+                    return False
 
         class AttiDataView(BaseDataView):
             create_template = 'admin/area_1/create_base_data_2.html'
