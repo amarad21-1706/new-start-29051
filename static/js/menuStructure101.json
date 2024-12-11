@@ -652,6 +652,15 @@
                                 "widget": {
                                     "display": false
                                 }
+                            },
+                            "Admin GCS": {
+                                "label": "Cloud Storage Test",
+                                "url": "/upload_in_cloud",
+                                "protected": true,
+                                "allowed_roles": ["Admin"],
+                                "widget": {
+                                    "display": false
+                                }
                             }
                         }
                     },

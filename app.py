@@ -6964,123 +6964,50 @@ def get_items(subcategory_id):
     return jsonify([{'id': i.id, 'name': i.name} for i in items])
 
 
-
-@app.route('/admin/send_circular_222', methods=['GET', 'POST'])
-def send_circular_222():
-    form = CircularMessageForm()
-    if form.validate_on_submit():
-        message_type = form.message_type.data
-        subject = form.subject.data
-        body = form.body.data
-        target_type = form.target_type.data
-        target_id = form.target_id.data
-        lifetime = form.lifetime.data
-
-        try:
-            if target_type == 'all':
-                # Send to all users
-                users = Users.query.all()
-                for user in users:
-                    new_post = Post(
-                        sender_id=current_user.id,  # Assuming current_user is the admin
-                        receiver_id=user.id,
-                        message_type=message_type,
-                        subject=subject,
-                        body=body,
-                        lifetime=lifetime
-                    )
-                    db.session.add(new_post)
-            elif target_type == 'company':
-                # Send to all users in a company
-                company = Company.query.get(target_id)
-                if not company:
-                    flash('Invalid Company ID', 'danger')
-                    return render_template('admin/send_circular.html', form=form)
-
-                for user in company.users:
-                    new_post = Post(
-                        sender_id=current_user.id,
-                        receiver_id=user.id,
-                        company_id=company.id,
-                        message_type=message_type,
-                        subject=subject,
-                        body=body,
-                        lifetime=lifetime
-                    )
-                    db.session.add(new_post)
-            elif target_type == 'user':
-                # Send to a specific user
-                user = Users.query.get(target_id)
-                if not user:
-                    flash('Invalid User ID', 'danger')
-                    return render_template('admin/send_circular.html', form=form)
-
-                new_post = Post(
-                    sender_id=current_user.id,
-                    receiver_id=user.id,
-                    message_type=message_type,
-                    subject=subject,
-                    body=body,
-                    lifetime=lifetime
-                )
-                db.session.add(new_post)
-
-            db.session.commit()
-            flash('Circular sent successfully!', 'success')
-            return redirect(url_for('send_circular'))
-        except Exception as e:
-            db.session.rollback()
-            flash(f'Error sending circular: {e}', 'danger')
-
-    return render_template('admin/send_circular.html', form=form)
-
-
-import os
-
 @app.route('/admin/send_circular', methods=['GET', 'POST'])
 def send_circular():
     form = CircularMessageForm()
-    print('Send circular triggered 0')
+    app.logger.info('Send circular triggered')
 
     if form.validate_on_submit():
         try:
-            print('Try triggered 1')
-
-            # Get recipients from form data
+            # Parse recipients
             recipients_json = request.form.get('recipients')  # Expecting JSON
             recipients = json.loads(recipients_json) if recipients_json else []
-            print(f"Recipients: {recipients}")
 
-            # If target type is not 'all', ensure recipients are provided
+            # Validate recipients
             if not recipients and form.target_type.data != 'all':
                 flash('Please select at least one recipient.', 'danger')
                 return render_template('admin/send_circular.html', form=form)
 
-            # Get form fields
+            # Form data
             target_type = form.target_type.data
             message_type = form.message_type.data
             subject = form.subject.data
             body = form.body.data
             lifetime = form.lifetime.data
 
-            print(f"Target Type: {target_type}, Message Type: {message_type}, Subject: {subject}")
-
-            # Handle file uploads
+            # File uploads
             uploaded_files = request.files.getlist('attachments')
             saved_files = []
+            bucket_name = os.getenv("GCS_BUCKET_NAME", "default_bucket")
+
+            if not uploaded_files:
+                flash("No files were uploaded.", "info")
 
             for file in uploaded_files:
                 if file.filename:
-                    # Save the file locally or to cloud storage
-                    upload_path = os.path.join("uploads", file.filename)
-                    file.save(upload_path)
-                    saved_files.append(upload_path)
+                    try:
+                        filename = secure_filename(file.filename)
+                        destination_path = f"company_files/{filename}"
+                        upload_to_gcs(bucket_name, file, destination_path)  # Pass the FileStorage object
+                        saved_files.append(destination_path)
+                    except Exception as e:
+                        app.logger.error(f"Failed to upload file {file.filename}: {e}", exc_info=True)
+                        flash(f"Failed to upload file {file.filename}: {str(e)}", "danger")
 
-            print(f"Saved files: {saved_files}")
-
-            # Process recipients based on type
+            # Message processing
             if target_type == 'all':
-                # Send message to all users
                 users = Users.query.all()
                 for user in users:
                     send_message_to_user(user, message_type, subject, body, lifetime, saved_files)
@@ -7096,138 +7023,20 @@ def send_circular():
                         company = Company.query.get(company_id)
                         if company and company.company_users:
                             for company_user in company.company_users:
-                                send_message_to_user(company_user.user, message_type, subject, body, lifetime, saved_files)
+                                send_message_to_user(company_user.user, message_type, subject, body, lifetime,
+                                                     saved_files)
 
+            # Flash success message
+            if saved_files:
+                flash(f'Files uploaded: {", ".join(saved_files)}', 'info')
             flash('Message sent successfully!', 'success')
             return redirect(url_for('send_circular'))
 
         except Exception as e:
-            app.logger.error(f"Error processing circular form: {e}")
-            flash('An error occurred while sending the circular.', 'danger')
+            app.logger.error(f"Error processing circular form: {e}", exc_info=True)
+            flash(f"An error occurred while sending the circular: {str(e)}", 'danger')
     else:
-        print('Form validation failed:', form.errors)
-
-    return render_template('admin/send_circular.html', form=form)
-
-
-@app.route('/admin/send_circular_345', methods=['GET', 'POST'])
-def send_circular_345():
-    form = CircularMessageForm()
-    print('Send circular triggered 0')
-
-    if request.method == 'POST':
-        # Log raw POST data
-        print(f"Raw form data: {request.form}")
-
-    if not form.validate_on_submit():
-        print((f"Error validating circular form: {form.errors}"))
-
-    if form.validate_on_submit():
-        try:
-            print('Try triggered 1')
-            # Debug the raw form data
-            print(f"Raw form data: {request.form}")
-
-            recipients_json = request.form.get('recipients', '[]')
-            recipients = json.loads(recipients_json) if recipients_json else []
-
-            # Get form data
-            target_type = form.target_type.data
-            message_type = form.message_type.data
-            subject = form.subject.data
-            body = form.body.data
-            lifetime = form.lifetime.data
-            recipients_json = request.form.get('recipients')  # Expecting JSON
-            recipients = json.loads(recipients_json) if recipients_json else []
-
-            print(f"Target Type: {target_type}, Recipients: {recipients}")
-
-            if target_type == 'all':
-                # Send to all users
-                users = Users.query.all()
-                for user in users:
-                    create_post(user.id, message_type, subject, body, lifetime)
-
-            elif target_type == 'company':
-                # Send to all users in selected companies
-                for recipient in recipients:
-                    if recipient.startswith('company-'):
-                        company_id = int(recipient.split('-')[1])
-                        company = Company.query.get(company_id)
-                        if not company:
-                            continue
-                        for company_user in company.company_users:
-                            create_post(company_user.user_id, message_type, subject, body, lifetime)
-
-            elif target_type == 'user':
-                # Send to specific users
-                for recipient in recipients:
-                    if recipient.startswith('user-'):
-                        user_id = int(recipient.split('-')[1])
-                        create_post(user_id, message_type, subject, body, lifetime)
-
-            flash('Circular sent successfully!', 'success')
-            return redirect(url_for('send_circular'))
-
-        except Exception as e:
-            db.session.rollback()
-            app.logger.error(f"Error sending circular: {e}")
-            flash('Failed to send circular.', 'danger')
-
-    else:
-        print('Form validation failed:', form.errors)
-
-    return render_template('admin/send_circular.html', form=form)
-
-
-@app.route('/admin/send_circular_234', methods=['GET', 'POST'])
-def send_circular_234():
-    form = CircularMessageForm()  # Replace with your circular message form class
-    print('Send circular triggered 0')
-
-    if not form.validate_on_submit():
-        print("Form validation failed:")
-        print(form.errors)  # Log all validation errors
-
-    if form.validate_on_submit():
-        try:
-            print('Try triggered 1')
-            # Get data from the form
-            message_type = form.message_type.data
-            subject = form.subject.data
-            body = form.body.data
-            lifetime = form.lifetime.data
-            recipients_json = request.form.get('recipients')
-            recipients = json.loads(recipients_json)  # Parse recipients from JSON string
-
-            # Log the recipients for debugging
-            print(f"Recipients: {recipients}")
-
-            # Iterate over recipients and process messages
-            for recipient in recipients:
-                print('recipient', recipient)
-                if recipient.startswith('company-'):
-                    # Send to all users in the company
-                    company_id = int(recipient.split('-')[1])
-                    company = Company.query.get(company_id)
-                    if not company:
-                        continue  # Skip if company does not exist
-                    for company_user in company.company_users:
-                        send_message_to_user(company_user.user, form, message_type, subject, body, lifetime)
-                elif recipient.startswith('user-'):
-                    # Send to a specific user
-                    user_id = int(recipient.split('-')[1])
-                    user = Users.query.get(user_id)
-                    if user:
-                        send_message_to_user(user, form, message_type, subject, body, lifetime)
-
-            flash('Circular sent successfully!', 'success')
-            return redirect(url_for('send_circular'))
-
-        except Exception as e:
-            db.session.rollback()
-            app.logger.error(f"Error sending circular: {e}")
-            flash('Failed to send circular.', 'danger')
+        app.logger.warning(f"Form validation failed: {form.errors}")
 
     return render_template('admin/send_circular.html', form=form)
 
@@ -7270,7 +7079,6 @@ def send_message_to_user(user, message_type, subject, body, lifetime, attachment
     except Exception as e:
         db.session.rollback()
         app.logger.error(f"Error sending message to user {user.id}: {e}")
-
 
 
 @app.route('/send_message', methods=['GET', 'POST'])
@@ -7323,58 +7131,6 @@ def send_message():
             flash('Failed to send message.', 'danger')
 
     return render_template('send_message.html', form=form)
-
-
-#submit message from admin
-@app.route("/send_message_222", methods=["POST"])
-@login_required
-def send_message_222():
-    form = SendMessageForm()  # Assuming you have a form class defined
-    if form.validate_on_submit():
-        try:
-            # Parse recipients from the submitted data
-            recipients = request.form.getlist('recipients')  # Expecting a list of recipient IDs
-
-            # Create and save the Post object
-            post = Post(
-                sender_id=current_user.id,
-                message_type=form.message_type.data,
-                subject=form.subject.data,
-                body=form.body.data,
-                lifetime=form.lifetime.data
-            )
-            db.session.add(post)
-            db.session.flush()  # Flush to generate post.id for relationships
-
-            # Debugging: Log the values
-            print(f"Message Type: {message_type}, Subject: {subject}, Body: {body}, Lifetime: {lifetime}, Recipients: {recipients}")
-
-            # Save PostRecipient relationships
-            for recipient in recipients:
-                if recipient.startswith('company-'):
-                    company_id = int(recipient.split('-')[1])
-                    company_users = CompanyUsers.query.filter_by(company_id=company_id).all()
-                    for company_user in company_users:
-                        post_recipient = PostRecipient(post_id=post.id, user_id=company_user.user_id)
-                        db.session.add(post_recipient)
-                elif recipient.startswith('user-'):
-                    user_id = int(recipient.split('-')[1])
-                    post_recipient = PostRecipient(post_id=post.id, user_id=user_id)
-                    db.session.add(post_recipient)
-
-            db.session.commit()
-
-            # Send emails to recipients
-            send_emails_to_recipients(recipients, form.subject.data, form.body.data)
-
-            flash("Message sent successfully!", "success")
-            return redirect(url_for("index"))  # Adjust as needed
-
-        except Exception as e:
-            db.session.rollback()
-            flash(f"Failed to send the message. Error: {str(e)}", "danger")
-            return redirect(url_for("send_message"))
-    return render_template("send_message.html", form=form)
 
 
 import smtplib
@@ -7489,6 +7245,7 @@ def companies_and_users():
         return jsonify({'error': str(e)}), 500
 
 
+
 def upload_to_bucket(bucket_name, source_file_name, destination_blob_name):
     """Uploads a file to the specified bucket."""
     client = setup_google_client()
@@ -7497,6 +7254,7 @@ def upload_to_bucket(bucket_name, source_file_name, destination_blob_name):
 
     blob.upload_from_filename(source_file_name)
     print(f"File {source_file_name} uploaded to {destination_blob_name}.")
+
 
 def generate_signed_url(bucket_name, blob_name, expiration_minutes=15):
     """Generates a signed URL for a blob."""
@@ -7524,9 +7282,68 @@ def setup_google_client():
     return storage.Client()
 
 
+import os
+import json
+import tempfile
+from google.cloud import storage
+
+def setup_credentials():
+    credentials_json = os.getenv("GOOGLE_APPLICATION_CREDENTIALS_JSON")
+    if not credentials_json:
+        raise ValueError("Environment variable GOOGLE_APPLICATION_CREDENTIALS_JSON is not set.")
+    temp_key_path = tempfile.NamedTemporaryFile(delete=False).name
+    with open(temp_key_path, "w") as key_file:
+        key_file.write(credentials_json)
+    os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = temp_key_path
+    print('Path is',temp_key_path)
 
 
-if __name__ == '__main__':
+def upload_to_gcs(bucket_name, file_storage, destination_blob_name):
+    """Uploads a file to Google Cloud Storage."""
+    try:
+        client = storage.Client()
+        bucket = client.bucket(bucket_name)
+        blob = bucket.blob(destination_blob_name)
+
+        # Use the file storage object to access the file stream and content type
+        blob.upload_from_file(file_storage, content_type=file_storage.content_type)
+
+        print(f"Uploaded {file_storage.filename} to GCS at {destination_blob_name}")
+    except Exception as e:
+        print(f"Error uploading file to GCS: {e}")
+        raise
+
+
+@app.route('/upload_in_cloud', methods=['GET', 'POST'])
+def upload_in_cloud():
+    if request.content_type != 'application/json':
+        return jsonify({"error": "Unsupported Media Type. Content-Type must be 'application/json'"}), 415
+
+    try:
+        # Parse JSON payload
+        data = request.get_json()
+        if not data:
+            return jsonify({"error": "Invalid JSON payload"}), 400
+
+        # Extract parameters
+        bucket_name = data.get('bucket_name')
+        destination_path = data.get('destination_path')
+        source_file_path = data.get('source_file_path')
+
+        if not all([bucket_name, destination_path, source_file_path]):
+            return jsonify({"error": "Missing required parameters"}), 400
+
+        # Upload file to GCS
+        upload_to_gcs(bucket_name, destination_path, source_file_path)
+
+        return jsonify(
+            {"message": f"File {source_file_path} uploaded to {destination_path} in bucket {bucket_name}"}), 200
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+
+if (__name__ == '__main__'):
     # Load menu items from JSON file
     current_dir = get_current_directory()
     json_file_path = os.path.join(current_dir, 'static', 'js', 'menuStructure101.json')

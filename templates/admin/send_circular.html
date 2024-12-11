@@ -18,7 +18,7 @@
         {% endif %}
     {% endwith %}
 
-    <form method="POST">
+    <form method="POST" action="{{ url_for('send_circular') }}" enctype="multipart/form-data">
         {{ form.hidden_tag() }}
 
         <div class="form-group">
@@ -55,8 +55,8 @@
             <label for="attachments">Attachments</label>
             <input type="file" name="attachments" id="attachments" class="form-control" multiple>
         </div>
-
         <button type="submit" class="btn btn-primary">Send Circular</button>
+
     </form>
 </div>
 

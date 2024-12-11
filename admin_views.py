@@ -2049,10 +2049,10 @@ class Tabella22_dataView(ModelView):
                      'fc1': 'Note'}
     column_descriptions = {'company_id': 'Company', 'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
                            'fi0': 'Inserire anno (in formato YYYY)',
-                           'fi1': 'Numero UDD', 'fi2': 'Numero PdR',
-                           'fi3': 'PdR domestic', 'fi4': 'PdR non domestic',
-                           'fi5': 'PdR domestic switch', 'fi6': 'PdR non domestic switch',
-                           'fn1': '% PdR domestic switch', 'fn2': '% PdR non domestic switch',
+                           'fi1': 'Numero UDD (a)', 'fi2': 'Numero PdR (b=c+d)',
+                           'fi3': 'PdR domestic (c)', 'fi4': 'PdR non domestic (d)',
+                           'fi5': 'PdR domestic switch (e)', 'fi6': 'PdR non domestic switch (f)',
+                           'fn1': '% PdR domestic switch (g=e/b)', 'fn2': '% PdR non domestic switch (h=f/b)',
                            'fc1': 'Note (opzionale)'}
 
     # Customize inlist for the View class
@@ -6440,8 +6440,13 @@ def create_admin_views(app, intervals):
             ))
 
         admin_app1.add_view(
-            AttiDataView(model=BaseData, session=db.session, name='Atti complaint', intervals=intervals, area_id=1,
-                                subarea_id=2, endpoint='atti_data_view'))
+            AttiDataView(model=BaseData,
+                         session=db.session,
+                         name='Atti complaint',
+                         intervals=intervals,
+                         area_id=1,
+                         subarea_id=2,
+                         endpoint='atti_data_view'))
 
         admin_app1.add_view(
             ContenziosiDataView(model=BaseData, session=db.session, name='Contenziosi', intervals=intervals, area_id=1,
