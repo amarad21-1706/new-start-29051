@@ -5791,7 +5791,7 @@ def create_admin_views(app, intervals):
 
                 return form
 
-            def update_model(self, form, model):
+            def update_model_223(self, form, model):
                 try:
                     # Populate model with form data
                     form.populate_obj(model)
@@ -5810,6 +5810,33 @@ def create_admin_views(app, intervals):
                     return True
                 except Exception as e:
                     self.session.rollback()
+                    print(f"Update failed: {e}")
+                    return False
+
+            def update_model(self, form, model):
+                try:
+                    # Populate the model with form data
+                    form.populate_obj(model)
+
+                    # Assign the ID values to the model fields
+                    model.lexic_id = form.lexic_id.data.id if form.lexic_id.data else None
+                    model.subcategory_id = form.subcategory_id.data.id if form.subcategory_id.data else None
+                    model.item_id = form.item_id.data.id if form.item_id.data else None
+
+                    # Debugging: Check the IDs being assigned
+                    print("Updating model with:")
+                    print(f"Lexic ID: {model.lexic_id}")
+                    print(f"Subcategory ID: {model.subcategory_id}")
+                    print(f"Item ID: {model.item_id}")
+
+                    # Commit the changes to the database
+                    self.session.add(model)
+                    self.session.commit()
+                    flash("Record updated successfully!", "success")
+                    return True
+                except Exception as e:
+                    self.session.rollback()
+                    flash(f"Failed to update record: {str(e)}", "error")
                     print(f"Update failed: {e}")
                     return False
 
@@ -6394,19 +6421,20 @@ def create_admin_views(app, intervals):
                  area_id=1,
                  subarea_id=2,
                  endpoint='pre_complaint'))
-        '''
+        
 
         admin_app1.add_view(
             CustomFlussiDataView(model=BaseData,
                                  session=db.session, name='Pre-complaint flows',
                                   intervals=intervals,
                                   endpoint='flussi_data_view'))
+        '''
 
         admin_app1.add_view(
             SimpleFlussiDataView(
                 model=BaseData,
                 session=db.session,
-                name="Pre-complaint Simple",
+                name="Pre-complaints",
                 intervals=intervals,
                 endpoint="simple_flussi_data"
             ))
