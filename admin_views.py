@@ -5595,8 +5595,48 @@ def create_admin_views(app, intervals):
 
         class SimpleFlussiDataView(ModelView):
             create_template = 'admin/simple_flussi_data_create.html'
+            area_id = 1
+            subarea_id = 1
+            inline_models = (BaseDataInlineModelForm(BaseDataInline),)
 
-            form_columns = ['lexic_id', 'subcategory_id', 'item_id']  # Only these fields
+            def __init__(self, *args, **kwargs):
+                self.intervals = kwargs.pop('intervals', None)
+                super().__init__(*args, **kwargs)
+                self.area_id = CustomFlussiDataView.area_id  # Initialize area_id in __init__
+                self.subarea_id = CustomFlussiDataView.subarea_id  # Initialize subarea_id in __init__
+                self.subarea_name = get_subarea_name(area_id=self.area_id, subarea_id=self.subarea_id)
+
+                print('area, subarea, name', self.area_id, self.subarea_id, self.subarea_name)
+
+            form_extra_fields = {
+                'file_path': CustomFileUploadField('File', base_path=config.UPLOAD_FOLDER)
+            }
+
+            column_editable_list = ['fc1']
+            form_widget_args = {
+                'fc1': {'widget': XEditableWidget()},
+            }
+
+            # form_columns = ['interval_ord', 'fi0', 'fi1', 'fi2', 'fi3', 'fc1']
+            form_columns = ['lexic_id', 'subcategory_id', 'item_id', 'fi0', 'interval_ord', 'fi1', 'fi2', 'fi3', 'fc1']
+
+            column_list = ['lexic_id', 'subcategory_id', 'item_id', 'company_id', 'interval_ord', 'fi0', 'fi1', 'fi2', 'fi3', 'fc1']
+
+            column_labels = {
+                'company_id': 'Comp.',
+                'interval_ord': 'Periodo',
+                'fi0': 'Anno',
+                'fi1': 'Totale',
+                'fi2': 'IVI',
+                'fi3': 'Altri',
+                'fc1': 'Notes'
+            }
+
+            # Define column formatters to display the first 5 letters of the company name
+            column_formatters = {
+                'company_id': lambda view, context, model, name: (
+                    model.company.name[:5] if model.company and model.company.name else 'N/A')
+            }
 
             def scaffold_form(self):
                 form_class = super(SimpleFlussiDataView, self).scaffold_form()
@@ -6214,16 +6254,18 @@ def create_admin_views(app, intervals):
         '''
 
         admin_app1.add_view(
-        CustomFlussiDataView(model=BaseData, session=db.session, name='Pre-complaint flows',
-                                                  intervals=intervals,
-                                                  endpoint='flussi_data_view'))
+            CustomFlussiDataView(model=BaseData,
+                                 session=db.session, name='Pre-complaint flows',
+                                  intervals=intervals,
+                                  endpoint='flussi_data_view'))
 
-        admin_app1.add_view(SimpleFlussiDataView(
-            model=BaseData,
-            session=db.session,
-            name="Pre-complaint Simple",
-            endpoint="simple_flussi_data"
-        ))
+        admin_app1.add_view(
+            SimpleFlussiDataView(
+                model=BaseData,
+                session=db.session,
+                name="Pre-complaint Simple",
+                endpoint="simple_flussi_data"
+            ))
 
         admin_app1.add_view(
             AttiDataView(model=BaseData, session=db.session, name='Atti complaint', intervals=intervals, area_id=1,
