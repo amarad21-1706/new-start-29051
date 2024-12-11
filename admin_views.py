@@ -130,8 +130,10 @@ index_view = MyAdminIndexView(name='contracts_admin_index')  # Add a unique name
 '''
 
 # Create the blueprint
+
 admin_all = Blueprint('admin_all', __name__, template_folder='templates')
 
+'''
 class PreComplaintView(BaseView):
     def __init__(self, intervals, area_id, subarea_id, **kwargs):
         super().__init__(**kwargs)
@@ -220,7 +222,7 @@ def check_record_exists(form, company_id):
         company_id=company_id,
     )
     return query.first() is not None
-
+'''
 
 class ExtraTimeManagementView(ModelView):
     # Admin view for managing extra time
@@ -5347,7 +5349,6 @@ def create_admin_views(app, intervals):
                     widget=Select2Widget()
                 )
 
-
                 current_year = datetime.now().year
                 year_choices = [(str(year), str(year)) for year in range(current_year - 5, current_year + 2)]
                 default_year = str(current_year)
@@ -5590,6 +5591,44 @@ def create_admin_views(app, intervals):
                 self.session.commit()
 
                 return model
+
+
+        class SimpleFlussiDataView(ModelView):
+            create_template = 'admin/simple_flussi_data_create.html'
+
+            form_columns = ['lexic_id', 'subcategory_id', 'item_id']  # Only these fields
+
+            def scaffold_form(self):
+                form_class = super(SimpleFlussiDataView, self).scaffold_form()
+
+                # Lexic Dropdown
+                form_class.lexic_id = QuerySelectField(
+                    'Tipo pre-complaint',
+                    query_factory=lambda: Lexic.query.filter_by(category="Pre-complaint"),
+                    allow_blank=True,
+                    get_label='name'
+                )
+
+                # Subcategories Dropdown
+                form_class.subcategory_id = QuerySelectField(
+                    'Categoria',
+                    query_factory=lambda: LexicSubcategory.query,  # Adjust dynamically later
+                    allow_blank=True,
+                    get_label='name'
+                )
+
+                # Items Dropdown
+                form_class.item_id = QuerySelectField(
+                    'Articolo',
+                    query_factory=lambda: LexicItem.query,  # Adjust dynamically later
+                    allow_blank=True,
+                    get_label='name'
+                )
+
+                return form_class
+
+
+
 
         class AttiDataView(BaseDataView):
             create_template = 'admin/area_1/create_base_data_2.html'
@@ -6166,16 +6205,25 @@ def create_admin_views(app, intervals):
                endpoint='open_admin_1',
         )
 
+        '''
         admin_app1.add_view(PreComplaintView(name='Pre-complaint',
                  intervals=intervals,
                  area_id=1,
                  subarea_id=2,
                  endpoint='pre_complaint'))
+        '''
 
-        # admin_app1.add_view(
-        #     CustomFlussiDataView(model=BaseData, session=db.session, name='Pre-complaint flows',
-        #                                          intervals=intervals,
-        #                                          endpoint='flussi_data_view'))
+        admin_app1.add_view(
+        CustomFlussiDataView(model=BaseData, session=db.session, name='Pre-complaint flows',
+                                                  intervals=intervals,
+                                                  endpoint='flussi_data_view'))
+
+        admin_app1.add_view(SimpleFlussiDataView(
+            model=BaseData,
+            session=db.session,
+            name="Pre-complaint Simple",
+            endpoint="simple_flussi_data"
+        ))
 
         admin_app1.add_view(
             AttiDataView(model=BaseData, session=db.session, name='Atti complaint', intervals=intervals, area_id=1,

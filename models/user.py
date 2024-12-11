@@ -579,6 +579,7 @@ class Deadline(db.Model):
     interval = relationship("Interval", back_populates="deadline")
     status = relationship("Status", back_populates="deadline")'''
 
+
 class Lexic(db.Model):
     __tablename__ = 'lexic'
 
@@ -602,8 +603,11 @@ class LexicSubcategory(db.Model):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     lexic_id = Column(Integer, ForeignKey('lexic.id'), nullable=False)
-    name = Column(db.String(128), nullable=False)
-    description = Column(db.String(500), nullable=True)
+    name = Column(String(128), nullable=False)
+    description = Column(String(500), nullable=True)
+
+    # Table-level constraints for uniqueness
+    __table_args__ = (db.UniqueConstraint('lexic_id', 'name', name='_lexic_subcategory_uc'),)
 
     # Relationship to parent Lexic
     parent = relationship('Lexic', back_populates='subcategories')
@@ -622,6 +626,9 @@ class LexicItem(db.Model):
     subcategory_id = Column(Integer, ForeignKey('lexic_subcategories.id'), nullable=False)
     name = Column(String(128), nullable=False)
     description = Column(String(256), nullable=True)
+
+    # Table-level constraints for uniqueness
+    __table_args__ = (db.UniqueConstraint('subcategory_id', 'name', name='_lexic_item_uc'),)
 
     # Relationship to parent Subcategory
     subcategory = relationship('LexicSubcategory', back_populates='items')

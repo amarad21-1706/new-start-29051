@@ -490,10 +490,9 @@ with app.app_context():
 
     #app.register_blueprint(admin_bp)
 
-    # Register the Blueprint
+    # Register the Blueprints
     app.register_blueprint(admin_all, url_prefix='/admin')  # Add a prefix like '/admin' if desired
-
-    # Register the blueprint
+    print('Admin blueprints registered')
     app.register_blueprint(contract_bp)
     app.register_blueprint(team_bp, url_prefix='/team')  # Adjust the url_prefix as needed
 
@@ -6923,9 +6922,16 @@ def debug_locale():
     print(f"Current locale: {get_locale()}")
     return f"Session language: {session.get('lang')}, Current locale: {get_locale()}"
 
+'''
+
 
 @app.route('/api/lexics', methods=['GET'])
 def get_lexics():
+
+    lexic = Lexic.query.first()
+    print(lexic.subcategories)
+    print(lexic.subcategories[0].items)
+
     """Fetch all Lexics in the 'Pre-complaint' category."""
     lexics = Lexic.query.filter_by(category='Precomplaint').all()
     return jsonify([{'id': l.id, 'name': l.name} for l in lexics])
@@ -6942,6 +6948,21 @@ def get_items(subcategory_id):
     """Fetch Items for a specific Subcategory."""
     items = LexicItem.query.filter_by(subcategory_id=subcategory_id).all()
     return jsonify([{'id': i.id, 'name': i.name} for i in items])
+
+'''
+
+
+@app.route('/api/get_subcategories/<int:lexic_id>')
+def get_subcategories(lexic_id):
+    subcategories = LexicSubcategory.query.filter_by(lexic_id=lexic_id).all()
+    return jsonify([{'id': s.id, 'name': s.name} for s in subcategories])
+
+
+@app.route('/api/get_items/<int:subcategory_id>')
+def get_items(subcategory_id):
+    items = LexicItem.query.filter_by(subcategory_id=subcategory_id).all()
+    return jsonify([{'id': i.id, 'name': i.name} for i in items])
+
 
 
 @app.route('/admin/send_circular_222', methods=['GET', 'POST'])
