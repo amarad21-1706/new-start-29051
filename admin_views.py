@@ -5644,28 +5644,28 @@ def create_admin_views(app, intervals):
             def scaffold_form(self):
                 form_class = super(SimpleFlussiDataView, self).scaffold_form()
 
-                # Lexic Dropdown
                 form_class.lexic_id = QuerySelectField(
                     'Tipo pre-complaint',
                     query_factory=lambda: Lexic.query.filter_by(category="Pre-complaint"),
                     allow_blank=True,
-                    get_label='name'
+                    get_label='name',
+                    validators=[Optional()]
                 )
 
-                # Subcategories Dropdown
                 form_class.subcategory_id = QuerySelectField(
                     'Categoria',
-                    query_factory=lambda: LexicSubcategory.query,  # Adjust dynamically later
+                    query_factory=lambda: LexicSubcategory.query,  # Dynamically populated
                     allow_blank=True,
-                    get_label='name'
+                    get_label='name',
+                    validators=[Optional()]
                 )
 
-                # Items Dropdown
                 form_class.item_id = QuerySelectField(
                     'Articolo',
-                    query_factory=lambda: LexicItem.query,  # Adjust dynamically later
+                    query_factory=lambda: LexicItem.query,  # Dynamically populated
                     allow_blank=True,
-                    get_label='name'
+                    get_label='name',
+                    validators=[Optional()]
                 )
 
                 current_year = datetime.now().year
@@ -5719,6 +5719,45 @@ def create_admin_views(app, intervals):
                     flash(f"Failed to create record: {str(ex)}", "error")
                     self.session.rollback()
                     return False
+
+            def edit_form(self, obj=None):
+                # Call the parent edit_form method to initialize the form
+                form = super(SimpleFlussiDataView, self).edit_form(obj)
+
+                # Ensure the object exists
+                if not obj:
+                    return form
+
+                # Populate Lexic dropdown
+                form.lexic_id.choices = [(0, "Select Tipo")] + [(l.id, l.name) for l in Lexic.query.all()]
+                form.lexic_id.data = Lexic.query.get(obj.lexic_id)  # Assign the Lexic object
+
+                # Populate Subcategory dropdown based on lexic_id
+                if obj.lexic_id:
+                    subcategories = LexicSubcategory.query.filter_by(lexic_id=obj.lexic_id).all()
+                    form.subcategory_id.choices = [(0, "Select Categoria")] + [(s.id, s.name) for s in subcategories]
+                    form.subcategory_id.data = LexicSubcategory.query.get(
+                        obj.subcategory_id)  # Assign the Subcategory object
+                    print('Subcategory to be selected is', obj.subcategory_id)
+                else:
+                    form.subcategory_id.choices = [(0, "Select Categoria")]
+
+                # Populate Item dropdown based on subcategory_id
+                if obj.subcategory_id:
+                    items = LexicItem.query.filter_by(subcategory_id=obj.subcategory_id).all()
+                    form.item_id.choices = [(0, "Select Articolo")] + [(i.id, i.name) for i in items]
+                    form.item_id.data = LexicItem.query.get(obj.item_id)  # Assign the Item object
+                    print('Item to be selected is', obj.item_id)
+                else:
+                    form.item_id.choices = [(0, "Select Articolo")]
+
+                # Debugging to confirm the form's state
+                print("Editing object:", obj)
+                print("Lexic dropdown choices:", form.lexic_id.choices, "Selected:", form.lexic_id.data)
+                print("Subcategory dropdown choices:", form.subcategory_id.choices, "Selected:", form.subcategory_id.data)
+                print("Item dropdown choices:", form.item_id.choices, "Selected:", form.item_id.data)
+
+                return form
 
         class AttiDataView(BaseDataView):
             create_template = 'admin/area_1/create_base_data_2.html'

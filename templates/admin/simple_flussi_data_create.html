@@ -1,58 +1,86 @@
 {% extends 'admin/model/create.html' %}
 
 {% block content %}
-<div class="container">
-    <h1>Pre-complaint Form</h1>
-    <form method="POST" action="{{ url_for('simple_flussi_data.create_view') }}">
-        {{ form.hidden_tag() }}
+    <div class="container">
+        <h1>Pre-complaint Form</h1>
+        <form method="POST" action="{{ url_for('simple_flussi_data.edit_view', id=obj.id) }}">
+            {{ form.hidden_tag() }}
 
-        <div class="form-group">
-            {{ form.lexic_id.label }}: {{ form.lexic_id(class_="form-control", id="lexic_id") }}
-        </div>
-        <div class="form-group">
-            {{ form.subcategory_id.label }}: {{ form.subcategory_id(class_="form-control", id="subcategory_id") }}
-        </div>
-        <div class="form-group">
-            {{ form.item_id.label }}: {{ form.item_id(class_="form-control", id="item_id") }}
-        </div>
-        <button type="submit" class="btn btn-primary">Submit</button>
-    </form>
-</div>
+            <!-- Lexic Dropdown -->
+            <div class="form-group">
+                <label for="lexic_id">{{ form.lexic_id.label }}</label>
+                <select id="lexic_id" name="lexic_id" class="form-control">
+                    {% for value, label in form.lexic_id.choices %}
+                    <option value="{{ value }}" {% if form.lexic_id.data == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
 
-<script>
-    $(document).ready(function () {
-        // Update Subcategories based on Lexic
-        $('#lexic_id').change(function () {
-            const lexicId = $(this).val();
-            if (lexicId) {
-                $.getJSON(`/api/get_subcategories/${lexicId}`, function (data) {
-                    let options = '<option value="">Select Categoria</option>';
-                    $.each(data, function (index, subcategory) {
-                        options += `<option value="${subcategory.id}">${subcategory.name}</option>`;
+            <!-- Subcategory Dropdown -->
+            <div class="form-group">
+                <label for="subcategory_id">{{ form.subcategory_id.label }}</label>
+                <select id="subcategory_id" name="subcategory_id" class="form-control">
+                    {% for value, label in form.subcategory_id.choices %}
+                    <option value="{{ value }}" {% if form.subcategory_id.data == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <!-- Item Dropdown -->
+            <div class="form-group">
+                <label for="item_id">{{ form.item_id.label }}</label>
+                <select id="item_id" name="item_id" class="form-control">
+                    {% for value, label in form.item_id.choices %}
+                    <option value="{{ value }}" {% if form.item_id.data == value %}selected{% endif %}>
+                        {{ label }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Save</button>
+        </form>
+    </div>
+
+
+    <script>
+        $(document).ready(function () {
+            // Update Subcategories based on Lexic
+            $('#lexic_id').change(function () {
+                const lexicId = $(this).val();
+                if (lexicId) {
+                    $.getJSON(`/api/get_subcategories/${lexicId}`, function (data) {
+                        let options = '<option value="">Select Categoria</option>';
+                        $.each(data, function (index, subcategory) {
+                            options += `<option value="${subcategory.id}">${subcategory.name}</option>`;
+                        });
+                        $('#subcategory_id').html(options);
                     });
-                    $('#subcategory_id').html(options);
-                });
-            } else {
-                $('#subcategory_id').html('<option value="">Select Categoria</option>');
-                $('#item_id').html('<option value="">Select Articolo</option>');
-            }
-        });
+                } else {
+                    $('#subcategory_id').html('<option value="">Select Categoria</option>');
+                    $('#item_id').html('<option value="">Select Articolo</option>');
+                }
+            });
 
-        // Update Items based on Subcategory
-        $('#subcategory_id').change(function () {
-            const subcategoryId = $(this).val();
-            if (subcategoryId) {
-                $.getJSON(`/api/get_items/${subcategoryId}`, function (data) {
-                    let options = '<option value="">Select Articolo</option>';
-                    $.each(data, function (index, item) {
-                        options += `<option value="${item.id}">${item.name}</option>`;
+            // Update Items based on Subcategory
+            $('#subcategory_id').change(function () {
+                const subcategoryId = $(this).val();
+                if (subcategoryId) {
+                    $.getJSON(`/api/get_items/${subcategoryId}`, function (data) {
+                        let options = '<option value="">Select Articolo</option>';
+                        $.each(data, function (index, item) {
+                            options += `<option value="${item.id}">${item.name}</option>`;
+                        });
+                        $('#item_id').html(options);
                     });
-                    $('#item_id').html(options);
-                });
-            } else {
-                $('#item_id').html('<option value="">Select Articolo</option>');
-            }
+                } else {
+                    $('#item_id').html('<option value="">Select Articolo</option>');
+                }
+            });
         });
-    });
-</script>
+    </script>
 {% endblock %}

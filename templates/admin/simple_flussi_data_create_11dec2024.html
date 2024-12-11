@@ -1,0 +1,58 @@
+{% extends 'admin/model/create.html' %}
+
+{% block content %}
+<div class="container">
+    <h1>Pre-complaint Form</h1>
+    <form method="POST" action="{{ url_for('simple_flussi_data.create_view') }}">
+        {{ form.hidden_tag() }}
+
+        <div class="form-group">
+            {{ form.lexic_id.label }}: {{ form.lexic_id(class_="form-control", id="lexic_id") }}
+        </div>
+        <div class="form-group">
+            {{ form.subcategory_id.label }}: {{ form.subcategory_id(class_="form-control", id="subcategory_id") }}
+        </div>
+        <div class="form-group">
+            {{ form.item_id.label }}: {{ form.item_id(class_="form-control", id="item_id") }}
+        </div>
+        <button type="submit" class="btn btn-primary">Submit</button>
+    </form>
+</div>
+
+<script>
+    $(document).ready(function () {
+        // Update Subcategories based on Lexic
+        $('#lexic_id').change(function () {
+            const lexicId = $(this).val();
+            if (lexicId) {
+                $.getJSON(`/api/get_subcategories/${lexicId}`, function (data) {
+                    let options = '<option value="">Select Categoria</option>';
+                    $.each(data, function (index, subcategory) {
+                        options += `<option value="${subcategory.id}">${subcategory.name}</option>`;
+                    });
+                    $('#subcategory_id').html(options);
+                });
+            } else {
+                $('#subcategory_id').html('<option value="">Select Categoria</option>');
+                $('#item_id').html('<option value="">Select Articolo</option>');
+            }
+        });
+
+        // Update Items based on Subcategory
+        $('#subcategory_id').change(function () {
+            const subcategoryId = $(this).val();
+            if (subcategoryId) {
+                $.getJSON(`/api/get_items/${subcategoryId}`, function (data) {
+                    let options = '<option value="">Select Articolo</option>';
+                    $.each(data, function (index, item) {
+                        options += `<option value="${item.id}">${item.name}</option>`;
+                    });
+                    $('#item_id').html(options);
+                });
+            } else {
+                $('#item_id').html('<option value="">Select Articolo</option>');
+            }
+        });
+    });
+</script>
+{% endblock %}

@@ -824,6 +824,8 @@ class BaseData(TimestampMixin, db.Model):
     # Add a back-reference to Dossier
     dossiers = db.relationship('Dossier', secondary=document_dossier, back_populates='documents')
 
+    # Relationships
+    lexic = db.relationship('Lexic', backref='base_data')
     subcategory = db.relationship('LexicSubcategory', backref='base_data')
     item = db.relationship('LexicItem', backref='base_data')
 
