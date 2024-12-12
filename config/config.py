@@ -612,6 +612,147 @@ def calculate_interval_dates(year_id, interval_ord, interval_id):
     return start_date, end_date
 
 
+def validate_sum_with_context(list_of_numbers, context, target_field, raise_error=True):
+    """
+    Validates if the sum of a list of numbers equals a specific field value (V) in the BaseData table.
+
+    Parameters:
+        list_of_numbers (list): List of numbers to sum.
+        context (dict): Dictionary containing the context for filtering BaseData
+                        (keys: company_id, fi0, interval_id, subject_id, area_id, subarea_id).
+        target_field (str): The name of the field in BaseData to validate against.
+        raise_error (bool): Whether to raise a ValueError for validation failures.
+
+    Returns:
+        bool: True if the sum matches the target field value.
+        str: Warning message if `raise_error` is False and validation fails.
+
+    Raises:
+        ValueError: If `raise_error` is True and validation fails.
+    """
+    if not isinstance(list_of_numbers, list) or not all(isinstance(i, (int, float)) for i in list_of_numbers):
+        if raise_error:
+            raise ValueError("list_of_numbers must be a list of numbers.")
+        return "Warning: list_of_numbers must be a list of numbers."
+
+    required_keys = ["company_id", "fi0", "interval_id", "subject_id", "area_id", "subarea_id"]
+    if not all(key in context for key in required_keys):
+        message = f"Context must contain the following keys: {', '.join(required_keys)}"
+        if raise_error:
+            raise ValueError(message)
+        return f"Warning: {message}"
+
+    if not isinstance(target_field, str):
+        if raise_error:
+            raise ValueError("target_field must be a string representing a field in BaseData.")
+        return "Warning: target_field must be a string representing a field in BaseData."
+
+    total_sum = sum(list_of_numbers)
+
+    try:
+        # Query the BaseData table for the matching record
+        target_record = (
+            db.session.query(BaseData)
+            .filter_by(
+                company_id=context["company_id"],
+                fi0=context["fi0"],
+                interval_id=context["interval_id"],
+                subject_id=context["subject_id"],
+                area_id=context["area_id"],
+                subarea_id=context["subarea_id"]
+            )
+            .one_or_none()
+        )
+
+        if not target_record:
+            message = "No matching record found in the data base with the provided context."
+            if raise_error:
+                raise ValueError(message)
+            return f"Warning: {message}"
+
+        # Get the value of the target field
+        target_value = getattr(target_record, target_field, None)
+        if target_value is None:
+            message = f"Field '{target_field}' does not exist in the data base."
+            if raise_error:
+                raise ValueError(message)
+            return f"Warning: {message}"
+
+        if total_sum != target_value:
+            message = (
+                f"Validation failed: Sum {total_sum} does not equal the target field value {target_value}."
+            )
+            if raise_error:
+                raise ValueError(message)
+            return f"Warning: {message}"
+
+    except Exception as e:
+        message = f"Error during validation: {str(e)}"
+        if raise_error:
+            raise ValueError(message)
+        return f"Warning: {message}"
+
+    return True  # Validation passed
+
+
+
+def validate_sum_equals(list_of_numbers, target, allow_tolerance=False, tolerance=0.01):
+    """
+    Validates if the sum of a list of numbers equals a target value.
+
+    Parameters:
+        list_of_numbers (list): List of numbers to sum.
+        target (float): The target value to compare against.
+        allow_tolerance (bool): Whether to allow a tolerance for floating-point precision.
+        tolerance (float): Acceptable range of deviation if tolerance is enabled.
+
+    Returns:
+        bool: True if the sum matches the target (within tolerance if enabled).
+
+    Raises:
+        ValueError: If the sum does not match the target within allowed tolerance.
+    """
+    if not isinstance(list_of_numbers, list) or not all(isinstance(i, (int, float)) for i in list_of_numbers):
+        raise ValueError("Input must be a list of numbers.")
+
+    total = sum(list_of_numbers)
+    if allow_tolerance:
+        if abs(total - target) > tolerance:
+            raise ValueError(f"Validation failed: Sum {total} is not within the tolerance range of {target}.")
+    else:
+        if total != target:
+            raise ValueError(f"Validation failed: Sum {total} does not equal the target {target}.")
+
+    return True
+
+
+
+def validate_percentage(numerator, denominator):
+    """
+    Validates and calculates a percentage, ensuring the value is within [0, 100].
+
+    Parameters:
+        numerator (float): The numerator for the percentage calculation.
+        denominator (float): The denominator for the percentage calculation.
+
+    Returns:
+        float: A valid percentage value within the range [0, 100].
+
+    Raises:
+        ValueError: If the denominator is zero or the calculated percentage is invalid.
+    """
+    if denominator == 0:
+        raise ValueError("Denominator cannot be zero for percentage calculation.")
+
+    percentage = round(100 * numerator / denominator, 2)
+
+    if percentage < 0 or percentage > 100:
+        raise ValueError(f"Calculated percentage {percentage}% is out of valid range [0, 100].")
+
+    return percentage
+
+
+
 # interval_id: 1 year, 2 'semester', 3 quadrimenter, 4 quarter, 12 month, 26 fortnight, 52 week
 def check_status(is_created, company_id, subject_id, legal_document_id,
                  year_id, interval_ord, interval_id,
@@ -650,6 +791,8 @@ def check_status(is_created, company_id, subject_id, legal_document_id,
             query = query.filter(BaseData.subarea_id == subarea_id)
         existing_data = query.first()
 
+        print('existing data check 1', existing_data)
+
         # If the data already exists in BaseData, return False
         if existing_data:
             if is_created:
@@ -682,6 +825,8 @@ def check_status(is_created, company_id, subject_id, legal_document_id,
         if subarea_id is not None:
             query = query.filter(BaseData.subarea_id == subarea_id)
         existing_data = query.first()
+
+        print('existing data check 2', existing_data)
 
         # If the data already exists in BaseData, return False
         if existing_data:

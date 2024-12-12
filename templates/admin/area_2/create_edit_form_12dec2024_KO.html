@@ -1,0 +1,46 @@
+{% extends 'admin/model/edit.html' %}
+<head>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+</head>
+{% block page %}
+<div class="container mt-4">
+    <h2>{{ _gettext("Create or Edit Data") }}</h2>
+    <form method="post" enctype="multipart/form-data">
+        <!-- Render hidden fields -->
+        {% for field in form %}
+            {% if field.type == 'HiddenField' %}
+                {{ field }}
+            {% endif %}
+        {% endfor %}
+
+        <!-- Render visible fields in a 3-column grid -->
+        <div class="row">
+            {% for field in form %}
+                {% if field.type != 'HiddenField' %}
+                <div class="col-md-4 mb-3">
+                    <div class="form-group">
+                        <label for="{{ field.id }}">{{ field.label.text }}</label>
+                        {{ field(class="form-control") }}
+                        {% if field.errors %}
+                            <div class="invalid-feedback">
+                                {% for error in field.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endif %}
+                {% if loop.index % 3 == 0 %}
+                    </div><div class="row">
+                {% endif %}
+            {% endfor %}
+        </div>
+
+        <!-- Submit Button -->
+        <div class="d-flex justify-content-end">
+            <button type="submit" class="btn btn-primary">{{ _gettext("Submit") }}</button>
+        </div>
+    </form>
+</div>
+{% endblock %}

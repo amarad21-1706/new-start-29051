@@ -61,7 +61,7 @@ from app_factory import roles_required, subscription_required
 
 from config.config import (get_if_active, get_subarea_name, get_current_interval, get_current_intervals,
                            get_subarea_interval_type, create_audit_log, remove_duplicates,
-                           create_notification, is_extratime)
+                           create_notification, is_extratime, validate_percentage, validate_sum_with_context)
 
 from config.custom_fields import CustomFileUploadField  # Import the custom field
 
@@ -408,6 +408,7 @@ class CompanyUsersAdminView(ModelView):
         'company_name': lambda v, c, m, p: m.company.name if m.company else '',
         'user_roles': lambda v, c, m, p: ', '.join([role.name for role in m.user.roles]) if m.user.roles else 'N/A'
     }
+
 
 class SignedContractsView(ModelView):
     column_list = ['contract_name', 'contract_status', 'created_by_user',
@@ -2077,6 +2078,7 @@ class Tabella22_dataView(ModelView):
         form.populate_obj(model)  # This resets the form data to its default values
 
         fi0_value = model.fi0
+        subject_id = form.subject_id.data
 
         now = datetime.now()
         current_year = now.year
@@ -2118,21 +2120,19 @@ class Tabella22_dataView(ModelView):
                             document_interval):
             raise ValidationError("You do not have permission to create this record (close period?).")
 
-
-        subject_id = None
-        lexic_id = None
         legal_document_id = None
         record_type = 'control_area'
         data_type = self.subarea_name
 
         result, message = check_status(is_created, company_id,
-                                       None, None, form.fi0.data, form.interval_ord.data,
+                                       subject_id, legal_document_id, form.fi0.data, form.interval_ord.data,
                                        interval_id, area_id, subarea_id, datetime.today(), db.session)
 
         # - Validate data
         # - Save the model
-        fields_to_check = ['fi0', 'interval_ord',
-                           'fi1', 'fi2', 'fi3', 'fi4', 'fi5']
+        fields_to_check = ['fi0',
+                           'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fi6',
+                           'interval_ord', 'subject_id']
 
         for field_name in fields_to_check:
             if form[field_name].data is None:
@@ -2149,15 +2149,23 @@ class Tabella22_dataView(ModelView):
         if form.fi1.data * form.fi2.data == 0:
             raise ValidationError("Please enter non-zero values for the fields.")
 
-        if form.fi2.data and form.fi3.data and form.fi2.data  != 0:
-            model.fn1 = round(100 * form.fi3.data / form.fi2.data, 2)
-        else:
-            model.fn1 = round(0, 2)
+        try:
+            # Validate and calculate fn1
+            if form.fi2.data and form.fi3.data and form.fi2.data != 0:
+                model.fn1 = validate_percentage(form.fi3.data, form.fi2.data)
+            else:
+                model.fn1 = 0.0
+        except ValueError as e:
+            raise ValidationError(f"Error calculating percentage #1: {str(e)}")
 
-        if form.fi5.data and form.fi4.data and form.fi4.data != 0:
-            model.fn2 = round(100 * form.fi5.data / form.fi4.data, 2)
-        else:
-            model.fn2 = round(0, 2)
+        try:
+            # Validate and calculate fn1
+            if form.fi4.data and form.fi5.data and form.fi4.data != 0:
+                model.fn2 = validate_percentage(form.fi5.data, form.fi4.data)
+            else:
+                model.fn2 = 0.0
+        except ValueError as e:
+            raise ValidationError(f"Error calculating percentage #2: {str(e)}")
 
         model.user_id = user_id
         model.data_type = data_type
@@ -2416,7 +2424,7 @@ class Tabella22_dataView_OLD(ModelView):
         # - Validate data
         # - Save the model
         fields_to_check = ['fi0',
-                           'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fi6', 'interval_ord']
+                           'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fi6', 'interval_ord', 'subject_id']
 
         for field_name in fields_to_check:
             if form[field_name].data is None:
@@ -2440,13 +2448,27 @@ class Tabella22_dataView_OLD(ModelView):
         else:
             model.fi2 = 0
 
-        if form.fi5.data and form.fi2.data and form.fi2.data  != 0:
-            model.fn1 = round(100 * form.fi5.data / form.fi2.data, 2)
-        else:
-            model.fn1 = round(0, 2)
+        try:
+            # Validate and calculate fn1
+            if form.fi5.data and form.fi2.data and form.fi2.data != 0:
+                model.fn1 = validate_percentage(form.fi5.data, form.fi2.data)
+            else:
+                model.fn1 = 0.0
+        except ValueError as e:
+            raise ValidationError(f"Error calculating percentage #1: {str(e)}")
+
 
         if form.fi6.data and form.fi2.data and form.fi2.data != 0:
-            model.fn2 = round(100 * form.fi6.data / form.fi2.data, 2)
+
+            try:
+                # Validate and calculate fn1
+                if form.fi6.data and form.fi2.data and form.fi2.data != 0:
+                    model.fn2 = validate_percentage(form.fi6.data, form.fi2.data)
+                else:
+                    model.fn2 = 0.0
+            except ValueError as e:
+                raise ValidationError(f"Error calculating percentage #1: {str(e)}")
+
         else:
             model.fn2 = round(0, 2)
 
@@ -2698,7 +2720,7 @@ class Tabella24_dataView(ModelView):
         # - Validate data
         # - Save the model
         fields_to_check = ['fi0',
-                           'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fc1', 'interval_ord']
+                           'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'interval_ord']
 
         with current_app.app_context():
             result, message = check_status(is_created, company_id,
@@ -3115,7 +3137,11 @@ class Tabella25_dataView(ModelView):
 class Tabella26_dataView(ModelView):
     page_title = "Switching rate (trattamento della vendita dell'IVI rispetto agli altri operatori)"
 
-    create_template = 'admin/create_base_data.html'
+    # create_template = 'admin/create_base_data.html'
+    # Specify the custom templates for Create and Edit forms
+    create_template = 'admin/area_2/create_edit_form.html'
+    edit_template = 'admin/area_2/create_edit_form.html'
+
     area_id = 2
     subarea_id = 14
 
@@ -3150,13 +3176,14 @@ class Tabella26_dataView(ModelView):
     # Specify form columns with dropdowns
 
     column_labels = {'company_id': 'Comp.', 'interval_ord': 'Periodo', 'fi0': 'Anno',
-                     'fi1': 'Totale rich. (a)', 'fi2': 'IVI (b)', 'fn1': '% (c)', 'fi3': 'Esito positivo (d)',
-                     'fn2': '% (e)', 'fi4': 'Esito negativo (f)', 'fn3': '% (g)',
-                     'fi5': 'ALTRI (h)', 'fn4': '% (i)',
-                     'fi6': 'Esito pos. (j)', 'fn5': '% (k)', 'fi7': 'Esito neg. (l)', 'fn6': '% (m)',
-                     'fi8': 'Rich. altri su PdR altri (n)', 'fi9': 'Esito neg. (p)', 'fn7': '% (q)',
-                     'fi10': 'Rich altri su PdR IVI (r)', 'fi11': 'Esito neg. (s)', 'fn8': '% (t)',
+                     'fi1': 'Totale rich. (a)*', 'fi2': 'IVI (b)*', 'fn1': '   % (c)', 'fi3': 'Esito positivo (d)*',
+                     'fn2': '   % (e)', 'fi4': 'Esito negativo (f)*', 'fn3': '% (g)',
+                     'fi5': 'ALTRI (h)*', 'fn4': '   % (i)',
+                     'fi6': 'Esito pos. (j)*', 'fn5': '   % (k)', 'fi7': 'Esito neg. (l)*', 'fn6': '   % (m)',
+                     'fi8': 'Rich. altri su PdR altri (n)*', 'fi9': 'Esito neg. (p)*', 'fn7': '   % (q)',
+                     'fi10': 'Rich altri su PdR IVI (r)*', 'fi11': 'Esito neg. (s)*', 'fn8': '   % (t)',
                      'fc1': 'Note'}
+
     column_descriptions = {'company_id': 'Comp.',
                            'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
                            'fi0': 'Inserire anno (es. 2024)',
@@ -3364,12 +3391,13 @@ class Tabella26_dataView(ModelView):
         # - Validate data
         # - Save the model
         fields_to_check_not_null = ['fi0', 'interval_ord',
-                                    'fi1', 'fi2', 'fi5', 'fi8', 'fi10']
+                                    'fi1', 'fi2', 'fi3', 'fi4', 'fi5',
+                                    'fi6', 'fi7', 'fi8', 'fi9', 'fi10', 'fi11']
 
-        fields_to_check = ['fi0', 'interval_ord',
-                           'fi1', 'fi2', 'fi3', 'fi4', 'fi5', 'fi6', 'fi7', 'fi8', 'fi9', 'fi10', 'fi11',
-                           'fn1', 'fn2', 'fn3', 'fn4', 'fn5', 'fn6', 'fn7', 'fn8',
-                           'fc1']
+        # fields_to_check = ['fi0', 'interval_ord',
+        #                             'fi1', 'fi2', 'fi3', 'fi4', 'fi5',
+        #                             'fi6', 'fi7', 'fi8', 'fi9', 'fi10', 'fi11']
+
 
         with current_app.app_context():
             result, message = check_status(is_created, company_id,
@@ -3390,39 +3418,79 @@ class Tabella26_dataView(ModelView):
                 "Please check the year")
             pass
 
-        if (form.fi1.data is None or form.fi2.data is None or form.fi5.data is None
-                or form.fi8.data is None or form.fi10.data is None):
-            raise ValidationError("Please enter all required integers.")
-        else:
-            if form.fi1.data + form.fi2.data + form.fi5.data + form.fi8.data + form.fi10.data == 0:
-                raise ValidationError("Please enter at least one non-zero values for the integer number.")
-            pass
-            if form.fi1.data != form.fi2.data + form.fi5.data:
-                raise ValidationError("Please check total, 'IVI' and 'Altri'.")
-            pass
-            if form.fi2.data != form.fi3.data + form.fi4.data:
-                raise ValidationError("Please check 'totale IVI', 'esito positivo' and 'esito negativo'.")
-            pass
-            if form.fi5.data != form.fi6.data + form.fi7.data:
-                raise ValidationError("Please check 'totale altri', 'esito positivo' and 'esito negativo'.")
-            pass
 
-            if form.fi1.data is not None and form.fi1.data != 0:
-                form.fn1.data = round(100 * (form.fi2.data / form.fi1.data), 2)  # IVI/tot
-                form.fn4.data = round(100 * (form.fi5.data / form.fi1.data), 2)  # altri/TOT
-            if form.fi2.data is not None and form.fi2.data != 0:
-                form.fn2.data = round(100 * (form.fi3.data / form.fi2.data), 2)  # pct IVI pos
-                form.fn3.data = round(100 * (form.fi4.data / form.fi2.data), 2)  # PCT IVI neg
-            if form.fi5.data is not None and form.fi5.data != 0:
-                form.fn5.data = round(100 * (form.fi6.data / form.fi5.data), 2)  # PCT POS altri
-                form.fn6.data = round(100 * (form.fi7.data / form.fi5.data), 2)  # PCT NEG altri
+        try:
+            # Validate and calculate fn1
+            if form.fi2.data and form.fi1.data and form.fi1.data != 0:
+                model.fn1 = validate_percentage(form.fi2.data, form.fi1.data)
+            else:
+                model.fn1 = 0.0
+        except ValueError as e:
+            raise ValidationError(f"Error calculating percentage #1: {str(e)}")
 
-        if form.fn1.data is None or form.fn1.data == 0:
-            if form.fi1.data != 0:
-                form.fn1.data = round(form.fi2.data / form.fi1.data, 2)
-        else:
-            if form.fi1.data != 0:
-                form.fi2.data = int(form.fi1.data * float(form.fn1.data) * 0.01)
+        try:
+            # Validate and calculate fn1
+            if form.fi5.data and form.fi1.data and form.fi1.data != 0:
+                model.fn4 = validate_percentage(form.fi5.data, form.fi1.data)
+            else:
+                model.fn4 = 0.0
+        except ValueError as e:
+            raise ValidationError(f"Error calculating percentage #4: {str(e)}")
+
+        try:
+            # Validate and calculate fn1
+            if form.fi3.data and form.fi2.data and form.fi2.data != 0:
+                model.fn2 = validate_percentage(form.fi3.data, form.fi2.data)
+            else:
+                model.fn2 = 0.0
+        except ValueError as e:
+            raise ValidationError(f"Error calculating percentage #2: {str(e)}")
+
+        try:
+            # Validate and calculate fn1
+            if form.fi4.data and form.fi2.data and form.fi2.data != 0:
+                model.fn3 = validate_percentage(form.fi4.data, form.fi2.data)
+            else:
+                model.fn3 = 0.0
+        except ValueError as e:
+            raise ValidationError(f"Error calculating percentage #3: {str(e)}")
+
+        try:
+            # Validate and calculate fn1
+            if form.fi7.data and form.fi6.data and form.fi6.data != 0:
+                model.fn5 = validate_percentage(form.fi7.data, form.fi6.data)
+            else:
+                model.fn5 = 0.0
+        except ValueError as e:
+            raise ValidationError(f"Error calculating percentage #5: {str(e)}")
+
+        try:
+            # Validate and calculate fn1
+            if form.fi7.data and form.fi5.data and form.fi5.data != 0:
+                model.fn6 = validate_percentage(form.fi7.data, form.fi5.data)
+            else:
+                model.fn6 = 0.0
+        except ValueError as e:
+            raise ValidationError(f"Error calculating percentage #6: {str(e)}")
+
+        try:
+            # Validate and calculate fn1
+            if form.fi9.data and form.fi8.data and form.fi8.data != 0:
+                model.fn7 = validate_percentage(form.fi7.data, form.fi8.data)
+            else:
+                model.fn7 = 0.0
+        except ValueError as e:
+            raise ValidationError(f"Error calculating percentage #7: {str(e)}")
+
+        try:
+            # Validate and calculate fn1
+            if form.fi11.data and form.fi10.data and form.fi10.data != 0:
+                model.fn8 = validate_percentage(form.fi11.data, form.fi10.data)
+            else:
+                model.fn8 = 0.0
+        except ValueError as e:
+            raise ValidationError(f"Error calculating percentage #8: {str(e)}")
+
 
         model.user_id = user_id
         model.data_type = data_type
@@ -3490,15 +3558,17 @@ class Tabella27_dataView(ModelView):
 
     column_labels = {'company_id': 'Comp.',
                      'interval_ord': 'Periodo', 'fi0': 'Anno',
-                     'fi1': 'Totale', 'fi2': 'domestico', 'fn1': '%',
-                     'fi3': 'IVI', 'fn2': '%',
-                     'fi4': 'altri', 'fn3': '%',
+                     'fi1': 'Totale',
+                     'fi2': 'domestico', 'fn1': '      %',
+                     'fi3': 'IVI', 'fn2': '      %',
+                     'fi4': 'altri', 'fn3': '      %',
                      'fi5': 'PdR', 'fn4': 'Tasso switching PdR',
                      'fc1': 'Note'}
     column_descriptions = {'company_id': 'Comp.',
                            'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
                            'fi0': 'Inserire anno (es. 2024)',
-                           'fi1': 'Totale', 'fi2': 'di cui: domestico', 'fn1': 'domestico, in percentuale',
+                           'fi1': 'Totale',
+                           'fi2': 'di cui: domestico', 'fn1': 'domestico, in percentuale',
                            'fi3': 'di cui IVI', 'fn2': 'IVI, in percentuale',
                            'fi4': 'altri', 'fn3': 'altri, in percentuale',
                            'fi5': 'PdR', 'fn4': 'Tasso switching PdR (percentuale)',
@@ -3559,6 +3629,7 @@ class Tabella27_dataView(ModelView):
             default=first_element
         )
         return form_class
+
 
     def create_model(self, form):
         model = super(Tabella27_dataView, self).create_model(form)
@@ -3665,6 +3736,35 @@ class Tabella27_dataView(ModelView):
 
         document_year = form.fi0.data
         document_interval = form.interval_ord.data
+
+        # CHECK THE TOTAL AGAINST THE PdR in Tabella22!
+        # =====
+        try:
+            # List of numbers to validate
+            list_of_numbers = [form.fi2.data] # [form.fi1.data, form.fi2.data, form.fi3.data]
+
+            # Context from the current record
+            context = {
+                "company_id": company_id,
+                "fi0": model.fi0,
+                "interval_id": model.interval_id,
+                "subject_id": 7, #domestici
+                "area_id": model.area_id,
+                "subarea_id": model.subarea_id
+            }
+
+            # Target field in BaseData to validate against
+            target_field = "fi2"  # Example field to compare the sum against
+
+            # Perform validation with a non-blocking warning
+            warning_message = validate_sum_with_context(list_of_numbers, context, target_field, raise_error=False)
+            if isinstance(warning_message, str):
+                flash(warning_message, "warning")  # Flash a warning message to the user
+
+        except ValidationError as e:
+            raise ValidationError(f"Blocking validation error: {str(e)}")
+
+
         if not is_extratime(company_id, self.area_id, self.subarea_id, document_year,
                             document_interval):
             raise ValidationError("You do not have permission to create this record (close period?).")
@@ -3675,9 +3775,7 @@ class Tabella27_dataView(ModelView):
         # - Validate data
         # - Save the model
         fields_to_check = ['fi0', 'interval_ord',
-                           'fi1', 'fi2', 'fi3', 'fi4', 'fi5',
-                           'fn1', 'fn2', 'fn3', 'fn4',
-                           'fc1']
+                           'fi1', 'fi2', 'fi3', 'fi4', 'fi5']
 
         with current_app.app_context():
             result, message = check_status(is_created, company_id,
@@ -3698,25 +3796,8 @@ class Tabella27_dataView(ModelView):
                 "Please check the year")
             pass
 
-        if (form.fi1.data is None or form.fi2.data is None or form.fi3.data is None
-                or form.fi4.data is None or form.fi5.data is None):
-            raise ValidationError("Please enter all required integers.")
-        else:
-            if form.fi1.data + form.fi2.data + form.fi3.data + form.fi4.data + form.fi5.data == 0:
-                raise ValidationError("Please enter at least one non-zero values for the integer fields.")
-            pass
-            if form.fi1.data != form.fi2.data + form.fi3.data + form.fi4.data:
-                raise ValidationError("Please check the total.")
-            pass
-
-        if (form.fn1.data is None or form.fn2.data is None or form.fn3.data is None
-                or form.fn4.data is None):
-            raise ValidationError("Please enter all required % data.")
-            pass
-        else:
-            if form.fn1.data + form.fn2.data + form.fn3.data + form.fn4.data == 0:
-                raise ValidationError("Please enter at least one non-zero value for the % fields.")
-            pass
+        if form.fi1.data != form.fi2.data + form.fi3.data + form.fi4.data:
+            raise ValidationError("Please check the total.")
 
         model.user_id = user_id
         model.data_type = data_type
