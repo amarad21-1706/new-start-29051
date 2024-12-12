@@ -3137,10 +3137,10 @@ class Tabella25_dataView(ModelView):
 class Tabella26_dataView(ModelView):
     page_title = "Switching rate (trattamento della vendita dell'IVI rispetto agli altri operatori)"
 
-    # create_template = 'admin/create_base_data.html'
+    create_template = 'admin/create_base_data.html'
     # Specify the custom templates for Create and Edit forms
-    create_template = 'admin/area_2/create_edit_form.html'
-    edit_template = 'admin/area_2/create_edit_form.html'
+    # create_template = 'admin/area_2/create_edit_form.html'
+    # edit_template = 'admin/area_2/create_edit_form.html'
 
     area_id = 2
     subarea_id = 14
