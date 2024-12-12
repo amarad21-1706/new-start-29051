@@ -142,7 +142,7 @@ class Config:
         # CAPTCHA
         # selfRECAPTCHA_PUBLIC_KEY = some_keys['recaptcha_public_key']
         # selfRECAPTCHA_PRIVATE_KEY = some_keys['recaptcha_private_key']
-        self.WTF_CSRF_ENABLED = False  # Disable CSRF protection for local development
+        self.WTF_CSRF_ENABLED = True # up to 12dec2024 it was False  # Disable CSRF protection for local development
 
         '''
         self.SQLALCHEMY_ENGINE_OPTIONS = {

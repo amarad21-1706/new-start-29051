@@ -6,12 +6,7 @@
     <h2>{{ _gettext("Create or Edit Data") }}</h2>
     <form method="post" enctype="multipart/form-data">
 
-        <!-- Explicitly render hidden fields -->
-        {% for field in form %}
-            {% if field.type == 'HiddenField' %}
-                <input type="hidden" name="{{ field.name }}" value="{{ field.data }}">
-            {% endif %}
-        {% endfor %}
+        <input type="hidden" name="csrf_token" value="{{ form.csrf_token.data }}">
 
         <!-- Render visible fields in a 3-column grid -->
         <div class="row">
