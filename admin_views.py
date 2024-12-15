@@ -3176,34 +3176,34 @@ class Tabella26_dataView(ModelView):
     # Specify form columns with dropdowns
 
     column_labels = {'company_id': 'Comp.', 'interval_ord': 'Periodo', 'fi0': 'Anno',
-                     'fi1': 'Totale rich. (a)*', 'fi2': 'IVI (b)*', 'fn1': '   % (c)', 'fi3': 'Esito positivo (d)*',
-                     'fn2': '   % (e)', 'fi4': 'Esito negativo (f)*', 'fn3': '% (g)',
-                     'fi5': 'ALTRI (h)*', 'fn4': '   % (i)',
-                     'fi6': 'Esito pos. (j)*', 'fn5': '   % (k)', 'fi7': 'Esito neg. (l)*', 'fn6': '   % (m)',
-                     'fi8': 'Rich. altri su PdR altri (n)*', 'fi9': 'Esito neg. (p)*', 'fn7': '   % (q)',
-                     'fi10': 'Rich altri su PdR IVI (r)*', 'fi11': 'Esito neg. (s)*', 'fn8': '   % (t)',
+                     'fi1': 'Totale rich. (a)*', 'fi2': 'A. IVI (b)*', 'fn1': '   % (c)', 'fi3': 'A.1 Esito positivo (d)*',
+                     'fn2': '   % (e)', 'fi4': 'A.2 Esito negativo (f)*', 'fn3': '% (g)',
+                     'fi5': 'B. ALTRI (h)*', 'fn4': '   % (i)',
+                     'fi6': 'B.1 Esito pos. (j)*', 'fn5': '   % (k)', 'fi7': 'B.2 Esito neg. (l)*', 'fn6': '   % (m)',
+                     'fi8': 'Rich. altri su PdR IVI (n)*', 'fi9': 'Esito neg. (p)*', 'fn7': '   % (q)',
+                     'fi10': 'Rich altri su PdR altri (r)*', 'fi11': 'Esito neg. (s)*', 'fn8': '   % (t)',
                      'fc1': 'Note'}
 
     column_descriptions = {'company_id': 'Comp.',
                            'interval_ord': '(inserire il numero - es. 1 - primo quadrimestre; 2 - secondo ecc.)',
                            'fi0': 'Inserire anno (es. 2024)',
                            'fi1': 'Totale richieste presentate', 'fi2': 'di cui IVI',
-                           'fn1': 'Percentuale richieste IVI (=b/a)',
+                           'fn1': Markup('&nbsp;&nbsp;&nbsp;&nbsp;Percentuale richieste IVI (=b/a)'),
                            'fi3': 'Richieste con esito positivo',
-                           'fn2': 'Percentuale delle richieste IVI con esito positivo (=d/b)',
+                           'fn2': Markup('&nbsp;&nbsp;&nbsp;&nbsp;Percentuale delle richieste IVI con esito positivo (=d/b)'),
                            'fi4': 'Richieste con esito negativo (=b-d)',
-                           'fn3': 'Percentuale delle richieste IVI con esito negativo (=f/b)',
+                           'fn3': Markup('&nbsp;&nbsp;&nbsp;&nbsp;Percentuale delle richieste IVI con esito negativo (=f/b)'),
                            'fi5': 'Richieste ALTRI operatori (=a-b)',
-                           'fn4': 'Percentuale ALTRI sul totale (=h/a)',
+                           'fn4': Markup('&nbsp;&nbsp;&nbsp;&nbsp;Percentuale ALTRI sul totale (=h/a)'),
                            'fi6': 'Richieste ALTRI con esito positivo',
-                           'fn5': 'Percentuale di richieste ALTRI con esito positivo (=j/h)',
+                           'fn5': Markup('&nbsp;&nbsp;&nbsp;&nbsp;Percentuale di richieste ALTRI con esito positivo (=j/h)'),
                            'fi7': 'Richieste ALTRI con esito negativo (=h-j)',
-                           'fn6': 'Percentuale richieste ALTRI con esito negativo (=l/h)',
-                           'fi8': 'Richieste ALTRI su PdR altri', 'fi9': 'di cui con esito negativo',
-                           'fn7': 'Percentuale di richieste ALTRI con esito negativo (=p/n)',
-                           'fi10': 'Richieste ALTRI su PdR IVI',
+                           'fn6': Markup('&nbsp;&nbsp;&nbsp;&nbsp;Percentuale richieste ALTRI con esito negativo (=l/h)'),
+                           'fi8': 'Richieste ALTRI su PdR IVI', 'fi9': 'di cui con esito negativo',
+                           'fn7': Markup('&nbsp;&nbsp;&nbsp;&nbsp;Percentuale di richieste ALTRI con esito negativo (=p/n)'),
+                           'fi10': 'Richieste ALTRI su PdR ALTRI',
                            'fi11': 'di cui con esito negativo',
-                           'fn8': 'Percentuale di richieste ALTRI su PdR IVI con esito negativo (=s/r)',
+                           'fn8': Markup('&nbsp;&nbsp;&nbsp;&nbsp;Percentuale di richieste ALTRI su PdR ALTRI con esito negativo (=s/r)'),
                            'fc1': '(opzionale)'}
 
     # Customize inlist for tabella26
@@ -3418,7 +3418,6 @@ class Tabella26_dataView(ModelView):
                 "Please check the year")
             pass
 
-
         try:
             # Validate and calculate fn1
             if form.fi2.data and form.fi1.data and form.fi1.data != 0:
@@ -3500,12 +3499,14 @@ class Tabella26_dataView(ModelView):
         model.interval_id = interval_id
         model.status_id = status_id
 
+        '''
         model.fn1 = form.fn1.data
         model.fn2 = form.fn2.data
         model.fn3 = form.fn3.data
         model.fn4 = form.fn4.data
         model.fn5 = form.fn5.data
         model.fn6 = form.fn6.data
+        '''
 
         model.legal_document_id = legal_document_id
         model.subject_id = subject_id
@@ -3741,14 +3742,14 @@ class Tabella27_dataView(ModelView):
         # =====
         try:
             # List of numbers to validate
-            list_of_numbers = [form.fi2.data] # [form.fi1.data, form.fi2.data, form.fi3.data]
+            list_of_numbers = [form.fi2.data]  # [form.fi1.data, form.fi2.data, form.fi3.data]
 
             # Context from the current record
             context = {
                 "company_id": company_id,
                 "fi0": model.fi0,
                 "interval_id": model.interval_id,
-                "subject_id": 7, #domestici
+                "subject_id": 7,  # domestici
                 "area_id": model.area_id,
                 "subarea_id": model.subarea_id
             }
@@ -3763,7 +3764,6 @@ class Tabella27_dataView(ModelView):
 
         except ValidationError as e:
             raise ValidationError(f"Blocking validation error: {str(e)}")
-
 
         if not is_extratime(company_id, self.area_id, self.subarea_id, document_year,
                             document_interval):
@@ -3799,6 +3799,25 @@ class Tabella27_dataView(ModelView):
         if form.fi1.data != form.fi2.data + form.fi3.data + form.fi4.data:
             raise ValidationError("Please check the total.")
 
+        try:
+            # Validate and calculate fn1
+            if form.fi2.data and form.fi1.data and form.fi1.data != 0:
+                model.fn1 = validate_percentage(form.fi2.data, form.fi1.data)
+            else:
+                model.fn1 = 0.0
+        except ValueError as e:
+            raise ValidationError(f"Error calculating percentage #1: {str(e)}")
+
+        try:
+            # Validate and calculate fn1
+            if form.fi3.data and form.fi1.data and form.fi1.data != 0:
+                model.fn2 = validate_percentage(form.fi3.data, form.fi1.data)
+            else:
+                model.fn2 = 0.0
+        except ValueError as e:
+            raise ValidationError(f"Error calculating percentage #2: {str(e)}")
+
+
         model.user_id = user_id
         model.data_type = data_type
         model.record_type = record_type
@@ -3825,7 +3844,6 @@ class Tabella27_dataView(ModelView):
         self.session.commit()
 
         return model
-
 
 
 class MyStringField(StringField):
@@ -4954,7 +4972,6 @@ class ContingenciesDataView(BaseDataView):
         return form
 
 
-
 class IniziativeDsoAsDataView(BaseDataView):
     create_template = 'admin/area_1/create_base_data_6.html'
     area_id = 1
@@ -6052,28 +6069,6 @@ def create_admin_views(app, intervals):
 
                 return form
 
-            def update_model_223(self, form, model):
-                try:
-                    # Populate model with form data
-                    form.populate_obj(model)
-
-                    # Validate references
-                    if not Lexic.query.get(model.lexic_id):
-                        raise ValueError(f"Invalid Lexic ID: {model.lexic_id}")
-                    if model.subcategory_id and not LexicSubcategory.query.get(model.subcategory_id):
-                        raise ValueError(f"Invalid Subcategory ID: {model.subcategory_id}")
-                    if model.item_id and not LexicItem.query.get(model.item_id):
-                        raise ValueError(f"Invalid Item ID: {model.item_id}")
-
-                    # Commit the changes
-                    self.session.add(model)
-                    self.session.commit()
-                    return True
-                except Exception as e:
-                    self.session.rollback()
-                    print(f"Update failed: {e}")
-                    return False
-
             def update_model(self, form, model):
                 try:
                     # Populate the model with form data
@@ -6083,12 +6078,6 @@ def create_admin_views(app, intervals):
                     model.lexic_id = form.lexic_id.data.id if form.lexic_id.data else None
                     model.subcategory_id = form.subcategory_id.data.id if form.subcategory_id.data else None
                     model.item_id = form.item_id.data.id if form.item_id.data else None
-
-                    # Debugging: Check the IDs being assigned
-                    print("Updating model with:")
-                    print(f"Lexic ID: {model.lexic_id}")
-                    print(f"Subcategory ID: {model.subcategory_id}")
-                    print(f"Item ID: {model.item_id}")
 
                     # Commit the changes to the database
                     self.session.add(model)
@@ -6861,7 +6850,6 @@ def create_admin_views(app, intervals):
 
 
         # Area 5: document upload
-
         # === = ==================================== === ====================================
         admin_app5 = Admin(app,
                name='Workflow Documenti',
@@ -6882,9 +6870,7 @@ def create_admin_views(app, intervals):
 
         # EOF app5
         # === = ==================================== === ====================================
-
         # App 6 - contracts
-
         # Initialize Flask-Admin
         admin_app6 = Admin(app,
                name='Contracts Management',
@@ -6912,7 +6898,6 @@ def create_admin_views(app, intervals):
         admin_app6.add_view(ModelView(ContractStatusHistory, db.session, name='Contract Status History'))
         # Optionally, you can add views for related models (e.g., Company, Party, User)
         admin_app6.add_view(ModelView(Party, db.session, name='Parties'))
-
 
         # Initialize Flask-Admin
         admin_app7 = Admin(app,
@@ -7091,10 +7076,8 @@ class ContainerAdmin(ModelView):
 
     def scaffold_form(self):
         form_class = super(ContainerAdmin, self).scaffold_form()
-
         form_class.created_at = HiddenField()
         form_class.updated_at = HiddenField()
-
         # Add any custom field settings if needed
         return form_class
 
@@ -7161,14 +7144,6 @@ class OpenSurveysView(BaseView):
             QuestionnaireCompanies.company_id == session['company_id']).first())
 
         # Query surveys open for editing for the current user's company
-        '''
-        open_surveys = db.session.query(Questionnaire).join(QuestionnaireCompanies).join(CompanyUsers).filter(
-            CompanyUsers.user_id == current_user.id,
-            Questionnaire.deadline_date > today,
-            Questionnaire.status_id < 3
-        ).all()
-        '''
-
         open_surveys = db.session.query(Questionnaire). \
             join(QuestionnaireCompanies, QuestionnaireCompanies.questionnaire_id == Questionnaire.id). \
             join(CompanyUsers, and_(CompanyUsers.company_id == QuestionnaireCompanies.company_id,
@@ -7227,6 +7202,7 @@ class QuestionnaireQuestionsForm(ModelView):
     can_export = True
     can_view_details = True
     pass  # No custom form needed for Questionnaire
+
 
 class QuestionnaireCompaniesForm(ModelView):
     column_list = ('questionnaire_id', 'company_id', 'status_id')  # Specify the columns you want to include

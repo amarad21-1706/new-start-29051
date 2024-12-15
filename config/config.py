@@ -678,6 +678,7 @@ def validate_sum_with_context(list_of_numbers, context, target_field, raise_erro
                 raise ValueError(message)
             return f"Warning: {message}"
 
+        '''
         if total_sum != target_value:
             message = (
                 f"Validation failed: Sum {total_sum} does not equal the target field value {target_value}."
@@ -685,6 +686,15 @@ def validate_sum_with_context(list_of_numbers, context, target_field, raise_erro
             if raise_error:
                 raise ValueError(message)
             return f"Warning: {message}"
+        '''
+
+        if total != target_value:
+            message = f"Warning: Total {total} does not match target value {target_value}."
+            if raise_error:
+                raise ValidationError(message)
+            return message  # Non-blocking warning
+        return None
+
 
     except Exception as e:
         message = f"Error during validation: {str(e)}"
