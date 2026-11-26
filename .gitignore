@@ -23,3 +23,11 @@ DataTables/
 venv/
 .idea/
 venv/
+
+# SSH keys / private key material - never commit
+*_ssh_key
+*_ssh_key.pub
+id_rsa*
+id_ed25519*
+*.pem
+*.key
